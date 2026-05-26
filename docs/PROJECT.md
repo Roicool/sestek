@@ -42,32 +42,40 @@ Version is declared in the file header comment and bumped on every release.
 
 ## Core Principles
 
-1. **Performance first** — 60fps always. No jank, no layout thrash.
+1. **Performance first** — 60fps always. No jank, no layout thrash. Target: PageSpeed 90+.
 2. **Premium feel** — Smooth easing curves, intentional timing.
-3. **Zero dependencies beyond declared stack** — Lenis + GSAP only.
-4. **CDN-first** — Every file is consumable via jsDelivr without a build step.
+3. **Zero render-blocking scripts** — Every `<script src>` tag must use `defer`. No exceptions.
+4. **Zero dependencies beyond declared stack** — Lenis + GSAP only.
+5. **CDN-first** — Every file is consumable via jsDelivr without a build step.
 
 ---
 
 ## Getting Started
 
+All scripts use `defer` — no render blocking, PageSpeed 90+ compatible.  
+Inline `<script>` blocks ignore `defer`, so init code lives in a separate file loaded last.
+
 ```html
-<!-- 1. Load dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<head>
+  <!-- DNS + TLS pre-warm for jsDelivr -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
-<!-- 2. Register ScrollTrigger -->
-<script>gsap.registerPlugin(ScrollTrigger);</script>
+  <!-- 1. Dependencies — defer, in order -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
-<!-- 3. Load Sestek core -->
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js"></script>
+  <!-- 2. Sestek core — defer, after dependencies -->
+  <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js" defer></script>
 
-<!-- 4. Initialize -->
-<script>
-  Sestek.initLenis({ duration: 1.2 });
-</script>
+  <!-- 3. Your init file — defer, always last -->
+  <!-- init.js: gsap.registerPlugin(ScrollTrigger); Sestek.initLenis({ duration: 1.2 }); -->
+  <script src="/js/init.js" defer></script>
+</head>
 ```
+
+**Why this order matters:** deferred scripts execute in declaration order after HTML is fully parsed.  
+`init.js` runs last, so Lenis, GSAP, ScrollTrigger, and Sestek are all available by then.
 
 ---
 

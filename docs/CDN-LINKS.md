@@ -3,6 +3,13 @@
 All files are served via **jsDelivr** from the `roicool/sestek` GitHub repository.  
 Use a specific tag (e.g. `@v1.0.0`) in production. Use `@main` only for development.
 
+> **PageSpeed 90+ Rule — always `defer`**  
+> Every `<script src>` tag must carry the `defer` attribute.  
+> Inline `<script>` blocks do **not** support `defer` — move all init code into a separate
+> deferred file that is listed **last** in the load order.  
+> Deferred scripts execute in declaration order after HTML parsing, before `DOMContentLoaded`.  
+> Add `<link rel="preconnect" href="https://cdn.jsdelivr.net">` in `<head>` to cut DNS + TLS latency.
+
 ---
 
 ## Format
@@ -22,13 +29,13 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag>/<path>
 ### Dev (always latest main)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js" defer></script>
 ```
 
 ### Production (pinned)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js" defer></script>
 ```
 
 ---
@@ -52,15 +59,14 @@ These are the third-party libraries Sestek depends on.
 ### Lenis
 
 ```html
-<!-- Latest stable -->
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
 ```
 
 ### GSAP + ScrollTrigger
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 ```
 
 ---
