@@ -22,8 +22,28 @@ sestek/
 ├── core/            # Foundation utilities (scroll, resize, etc.)
 ├── animations/      # Reusable GSAP animation presets
 ├── components/      # UI components (nav, hero, etc.)
-└── docs/            # PROJECT.md, CDN-LINKS.md, changelogs
+└── docs/            # PROJECT.md, CDN-LINKS.md, RC-STRUCTURE-REFERENCE.css, changelogs
 ```
+
+---
+
+## CSS Convention — RC Structure Reference
+
+All CSS written in this project **must** use the utility classes and CSS variables defined in  
+[`docs/RC-STRUCTURE-REFERENCE.css`](./RC-STRUCTURE-REFERENCE.css) wherever applicable.
+
+### Rules
+
+- **Spacing** → always use `--spacing--*` variables or `.m-*` / `.p-*` / `.gap-*` utility classes. No hardcoded pixel/rem values.
+- **Typography** → use `--text--*` scale variables or `.text-*` / `.h*-style` / `.display-*` classes. No arbitrary font sizes.
+- **Colors** → use `--brand-primary--*`, `--brand-secondary--*`, `--neutral--*` or semantic tokens (`--surface--*`, `--color-text--*`). No raw hex/rgb values.
+- **Border radius** → use `--radius--*` variables or `.rounded-*` classes.
+- **Layout** → use `.container-*`, `.grid-*col`, `.col-span-*`, `.flex`, `.stack`, `.row` classes.
+- **New custom CSS** → only write it when no existing utility class covers the need. Keep it minimal.
+
+> **Reference file:** `docs/RC-STRUCTURE-REFERENCE.css`  
+> Webflow Site ID: `6a15b02be7e45b4ce963410c` · Variable Collection: Base collection  
+> All values are fluid `clamp()` based (fluid-min=20rem → fluid-max=90rem)
 
 ---
 
@@ -47,6 +67,7 @@ Version is declared in the file header comment and bumped on every release.
 3. **Zero render-blocking scripts** — Every `<script src>` tag must use `defer`. No exceptions.
 4. **Zero dependencies beyond declared stack** — Lenis + GSAP only.
 5. **CDN-first** — Every file is consumable via jsDelivr without a build step.
+6. **RC Structure first** — Always reach for `RC-STRUCTURE-REFERENCE.css` classes and variables before writing custom CSS.
 
 ---
 
