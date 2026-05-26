@@ -1,6 +1,6 @@
 /*!
- * lenis-init.js v1.0.0
- * Lenis smooth scroll + GSAP ScrollTrigger integration
+ * lenis-init.js v1.1.0
+ * Lenis smooth scroll — optional GSAP ScrollTrigger sync
  * https://github.com/roicool/sestek
  */
 
@@ -8,26 +8,26 @@
   "use strict";
 
   /**
-   * Initializes Lenis smooth scroll and wires it to GSAP ScrollTrigger.
+   * Initializes Lenis smooth scroll.
+   * GSAP and ScrollTrigger are optional — if present they are wired automatically.
+   * When you later add ScrollTrigger animations, load gsap + ScrollTrigger before
+   * this file and the sync happens without any extra code.
    *
-   * Required globals: Lenis, gsap, ScrollTrigger
+   * Required globals : Lenis
+   * Optional globals : gsap, ScrollTrigger
    *
    * Options mirror the Lenis constructor API:
-   *   duration    – scroll duration in seconds (default: 1.2)
-   *   easing      – easing function (default: expo out)
-   *   orientation – "vertical" | "horizontal" (default: "vertical")
-   *   smoothWheel – smooth mouse wheel (default: true)
-   *   wheelMultiplier – wheel speed multiplier (default: 1)
-   *   touchMultiplier – touch speed multiplier (default: 2)
-   *   infinite    – infinite scroll (default: false)
+   *   duration         – scroll duration in seconds (default: 1.2)
+   *   easing           – easing function (default: expo out)
+   *   orientation      – "vertical" | "horizontal" (default: "vertical")
+   *   smoothWheel      – smooth mouse wheel (default: true)
+   *   wheelMultiplier  – wheel speed multiplier (default: 1)
+   *   touchMultiplier  – touch speed multiplier (default: 2)
+   *   infinite         – infinite scroll (default: false)
    */
   function initLenis(options) {
     if (typeof Lenis === "undefined") {
       console.error("[Sestek] Lenis is not loaded.");
-      return null;
-    }
-    if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-      console.error("[Sestek] GSAP or ScrollTrigger is not loaded.");
       return null;
     }
 
@@ -44,19 +44,29 @@
     };
 
     var config = Object.assign({}, defaults, options || {});
-
     var lenis = new Lenis(config);
+    var hasGsap = typeof gsap !== "undefined";
+    var hasScrollTrigger = hasGsap && typeof ScrollTrigger !== "undefined";
 
-    // Sync Lenis scroll position with GSAP ScrollTrigger
-    lenis.on("scroll", ScrollTrigger.update);
+    if (hasGsap) {
+      // Drive Lenis via GSAP ticker for frame-perfect sync
+      gsap.ticker.add(function (time) {
+        lenis.raf(time * 1000);
+      });
+      // Prevent GSAP from adding its own lag smoothing on top of Lenis
+      gsap.ticker.lagSmoothing(0);
+    } else {
+      // Fallback: drive Lenis with requestAnimationFrame
+      (function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      })(performance.now());
+    }
 
-    // Drive Lenis via GSAP ticker for frame-perfect sync
-    gsap.ticker.add(function (time) {
-      lenis.raf(time * 1000);
-    });
-
-    // Prevent GSAP from adding its own lag smoothing on top of Lenis
-    gsap.ticker.lagSmoothing(0);
+    if (hasScrollTrigger) {
+      // ScrollTrigger reads native scroll — keep it in sync with Lenis virtual scroll
+      lenis.on("scroll", ScrollTrigger.update);
+    }
 
     // Expose on global for external access (e.g. anchor links, modals)
     global.lenisInstance = lenis;
@@ -66,9 +76,8 @@
 
   /**
    * Smoothly scrolls to a target element or numeric position.
-   *
-   * @param {string|number|HTMLElement} target  – CSS selector, pixel offset, or element
-   * @param {object} [options]                  – Lenis scrollTo options
+   * @param {string|number|HTMLElement} target
+   * @param {object} [options] – Lenis scrollTo options
    */
   function scrollTo(target, options) {
     if (!global.lenisInstance) {
@@ -78,27 +87,25 @@
     global.lenisInstance.scrollTo(target, options || {});
   }
 
-  /**
-   * Temporarily stops Lenis (e.g. when a modal is open).
-   */
+  /** Temporarily stops Lenis (e.g. when a modal is open). */
   function stopScroll() {
     if (global.lenisInstance) global.lenisInstance.stop();
   }
 
-  /**
-   * Resumes Lenis after stopScroll().
-   */
+  /** Resumes Lenis after stopScroll(). */
   function startScroll() {
     if (global.lenisInstance) global.lenisInstance.start();
   }
 
   /**
-   * Destroys the Lenis instance and removes the GSAP ticker listener.
+   * Destroys the Lenis instance and cleans up the ticker/raf loop.
    * Call this before navigating away in SPA contexts.
    */
   function destroyLenis() {
     if (!global.lenisInstance) return;
-    gsap.ticker.remove(global.lenisInstance.raf);
+    if (typeof gsap !== "undefined") {
+      gsap.ticker.remove(global.lenisInstance.raf);
+    }
     global.lenisInstance.destroy();
     global.lenisInstance = null;
   }

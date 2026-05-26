@@ -24,19 +24,37 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag>/<path>
 
 | File | Latest Tag | CDN Link |
 |---|---|---|
-| `lenis-init.js` | `v1.0.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js` |
+| `lenis-init.js` | `v1.1.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js` |
 
-### Dev (always latest main)
-
-```html
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js" defer></script>
-```
-
-### Production (pinned)
+### Lenis only (no animations yet)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
+<script src="/js/init.js" defer></script>
 ```
+```js
+// init.js
+Sestek.initLenis({ duration: 1.2 });
+```
+
+### Lenis + GSAP ScrollTrigger (when animations are needed)
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
+<script src="/js/init.js" defer></script>
+```
+```js
+// init.js
+gsap.registerPlugin(ScrollTrigger);
+Sestek.initLenis({ duration: 1.2 });
+```
+
+> ScrollTrigger sync is automatic — if the globals exist when `initLenis()` runs,
+> they are wired. No extra code needed.
 
 ---
 
