@@ -1,48 +1,43 @@
 /*!
- * grain.css v1.0.0
+ * grain.css v2.0.0
  * Animated film-grain overlay
  * https://github.com/roicool/sestek
  *
  * Changelog
- * v1.0.0 — initial release
+ * v2.0.0 — canvas element replaces SVG overlay
+ * v1.0.0 — initial release (SVG feTurbulence)
  */
 
-/* ── Overlay ─────────────────────────────────────────────────── */
+/* ── Canvas overlay ──────────────────────────────────────────── */
 /*
- * Covers the full parent (video wrapper must be position:relative —
- * grain.js sets this automatically if missing).
+ * The canvas is a small tile (default 128×128) stretched via
+ * width/height 100% to cover the parent.
+ * Stretching creates a soft, organic grain — not pixel-perfect noise.
  *
- * mix-blend-mode:soft-light integrates grain with the video naturally:
- *   – bright areas stay bright, dark areas stay dark
- *   – grain doesn't create a flat grey veil over the image
+ * mix-blend-mode: soft-light blends naturally with video:
+ *   bright areas stay bright, dark areas stay dark,
+ *   grain reads as texture not a grey veil.
  *
- * pointer-events:none ensures the grain never intercepts clicks / taps.
+ * will-change: transform promotes canvas to its own GPU compositor
+ * layer, so putImageData uploads don't trigger layout or style recalc.
  */
-.grain__overlay {
+canvas.grain__overlay {
   position: absolute;
   inset: 0;
-  z-index: 10;
-  pointer-events: none;
-  overflow: hidden;
-  mix-blend-mode: soft-light;
-  opacity: var(--grain-opacity, 0.12);
-  will-change: opacity;    /* isolates layer — avoids unnecessary repaints */
-  border-radius: inherit;  /* respect rounded corners of the parent */
-}
-
-.grain__overlay svg {
-  display: block;
   width: 100%;
   height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: var(--grain-opacity, 0.12);
+  will-change: transform;
+  border-radius: inherit;
+  display: block;
 }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
-/*
- * JS also exits early on prefers-reduced-motion; this rule is a
- * CSS-level safety net if the overlay is added without JS.
- */
 @media (prefers-reduced-motion: reduce) {
-  .grain__overlay {
+  canvas.grain__overlay {
     display: none;
   }
 }
