@@ -19,6 +19,8 @@
       console.error("[Sestek Hero] GSAP + ScrollTrigger required."); return;
     }
 
+    gsap.registerPlugin(ScrollTrigger);
+
     var el = {
       videoWrap : hero.querySelector("[data-hero-video-wrap]"),
       overlay   : hero.querySelector(".hero__video-overlay"),
