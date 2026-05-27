@@ -81,11 +81,67 @@ Webflow `</body>` öncesi:
 | `hero.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css` |
 | `btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.js` |
 | `btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.css` |
+| `marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.js` |
+| `marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css` |
+
+### Hero
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css">
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.js" defer></script>
 ```
+
+### Marquee
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initMarquee(); // tüm [data-marquee] elementlerini başlatır
+  });
+</script>
+```
+
+#### Webflow CMS yapısı
+
+```html
+<!-- Wrapper — custom attribute: data-marquee, data-marquee-speed="60" -->
+<div data-marquee data-marquee-speed="60" class="marquee">
+
+  <!--
+    Collection List Wrapper
+    Webflow class: marquee__track
+    Layout: inline-flex (CSS override)
+  -->
+  <div role="list" class="marquee__track">
+
+    <!--
+      Collection Item
+      Webflow class: marquee__item
+    -->
+    <div role="listitem" class="marquee__item">
+      <img class="marquee__logo"
+           src="[CMS logo field]"
+           alt="[CMS name field]"
+           loading="eager">
+      <!--
+        loading="eager" önerilir — lazy-load ile görseller yüklenmeden
+        önce track genişliği yanlış ölçülebilir.
+      -->
+    </div>
+
+  </div>
+</div>
+```
+
+**`data-marquee-speed`** — piksel/saniye cinsinden hız (varsayılan: `60`).
+Daha yavaş → daha premium, daha hızlı → daha enerjik.
 
 ---
 
