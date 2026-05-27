@@ -128,6 +128,17 @@
   background-color: var(--neutral--200);
 }
 
+/* Description below phrase */
+.hero__desc {
+  text-align: center;
+  font-size: var(--text--base);
+  color: var(--color-text--muted);
+  line-height: var(--leading--relaxed);
+  max-width: var(--container--sm);
+  margin-top: var(--spacing--6);
+  will-change: transform, opacity;
+}
+
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hero__video-wrap,

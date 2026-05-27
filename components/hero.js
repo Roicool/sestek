@@ -28,11 +28,13 @@
       scene2    : hero.querySelector("[data-hero-s2]"),
       words     : Array.from(hero.querySelectorAll("[data-hero-word]")),
       slot      : hero.querySelector("[data-hero-video-slot]"),
+      desc      : hero.querySelector("[data-hero-desc]"),
     };
 
-    // Bail if any critical element is missing
-    var missing = Object.keys(el).filter(function (k) {
-      return !el[k] || (NodeList && el[k] instanceof NodeList && !el[k].length);
+    // Bail if any critical element is missing (desc is optional)
+    var required = ["videoWrap", "overlay", "s1Content", "scene2", "words", "slot"];
+    var missing = required.filter(function (k) {
+      return !el[k] || (Array.isArray(el[k]) && !el[k].length);
     });
     if (missing.length) {
       console.warn("[Sestek Hero] Missing elements:", missing.join(", ")); return;
@@ -42,6 +44,7 @@
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(el.scene2, { opacity: 1 });
       gsap.set(el.words, { opacity: 1, y: 0 });
+      if (el.desc) gsap.set(el.desc, { opacity: 1, y: 0 });
       return;
     }
 
@@ -80,6 +83,7 @@
       gsap.set(el.s1Content, { opacity: 1, y: 0 });
       gsap.set(el.scene2,    { opacity: 0 });
       gsap.set(el.words,     { opacity: 0, y: 40 });
+      if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
 
       var tl = gsap.timeline({
         defaults: { ease: "none" }, // scrub handles timing; per-tween eases override this
@@ -143,7 +147,17 @@
         }, 0.40 + i * 0.08);
       });
 
-      // ── Phase 6 (0.80 – 0.94): Video fades from slot ─────────────
+      // ── Phase 6 (0.74 – 0.86): Description fades in ─────────────
+      if (el.desc) {
+        tl.to(el.desc, {
+          opacity : 1,
+          y       : 0,
+          ease    : "power3.out",
+          duration: 0.12,
+        }, 0.74);
+      }
+
+      // ── Phase 7 (0.80 – 0.94): Video fades from slot ─────────────
       tl.to(el.videoWrap, {
         opacity : 0,
         duration: 0.14,
