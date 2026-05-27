@@ -26,35 +26,45 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag>/<path>
 |---|---|---|
 | `lenis-init.js` | `v1.1.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js` |
 
-### Lenis only (no animations yet)
+### Lenis only — Webflow `<head>`
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
-<script src="/js/init.js" defer></script>
-```
-```js
-// init.js
-Sestek.initLenis({ duration: 1.2 });
 ```
 
-### Lenis + GSAP ScrollTrigger (when animations are needed)
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initLenis({ duration: 1.2 });
+  });
+</script>
+```
+
+### Lenis + GSAP ScrollTrigger — Webflow `<head>`
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
-<script src="/js/init.js" defer></script>
-```
-```js
-// init.js
-gsap.registerPlugin(ScrollTrigger);
-Sestek.initLenis({ duration: 1.2 });
 ```
 
-> ScrollTrigger sync is automatic — if the globals exist when `initLenis()` runs,
-> they are wired. No extra code needed.
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initLenis({ duration: 1.2 });
+  });
+</script>
+```
+
+> `DOMContentLoaded` deferred script'ler bittikten sonra ateşlenir —
+> inline script olmasına rağmen bu callback güvenle tüm kütüphanelere erişir.
 
 ---
 
@@ -66,7 +76,15 @@ Sestek.initLenis({ duration: 1.2 });
 
 ## Components
 
-> Files will be listed here as they are added.
+| File | Latest Tag | CDN Link |
+|---|---|---|
+| `hero.js` | `v1.0.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.js` |
+| `hero.css` | `v1.0.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.css` |
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.js" defer></script>
+```
 
 ---
 
