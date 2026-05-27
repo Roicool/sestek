@@ -63,48 +63,6 @@
   will-change: transform, opacity;
 }
 
-.hero__badge {
-  position: absolute;
-  top: var(--spacing--6);
-  right: var(--spacing--6);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing--3);
-  background-color: var(--neutral--0);
-  padding: var(--spacing--2) var(--spacing--4);
-  border-radius: var(--radius--full);
-  pointer-events: auto;
-}
-
-.hero__badge-avatar {
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius--full);
-  object-fit: cover;
-  display: block;
-  background-color: var(--neutral--200);
-}
-
-.hero__badge-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.hero__badge-label {
-  font-size: var(--text--xs);
-  letter-spacing: var(--tracking--widest);
-  color: var(--neutral--500);
-  line-height: var(--leading--none);
-}
-
-.hero__badge-name {
-  font-size: var(--text--sm);
-  font-weight: var(--font-weight--semibold);
-  color: var(--neutral--900);
-  line-height: var(--leading--tight);
-}
-
 .hero__discover {
   position: absolute;
   left: var(--spacing--20);
@@ -113,6 +71,16 @@
   font-size: var(--text--base);
   letter-spacing: var(--tracking--wide);
   color: var(--neutral--0);
+}
+
+.hero__s1-actions {
+  position: absolute;
+  bottom: var(--spacing--12);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--4);
 }
 
 /* --- Scene 2 --- */
