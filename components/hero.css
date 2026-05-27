@@ -125,7 +125,6 @@
   overflow: hidden;
   vertical-align: middle;
   flex-shrink: 0;
-  background-color: var(--neutral--200);
 }
 
 /* Description below phrase */
