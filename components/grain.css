@@ -1,0 +1,48 @@
+/*!
+ * grain.css v1.0.0
+ * Animated film-grain overlay
+ * https://github.com/roicool/sestek
+ *
+ * Changelog
+ * v1.0.0 — initial release
+ */
+
+/* ── Overlay ─────────────────────────────────────────────────── */
+/*
+ * Covers the full parent (video wrapper must be position:relative —
+ * grain.js sets this automatically if missing).
+ *
+ * mix-blend-mode:soft-light integrates grain with the video naturally:
+ *   – bright areas stay bright, dark areas stay dark
+ *   – grain doesn't create a flat grey veil over the image
+ *
+ * pointer-events:none ensures the grain never intercepts clicks / taps.
+ */
+.grain__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: soft-light;
+  opacity: var(--grain-opacity, 0.12);
+  will-change: opacity;    /* isolates layer — avoids unnecessary repaints */
+  border-radius: inherit;  /* respect rounded corners of the parent */
+}
+
+.grain__overlay svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+/*
+ * JS also exits early on prefers-reduced-motion; this rule is a
+ * CSS-level safety net if the overlay is added without JS.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .grain__overlay {
+    display: none;
+  }
+}

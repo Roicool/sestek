@@ -83,6 +83,8 @@ Webflow `</body>` öncesi:
 | `btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.css` |
 | `marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.js` |
 | `marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css` |
+| `grain.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.js` |
+| `grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css` |
 
 ### Hero
 
@@ -142,6 +144,52 @@ Webflow `</body>` öncesi:
 
 **`data-marquee-speed`** — piksel/saniye cinsinden hız (varsayılan: `60`).
 Daha yavaş → daha premium, daha hızlı → daha enerjik.
+
+### Grain
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initGrain();
+  });
+</script>
+```
+
+#### Webflow yapısı
+
+```html
+<!--
+  Video wrapper — custom attributes:
+    data-grain
+    data-grain-intensity="0.12"   (0.0–1.0, default: 0.12)
+    data-grain-size="0.65"        (0.3 kaba → 0.65 default → 0.9 ince)
+-->
+<div data-grain data-grain-intensity="0.12" data-grain-size="0.65"
+     class="video-wrap">
+  <video autoplay muted loop playsinline></video>
+  <!-- grain__overlay buraya JS tarafından eklenir -->
+</div>
+```
+
+| `data-grain-intensity` | Görünüm |
+|---|---|
+| `0.05` | Neredeyse görünmez, çok subtile |
+| `0.12` | Premium, sinematik (default) |
+| `0.20` | Belirgin grain |
+| `0.35` | Heavy / stylized |
+
+| `data-grain-size` | Görünüm |
+|---|---|
+| `0.35` | Kaba, 16mm film |
+| `0.65` | Standard, 35mm film (default) |
+| `0.85` | İnce, dijital sensör noise |
 
 ---
 
