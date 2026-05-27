@@ -66,7 +66,15 @@ Sestek.initLenis({ duration: 1.2 });
 
 ## Components
 
-> Files will be listed here as they are added.
+| File | Latest Tag | CDN Link |
+|---|---|---|
+| `hero.js` | `v1.0.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.js` |
+| `hero.css` | `v1.0.0` | `https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.css` |
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/components/hero.js" defer></script>
+```
 
 ---
 
