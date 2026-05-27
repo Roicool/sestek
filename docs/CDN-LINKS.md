@@ -79,6 +79,8 @@ Webflow `</body>` öncesi:
 |---|---|
 | `hero.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.js` |
 | `hero.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css` |
+| `btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.js` |
+| `btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.css` |
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css">

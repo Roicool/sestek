@@ -1,0 +1,73 @@
+/*!
+ * btn-glow.css v1.0.0
+ * Rotating gradient border button — Sestek brand colors
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Wrapper ─────────────────────────────────────────────────── */
+/*
+ * overflow:hidden clips the rotating ring to the pill shape.
+ * display:inline-flex centers the face element.
+ */
+.btn-glow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius--full);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Rotating ring ───────────────────────────────────────────── */
+/*
+ * Square element centered on the button, 200% wide so all four
+ * corners always cover the button edge during rotation.
+ * GSAP sets xPercent:-50 yPercent:-50 and drives rotation.
+ */
+.btn-glow__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200%;
+  aspect-ratio: 1 / 1;
+  background: conic-gradient(
+    from 0deg,
+    #EC008C,
+    #7F81AE,
+    #00FFEB,
+    #EC008C
+  );
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ── Face (inner pill) ───────────────────────────────────────── */
+/*
+ * margin creates the "border" — 1.5px gap reveals the ring beneath.
+ * GSAP animates margin on hover for the thicken effect.
+ */
+.btn-glow__face {
+  position: relative;
+  z-index: 1;
+  margin: 1.5px;
+  border-radius: var(--radius--full);
+  background-color: var(--neutral--950);
+  color: var(--neutral--0);
+  padding: var(--spacing--3) var(--spacing--8);
+  font-size: var(--text--sm);
+  font-weight: var(--font-weight--medium);
+  letter-spacing: var(--tracking--wide);
+  white-space: nowrap;
+  line-height: var(--leading--none);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-glow__ring {
+    animation: none !important;
+    will-change: auto;
+  }
+}
