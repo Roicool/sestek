@@ -77,6 +77,12 @@
       var targetX      = (slotRect.left + slotRect.width  * 0.5) - vw * 0.5;
       var targetY      = (slotRect.top  + slotRect.height * 0.5) - vh * 0.5;
 
+      /*
+       * scale() transform border-radius'ı da küçültür.
+       * Görsel olarak 8px görünmesi için CSS değerini scale'e bölerek telafi ediyoruz.
+       */
+      var finalBorderRadius = Math.round(8 / Math.min(targetScaleX, targetScaleY));
+
       // Hard-reset before re-building so resize doesn't leave stale values
       gsap.set(el.videoWrap, { scaleX: 1, scaleY: 1, x: 0, y: 0, opacity: 1, borderRadius: 0 });
       gsap.set(el.overlay,   { opacity: 1 });
@@ -123,7 +129,7 @@
         scaleY      : targetScaleY,
         x           : targetX,
         y           : targetY,
-        borderRadius: "8px",
+        borderRadius: finalBorderRadius + "px",
         ease        : "power2.inOut",
         duration    : 0.48,
       }, 0.16);
