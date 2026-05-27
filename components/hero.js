@@ -26,7 +26,6 @@
       scene2    : hero.querySelector("[data-hero-s2]"),
       words     : Array.from(hero.querySelectorAll("[data-hero-word]")),
       slot      : hero.querySelector("[data-hero-video-slot]"),
-      barBeta   : hero.querySelector("[data-hero-bar-beta]"),
     };
 
     // Bail if any critical element is missing
@@ -79,7 +78,6 @@
       gsap.set(el.s1Content, { opacity: 1, y: 0 });
       gsap.set(el.scene2,    { opacity: 0 });
       gsap.set(el.words,     { opacity: 0, y: 40 });
-      gsap.set(el.barBeta,   { color: "var(--neutral--0)" });
 
       var tl = gsap.timeline({
         defaults: { ease: "none" }, // scrub handles timing; per-tween eases override this
@@ -128,12 +126,6 @@
         opacity : 1,
         duration: 0.12,
       }, 0.34);
-
-      // Bar beta text: white → dark as background switches to off-white
-      tl.to(el.barBeta, {
-        color   : "var(--neutral--700)",
-        duration: 0.18,
-      }, 0.32);
 
       // ── Phase 5 (0.40 – 0.76): Words stagger in ──────────────────
       /*
