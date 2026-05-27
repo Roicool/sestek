@@ -1,43 +1,69 @@
 /*!
- * grain.css v2.0.0
+ * grain.css v3.0.0
  * Animated film-grain overlay
  * https://github.com/roicool/sestek
  *
  * Changelog
- * v2.0.0 — canvas element replaces SVG overlay
- * v1.0.0 — initial release (SVG feTurbulence)
+ * v3.0.0 — CSS steps() animation; SVG rendered once as background-image
+ * v2.0.0 — Canvas-based per-frame noise
+ * v1.0.0 — initial release (SVG feTurbulence per-frame)
  */
 
-/* ── Canvas overlay ──────────────────────────────────────────── */
+/* ── Overlay ─────────────────────────────────────────────────── */
 /*
- * The canvas is a small tile (default 128×128) stretched via
- * width/height 100% to cover the parent.
- * Stretching creates a soft, organic grain — not pixel-perfect noise.
+ * 300% × 300% oversized element centred on its parent.
+ * The extra size provides room to shift the texture without ever
+ * revealing an edge. Parent must be position:relative + overflow:hidden
+ * (grain.js sets position:relative automatically if missing).
  *
- * mix-blend-mode: soft-light blends naturally with video:
- *   bright areas stay bright, dark areas stay dark,
- *   grain reads as texture not a grey veil.
+ * background-size: cover stretches the SVG tile across the full overlay.
+ * background-repeat: repeat tiles it for extra coverage on large screens.
  *
- * will-change: transform promotes canvas to its own GPU compositor
- * layer, so putImageData uploads don't trigger layout or style recalc.
+ * mix-blend-mode: overlay integrates with video naturally —
+ * bright areas stay bright, dark areas stay dark, no grey veil.
+ *
+ * will-change: transform promotes this element to its own GPU layer
+ * so the keyframe animation is entirely compositor-driven (zero CPU).
  */
-canvas.grain__overlay {
+.grain__overlay {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
   z-index: 10;
   pointer-events: none;
-  mix-blend-mode: soft-light;
-  opacity: var(--grain-opacity, 0.12);
+  mix-blend-mode: overlay;
+  opacity: var(--grain-opacity, 0.08);
+  background-size: 256px 256px;
+  background-repeat: repeat;
   will-change: transform;
-  border-radius: inherit;
-  display: block;
+  animation: sestek-grain var(--grain-speed, 800ms) steps(1) infinite;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────── */
+/*
+ * steps(1) means each keyframe is a hard instant jump — no interpolation.
+ * The translate values shift which part of the noise texture is visible.
+ * Values are percentages of the overlay element itself (not the parent),
+ * kept within ±8% so no edge is ever revealed through the parent clip.
+ */
+@keyframes sestek-grain {
+  0%   { transform: translate(0,    0);    }
+  11%  { transform: translate(-4%,  -6%);  }
+  22%  { transform: translate(5%,    3%);  }
+  33%  { transform: translate(-6%,   7%);  }
+  44%  { transform: translate(3%,   -5%);  }
+  55%  { transform: translate(-7%,   2%);  }
+  66%  { transform: translate(6%,    -4%); }
+  77%  { transform: translate(-3%,   6%);  }
+  88%  { transform: translate(4%,    -7%); }
+  100% { transform: translate(0,    0);    }
 }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  canvas.grain__overlay {
+  .grain__overlay {
     display: none;
   }
 }

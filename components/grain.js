@@ -1,27 +1,34 @@
 /*!
- * grain.js v2.0.0
- * Animated film-grain overlay — Canvas-based, GPU-composited
- * Requires: gsap (global)
+ * grain.js v3.0.0
+ * Animated film-grain overlay — CSS steps() animation, zero per-frame CPU
+ * No runtime dependencies (GSAP not required)
  * https://github.com/roicool/sestek
  *
  * Attributes on [data-grain] element:
- *   data-grain-intensity  — opacity 0.0–1.0  (default: 0.12)
- *   data-grain-size       — canvas tile px   (default: 128 — lower = coarser)
+ *   data-grain-intensity  — opacity 0.0–1.0        (default: 0.08)
+ *   data-grain-size       — SVG baseFrequency 0.3–0.9  (default: 0.65)
+ *                           lower  → coarser / cinematic
+ *                           higher → finer  / digital
+ *   data-grain-speed      — animation duration in ms   (default: 800)
+ *
+ * How it works:
+ *   An SVG feTurbulence texture is rendered ONCE as a CSS background-image.
+ *   The browser rasterises it to a GPU texture at parse time — never again.
+ *   A CSS @keyframes animation shifts the oversized overlay via transform,
+ *   revealing different portions of the texture each step. Because only
+ *   transform changes (compositor-only property), there is zero CPU cost
+ *   at runtime — the GPU handles everything.
  *
  * Changelog
- * v2.0.0 — rewritten with Canvas; eliminates SVG feTurbulence CPU cost
- * v1.0.0 — initial release (SVG feTurbulence)
+ * v3.0.0 — rewritten: CSS steps() animation, SVG rendered once, no GSAP needed
+ * v2.0.0 — Canvas-based per-frame noise
+ * v1.0.0 — SVG feTurbulence per-frame seed mutation
  */
 
 (function (global) {
   "use strict";
 
   function initGrain(selector) {
-    if (typeof gsap === "undefined") {
-      console.error("[Sestek Grain] GSAP required.");
-      return;
-    }
-
     var targets = Array.from(
       document.querySelectorAll(selector || "[data-grain]")
     );
@@ -29,93 +36,51 @@
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    var instances = [];
-
     targets.forEach(function (el) {
       var intensity = parseFloat(el.dataset.grainIntensity);
-      if (isNaN(intensity)) intensity = 0.12;
+      if (isNaN(intensity)) intensity = 0.08;
       intensity = Math.max(0, Math.min(1, intensity));
 
-      /*
-       * Tile size controls grain coarseness when CSS stretches the canvas:
-       *   64  → coarse / cinematic
-       *   128 → standard 35mm (default)
-       *   256 → fine / digital
-       */
-      var tileSize = parseInt(el.dataset.grainSize, 10);
-      if (isNaN(tileSize) || tileSize < 32) tileSize = 128;
-      tileSize = Math.min(tileSize, 512);
+      var freq = parseFloat(el.dataset.grainSize);
+      if (isNaN(freq)) freq = 0.65;
+      freq = Math.max(0.3, Math.min(0.9, freq)).toFixed(2);
+
+      var speed = parseInt(el.dataset.grainSpeed, 10);
+      if (isNaN(speed) || speed < 100) speed = 800;
 
       if (getComputedStyle(el).position === "static") {
         el.style.position = "relative";
       }
 
-      var canvas = document.createElement("canvas");
-      canvas.width  = tileSize;
-      canvas.height = tileSize;
-      canvas.className = "grain__overlay";
-      canvas.setAttribute("aria-hidden", "true");
-      canvas.style.setProperty("--grain-opacity", intensity);
-
-      el.appendChild(canvas);
-
-      var ctx     = canvas.getContext("2d");
-      var imgData = ctx.createImageData(tileSize, tileSize);
-      var data    = imgData.data;
-
       /*
-       * Pre-fill alpha channel to 255 once — only RGB channels are written
-       * per frame, saving 25 % of the per-frame write work.
+       * The SVG is set as background-image — the browser renders the
+       * feTurbulence filter once and uploads it to the GPU as a texture.
+       * After that, no CPU work happens — only GPU transform changes.
        */
-      for (var a = 3; a < data.length; a += 4) {
-        data[a] = 255;
-      }
+      var svg =
+        "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'>" +
+        "<filter id='g'>" +
+        "<feTurbulence type='fractalNoise' baseFrequency='" + freq + "' " +
+        "numOctaves='4' stitchTiles='stitch'/>" +
+        "<feColorMatrix type='saturate' values='0'/>" +
+        "</filter>" +
+        "<rect width='100%' height='100%' filter='url(#g)'/>" +
+        "</svg>";
 
-      instances.push({ ctx: ctx, imgData: imgData, data: data, size: tileSize });
+      var dataUri = "url(\"data:image/svg+xml," + encodeURIComponent(svg) + "\")";
+
+      var overlay = document.createElement("div");
+      overlay.className = "grain__overlay";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.style.setProperty("--grain-opacity", intensity);
+      overlay.style.setProperty("--grain-speed",   speed + "ms");
+      overlay.style.backgroundImage = dataUri;
+
+      el.appendChild(overlay);
     });
-
-    /*
-     * Noise is repainted every 2 ticks (~30 fps at 60 fps display).
-     * 30 fps mimics analogue film grain; 60 fps reads as digital noise.
-     *
-     * Per-frame cost for one 128×128 tile:
-     *   16 384 pixels × 3 channels = 49 152 byte writes + putImageData upload.
-     *   Negligible on all devices; no GC pressure (buffer is reused).
-     */
-    var frame = 0;
-
-    function tick() {
-      frame++;
-      if (frame % 2 !== 0) return;
-
-      // Pause when tab is hidden — no visual output, no wasted CPU
-      if (document.hidden) return;
-
-      for (var i = 0; i < instances.length; i++) {
-        var inst = instances[i];
-        var d    = inst.data;
-        var len  = d.length;
-
-        for (var j = 0; j < len; j += 4) {
-          var v = (Math.random() * 255) | 0;
-          d[j]     = v; // R
-          d[j + 1] = v; // G
-          d[j + 2] = v; // B
-          // alpha pre-filled, skipped
-        }
-
-        inst.ctx.putImageData(inst.imgData, 0, 0);
-      }
-    }
-
-    gsap.ticker.add(tick);
-
-    global.Sestek._grainDestroy = function () {
-      gsap.ticker.remove(tick);
-    };
   }
 
-  global.Sestek           = global.Sestek || {};
-  global.Sestek.initGrain = initGrain;
+  global.Sestek            = global.Sestek || {};
+  global.Sestek.initGrain  = initGrain;
 
 })(typeof window !== "undefined" ? window : this);
