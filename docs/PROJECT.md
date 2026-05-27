@@ -71,32 +71,44 @@ Version is declared in the file header comment and bumped on every release.
 
 ---
 
-## Getting Started
+## Getting Started (Webflow)
 
-All scripts use `defer` — no render blocking, PageSpeed 90+ compatible.  
-Inline `<script>` blocks ignore `defer`, so init code lives in a separate file loaded last.
+Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom Code alanlarına yazılır.
+
+### Page Settings → Custom Code → `<head>` bölümü
 
 ```html
-<head>
-  <!-- DNS + TLS pre-warm for jsDelivr -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+<!-- DNS + TLS pre-warm -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
 
-  <!-- 1. Dependencies — defer, in order -->
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-
-  <!-- 2. Sestek core — defer, after dependencies -->
-  <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.0.0/core/lenis-init.js" defer></script>
-
-  <!-- 3. Your init file — defer, always last -->
-  <!-- init.js: gsap.registerPlugin(ScrollTrigger); Sestek.initLenis({ duration: 1.2 }); -->
-  <script src="/js/init.js" defer></script>
-</head>
+<!-- Tüm scriptler defer — render blocking sıfır -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
+<!-- Kullanılan component scriptleri buraya eklenir -->
 ```
 
-**Why this order matters:** deferred scripts execute in declaration order after HTML is fully parsed.  
-`init.js` runs last, so Lenis, GSAP, ScrollTrigger, and Sestek are all available by then.
+### Page Settings → Custom Code → `</body>` öncesi bölümü
+
+```html
+<script>
+  /*
+   * DOMContentLoaded, deferred script'ler bittikten SONRA ateşlenir (spec gereği).
+   * Bu yüzden init kodu buraya — inline olmasına rağmen deferred script'lere
+   * erişim garantilidir. /js/init.js'e gerek yok.
+   */
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initLenis({ duration: 1.2 });
+    // Sestek.initHero(); // hero componenti varsa
+  });
+</script>
+```
+
+> **Neden çalışır?** Inline `<script>` HTML parse edilirken çalışır (deferred'dan önce),
+> ama içindeki `addEventListener` callback'i DOMContentLoaded'da çalışır —
+> bu event spec gereği deferred script'lerin tamamlanmasını bekler.
 
 ---
 
