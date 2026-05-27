@@ -84,6 +84,7 @@
       gsap.set(el.scene2,    { opacity: 0 });
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
+      gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
       var tl = gsap.timeline({
         defaults: { ease: "none" }, // scrub handles timing; per-tween eases override this
@@ -157,11 +158,19 @@
         }, 0.74);
       }
 
-      // ── Phase 7 (0.80 – 0.94): Video fades from slot ─────────────
+      // ── Phase 7 (0.80 – 0.88): Video fades from slot ─────────────
       tl.to(el.videoWrap, {
         opacity : 0,
-        duration: 0.14,
+        duration: 0.08,
       }, 0.80);
+
+      // ── Phase 8 (0.86 – 0.96): Slot collapses, last word shifts left ─
+      tl.to(el.slot, {
+        width   : 0,
+        opacity : 0,
+        ease    : "power2.inOut",
+        duration: 0.10,
+      }, 0.86);
 
       activeST = tl.scrollTrigger;
     }
