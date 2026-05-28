@@ -92,6 +92,8 @@
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
+      var navEl = document.querySelector("[data-nav]");
+
       var tl = gsap.timeline({
         defaults: { ease: "none" }, // scrub handles timing; per-tween eases override this
         scrollTrigger: {
@@ -101,6 +103,14 @@
           pin        : true,
           scrub      : 1,         // 1s lag behind scroll — feels heavy/premium
           anticipatePin: 1,
+          onUpdate: function (self) {
+            // Scene 2 (light bg) fades in at ~0.34 — switch nav text to dark
+            if (navEl) navEl.classList.toggle("nav--on-light", self.progress >= 0.34);
+          },
+          onLeaveBack: function () {
+            // Scrolled back above hero entirely — restore dark nav
+            if (navEl) navEl.classList.remove("nav--on-light");
+          },
         },
       });
 
