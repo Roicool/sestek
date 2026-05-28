@@ -85,6 +85,8 @@ Webflow `</body>` öncesi:
 | `marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css` |
 | `grain.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.js` |
 | `grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css` |
+| `nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js` |
+| `nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css` |
 
 ### Hero
 
@@ -190,6 +192,230 @@ Webflow `</body>` öncesi:
 | `0.35` | Kaba, 16mm film |
 | `0.65` | Standard, 35mm film (default) |
 | `0.85` | İnce, dijital sensör noise |
+
+### Nav
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initNav(); // [data-nav] elementini başlatır
+  });
+</script>
+```
+
+#### DOM yapısı
+
+```html
+<!-- Root: data-nav -->
+<nav data-nav class="nav">
+
+  <!-- Backdrop (frosted glass blur layer) -->
+  <div class="nav__backdrop"></div>
+
+  <!-- Bar: data-nav-bar -->
+  <div data-nav-bar class="nav__bar">
+    <div class="nav__inner">
+
+      <!-- Logo -->
+      <a href="/" class="nav__logo">
+        <img src="logo.svg" alt="Logo">
+      </a>
+
+      <!-- Desktop nav list -->
+      <ul class="nav__list">
+
+        <!-- Trigger item (opens mega menu) -->
+        <li>
+          <button class="nav__trigger" data-nav-trigger="products">
+            Products
+            <svg class="nav__chevron" width="12" height="12"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+        </li>
+
+        <!-- Plain link item (no panel) -->
+        <li><a href="/pricing" class="nav__link">Pricing</a></li>
+
+      </ul>
+
+      <!-- Desktop CTAs -->
+      <div class="nav__actions">
+        <a href="/login" class="nav__link">Log in</a>
+        <a href="/signup" class="nav__btn">Get started</a>
+      </div>
+
+      <!-- Hamburger (mobile only) -->
+      <button class="nav__hamburger" data-nav-hamburger aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Dropdown wrap + height container -->
+  <div class="nav__dropdown-wrap">
+    <div data-nav-dropdown class="nav__dropdown">
+
+      <!-- Panel: data-nav-panel="products" matches trigger -->
+      <div data-nav-panel="products" class="nav__panel">
+        <div class="nav__panel-layout">
+
+          <!-- Body (3 content cols) -->
+          <div class="nav__panel-body">
+            <div class="nav__panel-rows">
+
+              <!-- Row 1 -->
+              <div class="nav__panel-row">
+
+                <!-- Col 1 — icon cards -->
+                <div class="nav__col">
+                  <span class="nav__col-label">Platform</span>
+                  <a href="#" class="nav__item-icon">
+                    <div class="nav__item-icon-box">
+                      <img src="icon.svg" alt="">
+                    </div>
+                    <div class="nav__item-icon-text">
+                      <span class="nav__item-title">Cards</span>
+                      <span class="nav__item-desc">Issue and manage cards</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Col 2 — plain links -->
+                <div class="nav__col">
+                  <span class="nav__col-label">More</span>
+                  <a href="#" class="nav__item-plain">Integrations</a>
+                  <a href="#" class="nav__item-plain">Security</a>
+                </div>
+
+                <!-- Col 3 — highlight cards -->
+                <div class="nav__col">
+                  <span class="nav__col-label">Resources</span>
+                  <a href="#" class="nav__item-highlight">
+                    <span class="nav__item-title">What's new</span>
+                    <span class="nav__item-desc">See the latest updates</span>
+                  </a>
+                </div>
+
+              </div>
+
+              <!-- Optional divider between rows -->
+              <hr class="nav__divider">
+
+              <!-- Row 2 -->
+              <div class="nav__panel-row">
+                <!-- ... more cols ... -->
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Featured col (4th, rightmost) -->
+          <div class="nav__col nav__col--featured">
+            <a href="#" class="nav__featured-card">
+              <img class="nav__featured-card-image" src="article.jpg" alt="">
+              <div class="nav__featured-card-body">
+                <span class="nav__item-title">Article title</span>
+                <span class="nav__item-desc">Short description here</span>
+              </div>
+            </a>
+          </div>
+
+        </div>
+      </div>
+      <!-- /panel -->
+
+    </div>
+  </div>
+
+  <!-- Dark overlay (behind dropdown, above page) -->
+  <div data-nav-overlay class="nav__overlay"></div>
+
+  <!-- Mobile full-screen menu: data-nav-mobile -->
+  <div data-nav-mobile class="nav__mobile" aria-hidden="true">
+
+    <!-- Head -->
+    <div class="nav__mobile-head">
+      <div class="nav__mobile-headleft">
+        <!-- Brand logo (visible at level 0) -->
+        <a href="/" data-nav-mobile-brand class="nav__mobile-brand">
+          <img src="logo.svg" alt="Logo">
+        </a>
+        <!-- Back button (visible at level 1) -->
+        <button data-nav-mobile-back class="nav__mobile-back">
+          <svg width="16" height="16"><path d="M10 4l-4 4 4 4"/></svg>
+          Back
+        </button>
+      </div>
+      <!-- Close button -->
+      <button data-nav-mobile-close class="nav__mobile-close" aria-label="Close">
+        <svg width="16" height="16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+
+    <!-- Body: 2-screen slider -->
+    <div class="nav__mobile-body">
+      <div data-nav-mobile-slider class="nav__mobile-slider">
+
+        <!-- Level 0: main list -->
+        <div class="nav__mobile-screen">
+          <ul class="nav__mobile-list">
+
+            <!-- Item with sub-panel (data-nav-mobile-trigger matches data-nav-panel) -->
+            <li class="nav__mobile-item">
+              <button class="nav__mobile-trigger-row" data-nav-mobile-trigger="products">
+                Products
+                <svg class="nav__mobile-chevron" width="12" height="12"><path d="M4 2l4 4-4 4"/></svg>
+              </button>
+            </li>
+
+            <!-- Plain link item -->
+            <li class="nav__mobile-item">
+              <a href="/pricing" class="nav__mobile-link">Pricing</a>
+            </li>
+
+          </ul>
+        </div>
+
+        <!-- Level 1: sub-panel (innerHTML injected by JS from matching data-nav-panel) -->
+        <div data-nav-mobile-sub class="nav__mobile-screen nav__mobile-screen--sub"></div>
+
+      </div>
+    </div>
+
+    <!-- Foot: pinned CTA bar -->
+    <div class="nav__mobile-foot">
+      <a href="/login" class="nav__mobile-signin">Log in</a>
+      <a href="/signup" class="nav__mobile-cta">Get started</a>
+    </div>
+
+  </div>
+  <!-- /mobile -->
+
+</nav>
+```
+
+#### Notlar
+
+- `data-nav-trigger="products"` ile `data-nav-panel="products"` eşleşmeli.
+- `data-nav-mobile-trigger="products"` ile aynı ID'yi kullan — JS desktop panel içeriğini otomatik klonlar.
+- CSS renk, padding, font değerlerini Webflow Designer'dan ver; nav.css yalnızca davranışsal CSS içerir.
+- `_destroy()` ile tüm event listener ve GSAP tween'leri temizlenir:
+  ```js
+  var nav = Sestek.initNav();
+  // ...
+  nav._destroy();
+  ```
 
 ---
 
