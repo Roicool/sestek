@@ -1,0 +1,112 @@
+/*!
+ * marquee.css v1.0.0
+ * Infinite logo marquee
+ * https://github.com/roicool/sestek
+ *
+ * Changelog
+ * v1.0.0 — initial release
+ */
+
+/* ── Root ────────────────────────────────────────────────────── */
+/*
+ * overflow:hidden clips the scrolling track.
+ * mask-image fades both edges for a premium "infinite" illusion.
+ * cursor:grab signals draggability before the user tries.
+ */
+.marquee {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent  0%,
+    black        12%,
+    black        88%,
+    transparent  100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent  0%,
+    black        12%,
+    black        88%,
+    transparent  100%
+  );
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-block: var(--spacing--6, 1.5rem);
+}
+
+/* Grabbing state — JS adds / removes this class */
+.marquee.is-dragging {
+  cursor: grabbing;
+}
+
+/* ── Track (the moving row) ──────────────────────────────────── */
+/*
+ * inline-flex + width:max-content keeps the row on one line and
+ * gives scrollWidth an accurate pixel value for JS measurement.
+ * column-gap drives the spacing between logos; JS reads this value
+ * with getComputedStyle to compute the exact seamless cycle width.
+ */
+.marquee__track {
+  display: inline-flex;
+  align-items: center;
+  column-gap: var(--spacing--20, 5rem);
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* ── Item ────────────────────────────────────────────────────── */
+.marquee__item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * Pointer-events on items are disabled while dragging so stray
+ * hover states don't fire during the gesture. They're re-enabled
+ * the moment .is-dragging is removed.
+ */
+.marquee.is-dragging .marquee__item {
+  pointer-events: none;
+}
+
+/* ── Logo image ──────────────────────────────────────────────── */
+/*
+ * Default: desaturated + dimmed so the marquee reads as a
+ * supporting element, not a focal point.
+ * Hover: full colour + subtle lift — rewards curiosity.
+ * clamp() height keeps logos proportional across breakpoints.
+ */
+.marquee__logo {
+  display: block;
+  width: 6.25rem;   /* 100px */
+  height: 6.25rem;  /* 100px */
+  object-fit: contain;
+  filter: grayscale(1) opacity(0.45);
+  transition:
+    filter    0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.40s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;   /* hit-test lives on .marquee__item */
+}
+
+.marquee__item:hover .marquee__logo {
+  filter: none;
+  transform: scale(1.07);
+  pointer-events: auto;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track {
+    will-change: auto;
+    transform: none !important;
+  }
+
+  .marquee__logo {
+    transition: none;
+  }
+}

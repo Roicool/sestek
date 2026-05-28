@@ -1,0 +1,539 @@
+/*!
+ * nav.css v2.0.0
+ * Mega-menu navbar — positioning, animation containers, state classes
+ * https://github.com/roicool/sestek
+ *
+ * Changelog
+ * v2.0.0 — full rewrite: 4-col panel layout, featured column, mobile slider,
+ *           level-0/1 structure, overlay z-index layers, hamburger→X transform,
+ *           mobile body scroll lock, item-type styles (icon-card, plain-link,
+ *           highlight-card, featured-card), section labels
+ * v1.0.0 — initial release
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * SCOPE: Behavioural CSS only.
+ *   Colours, font sizes, font weights, spacing/padding values, logo size,
+ *   and border colours should be set inside Webflow Designer.
+ *
+ * OVERRIDE SURFACE — custom properties on .nav:
+ *
+ *   .nav {
+ *     --nav-height           : 3.75rem;
+ *     --nav-solar            : #E8FF51;
+ *     --nav-solar-hover      : #F2FF78;
+ *     --nav-blur             : 25px;
+ *     --nav-dropdown-shadow  : 0px 9px 20px rgba(0,0,0,.085),
+ *                              0px 20px 50px rgba(0,0,0,.09),
+ *                              0px 37px 37px rgba(0,0,0,.065),
+ *                              0px 35px 59px rgba(0,0,0,.03);
+ *   }
+ *
+ * Z-INDEX LAYERS:
+ *   .nav__backdrop          0   (behind bar content)
+ *   .nav__bar              10
+ *   .nav__overlay          40   (dark gradient, above page, below dropdown)
+ *   .nav__dropdown-wrap    50
+ *   .nav__mobile          200   (full-screen, above everything)
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Custom properties ───────────────────────────────────────── */
+.nav {
+  --nav-height          : 3.75rem;
+  --nav-solar           : #E8FF51;
+  --nav-solar-hover     : #F2FF78;
+  --nav-blur            : 25px;
+  --nav-dropdown-shadow :
+    0px 9px  20px rgba(0, 0, 0, 0.085),
+    0px 20px 50px rgba(0, 0, 0, 0.09),
+    0px 37px 37px rgba(0, 0, 0, 0.065),
+    0px 35px 59px rgba(0, 0, 0, 0.03);
+}
+
+/* ── Root ────────────────────────────────────────────────────── */
+.nav {
+  position      : fixed;
+  inset-inline  : 0;
+  top           : 0;
+  z-index       : 100;
+  /* Height is intentionally not set here: the element wraps the bar,
+     dropdown, overlay, and mobile menu which each manage their own
+     positioning. Only --nav-height is used as a shared reference token. */
+}
+
+/* ── Backdrop ────────────────────────────────────────────────── */
+/*
+ * Separate layer so the blur doesn't bleed into child content.
+ * Colour/border are intentionally omitted — set them in Webflow.
+ */
+.nav__backdrop {
+  position              : absolute;
+  inset                 : 0;
+  height                : var(--nav-height);
+  backdrop-filter       : blur(var(--nav-blur));
+  -webkit-backdrop-filter: blur(var(--nav-blur));
+  z-index               : 0;
+  pointer-events        : none;
+}
+
+/* ── Bar ─────────────────────────────────────────────────────── */
+.nav__bar {
+  position   : relative;
+  z-index    : 10;
+  height     : var(--nav-height);
+}
+
+.nav__inner {
+  display       : flex;
+  align-items   : center;
+  height        : 100%;
+  max-width     : 90rem;
+  margin-inline : auto;
+}
+
+/* ── Nav list ────────────────────────────────────────────────── */
+.nav__list {
+  display     : flex;
+  align-items : center;
+  list-style  : none;
+  margin      : 0;
+  padding     : 0;
+  flex        : 1;
+}
+
+/* ── Trigger / plain link — shared focus ring ────────────────── */
+.nav__trigger,
+.nav__link {
+  display         : inline-flex;
+  align-items     : center;
+  cursor          : pointer;
+  text-decoration : none;
+  background      : transparent;
+  border          : none;
+  white-space     : nowrap;
+}
+
+/* Chevron animation is driven by data-state on the trigger */
+.nav__chevron {
+  flex-shrink : 0;
+  transition  : transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav__trigger[data-state="open"] .nav__chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Actions (CTA area) ──────────────────────────────────────── */
+.nav__actions {
+  display     : flex;
+  align-items : center;
+  flex-shrink : 0;
+  margin-left : auto;
+}
+
+/* ── Dropdown wrap ───────────────────────────────────────────── */
+/*
+ * Sits flush below the bar. The 1px negative margin-top covers the
+ * bar's bottom border so the dropdown appears seamlessly attached.
+ */
+.nav__dropdown-wrap {
+  position : absolute;
+  top      : var(--nav-height);
+  left     : 0;
+  right    : 0;
+  z-index  : 50;
+}
+
+/* ── Dropdown height-animation container ─────────────────────── */
+/*
+ * GSAP animates height 0 → panel height. overflow:hidden clips content
+ * during the animation. Border-radius only on the bottom two corners
+ * so the top edge merges invisibly with the nav bar.
+ */
+.nav__dropdown {
+  overflow      : hidden;
+  border-radius : 0 0 0.75rem 0.75rem;
+  box-shadow    : var(--nav-dropdown-shadow);
+  max-width     : 90rem;
+  margin-inline : auto;
+  position      : relative;
+}
+
+/* ── Panel — absolute stack ──────────────────────────────────── */
+/*
+ * All panels share the same position; only the active one is opaque.
+ * GSAP sets opacity on open/close; CSS provides the inert default.
+ */
+.nav__panel {
+  position       : absolute;
+  top            : 0;
+  left           : 0;
+  right          : 0;
+  opacity        : 0;
+  pointer-events : none;
+}
+
+.nav__panel.is-active {
+  opacity        : 1;
+  pointer-events : auto;
+}
+
+/* ── Panel 4-column layout ───────────────────────────────────── */
+/*
+ * 3 content columns (flex: 1) + 1 featured column (fixed width).
+ * A border-left on the featured column creates the visual separator.
+ */
+.nav__panel-layout {
+  display : flex;
+  gap     : 1.5rem;
+}
+
+/* The 3-column content area */
+.nav__panel-body {
+  flex       : 1;
+  min-width  : 0;
+}
+
+.nav__panel-rows {
+  display        : flex;
+  flex-direction : column;
+}
+
+/* Each row uses a 3-column grid matching the content columns */
+.nav__panel-row {
+  display               : grid;
+  grid-template-columns : repeat(3, 1fr);
+  gap                   : 0.5rem;
+}
+
+/* Thin horizontal rule between Products rows */
+.nav__divider {
+  border     : none;
+  border-top : 1px solid;
+  /* colour intentionally omitted — set in Webflow */
+  margin     : 0;
+  opacity    : 0.08;
+}
+
+/* ── Column ──────────────────────────────────────────────────── */
+.nav__col {
+  display        : flex;
+  flex-direction : column;
+}
+
+/* Section label — small uppercase muted text above a group of items */
+.nav__col-label {
+  display        : block;
+  font-size      : 0.6875rem;   /* 11px */
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
+  line-height    : 1;
+}
+
+/* ── Featured column (rightmost, 4th) ────────────────────────── */
+.nav__col--featured {
+  width       : 17rem;
+  flex-shrink : 0;
+}
+
+/* ── Item types ──────────────────────────────────────────────── */
+
+/* 1. Icon card — icon-box + title + desc */
+.nav__item-icon {
+  display         : flex;
+  align-items     : flex-start;
+  text-decoration : none;
+}
+
+.nav__item-icon-box {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 2.5rem;   /* 40px */
+  height          : 2.5rem;
+  border-radius   : 0.375rem;
+  flex-shrink     : 0;
+  /* background colour set in Webflow */
+}
+
+.nav__item-icon-text {
+  display : flex;
+  flex-direction : column;
+}
+
+.nav__item-title {
+  display     : block;
+  font-weight : 600;
+  line-height : 1.3;
+}
+
+.nav__item-desc {
+  display     : block;
+  line-height : 1.4;
+}
+
+/* 2. Plain link — text only, no icon */
+.nav__item-plain {
+  display         : block;
+  text-decoration : none;
+}
+
+/* 3. Highlight card — subtle bg, rounded, title + body */
+.nav__item-highlight {
+  display         : flex;
+  flex-direction  : column;
+  border-radius   : 0.5rem;
+  text-decoration : none;
+  /* bg colour set in Webflow */
+}
+
+/* 4. Featured card — image (16/9) + title + desc */
+.nav__featured-card {
+  display         : flex;
+  flex-direction  : column;
+  text-decoration : none;
+  border-radius   : 0.5rem;
+  overflow        : hidden;
+}
+
+.nav__featured-card-image {
+  display      : block;
+  width        : 100%;
+  aspect-ratio : 16 / 9;
+  object-fit   : cover;
+}
+
+.nav__featured-card-body {
+  display        : flex;
+  flex-direction : column;
+}
+
+/* ── Dark overlay (above page content, below dropdown) ────────── */
+.nav__overlay {
+  position       : fixed;
+  inset          : 0;
+  top            : var(--nav-height);
+  background     : linear-gradient(
+    to bottom,
+    transparent         0%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events : none;
+  z-index        : 40;
+  opacity        : 0;   /* GSAP controls live value */
+}
+
+/* ── Hamburger ───────────────────────────────────────────────── */
+.nav__hamburger {
+  display         : none; /* shown via media query below */
+  flex-direction  : column;
+  justify-content : center;
+  align-items     : center;
+  background      : transparent;
+  border          : none;
+  cursor          : pointer;
+  padding         : 0;
+  margin-left     : auto;
+}
+
+.nav__hamburger span {
+  display          : block;
+  width            : 1.25rem;
+  height           : 1.5px;
+  border-radius    : 2px;
+  /* background colour set in Webflow */
+  transition       : transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                     opacity   0.2s ease;
+  transform-origin : center;
+}
+
+/* Hamburger → X morphing when mobile menu is open */
+.nav__hamburger[data-state="open"] span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+.nav__hamburger[data-state="open"] span:nth-child(2) {
+  opacity   : 0;
+  transform : scaleX(0);
+}
+.nav__hamburger[data-state="open"] span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
+
+/* ── Mobile menu ─────────────────────────────────────────────── */
+/*
+ * Full-screen fixed overlay rendered above everything (z-index 200).
+ * GSAP animates opacity + translateY on open/close.
+ * aria-hidden="true" is set by JS when the menu is closed.
+ */
+.nav__mobile {
+  position    : fixed;
+  inset       : 0;
+  z-index     : 200;
+  display     : flex;
+  flex-direction : column;
+  overflow    : hidden;
+}
+
+.nav__mobile[aria-hidden="true"] {
+  pointer-events : none;
+}
+
+/* ── Mobile head ─────────────────────────────────────────────── */
+.nav__mobile-head {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  flex-shrink     : 0;
+}
+
+.nav__mobile-headleft {
+  display     : flex;
+  align-items : center;
+  position    : relative;
+}
+
+/* Brand and back-button occupy the same layout slot; JS cross-fades them */
+.nav__mobile-brand,
+.nav__mobile-back {
+  display : flex;
+  align-items : center;
+}
+
+/* Close button — rounded, appears as X */
+.nav__mobile-close {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  border          : none;
+  cursor          : pointer;
+  border-radius   : 50%;
+  /* sizing and colours set in Webflow */
+}
+
+/* ── Mobile body — scrollable area with the 2-screen slider ───── */
+.nav__mobile-body {
+  flex     : 1;
+  overflow : hidden; /* clip the slider; each screen scrolls independently */
+  position : relative;
+}
+
+/* ── Slider — 200% wide container holding 2 half-width screens ── */
+/*
+ * GSAP translates this element by -viewportWidth to switch to level 1.
+ * width: 200% means each child .nav__mobile-screen is exactly 50% = 1vw.
+ */
+.nav__mobile-slider {
+  display  : flex;
+  width    : 200%;
+  height   : 100%;
+}
+
+/* ── Each screen ─────────────────────────────────────────────── */
+.nav__mobile-screen {
+  width      : 50%;
+  height     : 100%;
+  overflow-y : auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Mobile list (level 0) ───────────────────────────────────── */
+.nav__mobile-list {
+  list-style : none;
+  margin     : 0;
+  padding    : 0;
+}
+
+.nav__mobile-item {
+  border-bottom : 1px solid;
+  /* border colour set in Webflow */
+}
+
+/* Dropdown trigger rows: text + right chevron (">" arrow) */
+.nav__mobile-trigger-row {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  width           : 100%;
+  background      : transparent;
+  border          : none;
+  cursor          : pointer;
+  text-align      : left;
+}
+
+/* Right-pointing chevron inside mobile trigger rows */
+.nav__mobile-chevron {
+  flex-shrink : 0;
+  /* sizing and colour set in Webflow */
+}
+
+/* Plain link rows (no chevron) */
+.nav__mobile-link {
+  display         : block;
+  text-decoration : none;
+  width           : 100%;
+}
+
+/* ── Mobile sub-panel (level 1) ──────────────────────────────── */
+/*
+ * The desktop panel's innerHTML is injected here by JS.
+ * Featured column and panel-layout flex are overridden so the content
+ * renders as a single stacked column suitable for mobile.
+ */
+.nav__mobile-screen--sub .nav__col--featured {
+  display : none !important;
+}
+
+.nav__mobile-screen--sub .nav__panel-layout {
+  flex-direction : column;
+}
+
+.nav__mobile-screen--sub .nav__panel-body {
+  width : 100%;
+}
+
+.nav__mobile-screen--sub .nav__panel-row {
+  grid-template-columns : 1fr;
+}
+
+/* ── Mobile foot — pinned CTA bar ────────────────────────────── */
+.nav__mobile-foot {
+  display     : flex;
+  flex-shrink : 0;
+}
+
+.nav__mobile-foot .nav__mobile-signin,
+.nav__mobile-foot .nav__mobile-cta {
+  flex            : 1;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  text-decoration : none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  /* Desktop list and actions are hidden on mobile */
+  .nav__list,
+  .nav__actions {
+    display : none;
+  }
+
+  /* Desktop dropdown is hidden on mobile */
+  .nav__dropdown-wrap,
+  .nav__overlay {
+    display : none;
+  }
+
+  /* Hamburger becomes visible */
+  .nav__hamburger {
+    display : flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Mobile menu is structurally absent on desktop */
+  .nav__mobile {
+    display : none;
+  }
+}
