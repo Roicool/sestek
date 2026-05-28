@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.0.0
+ * hero.js v1.0.1
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  * https://github.com/roicool/sestek
@@ -88,6 +88,7 @@
       gsap.set(el.overlay,   { opacity: 1 });
       gsap.set(el.s1Content, { opacity: 1, y: 0 });
       gsap.set(el.scene2,    { opacity: 0 });
+      el.s1Content.style.pointerEvents = "auto";
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
@@ -104,12 +105,16 @@
           scrub      : 1,         // 1s lag behind scroll — feels heavy/premium
           anticipatePin: 1,
           onUpdate: function (self) {
-            // Scene 2 (light bg) fades in at ~0.34 — switch nav text to dark
-            if (navEl) navEl.classList.toggle("nav--on-light", self.progress >= 0.34);
+            var inScene2 = self.progress >= 0.34;
+            // Nav theme
+            if (navEl) navEl.classList.toggle("nav--on-light", inScene2);
+            // Scene 1 loses interactivity once scene 2 is visible
+            el.s1Content.style.pointerEvents = inScene2 ? "none" : "auto";
           },
           onLeaveBack: function () {
-            // Scrolled back above hero entirely — restore dark nav
+            // Scrolled back above hero entirely — restore dark nav + scene 1 clicks
             if (navEl) navEl.classList.remove("nav--on-light");
+            el.s1Content.style.pointerEvents = "auto";
           },
         },
       });
