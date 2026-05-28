@@ -413,7 +413,7 @@ Webflow `</body>` öncesi:
 ```html
 <!-- in <head> -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.css">
-<script src="https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.js" defer></script>
 ```
 
