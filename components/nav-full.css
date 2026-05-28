@@ -67,9 +67,9 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .nav--on-light {
-  --nav-text       : #1a1a1a;
-  --nav-text-muted : rgba(26, 26, 26, 0.5);
-  --nav-border     : rgba(0, 0, 0, 0.1);
+  --nav-text       : var(--_nav---nav-text-on-light, #1a1a1a);
+  --nav-text-muted : var(--_nav---nav-text-muted-on-light, rgba(26, 26, 26, 0.5));
+  --nav-border     : var(--_nav---nav-border-on-light, rgba(0, 0, 0, 0.1));
 }
 
 /* ═══════════════════════════════════════════════════════════════
