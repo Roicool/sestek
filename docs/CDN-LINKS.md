@@ -88,8 +88,6 @@ Webflow `</body>` öncesi:
 | `nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js` |
 | `nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css` |
 | `nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav-full.css` |
-| `data-viz.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.js` |
-| `data-viz.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.css` |
 
 ### Hero
 
@@ -407,58 +405,6 @@ Webflow `</body>` öncesi:
 
 </nav>
 ```
-
-### Data Viz
-
-```html
-<!-- in <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.css">
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/data-viz.js" defer></script>
-```
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initDataViz({ container: '[data-viz]' });
-  });
-</script>
-```
-
-#### DOM yapısı
-
-```html
-<!--
-  Wrapper — data-viz attribute zorunlu.
-  height CSS'te tanımlanmalı; canvas %100 doldurur.
--->
-<div data-viz style="height: 560px;"></div>
-```
-
-#### Seçenekler
-
-| Seçenek | Tip | Default | Açıklama |
-|---|---|---|---|
-| `container` | `string\|Element` | `'[data-viz]'` | Hedef element |
-| `nodeCount` | `number` | `50` | Düğüm sayısı |
-| `maxDist` | `number` | `3.2` | Bağlantı mesafe eşiği |
-| `spreadX` | `number` | `10` | Yatay yayılım |
-| `spreadY` | `number` | `3.5` | Dikey yayılım |
-| `spreadZ` | `number` | `5` | Derinlik yayılımı |
-| `bgColor` | `number` | `0x04040a` | Arka plan rengi (0x hex) |
-| `palette` | `string[]` | beyaz dominant | Hex renk dizisi |
-
-#### destroy()
-
-```js
-var viz = Sestek.initDataViz();
-// ...
-viz.destroy(); // canvas kaldırılır, event'ler temizlenir
-```
-
----
 
 #### Notlar
 
