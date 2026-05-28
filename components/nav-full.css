@@ -61,6 +61,18 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SECTION 1b — ADAPTIVE THEME (light background behind nav)
+   Add [data-nav-theme="light"] or [data-nav-theme="dark"] on page
+   sections. nav.js toggles .nav--on-light via IntersectionObserver.
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav--on-light {
+  --nav-text       : #1a1a1a;
+  --nav-text-muted : rgba(26, 26, 26, 0.5);
+  --nav-border     : rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SECTION 2 — ROOT
    ═══════════════════════════════════════════════════════════════ */
 

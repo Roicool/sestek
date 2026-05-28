@@ -370,6 +370,37 @@
     if (mobileBrand)  mobileBrand.style.display  = "";
     if (mobileSlider) gsap.set(mobileSlider, { x: 0 });
 
+    // ── Adaptive theme (light/dark background detection) ─────────
+    // Sections declare their background via [data-nav-theme="light|dark"].
+    // When a light-background section scrolls behind the nav bar,
+    // .nav--on-light is toggled so CSS variables flip text to dark.
+    var _themeObserver = null;
+
+    (function initAdaptiveTheme() {
+      var themed = Array.from(document.querySelectorAll("[data-nav-theme]"));
+      if (!themed.length || !("IntersectionObserver" in window)) return;
+
+      var navH = nav.offsetHeight || 60;
+
+      _themeObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              var isLight = entry.target.dataset.navTheme === "light";
+              nav.classList.toggle("nav--on-light", isLight);
+            }
+          });
+        },
+        {
+          // The observation band is exactly the nav bar's height at the top.
+          rootMargin: "-" + navH + "px 0px -" + (window.innerHeight - navH - 1) + "px 0px",
+          threshold: 0,
+        }
+      );
+
+      themed.forEach(function (el) { _themeObserver.observe(el); });
+    })();
+
     // ── Public API ────────────────────────────────────────────────
     var instance = {
       _destroy: function () {
@@ -380,6 +411,7 @@
         if (mobileSlider) gsap.killTweensOf(mobileSlider);
         panels.forEach(function (p) { gsap.killTweensOf(p); });
         document.body.style.overflow = "";
+        if (_themeObserver) _themeObserver.disconnect();
 
         _listeners.forEach(function (l) {
           l.el.removeEventListener(l.type, l.fn);
