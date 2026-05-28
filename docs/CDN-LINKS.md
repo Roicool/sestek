@@ -87,6 +87,7 @@ Webflow `</body>` öncesi:
 | `grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css` |
 | `nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js` |
 | `nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css` |
+| `nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav-full.css` |
 
 ### Hero
 

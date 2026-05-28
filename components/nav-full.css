@@ -1,0 +1,888 @@
+/*!
+ * nav-full.css v2.0.0
+ * Complete nav styles — behavioural + visual design tokens
+ * Drop-in replacement for nav.css when you are NOT using Webflow Designer.
+ * In Webflow: use nav.css (behavioural only) and apply visual values via Designer.
+ *
+ * Theme: dark glass nav, #E8FF51 solar accent, neutral-900 background
+ * https://github.com/roicool/sestek
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 1 — CUSTOM PROPERTIES
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav {
+  /* ── Sizing ── */
+  --nav-height          : 3.75rem;         /* 60px bar height                  */
+
+  /* ── Palette ── */
+  --nav-bg              : rgba(10, 10, 10, 0.72);   /* frosted glass base       */
+  --nav-border          : rgba(255, 255, 255, 0.08);
+  --nav-text            : #f0f0f0;
+  --nav-text-muted      : rgba(240, 240, 240, 0.45);
+  --nav-solar           : #E8FF51;
+  --nav-solar-hover     : #F2FF78;
+  --nav-solar-text      : #0a0a0a;         /* text on solar bg                 */
+
+  /* ── Dropdown ── */
+  --nav-dropdown-bg     : #111111;
+  --nav-dropdown-border : rgba(255, 255, 255, 0.07);
+  --nav-dropdown-shadow :
+    0px  9px  20px rgba(0, 0, 0, 0.28),
+    0px 20px  50px rgba(0, 0, 0, 0.32),
+    0px 37px  37px rgba(0, 0, 0, 0.22),
+    0px 35px  59px rgba(0, 0, 0, 0.12);
+
+  /* ── Item hover ── */
+  --nav-item-hover-bg   : rgba(255, 255, 255, 0.05);
+  --nav-item-icon-bg    : rgba(255, 255, 255, 0.07);
+
+  /* ── Mobile ── */
+  --nav-mobile-bg       : #0a0a0a;
+  --nav-mobile-border   : rgba(255, 255, 255, 0.09);
+
+  /* ── Blur ── */
+  --nav-blur            : 24px;
+
+  /* ── Radius ── */
+  --nav-radius-sm       : 0.375rem;        /* 6px  */
+  --nav-radius-md       : 0.5rem;          /* 8px  */
+  --nav-radius-lg       : 0.75rem;         /* 12px */
+
+  /* ── Typography ── */
+  --nav-font-size       : 0.9375rem;       /* 15px */
+  --nav-font-weight     : 450;
+  --nav-font-weight-btn : 600;
+
+  /* ── Transitions ── */
+  --nav-ease            : cubic-bezier(0.16, 1, 0.3, 1);
+  --nav-t               : 0.22s;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 2 — ROOT
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav {
+  position     : fixed;
+  inset-inline : 0;
+  top          : 0;
+  z-index      : 100;
+  font-family  : inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 3 — BACKDROP (frosted glass layer)
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__backdrop {
+  position                : absolute;
+  inset                   : 0;
+  height                  : var(--nav-height);
+  background              : var(--nav-bg);
+  border-bottom           : 1px solid var(--nav-border);
+  backdrop-filter         : blur(var(--nav-blur));
+  -webkit-backdrop-filter : blur(var(--nav-blur));
+  z-index                 : 0;
+  pointer-events          : none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 4 — BAR
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__bar {
+  position : relative;
+  z-index  : 10;
+  height   : var(--nav-height);
+}
+
+.nav__inner {
+  display        : flex;
+  align-items    : center;
+  height         : 100%;
+  max-width      : 90rem;
+  margin-inline  : auto;
+  padding-inline : 1.5rem;
+  gap            : 0.5rem;
+}
+
+/* ── Logo ── */
+.nav__logo {
+  display         : flex;
+  align-items     : center;
+  text-decoration : none;
+  flex-shrink     : 0;
+  margin-right    : 1.5rem;
+}
+
+.nav__logo img {
+  height : 1.75rem;          /* 28px — override as needed */
+  width  : auto;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 5 — NAV LIST
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__list {
+  display     : flex;
+  align-items : center;
+  list-style  : none;
+  margin      : 0;
+  padding     : 0;
+  flex        : 1;
+  gap         : 0.125rem;
+}
+
+/* ── Trigger (has dropdown panel) ── */
+.nav__trigger {
+  display         : inline-flex;
+  align-items     : center;
+  gap             : 0.25rem;
+  cursor          : pointer;
+  text-decoration : none;
+  background      : transparent;
+  border          : none;
+  color           : var(--nav-text);
+  font-size       : var(--nav-font-size);
+  font-weight     : var(--nav-font-weight);
+  padding         : 0.375rem 0.625rem;
+  border-radius   : var(--nav-radius-sm);
+  white-space     : nowrap;
+  transition      : color var(--nav-t) var(--nav-ease),
+                    background var(--nav-t) var(--nav-ease);
+  line-height     : 1;
+}
+
+.nav__trigger:hover,
+.nav__trigger[data-state="open"] {
+  background : var(--nav-item-hover-bg);
+  color      : #ffffff;
+}
+
+/* ── Plain link (no panel) ── */
+.nav__link {
+  display         : inline-flex;
+  align-items     : center;
+  cursor          : pointer;
+  text-decoration : none;
+  background      : transparent;
+  border          : none;
+  color           : var(--nav-text);
+  font-size       : var(--nav-font-size);
+  font-weight     : var(--nav-font-weight);
+  padding         : 0.375rem 0.625rem;
+  border-radius   : var(--nav-radius-sm);
+  white-space     : nowrap;
+  transition      : color var(--nav-t) var(--nav-ease),
+                    background var(--nav-t) var(--nav-ease);
+  line-height     : 1;
+}
+
+.nav__link:hover {
+  background : var(--nav-item-hover-bg);
+  color      : #ffffff;
+}
+
+/* ── Chevron ── */
+.nav__chevron {
+  flex-shrink : 0;
+  stroke      : currentColor;
+  fill        : none;
+  transition  : transform 0.25s var(--nav-ease);
+}
+
+.nav__trigger[data-state="open"] .nav__chevron {
+  transform : rotate(180deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 6 — ACTIONS (right side CTAs)
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__actions {
+  display     : flex;
+  align-items : center;
+  flex-shrink : 0;
+  margin-left : auto;
+  gap         : 0.25rem;
+}
+
+/* "Log in" — same as nav__link */
+.nav__actions .nav__link {
+  margin-right : 0.25rem;
+}
+
+/* "Get started" CTA button */
+.nav__btn {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  cursor          : pointer;
+  text-decoration : none;
+  border          : none;
+  background      : var(--nav-solar);
+  color           : var(--nav-solar-text);
+  font-size       : 0.875rem;
+  font-weight     : var(--nav-font-weight-btn);
+  padding         : 0.4375rem 0.9375rem;
+  border-radius   : var(--nav-radius-sm);
+  white-space     : nowrap;
+  line-height     : 1;
+  transition      : background var(--nav-t) var(--nav-ease),
+                    transform  0.14s var(--nav-ease);
+}
+
+.nav__btn:hover {
+  background : var(--nav-solar-hover);
+  transform  : translateY(-1px);
+}
+
+.nav__btn:active {
+  transform : translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 7 — DROPDOWN WRAP + CONTAINER
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__dropdown-wrap {
+  position : absolute;
+  top      : var(--nav-height);
+  left     : 0;
+  right    : 0;
+  z-index  : 50;
+}
+
+/*
+ * GSAP animates height 0 → panel offsetHeight.
+ * overflow:hidden clips during the animation.
+ * [REQUIRED BY JS] — do not remove overflow:hidden.
+ */
+.nav__dropdown {
+  overflow      : hidden;
+  border-radius : 0 0 var(--nav-radius-lg) var(--nav-radius-lg);
+  box-shadow    : var(--nav-dropdown-shadow);
+  max-width     : 90rem;
+  margin-inline : auto;
+  position      : relative;
+  background    : var(--nav-dropdown-bg);
+  border        : 1px solid var(--nav-dropdown-border);
+  border-top    : none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 8 — PANELS
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * All panels are stacked absolute; only the active panel is opaque.
+ * [REQUIRED BY JS] — opacity:0 and pointer-events:none are the inert state.
+ * GSAP sets the live values; CSS provides the safe starting point.
+ */
+.nav__panel {
+  position       : absolute;
+  top            : 0;
+  left           : 0;
+  right          : 0;
+  opacity        : 0;
+  pointer-events : none;
+  padding        : 1.5rem;
+}
+
+.nav__panel.is-active {
+  opacity        : 1;
+  pointer-events : auto;
+}
+
+/* ── Panel 4-column layout ── */
+/*
+ * [REQUIRED BY JS] — .nav__panel-layout flex-direction is overridden
+ * inside .nav__mobile-screen--sub to stack columns vertically on mobile.
+ */
+.nav__panel-layout {
+  display : flex;
+  gap     : 0.75rem;
+}
+
+.nav__panel-body {
+  flex      : 1;
+  min-width : 0;
+}
+
+.nav__panel-rows {
+  display        : flex;
+  flex-direction : column;
+  gap            : 0.25rem;
+}
+
+/*
+ * 3-column grid for content columns.
+ * [REQUIRED BY JS] — grid-template-columns is overridden to 1fr inside
+ * .nav__mobile-screen--sub so injected desktop content becomes single-col.
+ */
+.nav__panel-row {
+  display               : grid;
+  grid-template-columns : repeat(3, 1fr);
+  gap                   : 0.25rem;
+}
+
+/* Horizontal divider between rows */
+.nav__divider {
+  border     : none;
+  border-top : 1px solid var(--nav-dropdown-border);
+  margin     : 0.5rem 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 9 — COLUMNS
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav__col {
+  display        : flex;
+  flex-direction : column;
+  gap            : 0.125rem;
+  padding        : 0.5rem;
+}
+
+/* Section label */
+.nav__col-label {
+  display        : block;
+  font-size      : 0.6875rem;    /* 11px */
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
+  color          : var(--nav-text-muted);
+  line-height    : 1;
+  padding        : 0.25rem 0.5rem 0.5rem;
+}
+
+/* Featured column (rightmost, 4th) */
+/*
+ * [REQUIRED BY JS] — .nav__mobile-screen--sub sets display:none !important
+ * on .nav__col--featured so it disappears in the mobile sub-panel view.
+ */
+.nav__col--featured {
+  width         : 17rem;
+  flex-shrink   : 0;
+  border-left   : 1px solid var(--nav-dropdown-border);
+  padding-left  : 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 10 — ITEM TYPES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Icon card ── */
+.nav__item-icon {
+  display         : flex;
+  align-items     : flex-start;
+  gap             : 0.75rem;
+  text-decoration : none;
+  padding         : 0.5rem;
+  border-radius   : var(--nav-radius-md);
+  transition      : background var(--nav-t) var(--nav-ease);
+}
+
+.nav__item-icon:hover {
+  background : var(--nav-item-hover-bg);
+}
+
+.nav__item-icon-box {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 2.25rem;    /* 36px */
+  height          : 2.25rem;
+  border-radius   : var(--nav-radius-sm);
+  flex-shrink     : 0;
+  background      : var(--nav-item-icon-bg);
+  border          : 1px solid var(--nav-dropdown-border);
+}
+
+.nav__item-icon-box img {
+  width  : 1.125rem;
+  height : 1.125rem;
+  display: block;
+}
+
+.nav__item-icon-text {
+  display        : flex;
+  flex-direction : column;
+  gap            : 0.1875rem;
+}
+
+.nav__item-title {
+  display     : block;
+  font-size   : 0.9375rem;
+  font-weight : 500;
+  color       : var(--nav-text);
+  line-height : 1.3;
+}
+
+.nav__item-desc {
+  display     : block;
+  font-size   : 0.8125rem;
+  color       : var(--nav-text-muted);
+  line-height : 1.4;
+}
+
+/* ── 2. Plain link ── */
+.nav__item-plain {
+  display         : block;
+  text-decoration : none;
+  color           : var(--nav-text);
+  font-size       : 0.9375rem;
+  font-weight     : var(--nav-font-weight);
+  padding         : 0.4375rem 0.5rem;
+  border-radius   : var(--nav-radius-sm);
+  transition      : background var(--nav-t) var(--nav-ease),
+                    color      var(--nav-t) var(--nav-ease);
+}
+
+.nav__item-plain:hover {
+  background : var(--nav-item-hover-bg);
+  color      : #ffffff;
+}
+
+/* ── 3. Highlight card ── */
+.nav__item-highlight {
+  display         : flex;
+  flex-direction  : column;
+  gap             : 0.1875rem;
+  border-radius   : var(--nav-radius-md);
+  text-decoration : none;
+  padding         : 0.625rem 0.75rem;
+  background      : rgba(255, 255, 255, 0.04);
+  border          : 1px solid var(--nav-dropdown-border);
+  transition      : background var(--nav-t) var(--nav-ease),
+                    border-color var(--nav-t) var(--nav-ease);
+}
+
+.nav__item-highlight:hover {
+  background   : rgba(255, 255, 255, 0.08);
+  border-color : rgba(255, 255, 255, 0.14);
+}
+
+/* ── 4. Featured card ── */
+.nav__featured-card {
+  display         : flex;
+  flex-direction  : column;
+  text-decoration : none;
+  border-radius   : var(--nav-radius-md);
+  overflow        : hidden;
+  border          : 1px solid var(--nav-dropdown-border);
+  transition      : border-color var(--nav-t) var(--nav-ease),
+                    transform    0.18s var(--nav-ease);
+}
+
+.nav__featured-card:hover {
+  border-color : rgba(255, 255, 255, 0.18);
+  transform    : translateY(-2px);
+}
+
+.nav__featured-card-image {
+  display      : block;
+  width        : 100%;
+  aspect-ratio : 16 / 9;
+  object-fit   : cover;
+}
+
+.nav__featured-card-body {
+  display        : flex;
+  flex-direction : column;
+  gap            : 0.25rem;
+  padding        : 0.875rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 11 — DARK OVERLAY
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * [REQUIRED BY JS] — GSAP controls opacity (0 → 1 on open, 1 → 0 on close).
+ * Starting opacity:0 in CSS ensures no flash before JS initialises.
+ */
+.nav__overlay {
+  position       : fixed;
+  inset          : 0;
+  top            : var(--nav-height);
+  background     : linear-gradient(
+    to bottom,
+    transparent         0%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events : none;
+  z-index        : 40;
+  opacity        : 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 12 — HAMBURGER
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * Hidden by default; shown via media query (≤ 1023px).
+ */
+.nav__hamburger {
+  display         : none;
+  flex-direction  : column;
+  justify-content : center;
+  align-items     : center;
+  gap             : 4.5px;
+  background      : transparent;
+  border          : none;
+  cursor          : pointer;
+  padding         : 0.375rem;
+  margin-left     : auto;
+  border-radius   : var(--nav-radius-sm);
+  transition      : background var(--nav-t) var(--nav-ease);
+}
+
+.nav__hamburger:hover {
+  background : var(--nav-item-hover-bg);
+}
+
+.nav__hamburger span {
+  display          : block;
+  width            : 1.25rem;    /* 20px */
+  height           : 1.5px;
+  border-radius    : 2px;
+  background       : var(--nav-text);
+  transition       : transform 0.25s var(--nav-ease),
+                     opacity   0.2s ease;
+  transform-origin : center;
+}
+
+/*
+ * [REQUIRED BY JS] — JS sets data-state="open" on hamburger when mobile menu
+ * opens. CSS transforms the 3 spans into an X.
+ */
+.nav__hamburger[data-state="open"] span:nth-child(1) {
+  transform : translateY(6px) rotate(45deg);
+}
+.nav__hamburger[data-state="open"] span:nth-child(2) {
+  opacity   : 0;
+  transform : scaleX(0);
+}
+.nav__hamburger[data-state="open"] span:nth-child(3) {
+  transform : translateY(-6px) rotate(-45deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 13 — MOBILE MENU
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * Full-screen fixed overlay, z-index 200 (above everything).
+ * [REQUIRED BY JS] — GSAP animates opacity + translateY on open/close.
+ *                    aria-hidden="true" → pointer-events: none.
+ */
+.nav__mobile {
+  position       : fixed;
+  inset          : 0;
+  z-index        : 200;
+  display        : flex;
+  flex-direction : column;
+  overflow       : hidden;
+  background     : var(--nav-mobile-bg);
+}
+
+.nav__mobile[aria-hidden="true"] {
+  pointer-events : none;
+}
+
+/* ── Mobile head ── */
+.nav__mobile-head {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  flex-shrink     : 0;
+  padding         : 0.75rem 1.25rem;
+  border-bottom   : 1px solid var(--nav-mobile-border);
+  height          : var(--nav-height);
+}
+
+.nav__mobile-headleft {
+  display     : flex;
+  align-items : center;
+  position    : relative;
+}
+
+/*
+ * [REQUIRED BY JS] — JS cross-fades brand ↔ back button.
+ * Both share the same layout slot; display toggling is done inline by GSAP.
+ */
+.nav__mobile-brand,
+.nav__mobile-back {
+  display     : flex;
+  align-items : center;
+  gap         : 0.375rem;
+}
+
+.nav__mobile-brand img {
+  height : 1.625rem;
+  width  : auto;
+  display: block;
+}
+
+.nav__mobile-back {
+  background      : transparent;
+  border          : none;
+  cursor          : pointer;
+  color           : var(--nav-text);
+  font-size       : 0.9375rem;
+  font-weight     : 500;
+  padding         : 0;
+  text-decoration : none;
+}
+
+.nav__mobile-back svg {
+  stroke       : currentColor;
+  fill         : none;
+  stroke-width : 1.75;
+}
+
+/* Close button */
+.nav__mobile-close {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 2rem;
+  height          : 2rem;
+  border          : none;
+  cursor          : pointer;
+  border-radius   : 50%;
+  background      : rgba(255, 255, 255, 0.07);
+  color           : var(--nav-text);
+  transition      : background var(--nav-t) var(--nav-ease);
+}
+
+.nav__mobile-close:hover {
+  background : rgba(255, 255, 255, 0.13);
+}
+
+.nav__mobile-close svg {
+  stroke       : currentColor;
+  fill         : none;
+  stroke-width : 1.75;
+}
+
+/* ── Mobile body ── */
+.nav__mobile-body {
+  flex     : 1;
+  overflow : hidden;  /* [REQUIRED BY JS] clips the 2-screen slider */
+  position : relative;
+}
+
+/* ── Slider ──
+ * [REQUIRED BY JS] — GSAP translates this by -window.innerWidth to switch
+ * to level 1. width:200% makes each child screen exactly 1 viewport wide.
+ */
+.nav__mobile-slider {
+  display  : flex;
+  width    : 200%;
+  height   : 100%;
+}
+
+/* Each screen is exactly 50% of the slider = 1 viewport width */
+/*
+ * [REQUIRED BY JS] — width:50% is essential; the slider calc depends on it.
+ */
+.nav__mobile-screen {
+  width      : 50%;
+  height     : 100%;
+  overflow-y : auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling : touch;
+  padding    : 0.75rem 0;
+}
+
+/* ── Mobile list (level 0) ── */
+.nav__mobile-list {
+  list-style : none;
+  margin     : 0;
+  padding    : 0 0.75rem;
+}
+
+.nav__mobile-item {
+  border-bottom : 1px solid var(--nav-mobile-border);
+}
+
+.nav__mobile-item:last-child {
+  border-bottom : none;
+}
+
+/* Trigger row — text + right chevron */
+.nav__mobile-trigger-row {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  width           : 100%;
+  background      : transparent;
+  border          : none;
+  cursor          : pointer;
+  text-align      : left;
+  color           : var(--nav-text);
+  font-size       : 1rem;
+  font-weight     : 450;
+  padding         : 0.875rem 0.5rem;
+  transition      : color var(--nav-t) var(--nav-ease);
+  text-decoration : none;
+}
+
+.nav__mobile-trigger-row:hover {
+  color : #ffffff;
+}
+
+.nav__mobile-chevron {
+  flex-shrink  : 0;
+  stroke       : currentColor;
+  fill         : none;
+  stroke-width : 1.75;
+  opacity      : 0.5;
+}
+
+/* Plain link rows */
+.nav__mobile-link {
+  display         : block;
+  text-decoration : none;
+  width           : 100%;
+  color           : var(--nav-text);
+  font-size       : 1rem;
+  font-weight     : 450;
+  padding         : 0.875rem 0.5rem;
+  transition      : color var(--nav-t) var(--nav-ease);
+}
+
+.nav__mobile-link:hover {
+  color : #ffffff;
+}
+
+/* ── Mobile sub-panel (level 1) ──
+ * [REQUIRED BY JS] — Desktop panel innerHTML is injected here.
+ * These overrides collapse the 4-col layout to a single vertical column.
+ */
+.nav__mobile-screen--sub .nav__col--featured {
+  display : none !important;
+}
+
+.nav__mobile-screen--sub .nav__panel-layout {
+  flex-direction : column;
+}
+
+.nav__mobile-screen--sub .nav__panel-body {
+  width : 100%;
+}
+
+.nav__mobile-screen--sub .nav__panel-row {
+  grid-template-columns : 1fr;
+}
+
+/* Remove panel absolute positioning in the mobile sub context */
+.nav__mobile-screen--sub .nav__panel {
+  position       : relative;
+  opacity        : 1;
+  pointer-events : auto;
+  padding        : 0.25rem 0.75rem;
+}
+
+.nav__mobile-screen--sub .nav__col {
+  padding : 0.25rem 0;
+}
+
+/* ── Mobile foot (pinned CTA bar) ── */
+.nav__mobile-foot {
+  display       : flex;
+  flex-shrink   : 0;
+  gap           : 0.75rem;
+  padding       : 1rem 1.25rem;
+  border-top    : 1px solid var(--nav-mobile-border);
+}
+
+.nav__mobile-foot .nav__mobile-signin,
+.nav__mobile-foot .nav__mobile-cta {
+  flex            : 1;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  text-decoration : none;
+  height          : 2.75rem;
+  border-radius   : var(--nav-radius-sm);
+  font-size       : 0.9375rem;
+  font-weight     : 600;
+  transition      : background var(--nav-t) var(--nav-ease),
+                    color      var(--nav-t) var(--nav-ease);
+}
+
+.nav__mobile-foot .nav__mobile-signin {
+  background   : transparent;
+  color        : var(--nav-text);
+  border       : 1px solid var(--nav-mobile-border);
+}
+
+.nav__mobile-foot .nav__mobile-signin:hover {
+  background : rgba(255, 255, 255, 0.06);
+  color      : #ffffff;
+}
+
+.nav__mobile-foot .nav__mobile-cta {
+  background : var(--nav-solar);
+  color      : var(--nav-solar-text);
+  border     : 1px solid transparent;
+}
+
+.nav__mobile-foot .nav__mobile-cta:hover {
+  background : var(--nav-solar-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 14 — RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1023px) {
+  /* Hide desktop elements */
+  .nav__list,
+  .nav__actions,
+  .nav__dropdown-wrap,
+  .nav__overlay {
+    display : none;
+  }
+
+  /* Show hamburger */
+  .nav__hamburger {
+    display : flex;
+  }
+
+  /* Tighten inner padding on mobile */
+  .nav__inner {
+    padding-inline : 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Mobile menu is structurally hidden on desktop */
+  .nav__mobile {
+    display : none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 15 — REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__chevron,
+  .nav__hamburger span,
+  .nav__trigger,
+  .nav__link,
+  .nav__btn,
+  .nav__item-icon,
+  .nav__item-plain,
+  .nav__item-highlight,
+  .nav__featured-card {
+    transition : none;
+  }
+}
