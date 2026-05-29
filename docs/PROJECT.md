@@ -19,9 +19,15 @@
 
 ```
 sestek/
-├── core/            # Foundation utilities (scroll, resize, etc.)
-├── animations/      # Reusable GSAP animation presets
-├── components/      # UI components (nav, hero, etc.)
+├── js/
+│   ├── core/        # Foundation utilities — lenis-init.js, nav.js
+│   ├── components/  # UI components — hero.js, marquee.js, scroll-tabs.js
+│   ├── effects/     # Visual effects — grain.js, btn-glow.js
+│   └── animations/  # Reusable GSAP animation presets — height-reveal.js
+├── css/
+│   ├── core/        # Core styles — nav.css, nav-full.css
+│   ├── components/  # Component styles — hero.css, marquee.css, scroll-tabs.css
+│   └── effects/     # Effect styles — grain.css, btn-glow.css
 └── docs/            # PROJECT.md, CDN-LINKS.md, RC-STRUCTURE-REFERENCE.css, changelogs
 ```
 
@@ -85,7 +91,7 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@v1.1.0/core/lenis-init.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js" defer></script>
 <!-- Kullanılan component scriptleri buraya eklenir -->
 ```
 
