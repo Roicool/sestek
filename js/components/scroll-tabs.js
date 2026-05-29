@@ -1,5 +1,5 @@
 /*!
- * scroll-tabs.js v1.2.0
+ * scroll-tabs.js v1.3.0
  * Pinned, scroll-driven tab section (Apollo-style):
  *   1. Big cards collapse into a thin tab bar
  *   2. Section pins
@@ -7,8 +7,8 @@
  *      (one collapses height→0, the next grows 0→auto)
  * Tabs are clickable (smooth-scroll to their segment) and the timeline snaps.
  *
- * Mobile (≤768px): no pin, no ScrollTrigger. Starts collapsed. Tab click
- * swaps the panel via height-reveal and slides the active tab into view.
+ * Mobile (≤768px): SAME pinned scroll animation. The tab bar is a horizontal
+ * scroll row; the active tab slides into view as the active index changes.
  *
  * Requires : gsap + ScrollTrigger registered, Sestek.heightReveal loaded.
  * Optional : Lenis (Sestek.scrollTo) for click navigation; falls back to native.
@@ -88,15 +88,14 @@
     if (reduce) { buildStatic(); return; }
 
     // ── Shared state ──────────────────────────────────────────────
-    var activeST       = null;
-    var snapPts        = [];   // snap targets as progress 0..1
-    var totalUnits     = 0;    // timeline length in units
-    var clickTarget    = null; // forces snapResolver during a click scroll
-    var clickTimer     = null;
-    var mobileActive   = 0;
-    var mobileAnim     = false;
+    var activeST    = null;
+    var snapPts     = [];   // snap targets as progress 0..1
+    var totalUnits  = 0;    // timeline length in units
+    var clickTarget = null; // forces snapResolver during a click scroll
+    var clickTimer  = null;
+    var curActive   = -1;   // last applied active index (avoids redundant work)
 
-    // ── Snap resolver (desktop) ───────────────────────────────────
+    // ── Snap resolver ─────────────────────────────────────────────
     /** Nearest snap point, or the click target while a jump is in flight. */
     function snapResolver(value) {
       if (clickTarget != null) return clickTarget;
@@ -109,10 +108,17 @@
       return best;
     }
 
-    /** Toggle the visible active tab. */
+    /** Toggle the active tab; on mobile slide that tab into view (only when changed). */
     function setActive(idx) {
+      if (idx === curActive) return;
+      curActive = idx;
       for (var i = 0; i < tabs.length; i++) {
         tabs[i].classList.toggle("is-active", i === idx);
+      }
+      // Mobile: slide the active chip into the centre of the horizontal bar.
+      // block:"nearest" prevents any vertical page scroll (would fight the pin).
+      if (mqMobile.matches && tabs[idx]) {
+        tabs[idx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       }
     }
 
@@ -127,44 +133,15 @@
       return idx;
     }
 
-    // ── Mobile build: collapsed bar, click-to-swap ────────────────
-    function buildMobile() {
-      if (activeST) { activeST.kill(); activeST = null; }
-
-      gsap.set(panels, { clearProps: "all" });
-      if (descs.length) gsap.set(descs, { clearProps: "all" });
-      if (icons.length) gsap.set(icons, { clearProps: "all" });
-
-      // Start collapsed — expanded card view never shows on mobile
-      root.classList.add("is-collapsed");
-
-      // Icons + descs: hidden immediately
-      if (descs.length) gsap.set(descs, { height: 0, autoAlpha: 0 });
-      if (icons.length) gsap.set(icons, { height: 0, autoAlpha: 0 });
-
-      // Measure and lock panel heights
-      var heights = panels.map(function (p) {
-        p.style.height = "auto";
-        return p.offsetHeight;
-      });
-      panels.forEach(function (p, i) {
-        if (i === 0) gsap.set(p, { height: heights[0], autoAlpha: 1 });
-        else         gsap.set(p, { height: 0, autoAlpha: 0 });
-      });
-
-      mobileActive = 0;
-      mobileAnim   = false;
-      setActive(0);
-    }
-
-    // ── Desktop build: pinned scroll-driven timeline ──────────────
-    function buildDesktop() {
+    // ── Build the pinned scroll-driven timeline (all viewports) ───
+    function build() {
       if (activeST) { activeST.kill(); activeST = null; }
 
       gsap.set(panels, { clearProps: "all" });
       if (descs.length) gsap.set(descs, { clearProps: "all" });
       if (icons.length) gsap.set(icons, { clearProps: "all" });
       root.classList.remove("is-collapsed");
+      curActive = -1;
 
       var heights = panels.map(function (p) {
         p.style.height = "auto";
@@ -206,8 +183,6 @@
             ease: "power2.inOut",
             delay: 0.12,
             // Always snap to NEAREST regardless of scroll direction.
-            // Default (true) snaps to the next point in scroll direction
-            // which felt like "sliding to the adjacent tab".
             directional: false,
           } : false,
           onUpdate: function (self) {
@@ -251,34 +226,8 @@
       activeST = tl.scrollTrigger;
     }
 
-    /** Dispatch to the right build based on viewport. */
-    function build() {
-      if (mqMobile.matches) buildMobile();
-      else                   buildDesktop();
-    }
-
-    // ── Click: mobile ─────────────────────────────────────────────
-    function jumpToMobile(idx) {
-      if (idx === mobileActive || mobileAnim) return;
-      var out = panels[mobileActive];
-      var inn = panels[idx];
-
-      mobileAnim = true;
-      var tl = Sestek.heightReveal(out, inn, { duration: 0.4, ease: ease });
-      tl.eventCallback("onComplete", function () { mobileAnim = false; });
-
-      mobileActive = idx;
-      setActive(idx);
-
-      // Slide the active tab chip into view in the horizontal scroll bar
-      var activeTab = tabs[idx];
-      if (activeTab) {
-        activeTab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-      }
-    }
-
-    // ── Click: desktop ────────────────────────────────────────────
-    function jumpToDesktop(idx) {
+    /** Click a tab → smooth-scroll to its dwell-centre (= exact snap point). */
+    function jumpTo(idx) {
       if (!activeST) return;
       var st = activeST;
       var progress = (collapse + idx * (reveal + dwell) + dwell / 2) / totalUnits;
@@ -299,15 +248,11 @@
         window.scrollTo({ top: y, behavior: "smooth" });
       }
 
-      // Release the snap lock a hair after the scroll settles
       clickTimer = setTimeout(function () { clickTarget = null; }, dur * 1000 + 120);
     }
 
     tabs.forEach(function (tab, i) {
-      tab.addEventListener("click", function () {
-        if (mqMobile.matches) jumpToMobile(i);
-        else                   jumpToDesktop(i);
-      });
+      tab.addEventListener("click", function () { jumpTo(i); });
     });
 
     // ── prefers-reduced-motion fallback ───────────────────────────
