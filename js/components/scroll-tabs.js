@@ -1,5 +1,5 @@
 /*!
- * scroll-tabs.js v1.0.0
+ * scroll-tabs.js v1.1.0
  * Pinned, scroll-driven tab section (Apollo-style):
  *   1. Big cards collapse into a thin tab bar
  *   2. Section pins
@@ -30,7 +30,7 @@
    *
    * Root element  [data-scroll-tabs] supports:
    *   data-stabs-end      pin scroll distance         (default "400%")
-   *   data-stabs-scrub    scrub lag in seconds        (default 1)
+   *   data-stabs-scrub    scrub lag in seconds        (default 0.5)
    *   data-stabs-collapse collapse-phase length, units(default 1)
    *   data-stabs-reveal   per-swap length, units      (default 1)
    *   data-stabs-dwell    per-tab hold length, units  (default 1.5)
@@ -71,7 +71,7 @@
 
     // ── Config from data-attributes ───────────────────────────────
     var endDist  = root.getAttribute("data-stabs-end") || "400%";
-    var scrub    = num(root, "data-stabs-scrub", 1);
+    var scrub    = num(root, "data-stabs-scrub", 0.5);
     var collapse = num(root, "data-stabs-collapse", 1);
     var reveal   = num(root, "data-stabs-reveal", 1);
     var dwell    = num(root, "data-stabs-dwell", 1.5);
@@ -145,12 +145,14 @@
           end: "+=" + endDist,
           pin: true,
           scrub: scrub,
-          anticipatePin: 1,
+          anticipatePin: 0,
           snap: snapOn ? {
             snapTo: snapPts,
-            duration: { min: 0.2, max: 0.5 },
-            ease: "power1.inOut",
-            delay: 0.05,
+            // min must be ≥ scrub so the scrub lag finishes inside the snap
+            // animation — prevents the double-jump "löğ löğ" feel
+            duration: { min: 0.55, max: 0.9 },
+            ease: "power2.inOut",
+            delay: 0.1,
           } : false,
           onUpdate: function (self) {
             var t = self.progress * total;
@@ -196,7 +198,7 @@
       activeST = tl.scrollTrigger;
     }
 
-    /** Click a tab → smooth-scroll to its segment. */
+    /** Click a tab → smooth-scroll to its dwell-centre (= exact snap point). */
     function jumpTo(idx) {
       if (!activeST) return;
       var st = activeST;
@@ -205,9 +207,15 @@
       var y = st.start + (st.end - st.start) * (centre / total);
 
       if (typeof Sestek.scrollTo === "function" && global.lenisInstance) {
-        Sestek.scrollTo(y, { duration: 0.8 });
+        // Duration longer than snap.duration.max so Lenis finishes at the same
+        // time as the snap settles — no double-animation on arrival
+        Sestek.scrollTo(y, {
+          duration: 1.1,
+          easing: function (t) { return t < 0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; },
+        });
       } else {
-        window.scrollTo({ top: y, behavior: "smooth" });
+        // Instant jump; scrub will smoothly animate the timeline to the new state
+        window.scrollTo({ top: y });
       }
     }
 
