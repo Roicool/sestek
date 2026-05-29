@@ -83,6 +83,10 @@ inerken diğeri `0 → auto` yükselir. Site genelinde içerik takası için tek
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js" defer></script>
 ```
 
+İki kullanım şekli var:
+
+#### 1) Programatik — `Sestek.heightReveal()`
+
 ```js
 // outEl height→0 + fade-out, inEl 0→auto + fade-in (aynı timeline'da)
 var tl = Sestek.heightReveal(outEl, inEl, {
@@ -91,6 +95,61 @@ var tl = Sestek.heightReveal(outEl, inEl, {
   inHeight: "auto",   // scrub'lı timeline'larda ölçülen px vermek önerilir
 });
 ```
+
+#### 2) Declarative — `data-attribute` ile (init gerekir)
+
+Hiç JS yazmadan, sadece data-attribute'larla tıkla/otomatik resim-içerik takası.
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initHeightReveal(); // tüm [data-height-reveal] gruplarını başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<!--
+  Grup — data-attribute'larla yönetilir:
+    data-height-reveal
+    data-hr-duration="0.5"          takas süresi sn (default 0.5)
+    data-hr-ease="power2.inOut"     ease (default power2.inOut)
+    data-hr-trigger="click"         "click" | "auto" (default click)
+    data-hr-interval="4000"         auto modda ms (default 4000)
+-->
+<div data-height-reveal data-hr-trigger="click" class="reveal">
+
+  <!-- Tetikleyiciler (tab/buton) — data-hr-to="i" ile item'a geçer.
+       Aktif item'ın index'iyle eşleşen tetikleyiciye is-active eklenir. -->
+  <div class="reveal__tabs">
+    <button data-hr-to="0" class="reveal__tab is-active">Bir</button>
+    <button data-hr-to="1" class="reveal__tab">İki</button>
+    <button data-hr-to="2" class="reveal__tab">Üç</button>
+  </div>
+
+  <!-- Item'lar (üst üste; biri görünür). Başlangıç için is-active ver. -->
+  <div class="reveal__stage">
+    <div data-hr-item class="reveal__item is-active"><img src="1.jpg" alt=""></div>
+    <div data-hr-item class="reveal__item"><img src="2.jpg" alt=""></div>
+    <div data-hr-item class="reveal__item"><img src="3.jpg" alt=""></div>
+  </div>
+
+</div>
+```
+
+**Notlar**
+- `[data-hr-item]` sayısı ≥ 2 olmalı; biri `is-active` ile başlar (yoksa ilki).
+- `[data-hr-to="i"]` tetikleyicileri **grubun içinde** olmalı (grup elementinin altında).
+- `data-hr-trigger="auto"` → `data-hr-interval` ms'de bir otomatik döner.
+- `is-active` class'ı hem aktif item'a hem eşleşen tetikleyiciye eklenir — Designer'dan
+  aktif tab/aktif item stilini bu class'a verebilirsin.
+- Item'lara JS `overflow:hidden` uygular; height takası temiz kırpılır.
+- `prefers-reduced-motion`: animasyon yerine anında geçiş yapar.
+- `Sestek.initHeightReveal()` her gruba bir API döndürür: `{ el, to(idx), stop() }`.
 
 ---
 
