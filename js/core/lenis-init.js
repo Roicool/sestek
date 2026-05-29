@@ -1,7 +1,12 @@
 /*!
- * lenis-init.js v1.1.0
+ * lenis-init.js v1.2.0
  * Lenis smooth scroll — optional GSAP ScrollTrigger sync
  * https://github.com/roicool/sestek
+ *
+ * Changelog
+ * v1.2.0 — lighter, more perceptible default feel: duration 1.2→1.05,
+ *          easing expo-out→cubic-out (longer glide tail, not heavy)
+ * v1.1.0 — initial smooth-scroll + ScrollTrigger sync
  */
 
 (function (global) {
@@ -32,9 +37,10 @@
     }
 
     var defaults = {
-      duration: 1.2,
+      // Light but perceptible glide — short enough to feel responsive, not heavy.
+      duration: 1.05,
       easing: function (t) {
-        return 1 - Math.pow(1 - t, 5); // expo out
+        return 1 - Math.pow(1 - t, 3); // cubic out — gentle, noticeable tail
       },
       orientation: "vertical",
       smoothWheel: true,

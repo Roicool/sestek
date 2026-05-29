@@ -106,7 +106,7 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
    */
   document.addEventListener('DOMContentLoaded', function () {
     gsap.registerPlugin(ScrollTrigger);
-    Sestek.initLenis({ duration: 1.2 });
+    Sestek.initLenis(); // ayarlanmış default feel (duration 1.05, cubic-out)
     // Sestek.initHero(); // hero componenti varsa
   });
 </script>

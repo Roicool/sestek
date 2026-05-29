@@ -1,5 +1,5 @@
 /*!
- * video-modal.js v1.0.0
+ * video-modal.js v1.1.0
  * Drop-in lightbox video modal. Add data-video-modal="<url>" to ANY element
  * (button, link, image…) — click opens a centred 16:9 player; the modal DOM
  * and a single overlay are created once and reused.
@@ -7,7 +7,8 @@
  * Supports : YouTube, Vimeo, Cloudflare Stream (iframe) + direct files (<video>).
  * Features : scale-in (GSAP if present, CSS fallback), loading spinner,
  *            focus trap, ESC / backdrop / close-button dismiss, body scroll
- *            lock with scrollbar-width compensation (no layout shift),
+ *            lock with scrollbar-width compensation (no layout shift) +
+ *            Lenis stop/start so virtual scroll is locked too,
  *            iframe destroyed on close so audio never lingers.
  *
  * CSS      : load css/components/video-modal.css (look lives there, not here).
@@ -129,9 +130,13 @@
       }
 
       // Lock body scroll without horizontal shift.
+      // overflow:hidden alone doesn't stop Lenis (virtual scroll) — stop it too.
       var sw = scrollbarWidth();
       document.body.style.overflow = "hidden";
       if (sw > 0) document.body.style.paddingRight = sw + "px";
+      if (global.Sestek && typeof global.Sestek.stopScroll === "function") {
+        global.Sestek.stopScroll();
+      }
 
       overlay.classList.add("is-open");
 
@@ -153,6 +158,9 @@
         overlay.classList.remove("is-open");
         document.body.style.overflow = "";
         document.body.style.paddingRight = "";
+        if (global.Sestek && typeof global.Sestek.startScroll === "function") {
+          global.Sestek.startScroll();
+        }
         if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
         lastFocus = null;
       }

@@ -56,7 +56,7 @@ Webflow `</body>` öncesi:
 ```html
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initLenis({ duration: 1.2 });
+    Sestek.initLenis(); // ayarlanmış default feel (duration 1.05, cubic-out)
   });
 </script>
 ```
@@ -76,7 +76,7 @@ Webflow `</body>` öncesi:
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     gsap.registerPlugin(ScrollTrigger);
-    Sestek.initLenis({ duration: 1.2 });
+    Sestek.initLenis(); // ayarlanmış default feel (duration 1.05, cubic-out)
   });
 </script>
 ```
@@ -490,7 +490,7 @@ Webflow `</body>` öncesi:
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     gsap.registerPlugin(ScrollTrigger);
-    Sestek.initLenis({ duration: 1.2 });
+    Sestek.initLenis(); // ayarlanmış default feel (duration 1.05, cubic-out)
     Sestek.initScrollTabs(); // [data-scroll-tabs] elementini başlatır
   });
 </script>

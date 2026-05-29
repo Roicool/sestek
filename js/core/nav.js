@@ -1,10 +1,12 @@
 /*!
- * nav.js v2.1.0
+ * nav.js v2.1.1
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
+ * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.1.1 — mobile menu also stops Lenis (virtual scroll) while open
  * v2.1.0 — auto-hide: [data-nav-hide] sections slide the nav off-screen
  *           while they cover the viewport (pin-friendly), back on exit
  * v2.0.0 — full rewrite: 4-col panel layout, mobile level system,
@@ -250,7 +252,11 @@
       mobileIsOpen = true;
       nav.classList.add("nav--mobile-open");
       // Prevent body scroll while the full-screen menu is visible.
+      // overflow:hidden alone doesn't stop Lenis (virtual scroll) — stop it too.
       document.body.style.overflow = "hidden";
+      if (global.Sestek && typeof global.Sestek.stopScroll === "function") {
+        global.Sestek.stopScroll();
+      }
       mobileMenu.removeAttribute("aria-hidden");
       if (hamburger) hamburger.setAttribute("data-state", "open");
 
@@ -269,6 +275,9 @@
       mobileIsOpen = false;
       nav.classList.remove("nav--mobile-open");
       document.body.style.overflow = "";
+      if (global.Sestek && typeof global.Sestek.startScroll === "function") {
+        global.Sestek.startScroll();
+      }
       if (hamburger) hamburger.setAttribute("data-state", "closed");
 
       gsap.to(mobileMenu, {
