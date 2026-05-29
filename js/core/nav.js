@@ -1,10 +1,12 @@
 /*!
- * nav.js v2.0.0
+ * nav.js v2.1.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.1.0 — auto-hide: [data-nav-hide] sections slide the nav off-screen
+ *           while they cover the viewport (pin-friendly), back on exit
  * v2.0.0 — full rewrite: 4-col panel layout, mobile level system,
  *           slider nav, back/brand cross-fade, body scroll lock,
  *           overlay gradient, cross-fade panel switch, full _destroy API
@@ -401,6 +403,37 @@
       themed.forEach(function (el) { _themeObserver.observe(el); });
     })();
 
+    // ── Auto-hide on [data-nav-hide] sections ────────────────────
+    // Any section with [data-nav-hide] slides the nav off the top while it
+    // covers the viewport (e.g. a pinned scroll-tabs section), then the nav
+    // eases back when the section ends. Works with pinned sections because
+    // the observed element stays fixed across the top of the viewport.
+    var _hideObserver = null;
+
+    (function initNavHide() {
+      var hideEls = Array.from(document.querySelectorAll("[data-nav-hide]"));
+      if (!hideEls.length || !("IntersectionObserver" in window)) return;
+
+      _hideObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              nav.classList.add("nav--hidden");
+              closeDropdown();     // tidy up any open mega-menu before hiding
+            } else {
+              nav.classList.remove("nav--hidden");
+            }
+          });
+        },
+        // Root collapses to a 1px line at the very top of the viewport.
+        // The section "intersects" only while it spans that line — i.e. while
+        // its top is above and its bottom below the viewport top edge.
+        { rootMargin: "0px 0px -100% 0px", threshold: 0 }
+      );
+
+      hideEls.forEach(function (el) { _hideObserver.observe(el); });
+    })();
+
     // ── Public API ────────────────────────────────────────────────
     var instance = {
       _destroy: function () {
@@ -412,6 +445,7 @@
         panels.forEach(function (p) { gsap.killTweensOf(p); });
         document.body.style.overflow = "";
         if (_themeObserver) _themeObserver.disconnect();
+        if (_hideObserver)  _hideObserver.disconnect();
 
         _listeners.forEach(function (l) {
           l.el.removeEventListener(l.type, l.fn);

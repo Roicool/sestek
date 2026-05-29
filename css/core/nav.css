@@ -1,9 +1,10 @@
 /*!
- * nav.css v2.0.0
+ * nav.css v2.1.0
  * Mega-menu navbar — positioning, animation containers, state classes
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.1.0 — .nav--hidden auto-hide state (slide off top + fade)
  * v2.0.0 — full rewrite: 4-col panel layout, featured column, mobile slider,
  *           level-0/1 structure, overlay z-index layers, hamburger→X transform,
  *           mobile body scroll lock, item-type styles (icon-card, plain-link,
@@ -61,6 +62,26 @@
      positioning. Only --nav-height is used as a shared reference token. */
 }
 
+/* ── Auto-hide ───────────────────────────────────────────────── */
+/*
+ * Sections marked [data-nav-hide] slide the whole nav off the top while
+ * they cover the viewport (e.g. a pinned scroll section), then it eases
+ * back in when the section ends. JS toggles .nav--hidden (see nav.js).
+ * transform stays "none" when visible, so it never becomes a containing
+ * block for the fixed mobile menu.
+ */
+.nav {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity   0.35s ease;
+}
+
+.nav--hidden {
+  transform     : translateY(-110%);
+  opacity       : 0;
+  pointer-events: none;
+}
+
 /* ── Backdrop ────────────────────────────────────────────────── */
 /*
  * Separate layer so the blur doesn't bleed into child content.
@@ -82,7 +103,6 @@
   z-index    : 10;
   height     : var(--nav-height);
 }
-
 .nav__inner {
   display       : flex;
   align-items   : center;
