@@ -85,6 +85,23 @@
     }
 
     var activeST = null;
+    var snapPts = [];          // snap targets (progress 0..1), built in build()
+    var totalUnits = 0;        // timeline length in units, shared with jumpTo
+    var clickTarget = null;    // while a tab-click scroll is in flight, forces
+                               // snap to agree with the click (kills the fight)
+
+    /** Nearest snap point to a progress value — or the click target if a
+     *  tab-click navigation is in flight (so snap cooperates, never fights). */
+    function snapResolver(value) {
+      if (clickTarget != null) return clickTarget;
+      if (!snapPts.length) return value;
+      var best = snapPts[0], bestD = Math.abs(value - snapPts[0]);
+      for (var i = 1; i < snapPts.length; i++) {
+        var d = Math.abs(value - snapPts[i]);
+        if (d < bestD) { bestD = d; best = snapPts[i]; }
+      }
+      return best;
+    }
 
     /** Toggle the visible active tab. */
     function setActive(idx) {
@@ -129,9 +146,12 @@
 
       // Total timeline length in units (positions/durations are relative)
       var total = collapse + (n - 1) * reveal + n * dwell;
+      totalUnits = total;
 
-      // Snap targets = each tab's resting dwell centre, plus 0 (expanded rest)
-      var snapPts = [0];
+      // Snap targets = each tab's resting dwell centre.
+      // No standalone "0" rest point: it sits too close to tab-0's snap and
+      // makes the entry feel indecisive. Entering the pin snaps straight to tab 0.
+      snapPts = [];
       for (var i = 0; i < n; i++) {
         var centre = collapse + i * (reveal + dwell) + dwell / 2;
         snapPts.push(centre / total);
@@ -147,12 +167,18 @@
           scrub: scrub,
           anticipatePin: 0,
           snap: snapOn ? {
-            snapTo: snapPts,
-            // min must be ≥ scrub so the scrub lag finishes inside the snap
-            // animation — prevents the double-jump "löğ löğ" feel
+            // Function form: nearest point, or the click target when a tab
+            // click is in flight (so snap agrees instead of fighting Lenis)
+            snapTo: snapResolver,
+            // min ≥ scrub so the scrub lag finishes inside the snap animation
+            // — prevents the double-jump "löğ löğ" feel
             duration: { min: 0.55, max: 0.9 },
             ease: "power2.inOut",
-            delay: 0.1,
+            delay: 0.12,
+            // NEAREST point regardless of scroll direction. Default (true)
+            // skips to the next point in the scroll direction → felt like it
+            // "slid to the adjacent tab".
+            directional: false,
           } : false,
           onUpdate: function (self) {
             var t = self.progress * total;
@@ -198,25 +224,32 @@
       activeST = tl.scrollTrigger;
     }
 
+    var clickTimer = null;
+
     /** Click a tab → smooth-scroll to its dwell-centre (= exact snap point). */
     function jumpTo(idx) {
       if (!activeST) return;
       var st = activeST;
-      var total = collapse + (n - 1) * reveal + n * dwell;
-      var centre = collapse + idx * (reveal + dwell) + dwell / 2;
-      var y = st.start + (st.end - st.start) * (centre / total);
+      var progress = (collapse + idx * (reveal + dwell) + dwell / 2) / totalUnits;
+      var y = st.start + (st.end - st.start) * progress;
 
+      // Lock snap to this exact target for the duration of the click scroll so
+      // ScrollTrigger's snap can't fight Lenis or overshoot to a neighbour.
+      clickTarget = progress;
+      if (clickTimer) clearTimeout(clickTimer);
+
+      var dur = 1.0;
       if (typeof Sestek.scrollTo === "function" && global.lenisInstance) {
-        // Duration longer than snap.duration.max so Lenis finishes at the same
-        // time as the snap settles — no double-animation on arrival
         Sestek.scrollTo(y, {
-          duration: 1.1,
-          easing: function (t) { return t < 0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; },
+          duration: dur,
+          easing: function (t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; },
         });
       } else {
-        // Instant jump; scrub will smoothly animate the timeline to the new state
-        window.scrollTo({ top: y });
+        window.scrollTo({ top: y, behavior: "smooth" });
       }
+
+      // Release the snap lock a hair after the scroll settles
+      clickTimer = setTimeout(function () { clickTarget = null; }, dur * 1000 + 120);
     }
 
     tabs.forEach(function (tab, i) {
