@@ -69,7 +69,28 @@ Webflow `</body>` öncesi:
 
 ## Animations
 
-> Files will be listed here as they are added.
+| File | CDN (`@main`) |
+|---|---|
+| `height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js` |
+
+### Height Reveal
+
+Yeniden kullanılabilir "Webflow tarzı" height takası — bir element `height → 0`
+inerken diğeri `0 → auto` yükselir. Site genelinde içerik takası için tek kaynak.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js" defer></script>
+```
+
+```js
+// outEl height→0 + fade-out, inEl 0→auto + fade-in (aynı timeline'da)
+var tl = Sestek.heightReveal(outEl, inEl, {
+  duration: 0.5,
+  ease: "power2.inOut",
+  inHeight: "auto",   // scrub'lı timeline'larda ölçülen px vermek önerilir
+});
+```
 
 ---
 
@@ -88,6 +109,8 @@ Webflow `</body>` öncesi:
 | `nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js` |
 | `nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css` |
 | `nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav-full.css` |
+| `scroll-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.js` |
+| `scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.css` |
 
 ### Hero
 
@@ -417,6 +440,103 @@ Webflow `</body>` öncesi:
   // ...
   nav._destroy();
   ```
+
+### Scroll Tabs
+
+Apollo tarzı pinli, scroll-driven sekme bölümü:
+1. Büyük kartlar yukarıda ince bir tab bar'a çöker
+2. Section pinlenir
+3. Scroll ilerledikçe aktif sekme değişir; her panel `height-reveal` ile takas olur
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initLenis({ duration: 1.2 });
+    Sestek.initScrollTabs(); // [data-scroll-tabs] elementini başlatır
+  });
+</script>
+```
+
+> Sekme tıklamasında akıcı scroll için Lenis (`Sestek.initLenis`) önerilir;
+> yoksa native `window.scrollTo({behavior:"smooth"})`'a düşer.
+
+#### DOM yapısı
+
+```html
+<!--
+  Kök — tüm animasyon data-attribute'larla yönetilir:
+    data-scroll-tabs
+    data-stabs-end="400%"      pin scroll mesafesi (default "400%")
+    data-stabs-scrub="1"       scrub gecikmesi sn (default 1)
+    data-stabs-collapse="1"    çöküş fazı uzunluğu, birim (default 1)
+    data-stabs-reveal="1"      panel takası uzunluğu, birim (default 1)
+    data-stabs-dwell="1.5"     sekme bekleme uzunluğu, birim (default 1.5)
+    data-stabs-snap="true"     sekmelere snap (default true)
+    data-stabs-ease="power2.inOut"  çöküş + takas ease'i
+-->
+<section data-scroll-tabs class="stabs">
+
+  <!-- Kartlar → tab bar'a çöken katman -->
+  <div data-stabs-bar class="stabs__bar">
+
+    <!-- data-stabs-tab="i" ile data-stabs-panel="i" eşleşir -->
+    <button data-stabs-tab="0" class="stabs__card is-active">
+      <span data-stabs-icon class="stabs__icon"><!-- icon svg --></span>
+      <span class="stabs__title">Outbound</span>
+      <span data-stabs-desc class="stabs__desc">Book more meetings faster…</span>
+    </button>
+
+    <button data-stabs-tab="1" class="stabs__card">
+      <span data-stabs-icon class="stabs__icon"><!-- icon --></span>
+      <span class="stabs__title">Inbound</span>
+      <span data-stabs-desc class="stabs__desc">Capture, qualify, route…</span>
+    </button>
+    <!-- Tab 2, 3… (data-stabs-tab="2"/"3") -->
+
+  </div>
+
+  <!-- Sekme başına içerik panelleri -->
+  <div class="stabs__stage">
+
+    <div data-stabs-panel="0" class="stabs__panel">
+      <div class="stabs__panel-inner">
+        <div class="stabs__col-text"><!-- başlık + butonlar + maddeler --></div>
+        <div class="stabs__col-media"><!-- görsel / video --></div>
+      </div>
+    </div>
+
+    <div data-stabs-panel="1" class="stabs__panel">
+      <div class="stabs__panel-inner"> … </div>
+    </div>
+    <!-- Panel 2, 3… -->
+
+  </div>
+</section>
+```
+
+#### Notlar
+
+- `data-stabs-tab="i"` ile `data-stabs-panel="i"` **sayıları eşit** olmalı (i = 0-tabanlı).
+- Birim (`collapse`/`reveal`/`dwell`) değerleri **göreceli**dir; toplam scroll
+  mesafesi `data-stabs-end` ile sabittir, birimler bu mesafeyi paylaştırır.
+- `--stabs-cols` CSS değişkeni ile kart sütun sayısı ayarlanır (default 4).
+- `--stabs-tab-speed` ile aktif sekme highlight geçiş hızı ayarlanır (default 0.3s).
+- Renk/font/spacing'i Webflow Designer'dan ver; scroll-tabs.css yalnızca
+  davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
+- `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
+  panel değiştirir.
 
 ---
 

@@ -1,0 +1,111 @@
+/*!
+ * scroll-tabs.css v1.0.0
+ * Pinned scroll-driven tab section — critical/behavioural styles only.
+ * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Section ─────────────────────────────────────────────────── */
+.stabs {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Card row → collapses into a tab bar ─────────────────────── */
+.stabs__bar {
+  display: grid;
+  grid-template-columns: repeat(var(--stabs-cols, 4), 1fr);
+  gap: var(--spacing--4);
+}
+
+/* Each card is a <button> acting as a tab */
+.stabs__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing--3);
+  padding: var(--spacing--8);
+  border: 0;
+  border-radius: var(--radius--lg);
+  background-color: var(--neutral--050);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  /* Only the cosmetic tab-bar settle transitions; height is GSAP-driven */
+  transition:
+    background-color var(--stabs-tab-speed, 0.3s) ease,
+    padding var(--stabs-tab-speed, 0.3s) ease;
+}
+
+/* Pieces that collapse during phase 1 — overflow:hidden lets height→0 clip */
+.stabs__icon {
+  overflow: hidden;
+  will-change: height, transform, opacity;
+}
+
+.stabs__desc {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+.stabs__title {
+  display: block;
+}
+
+/* ── Collapsed (tab-bar) state ───────────────────────────────── */
+.stabs.is-collapsed .stabs__card {
+  padding-top: var(--spacing--3);
+  padding-bottom: var(--spacing--3);
+}
+
+.stabs.is-collapsed .stabs__card.is-active {
+  background-color: var(--brand-primary--500);
+}
+
+/* ── Panel stage ─────────────────────────────────────────────── */
+.stabs__stage {
+  position: relative;
+  margin-top: var(--spacing--12);
+}
+
+/*
+ * Panels live in normal flow stacked as siblings. height:0 removes a panel
+ * from layout entirely; during a swap the outgoing one shrinks while the
+ * incoming one grows — the "one drops, the other rises" reveal.
+ * overflow:hidden is critical so content clips cleanly while height animates.
+ */
+.stabs__panel {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+.stabs__panel-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing--12);
+  align-items: center;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stabs__bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stabs__panel-inner {
+    grid-template-columns: 1fr;
+    gap: var(--spacing--6);
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .stabs__card,
+  .stabs__icon,
+  .stabs__desc,
+  .stabs__panel {
+    will-change: auto !important;
+    transition: none !important;
+  }
+}
