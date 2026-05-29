@@ -19,17 +19,36 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 
 ---
 
+## Folder Structure
+
+```
+js/
+  core/        lenis-init.js, nav.js
+  components/  hero.js, marquee.js, scroll-tabs.js
+  effects/     grain.js, btn-glow.js
+  animations/  height-reveal.js
+css/
+  core/        nav.css, nav-full.css
+  components/  hero.css, marquee.css, scroll-tabs.css
+  effects/     grain.css, btn-glow.css
+```
+
+---
+
 ## Core
 
 | File | CDN (`@main`) |
 |---|---|
-| `lenis-init.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js` |
+| `js/core/lenis-init.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js` |
+| `js/core/nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/nav.js` |
+| `css/core/nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav.css` |
+| `css/core/nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav-full.css` |
 
 ### Lenis only — Webflow `<head>`
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js" defer></script>
 ```
 
 Webflow `</body>` öncesi:
@@ -48,7 +67,7 @@ Webflow `</body>` öncesi:
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/core/lenis-init.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js" defer></script>
 ```
 
 Webflow `</body>` öncesi:
@@ -65,224 +84,13 @@ Webflow `</body>` öncesi:
 > `DOMContentLoaded` deferred script'ler bittikten sonra ateşlenir —
 > inline script olmasına rağmen bu callback güvenle tüm kütüphanelere erişir.
 
----
-
-## Animations
-
-| File | CDN (`@main`) |
-|---|---|
-| `height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js` |
-
-### Height Reveal
-
-Yeniden kullanılabilir "Webflow tarzı" height takası — bir element `height → 0`
-inerken diğeri `0 → auto` yükselir. Site genelinde içerik takası için tek kaynak.
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js" defer></script>
-```
-
-İki kullanım şekli var:
-
-#### 1) Programatik — `Sestek.heightReveal()`
-
-```js
-// outEl height→0 + fade-out, inEl 0→auto + fade-in (aynı timeline'da)
-var tl = Sestek.heightReveal(outEl, inEl, {
-  duration: 0.5,
-  ease: "power2.inOut",
-  inHeight: "auto",   // scrub'lı timeline'larda ölçülen px vermek önerilir
-});
-```
-
-#### 2) Declarative — `data-attribute` ile (init gerekir)
-
-Hiç JS yazmadan, sadece data-attribute'larla tıkla/otomatik resim-içerik takası.
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initHeightReveal(); // tüm [data-height-reveal] gruplarını başlatır
-  });
-</script>
-```
-
-DOM yapısı:
-
-```html
-<!--
-  Grup — data-attribute'larla yönetilir:
-    data-height-reveal
-    data-hr-duration="0.5"          takas süresi sn (default 0.5)
-    data-hr-ease="power2.inOut"     ease (default power2.inOut)
-    data-hr-trigger="click"         "click" | "auto" (default click)
-    data-hr-interval="4000"         auto modda ms (default 4000)
--->
-<div data-height-reveal data-hr-trigger="click" class="reveal">
-
-  <!-- Tetikleyiciler (tab/buton) — data-hr-to="i" ile item'a geçer.
-       Aktif item'ın index'iyle eşleşen tetikleyiciye is-active eklenir. -->
-  <div class="reveal__tabs">
-    <button data-hr-to="0" class="reveal__tab is-active">Bir</button>
-    <button data-hr-to="1" class="reveal__tab">İki</button>
-    <button data-hr-to="2" class="reveal__tab">Üç</button>
-  </div>
-
-  <!-- Item'lar (üst üste; biri görünür). Başlangıç için is-active ver. -->
-  <div class="reveal__stage">
-    <div data-hr-item class="reveal__item is-active"><img src="1.jpg" alt=""></div>
-    <div data-hr-item class="reveal__item"><img src="2.jpg" alt=""></div>
-    <div data-hr-item class="reveal__item"><img src="3.jpg" alt=""></div>
-  </div>
-
-</div>
-```
-
-**Notlar**
-- `[data-hr-item]` sayısı ≥ 2 olmalı; biri `is-active` ile başlar (yoksa ilki).
-- `[data-hr-to="i"]` tetikleyicileri **grubun içinde** olmalı (grup elementinin altında).
-- `data-hr-trigger="auto"` → `data-hr-interval` ms'de bir otomatik döner.
-- `is-active` class'ı hem aktif item'a hem eşleşen tetikleyiciye eklenir — Designer'dan
-  aktif tab/aktif item stilini bu class'a verebilirsin.
-- Item'lara JS `overflow:hidden` uygular; height takası temiz kırpılır.
-- `prefers-reduced-motion`: animasyon yerine anında geçiş yapar.
-- `Sestek.initHeightReveal()` her gruba bir API döndürür: `{ el, to(idx), stop() }`.
-
----
-
-## Components
-
-| File | CDN (`@main`) |
-|---|---|
-| `hero.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.js` |
-| `hero.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css` |
-| `btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.js` |
-| `btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/btn-glow.css` |
-| `marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.js` |
-| `marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css` |
-| `grain.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.js` |
-| `grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css` |
-| `nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js` |
-| `nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css` |
-| `nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav-full.css` |
-| `scroll-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.js` |
-| `scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.css` |
-
-### Hero
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.css">
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/hero.js" defer></script>
-```
-
-### Marquee
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.css">
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/marquee.js" defer></script>
-```
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initMarquee(); // tüm [data-marquee] elementlerini başlatır
-  });
-</script>
-```
-
-#### Webflow CMS yapısı
-
-```html
-<!-- Wrapper — custom attribute: data-marquee, data-marquee-speed="60" -->
-<div data-marquee data-marquee-speed="60" class="marquee">
-
-  <!--
-    Collection List Wrapper
-    Webflow class: marquee__track
-    Layout: inline-flex (CSS override)
-  -->
-  <div role="list" class="marquee__track">
-
-    <!--
-      Collection Item
-      Webflow class: marquee__item
-    -->
-    <div role="listitem" class="marquee__item">
-      <img class="marquee__logo"
-           src="[CMS logo field]"
-           alt="[CMS name field]"
-           loading="eager">
-      <!--
-        loading="eager" önerilir — lazy-load ile görseller yüklenmeden
-        önce track genişliği yanlış ölçülebilir.
-      -->
-    </div>
-
-  </div>
-</div>
-```
-
-**`data-marquee-speed`** — piksel/saniye cinsinden hız (varsayılan: `60`).
-Daha yavaş → daha premium, daha hızlı → daha enerjik.
-
-### Grain
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.css">
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/grain.js" defer></script>
-```
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initGrain();
-  });
-</script>
-```
-
-#### Webflow yapısı
-
-```html
-<!--
-  Video wrapper — custom attributes:
-    data-grain
-    data-grain-intensity="0.12"   (0.0–1.0, default: 0.12)
-    data-grain-size="0.65"        (0.3 kaba → 0.65 default → 0.9 ince)
--->
-<div data-grain data-grain-intensity="0.12" data-grain-size="0.65"
-     class="video-wrap">
-  <video autoplay muted loop playsinline></video>
-  <!-- grain__overlay buraya JS tarafından eklenir -->
-</div>
-```
-
-| `data-grain-intensity` | Görünüm |
-|---|---|
-| `0.05` | Neredeyse görünmez, çok subtile |
-| `0.12` | Premium, sinematik (default) |
-| `0.20` | Belirgin grain |
-| `0.35` | Heavy / stylized |
-
-| `data-grain-size` | Görünüm |
-|---|---|
-| `0.35` | Kaba, 16mm film |
-| `0.65` | Standard, 35mm film (default) |
-| `0.85` | İnce, dijital sensör noise |
-
 ### Nav
 
 ```html
 <!-- in <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav.css">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/nav.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/nav.js" defer></script>
 ```
 
 Webflow `</body>` öncesi:
@@ -500,6 +308,164 @@ Webflow `</body>` öncesi:
   nav._destroy();
   ```
 
+---
+
+## Animations
+
+| File | CDN (`@main`) |
+|---|---|
+| `js/animations/height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js` |
+
+### Height Reveal
+
+Yeniden kullanılabilir "Webflow tarzı" height takası — bir element `height → 0`
+inerken diğeri `0 → auto` yükselir. Site genelinde içerik takası için tek kaynak.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js" defer></script>
+```
+
+İki kullanım şekli var:
+
+#### 1) Programatik — `Sestek.heightReveal()`
+
+```js
+// outEl height→0 + fade-out, inEl 0→auto + fade-in (aynı timeline'da)
+var tl = Sestek.heightReveal(outEl, inEl, {
+  duration: 0.5,
+  ease: "power2.inOut",
+  inHeight: "auto",   // scrub'lı timeline'larda ölçülen px vermek önerilir
+});
+```
+
+#### 2) Declarative — `data-attribute` ile (init gerekir)
+
+Hiç JS yazmadan, sadece data-attribute'larla tıkla/otomatik resim-içerik takası.
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initHeightReveal(); // tüm [data-height-reveal] gruplarını başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<!--
+  Grup — data-attribute'larla yönetilir:
+    data-height-reveal
+    data-hr-duration="0.5"          takas süresi sn (default 0.5)
+    data-hr-ease="power2.inOut"     ease (default power2.inOut)
+    data-hr-trigger="click"         "click" | "auto" (default click)
+    data-hr-interval="4000"         auto modda ms (default 4000)
+-->
+<div data-height-reveal data-hr-trigger="click" class="reveal">
+
+  <!-- Tetikleyiciler (tab/buton) — data-hr-to="i" ile item'a geçer.
+       Aktif item'ın index'iyle eşleşen tetikleyiciye is-active eklenir. -->
+  <div class="reveal__tabs">
+    <button data-hr-to="0" class="reveal__tab is-active">Bir</button>
+    <button data-hr-to="1" class="reveal__tab">İki</button>
+    <button data-hr-to="2" class="reveal__tab">Üç</button>
+  </div>
+
+  <!-- Item'lar (üst üste; biri görünür). Başlangıç için is-active ver. -->
+  <div class="reveal__stage">
+    <div data-hr-item class="reveal__item is-active"><img src="1.jpg" alt=""></div>
+    <div data-hr-item class="reveal__item"><img src="2.jpg" alt=""></div>
+    <div data-hr-item class="reveal__item"><img src="3.jpg" alt=""></div>
+  </div>
+
+</div>
+```
+
+**Notlar**
+- `[data-hr-item]` sayısı ≥ 2 olmalı; biri `is-active` ile başlar (yoksa ilki).
+- `[data-hr-to="i"]` tetikleyicileri **grubun içinde** olmalı (grup elementinin altında).
+- `data-hr-trigger="auto"` → `data-hr-interval` ms'de bir otomatik döner.
+- `is-active` class'ı hem aktif item'a hem eşleşen tetikleyiciye eklenir — Designer'dan
+  aktif tab/aktif item stilini bu class'a verebilirsin.
+- Item'lara JS `overflow:hidden` uygular; height takası temiz kırpılır.
+- `prefers-reduced-motion`: animasyon yerine anında geçiş yapar.
+- `Sestek.initHeightReveal()` her gruba bir API döndürür: `{ el, to(idx), stop() }`.
+
+---
+
+## Components
+
+| File | CDN (`@main`) |
+|---|---|
+| `js/components/hero.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero.js` |
+| `css/components/hero.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero.css` |
+| `js/components/marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/marquee.js` |
+| `css/components/marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/marquee.css` |
+| `js/components/scroll-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/scroll-tabs.js` |
+| `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
+
+### Hero
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero.js" defer></script>
+```
+
+### Marquee
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/marquee.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/marquee.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initMarquee(); // tüm [data-marquee] elementlerini başlatır
+  });
+</script>
+```
+
+#### Webflow CMS yapısı
+
+```html
+<!-- Wrapper — custom attribute: data-marquee, data-marquee-speed="60" -->
+<div data-marquee data-marquee-speed="60" class="marquee">
+
+  <!--
+    Collection List Wrapper
+    Webflow class: marquee__track
+    Layout: inline-flex (CSS override)
+  -->
+  <div role="list" class="marquee__track">
+
+    <!--
+      Collection Item
+      Webflow class: marquee__item
+    -->
+    <div role="listitem" class="marquee__item">
+      <img class="marquee__logo"
+           src="[CMS logo field]"
+           alt="[CMS name field]"
+           loading="eager">
+      <!--
+        loading="eager" önerilir — lazy-load ile görseller yüklenmeden
+        önce track genişliği yanlış ölçülebilir.
+      -->
+    </div>
+
+  </div>
+</div>
+```
+
+**`data-marquee-speed`** — piksel/saniye cinsinden hız (varsayılan: `60`).
+Daha yavaş → daha premium, daha hızlı → daha enerjik.
+
 ### Scroll Tabs
 
 Apollo tarzı pinli, scroll-driven sekme bölümü:
@@ -509,11 +475,11 @@ Apollo tarzı pinli, scroll-driven sekme bölümü:
 
 ```html
 <!-- in <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/animations/height-reveal.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/components/scroll-tabs.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/scroll-tabs.js" defer></script>
 ```
 
 Webflow `</body>` öncesi:
@@ -596,6 +562,70 @@ Webflow `</body>` öncesi:
   davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
+
+---
+
+## Effects
+
+| File | CDN (`@main`) |
+|---|---|
+| `js/effects/grain.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/grain.js` |
+| `css/effects/grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/grain.css` |
+| `js/effects/btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/btn-glow.js` |
+| `css/effects/btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css` |
+
+### Grain
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/grain.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/grain.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initGrain();
+  });
+</script>
+```
+
+#### Webflow yapısı
+
+```html
+<!--
+  Video wrapper — custom attributes:
+    data-grain
+    data-grain-intensity="0.12"   (0.0–1.0, default: 0.12)
+    data-grain-size="0.65"        (0.3 kaba → 0.65 default → 0.9 ince)
+-->
+<div data-grain data-grain-intensity="0.12" data-grain-size="0.65"
+     class="video-wrap">
+  <video autoplay muted loop playsinline></video>
+  <!-- grain__overlay buraya JS tarafından eklenir -->
+</div>
+```
+
+| `data-grain-intensity` | Görünüm |
+|---|---|
+| `0.05` | Neredeyse görünmez, çok subtile |
+| `0.12` | Premium, sinematik (default) |
+| `0.20` | Belirgin grain |
+| `0.35` | Heavy / stylized |
+
+| `data-grain-size` | Görünüm |
+|---|---|
+| `0.35` | Kaba, 16mm film |
+| `0.65` | Standard, 35mm film (default) |
+| `0.85` | İnce, dijital sensör noise |
+
+### Btn Glow
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/btn-glow.js" defer></script>
+```
 
 ---
 
