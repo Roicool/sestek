@@ -1,7 +1,7 @@
 /*!
- * video-modal.css v1.0.0
+ * video-modal.css v1.1.0
  * Lightbox video modal — overlay + scale-in container, loading spinner,
- * focus-visible ring. DOM is built by video-modal.js; this file owns the look.
+ * pill close button. DOM is built by video-modal.js; this file owns the look.
  * Plays YouTube / Vimeo / Cloudflare Stream (iframe) or direct files (<video>).
  * https://github.com/roicool/sestek
  */
@@ -15,9 +15,9 @@
   align-items: center;
   justify-content: center;
   padding: clamp(0.75rem, 4vw, 2.5rem);
-  background: rgba(0, 0, 0, 0.86);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: rgba(10, 10, 12, 0.72);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
   /* JS toggles .is-open; transition is the no-GSAP fallback */
@@ -81,38 +81,47 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Close button ─────────────────────────────────────────────── */
+/* ── Close button (circular pill, sits just above the video) ──── */
 .vm__close {
   position: absolute;
-  top: -2.75rem;
+  top: -3.25rem;
   right: 0;
-  padding: 0.25rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
   border: 0;
-  background: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  font-size: 2.25rem;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .vm__close:hover {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.22);
   transform: scale(1.08);
 }
 
+/* Subtle ring only on keyboard focus — no harsh box on click/auto-focus */
 .vm__close:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-  opacity: 1;
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
 }
 
 /* ── Mobile ───────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .vm__close {
-    top: -2.4rem;
-    font-size: 1.75rem;
+    top: -3rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.35rem;
   }
 }
 
