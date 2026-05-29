@@ -24,12 +24,12 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 ```
 js/
   core/        lenis-init.js, nav.js
-  components/  hero.js, marquee.js, scroll-tabs.js
+  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js
 css/
   core/        nav.css, nav-full.css
-  components/  hero.css, marquee.css, scroll-tabs.css
+  components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css
   effects/     grain.css, btn-glow.css
 ```
 
@@ -406,6 +406,8 @@ DOM yapısı:
 | `css/components/marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/marquee.css` |
 | `js/components/scroll-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/scroll-tabs.js` |
 | `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
+| `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
+| `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 
 ### Hero
 
@@ -562,6 +564,45 @@ Webflow `</body>` öncesi:
   davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
+
+### Video Modal
+
+Drop-in lightbox video oynatıcı. Herhangi bir elemente `data-video-modal="<url>"`
+eklersin — tıklayınca ortada 16:9 bir player açılır. YouTube, Vimeo, Cloudflare
+Stream (iframe) ve direkt dosyaları (`.mp4` vb. → `<video>`) destekler.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initVideoModal(); // tek overlay'i kurar, [data-video-modal] click'lerini dinler
+  });
+</script>
+```
+
+Tetikleyici (herhangi bir element — buton, link, kapak görseli):
+
+```html
+<button data-video-modal="https://youtu.be/XXXXXXXX"
+        data-video-modal-title="Tanıtım videosu">
+  ▶ İzle
+</button>
+```
+
+- **`data-video-modal`** — video URL'i (zorunlu).
+- **`data-video-modal-title`** — erişilebilirlik etiketi (opsiyonel, ekran okuyucu).
+- GSAP varsa overlay fade + container scale-in animasyonu; yoksa CSS fade fallback.
+- Açıkken: body scroll kilidi (scrollbar genişliği telafi edilir → yatay kayma yok),
+  focus trap, ESC / backdrop / kapat butonu ile kapanır.
+- Kapanışta iframe/video anında DOM'dan silinir → arka planda ses kalmaz.
+- `Sestek.initVideoModal()` bir API döner: `.open(url, title)` ve `.close()` ile
+  programatik kontrol edilebilir.
 
 ---
 
