@@ -1,5 +1,5 @@
 /*!
- * scroll-tabs.css v1.0.0
+ * scroll-tabs.css v1.1.0
  * Pinned scroll-driven tab section — critical/behavioural styles only.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
  * https://github.com/roicool/sestek
@@ -90,9 +90,33 @@
 
 /* ── Mobile ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  /*
+   * Tab bar becomes a horizontally scrollable pill row.
+   * JS adds is-collapsed immediately — cards never show expanded.
+   * scrollIntoView() slides the active tab into the centre on click.
+   */
   .stabs__bar {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+    gap: var(--spacing--2);
+    padding-bottom: 2px;          /* prevents clipping on active box-shadow */
   }
+
+  .stabs__bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stabs__card {
+    flex: 0 0 auto;
+    min-width: 7rem;              /* prevents tiny chips on short labels */
+    scroll-snap-align: start;
+  }
+
   .stabs__panel-inner {
     grid-template-columns: 1fr;
     gap: var(--spacing--6);
