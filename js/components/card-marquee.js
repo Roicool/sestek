@@ -1,16 +1,17 @@
 /*!
- * card-marquee.js v1.0.1
+ * card-marquee.js v1.1.0
  * Two-row, scroll-driven card marquee for Webflow CMS.
- *
- * Changelog
- * v1.0.1 — fix "grab sticks on click": pointer is captured only after the
- *          drag slop is exceeded, not on press; flip uses the press target.
- * v1.0.0 — initial release
- *   • Seamless infinite loop (GSAP ticker) — drag + momentum + hover-pause
+ *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
  *   • Click-to-flip cards (3D rotateY) — only cards that have a .cardm__back
  *   • Custom floating "flip" cursor over flippable cards (hover/fine pointers)
  *   • Open flips auto-reset when the marquee resumes (mouse leaves)
+ *
+ * Changelog
+ * v1.1.0 — removed drag/grab entirely; auto-scroll + hover-pause + click-flip
+ *          only (drag interfered with reliable click-to-flip)
+ * v1.0.1 — (superseded) deferred pointer capture until drag slop
+ * v1.0.0 — initial release
  *
  * Requires : gsap (global)
  * CSS      : css/components/card-marquee.css
@@ -37,7 +38,6 @@
 (function (global) {
   "use strict";
 
-  var CLICK_SLOP = 6;          // px of movement below which a press = a click
   var sharedCursor = null;     // one floating cursor element for the whole page
 
   /** Truthy-ish CMS values normalise to "featured". */
@@ -172,14 +172,6 @@
 
     // ── State ─────────────────────────────────────────────────────
     var pos = 0;
-    var isDown = false;          // pointer pressed (may become a drag or a click)
-    var isDragging = false;      // movement passed the slop → true drag
-    var dragStartX = 0, dragStartY = 0, dragStartPos = 0;
-    var movedDist = 0;
-    var pressTarget = null;      // element under the press — used for flip on click
-    var activePointerId = null;
-    var ptrVelocity = 0, lastPtrX = 0, lastPtrTime = 0;
-
     var sp = { v: BASE_SPEED };   // speed proxy, tweened for smooth accel
     var spTween = null;
     function tweenSpeed(target, dur, ease) {
@@ -189,10 +181,8 @@
 
     // ── Ticker — the only thing that moves the track ──────────────
     function tick(time, deltaTime) {
-      if (!isDown) {
-        pos += sp.v * (deltaTime / 1000);
-        if (pos > trackW * 1e6) pos -= trackW * Math.floor(pos / trackW);
-      }
+      pos += sp.v * (deltaTime / 1000);
+      if (pos > trackW * 1e6) pos -= trackW * Math.floor(pos / trackW);
       var wrapped = ((pos % trackW) + trackW) % trackW;
       gsap.set(track, { x: -wrapped, force3D: true });
     }
@@ -200,10 +190,10 @@
 
     // ── Hover: pause scroll + reset open flips on leave ───────────
     root.addEventListener("mouseenter", function () {
-      if (!isDown) tweenSpeed(0, 0.9, "power3.out");
+      tweenSpeed(0, 0.9, "power3.out");
     });
     root.addEventListener("mouseleave", function () {
-      if (!isDown) tweenSpeed(BASE_SPEED, 1.1, "power3.inOut");
+      tweenSpeed(BASE_SPEED, 1.1, "power3.inOut");
       resetFlips();
       hideCursor();
     });
@@ -222,90 +212,16 @@
     }
     if (canHover) {
       root.addEventListener("mousemove", function (e) {
-        if (isDown) { hideCursor(); return; }
         if (flippableFrom(e.target)) showCursorAt(e.clientX, e.clientY);
         else hideCursor();
       });
     }
 
-    // ── Press → (click | drag) ────────────────────────────────────
-    // Pointer is NOT captured on press — capturing immediately makes a plain
-    // click "stick" (grab cursor latches, pointerup retargets to root). We
-    // only capture once movement passes the slop, i.e. it's a genuine drag.
-    root.addEventListener("pointerdown", function (e) {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (spTween) spTween.kill();
-      sp.v = 0;
-      isDown          = true;
-      isDragging      = false;
-      movedDist       = 0;
-      pressTarget     = e.target;        // remember what was pressed (for flip)
-      activePointerId = e.pointerId;
-      dragStartX      = e.clientX;
-      dragStartY      = e.clientY;
-      dragStartPos    = pos;
-      lastPtrX        = e.clientX;
-      lastPtrTime     = performance.now();
-      ptrVelocity     = 0;
+    // ── Click to flip ─────────────────────────────────────────────
+    root.addEventListener("click", function (e) {
+      var item = flippableFrom(e.target);
+      if (item) toggleFlip(item);
     });
-
-    root.addEventListener("pointermove", function (e) {
-      if (!isDown) return;
-      var now = performance.now();
-      var dt = now - lastPtrTime;
-      if (dt > 0) ptrVelocity = (lastPtrX - e.clientX) / dt * 1000;
-      lastPtrX = e.clientX;
-      lastPtrTime = now;
-
-      var dx = e.clientX - dragStartX;
-      var dy = e.clientY - dragStartY;
-      movedDist = Math.max(movedDist, Math.sqrt(dx * dx + dy * dy));
-
-      // Promote to a real drag only after the slop is exceeded.
-      if (!isDragging && movedDist >= CLICK_SLOP) {
-        isDragging = true;
-        root.classList.add("is-dragging");
-        hideCursor();
-        if (root.setPointerCapture) root.setPointerCapture(e.pointerId);
-      }
-
-      if (isDragging) pos = dragStartPos + (dragStartX - e.clientX);
-    });
-
-    root.addEventListener("pointerup", releaseDrag);
-    root.addEventListener("pointercancel", releaseDrag);
-
-    function releaseDrag(e) {
-      if (!isDown) return;
-      isDown = false;
-
-      if (activePointerId != null && root.releasePointerCapture) {
-        try { root.releasePointerCapture(activePointerId); } catch (err) {}
-      }
-      activePointerId = null;
-
-      // Barely moved → it was a click → flip the pressed card.
-      if (!isDragging) {
-        var item = flippableFrom(pressTarget);
-        if (item) toggleFlip(item);
-        pressTarget = null;
-        tweenSpeed(0, 0.6, "power3.out"); // pointer still inside → hover-pause
-        return;
-      }
-
-      // It was a drag → end it and fling with clamped momentum.
-      isDragging = false;
-      root.classList.remove("is-dragging");
-      pressTarget = null;
-
-      var momentum = Math.max(-BASE_SPEED * 5, Math.min(BASE_SPEED * 10, ptrVelocity));
-      sp.v = momentum;
-
-      var r = root.getBoundingClientRect();
-      var inside = e.clientX >= r.left && e.clientX <= r.right &&
-                   e.clientY >= r.top  && e.clientY <= r.bottom;
-      tweenSpeed(inside ? 0 : BASE_SPEED, 1.6, "power4.out");
-    }
 
     // ── Resize ────────────────────────────────────────────────────
     var rTimer;

@@ -1,7 +1,7 @@
 /*!
- * card-marquee.css v1.0.0
- * Two-row, scroll-driven card marquee with per-card depth (opacity),
- * click-to-flip cards, and a custom flip cursor.
+ * card-marquee.css v1.1.0
+ * Two-row, auto-scroll card marquee with per-card depth (opacity),
+ * click-to-flip cards, and a custom flip cursor. (No drag — hover-pause only.)
  *
  * DOM is authored in Webflow CMS:
  *   Collection List Wrapper → .cardm            [data-card-marquee]
@@ -17,18 +17,15 @@
  */
 
 /* ── Root ─────────────────────────────────────────────────────── */
-/* overflow:hidden clips the scrolling track. cursor:grab signals drag. */
+/* overflow:hidden clips the scrolling track. */
 .cardm {
   position: relative;
   width: 100%;
   overflow: hidden;
-  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   padding-block: var(--spacing--6, 1.5rem);
 }
-
-.cardm.is-dragging { cursor: grabbing; }
 
 /* Native cursor hidden while hovering a flippable card (JS toggles class) */
 .cardm.is-flip-hover { cursor: none; }
@@ -64,9 +61,6 @@
 }
 
 .cardm__item--featured { opacity: 1; }
-
-/* Stop stray hover/click states firing mid-drag */
-.cardm.is-dragging .cardm__item { pointer-events: none; }
 
 /* ── 3D flip ──────────────────────────────────────────────────── */
 .cardm__inner {
@@ -136,7 +130,7 @@
 /* ── Touch / no-hover: no custom cursor ───────────────────────── */
 @media (hover: none), (pointer: coarse) {
   .cardm-cursor { display: none; }
-  .cardm.is-flip-hover { cursor: grab; }
+  .cardm.is-flip-hover { cursor: pointer; }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────── */
