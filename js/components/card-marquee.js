@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v2.0.2
+ * card-marquee.js v2.1.0
  * Two-row, auto-scrolling card marquee for Webflow CMS.
  *   • Infinite loop with ZERO clones — columns recycle (first → last) as they
  *     scroll off, so ~20 CMS items loop seamlessly without duplicating the DOM
@@ -30,9 +30,16 @@
  *
  * Root attributes:
  *   data-card-marquee-speed   px/sec auto-scroll          (default 50)
+ *   data-card-arrange         opt-in auto-stagger so each column pairs one
+ *                             aspect with the other, alternating top/bottom —
+ *                             no manual CMS sort field needed:
+ *                               "alternate" → lead with the first card's aspect
+ *                               "5:7"/"1:1" → lead each column's top with that
  *
  * Item attributes (bind to CMS fields):
  *   data-card-featured        "true"/"yes"/"on"/"1" → bright; else dim
+ *   data-card-aspect-ratio    "5:7" / "1:1" … — used by data-card-arrange to
+ *                             interleave the rows (and handy for CSS sizing)
  *   (flippable is inferred from a .cardm__back element being present —
  *    use Webflow Conditional Visibility so it only renders when desired)
  *
@@ -43,6 +50,7 @@
   "use strict";
 
   var ROWS = 2;                // the grid is two rows → one column = 2 items
+  var ASPECT_ATTR = "data-card-aspect-ratio"; // per-card aspect, e.g. "5:7" / "1:1"
   var sharedCursor = null;     // one floating cursor element for the whole page
 
   /** Truthy-ish CMS values normalise to "featured". */
@@ -50,6 +58,50 @@
     if (v == null) return false;
     v = String(v).trim().toLowerCase();
     return v === "true" || v === "yes" || v === "on" || v === "1";
+  }
+
+  /**
+   * Reorder a flat CMS list so every 2-row column pairs one aspect with the
+   * other, alternating which sits on top — without any manual CMS sort field.
+   * The grid fills column-by-column (item N→top, N+1→bottom), so emitting the
+   * sequence [lead, other, other, lead, lead, other …] yields:
+   *   col1 lead/other · col2 other/lead · col3 lead/other …
+   * Aspect lives on each card (ASPECT_ATTR), so this stays recycle-safe — the
+   * loop later moves whole columns (ROWS items) and never splits a pair.
+   *
+   * @param track  the .cardm__track grid
+   * @param lead   aspect value to place on top of column 1; null → first card's
+   */
+  function arrangeByAspect(track, lead) {
+    var items = Array.from(track.children).filter(function (c) {
+      return c.classList && c.classList.contains("cardm__item");
+    });
+    if (items.length < 2) return;
+
+    // Bucket cards by their aspect value.
+    var groups = {};
+    items.forEach(function (it) {
+      var v = (it.getAttribute(ASPECT_ATTR) || "").trim();
+      (groups[v] = groups[v] || []).push(it);
+    });
+    var keys = Object.keys(groups);
+    if (keys.length < 2) return;   // only one aspect present → nothing to alternate
+
+    var a = (lead && groups[lead]) ? lead : keys[0];                 // top of column 1
+    var b = keys.filter(function (k) { return k !== a; })[0] || a;   // the other aspect
+    var qa = groups[a].slice(), qb = groups[b].slice();
+
+    var ordered = [], col = 0;
+    while (qa.length || qb.length) {
+      var topQ = (col % 2 === 0) ? qa : qb;   // alternate which aspect leads each column
+      var botQ = (col % 2 === 0) ? qb : qa;
+      var top = topQ.shift() || botQ.shift(); // fall back to leftovers when a bucket empties
+      var bot = botQ.shift() || topQ.shift();
+      if (top) ordered.push(top);
+      if (bot) ordered.push(bot);
+      if (++col > items.length) break;        // never spin forever
+    }
+    ordered.forEach(function (it) { track.appendChild(it); });
   }
 
   /** Lazily build the single floating flip-cursor element. */
@@ -103,6 +155,17 @@
     track._cardmTrackBound = true;
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── Opt-in: auto-stagger aspects so columns alternate (no CMS sort) ──
+    // data-card-arrange="alternate" → lead with the first card's aspect
+    // data-card-arrange="5:7"       → lead each odd column's top with 5:7
+    var arrange = root.getAttribute("data-card-arrange");
+    if (arrange) {
+      arrange = arrange.trim();
+      var lead = (arrange === "alternate" || arrange === "true" || arrange === "")
+        ? null : arrange;
+      arrangeByAspect(track, lead);
+    }
 
     // ── Tag items: depth (featured) + flippable affordance ────────
     Array.from(track.children).forEach(function (item) {
