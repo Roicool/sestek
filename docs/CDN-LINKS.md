@@ -24,12 +24,12 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 ```
 js/
   core/        lenis-init.js, nav.js
-  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js
+  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js
 css/
   core/        nav.css, nav-full.css
-  components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css
+  components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
   effects/     grain.css, btn-glow.css
 ```
 
@@ -408,6 +408,8 @@ DOM yapısı:
 | `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
+| `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
+| `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 
 ### Hero
 
@@ -603,6 +605,78 @@ Tetikleyici (herhangi bir element — buton, link, kapak görseli):
 - Kapanışta iframe/video anında DOM'dan silinir → arka planda ses kalmaz.
 - `Sestek.initVideoModal()` bir API döner: `.open(url, title)` ve `.close()` ile
   programatik kontrol edilebilir.
+
+### Card Marquee
+
+İki sıralı, scroll ile kayan kart marquee'si — Webflow CMS için. Bazı kartlar
+parlak (öne çıkan), bazıları soluk (derinlik hissi); dönebilir kartlar tıklayınca
+3D döner ve ekstra detay gösterir; dönebilir kartın üzerinde özel bir "flip"
+cursor'u belirir.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initCardMarquee(); // tüm [data-card-marquee] bölümlerini başlatır
+  });
+</script>
+```
+
+#### Webflow CMS yapısı
+
+```html
+<!-- Collection List Wrapper — custom attribute: data-card-marquee -->
+<div data-card-marquee data-card-marquee-speed="50" class="cardm">
+
+  <!-- Collection List -->
+  <div role="list" class="cardm__track">
+
+    <!-- Collection Item -->
+    <div role="listitem" class="cardm__item" data-card-featured="[CMS Featured switch]">
+      <div class="cardm__inner">
+
+        <!-- Ön yüz: her zaman görünür (logo + büyük stat) -->
+        <div class="cardm__front">
+          <img src="[CMS logo]" alt="[CMS name]">
+          <div>[CMS stat]</div>
+        </div>
+
+        <!--
+          Arka yüz: SADECE dönebilir kartlarda olmalı.
+          Webflow Conditional Visibility ile "Flippable" switch açıkken göster.
+          Bu element varsa JS o kartı dönebilir sayar (data-card-flip ekler).
+        -->
+        <div class="cardm__back">
+          <div>[CMS detay alanları]</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+```
+
+- **`data-card-marquee-speed`** — piksel/saniye otomatik kayma hızı (default `50`).
+- **`data-card-featured`** — CMS "Featured" switch'ine bağla. `true/yes/on/1` → parlak;
+  değilse soluk (opacity ~0.5). JS değeri normalize eder.
+- **Dönebilirlik** — ayrı bir attribute gerekmez; kartta `.cardm__back` varsa dönebilir
+  sayılır. Webflow'da arka yüzü **Conditional Visibility** ("Flippable" switch açıkken)
+  ile koşulla — dönebilir olmayan kartlarda arka yüz hiç render olmaz.
+- **Etkileşim** — hover'da durur; sürükle (sağa/sola) + momentum; dönebilir karta
+  tıkla → 3D döner (tek seferde bir kart açık); mouse ayrılıp scroll devam edince
+  açık kartlar otomatik kapanır.
+- **Özel cursor** — sadece hover destekli (fine pointer) cihazlarda; dönebilir kartın
+  üzerinde native cursor gizlenir, dönme ikonlu bir cursor belirir.
+- CMS item sayısı **tek** ise JS 2 satır düzeninin sorunsuz dönmesi için repeat
+  birimini otomatik ikiye katlar — yine de **çift sayı** önerilir.
 
 ---
 

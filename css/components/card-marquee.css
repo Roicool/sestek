@@ -1,0 +1,147 @@
+/*!
+ * card-marquee.css v1.0.0
+ * Two-row, scroll-driven card marquee with per-card depth (opacity),
+ * click-to-flip cards, and a custom flip cursor.
+ *
+ * DOM is authored in Webflow CMS:
+ *   Collection List Wrapper → .cardm            [data-card-marquee]
+ *     Collection List       → .cardm__track     (2-row grid; JS moves it)
+ *       Collection Item     → .cardm__item
+ *         .cardm__inner       (3D flip container)
+ *           .cardm__front     (logo + big stat — always)
+ *           .cardm__back      (extra detail — only on flippable cards)
+ *
+ * Behaviour driven by card-marquee.js. Colours/sizing come from the
+ * Webflow Designer + RC tokens — this file owns only critical layout/motion.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Root ─────────────────────────────────────────────────────── */
+/* overflow:hidden clips the scrolling track. cursor:grab signals drag. */
+.cardm {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-block: var(--spacing--6, 1.5rem);
+}
+
+.cardm.is-dragging { cursor: grabbing; }
+
+/* Native cursor hidden while hovering a flippable card (JS toggles class) */
+.cardm.is-flip-hover { cursor: none; }
+
+/* ── Track — 2-row grid, translated horizontally by JS ────────── */
+/*
+ * grid-auto-flow:column + 2 rows means CMS items fill column-by-column
+ * (item 1 → top-left, item 2 → bottom-left, item 3 → top-2nd-col …).
+ * grid-auto-columns:max-content lets each card size to its content.
+ * column-gap is read by JS (getComputedStyle) to compute the seamless cycle.
+ */
+.cardm__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-columns: max-content;
+  column-gap: var(--spacing--6, 1.5rem);
+  row-gap: var(--spacing--6, 1.5rem);
+  width: max-content;
+  will-change: transform;
+}
+
+/* ── Item — depth via opacity ─────────────────────────────────── */
+/*
+ * Cards are dimmed by default so featured ones pop (the "layered depth"
+ * look — no shadows). JS adds --featured from the CMS "Featured" field.
+ * perspective here gives the child flip its 3D depth.
+ */
+.cardm__item {
+  opacity: 0.5;
+  perspective: 1200px;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cardm__item--featured { opacity: 1; }
+
+/* Stop stray hover/click states firing mid-drag */
+.cardm.is-dragging .cardm__item { pointer-events: none; }
+
+/* ── 3D flip ──────────────────────────────────────────────────── */
+.cardm__inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.45, 0.05, 0.2, 1);
+}
+
+.cardm__item.is-flipped .cardm__inner { transform: rotateY(180deg); }
+
+.cardm__front,
+.cardm__back {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Front defines the card box; back is layered over it, pre-rotated. */
+.cardm__front { position: relative; z-index: 1; height: 100%; }
+
+.cardm__back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* ── Custom flip cursor (JS-driven floating element) ──────────── */
+/*
+ * A single element is appended to <body>; JS moves it to the pointer and
+ * toggles .is-visible when hovering a flippable card. Centred on the
+ * pointer via the negative margins.
+ */
+.cardm-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(17, 17, 19, 0.85);
+  color: #fff;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 0.18s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cardm-cursor.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cardm-cursor svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  display: block;
+}
+
+/* ── Touch / no-hover: no custom cursor ───────────────────────── */
+@media (hover: none), (pointer: coarse) {
+  .cardm-cursor { display: none; }
+  .cardm.is-flip-hover { cursor: grab; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cardm__track { will-change: auto; transform: none !important; }
+  .cardm__inner { transition: none; }
+  .cardm-cursor { display: none; }
+}
