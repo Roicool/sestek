@@ -1,5 +1,5 @@
 /*!
- * card-marquee.css v2.0.0
+ * card-marquee.css v2.2.0
  * Two-row, auto-scrolling card marquee with per-card depth (opacity),
  * a TRUE 3D tap-to-flip, and a custom flip cursor.
  *
@@ -63,6 +63,25 @@
   column-gap: var(--spacing--6, 1.5rem);
   row-gap: var(--spacing--6, 1.5rem);
   width: max-content;
+}
+
+/* ── Track — column-grouped variant (JS adds this with data-card-arrange) ──
+ * Each .cardm__col is a vertical flex pair (e.g. 5:7 + 1:1); columns sit in a
+ * flex row. Because every column pairs one aspect with the other, all columns
+ * share the same total height — tops AND bottoms align with none of the in-row
+ * gaps a shared-row grid forces between mismatched aspect ratios.
+ * (display:flex overrides display:grid above; the grid-* props go inert.)
+ */
+.cardm__track--cols {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+.cardm__col {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  row-gap: var(--spacing--6, 1.5rem);   /* gap between the two stacked cards */
 }
 
 /* ── Item — depth via opacity + 3D perspective for the flip ───── */

@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v2.1.0
+ * card-marquee.js v2.2.0
  * Two-row, auto-scrolling card marquee for Webflow CMS.
  *   • Infinite loop with ZERO clones — columns recycle (first → last) as they
  *     scroll off, so ~20 CMS items loop seamlessly without duplicating the DOM
@@ -104,6 +104,29 @@
     ordered.forEach(function (it) { track.appendChild(it); });
   }
 
+  /**
+   * Wrap each consecutive pair of cards in a .cardm__col flex column and switch
+   * the track to a flex row (via .cardm__track--cols). A 5:7+1:1 pair then
+   * stacks tight inside its own column; since every column pairs one aspect
+   * with the other, all columns share the same total height — tops AND bottoms
+   * line up with none of the in-row gaps a shared-row grid forces. Recycle moves
+   * one whole .cardm__col at a time. Returns true when grouping happened.
+   */
+  function groupIntoColumns(track) {
+    var items = Array.from(track.children).filter(function (c) {
+      return c.classList && c.classList.contains("cardm__item");
+    });
+    if (items.length < ROWS) return false;
+    for (var i = 0; i < items.length; i += ROWS) {
+      var col = document.createElement("div");
+      col.className = "cardm__col";
+      for (var r = 0; r < ROWS && items[i + r]; r++) col.appendChild(items[i + r]);
+      track.appendChild(col);
+    }
+    track.classList.add("cardm__track--cols");
+    return true;
+  }
+
   /** Lazily build the single floating flip-cursor element. */
   function getCursor() {
     if (sharedCursor) return sharedCursor;
@@ -156,20 +179,25 @@
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // ── Opt-in: auto-stagger aspects so columns alternate (no CMS sort) ──
+    // ── Opt-in: auto-stagger aspects + tight flex columns (no CMS sort) ──
     // data-card-arrange="alternate" → lead with the first card's aspect
     // data-card-arrange="5:7"       → lead each odd column's top with 5:7
+    // Reorders by aspect, then wraps each pair in a .cardm__col flex column so
+    // the stagger stacks tight (no shared-row-grid gaps).
+    var columnsMode = false;
     var arrange = root.getAttribute("data-card-arrange");
     if (arrange) {
       arrange = arrange.trim();
       var lead = (arrange === "alternate" || arrange === "true" || arrange === "")
         ? null : arrange;
       arrangeByAspect(track, lead);
+      columnsMode = groupIntoColumns(track);
     }
 
     // ── Tag items: depth (featured) + flippable affordance ────────
-    Array.from(track.children).forEach(function (item) {
-      if (!item.classList.contains("cardm__item")) return;
+    // Query (not direct children) so it works whether items are direct
+    // children of the track or nested inside .cardm__col wrappers.
+    Array.from(track.querySelectorAll(".cardm__item")).forEach(function (item) {
       if (isFeaturedValue(item.getAttribute("data-card-featured"))) {
         item.classList.add("cardm__item--featured");
       }
@@ -233,18 +261,20 @@
     }
 
     /**
-     * Recycle the leading column (ROWS items) to the end once it has fully
-     * scrolled out of view, pulling scrollLeft back by that column's width so
-     * nothing visibly jumps — this is the seamless, clone-free loop.
+     * Recycle the leading column to the end once it has fully scrolled out of
+     * view, pulling scrollLeft back by that column's width so nothing visibly
+     * jumps — the seamless, clone-free loop. A "column" is one .cardm__col in
+     * columns mode, else ROWS stacked items in the bare grid.
      */
+    var perCol = columnsMode ? 1 : ROWS;   // track children that form one column
     function recycleIfNeeded() {
       var safety = 0;
-      while (track.children.length > ROWS) {
+      while (track.children.length > perCol) {
         var first = track.children[0];
         var colW = first.getBoundingClientRect().width + colGap();
         if (root.scrollLeft < colW) break;        // not off-screen yet
-        for (var i = 0; i < ROWS && track.children.length > ROWS; i++) {
-          track.appendChild(track.children[0]);    // move first item to the end
+        for (var i = 0; i < perCol && track.children.length > perCol; i++) {
+          track.appendChild(track.children[0]);    // move leading column to the end
         }
         root.scrollLeft -= colW;
         if (++safety > 64) break;                  // never spin forever
