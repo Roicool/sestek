@@ -1,27 +1,19 @@
 /*!
- * card-marquee.js v1.2.0
- * Two-row, scroll-driven card marquee for Webflow CMS.
- *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
+ * card-marquee.js v2.0.0
+ * Two-row, auto-scrolling card marquee for Webflow CMS.
+ *   • Infinite loop with ZERO clones — columns recycle (first → last) as they
+ *     scroll off, so ~20 CMS items loop seamlessly without duplicating the DOM
+ *   • Scrolls via the container's scrollLeft (NOT a CSS transform) so the
+ *     card's real 3D flip keeps an intact preserve-3d context
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
- *   • Tap-to-flip cards (cross-fade) — only cards that have a .cardm__back
+ *   • Tap-to-flip cards (true 3D rotateY) — only cards with a .cardm__back
  *   • Custom floating "flip" cursor over flippable cards (hover/fine pointers)
- *   • Open flips auto-reset when the marquee resumes (mouse leaves)
+ *   • Hover pauses the scroll; open flips reset when it resumes
  *
- * Changelog
- * v1.2.0 — flip rewritten as a 2D-safe cross-fade (CSS). A true preserve-3d
- *          flip blanked out here because the moving track is transformed and
- *          .cardm clips with overflow:hidden — both kill the 3D context.
- *          Removed debug logging.
- * v1.1.3 — robust tap: pointerup + click fallback (double-toggle guarded),
- *          touch-action:manipulation, explicit pointer-events on faces
- * v1.1.2 — flip the PRESSED card (not the up-target) + stop track on press,
- *          so a tap reliably flips even while the marquee is still easing
- * v1.1.1 — flip via pointerdown→up pairing (native click was suppressed while
- *          the track was still gliding); guard against double-init re-cloning
- * v1.1.0 — removed drag/grab entirely; auto-scroll + hover-pause + click-flip
- *          only (drag interfered with reliable click-to-flip)
- * v1.0.1 — (superseded) deferred pointer capture until drag slop
- * v1.0.0 — initial release
+ * Why scrollLeft instead of transform:
+ *   A moving CSS transform on the track flattens the descendant preserve-3d
+ *   context, so rotateY(180deg) renders blank. Driving scrollLeft leaves the
+ *   ancestor chain transform-free, so the 3D flip works reliably.
  *
  * Requires : gsap (global)
  * CSS      : css/components/card-marquee.css
@@ -48,6 +40,7 @@
 (function (global) {
   "use strict";
 
+  var ROWS = 2;                // the grid is two rows → one column = 2 items
   var sharedCursor = null;     // one floating cursor element for the whole page
 
   /** Truthy-ish CMS values normalise to "featured". */
@@ -63,7 +56,6 @@
     var el = document.createElement("div");
     el.className = "cardm-cursor";
     el.setAttribute("aria-hidden", "true");
-    // Refresh/rotate glyph — reads as "this card flips".
     el.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -91,28 +83,25 @@
       return;
     }
 
-    // Guard against double-init on the same root (would re-clone the track).
+    // Idempotent — never re-process the same root.
     if (root._cardMarqueeInit) return;
     root._cardMarqueeInit = true;
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // ── Tag items: depth (featured) + flippable affordance ────────
-    function tagItems() {
-      Array.from(track.children).forEach(function (item) {
-        if (!item.classList.contains("cardm__item")) return;
-        if (isFeaturedValue(item.getAttribute("data-card-featured"))) {
-          item.classList.add("cardm__item--featured");
-        }
-        // Flippable = has a back face. Mark it so CSS/cursor can target it.
-        if (item.querySelector(".cardm__back")) {
-          item.setAttribute("data-card-flip", "true");
-        }
-      });
-    }
-    tagItems();
+    Array.from(track.children).forEach(function (item) {
+      if (!item.classList.contains("cardm__item")) return;
+      if (isFeaturedValue(item.getAttribute("data-card-featured"))) {
+        item.classList.add("cardm__item--featured");
+      }
+      // Flippable = has a back face.
+      if (item.querySelector(".cardm__back")) {
+        item.setAttribute("data-card-flip", "true");
+      }
+    });
 
-    // ── Flip handling (click to toggle; reset when scroll resumes) ─
+    // ── Flip handling ─────────────────────────────────────────────
     function flippableFrom(node) {
       var item = node && node.closest ? node.closest(".cardm__item") : null;
       return item && item.hasAttribute("data-card-flip") ? item : null;
@@ -140,52 +129,7 @@
 
     var BASE_SPEED = parseFloat(root.dataset.cardMarqueeSpeed) || 50; // px/s
 
-    // ── Seamless loop: clone into an EVEN repeat unit, then duplicate
-    //    A 2-row grid only tiles cleanly when the repeat unit has an even
-    //    item count. If the CMS list is odd, the unit is doubled (2n, even).
-    function cloneItem(el) {
-      var c = el.cloneNode(true);
-      c.setAttribute("aria-hidden", "true");
-      c.classList.remove("is-flipped");
-      return c;
-    }
-
-    var originals = Array.from(track.children);
-    var n = originals.length;
-    var unitCount = (n % 2 === 0) ? n : n * 2;
-
-    // Grow the repeat unit to unitCount items…
-    for (var u = track.children.length; u < unitCount; u++) {
-      track.appendChild(cloneItem(originals[u % n]));
-    }
-    // …then append one full duplicate of the unit for the loop.
-    Array.from(track.children).forEach(function (el) {
-      track.appendChild(cloneItem(el));
-    });
-    tagItems(); // re-tag so clones get featured/flip markers too
-
-    // ── Measure one seamless cycle (= half of the doubled track) ──
-    function measureTrack() {
-      var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-      return (track.scrollWidth + gap) / 2;
-    }
-    var trackW = measureTrack();
-
-    // Re-measure once images finish (logos affect column widths)
-    var pendingImgs = Array.from(track.querySelectorAll("img")).filter(function (img) {
-      return !img.complete;
-    });
-    if (pendingImgs.length) {
-      var done = 0;
-      var onImg = function () { if (++done === pendingImgs.length) trackW = measureTrack(); };
-      pendingImgs.forEach(function (img) {
-        img.addEventListener("load", onImg);
-        img.addEventListener("error", onImg);
-      });
-    }
-
-    // ── State ─────────────────────────────────────────────────────
-    var pos = 0;
+    // ── Scroll state — scrollLeft, not transform (keeps 3D intact) ─
     var sp = { v: BASE_SPEED };   // speed proxy, tweened for smooth accel
     var spTween = null;
     function tweenSpeed(target, dur, ease) {
@@ -193,12 +137,42 @@
       spTween = gsap.to(sp, { v: target, duration: dur || 0.7, ease: ease || "power3.out" });
     }
 
-    // ── Ticker — the only thing that moves the track ──────────────
+    // Sub-pixel accumulator so slow speeds still move (scrollLeft is integer).
+    var acc = 0;
+
+    /** Gap between columns, read from the grid. */
+    function colGap() {
+      return parseFloat(getComputedStyle(track).columnGap) || 0;
+    }
+
+    /**
+     * Recycle the leading column (ROWS items) to the end once it has fully
+     * scrolled out of view, pulling scrollLeft back by that column's width so
+     * nothing visibly jumps — this is the seamless, clone-free loop.
+     */
+    function recycleIfNeeded() {
+      var safety = 0;
+      while (track.children.length > ROWS) {
+        var first = track.children[0];
+        var colW = first.getBoundingClientRect().width + colGap();
+        if (root.scrollLeft < colW) break;        // not off-screen yet
+        for (var i = 0; i < ROWS && track.children.length > ROWS; i++) {
+          track.appendChild(track.children[0]);    // move first item to the end
+        }
+        root.scrollLeft -= colW;
+        if (++safety > 64) break;                  // never spin forever
+      }
+    }
+
+    // ── Ticker — advances scrollLeft, then recycles ───────────────
     function tick(time, deltaTime) {
-      pos += sp.v * (deltaTime / 1000);
-      if (pos > trackW * 1e6) pos -= trackW * Math.floor(pos / trackW);
-      var wrapped = ((pos % trackW) + trackW) % trackW;
-      gsap.set(track, { x: -wrapped, force3D: true });
+      acc += sp.v * (deltaTime / 1000);
+      var whole = Math.trunc(acc);
+      if (whole !== 0) {
+        acc -= whole;
+        root.scrollLeft += whole;
+        recycleIfNeeded();
+      }
     }
     gsap.ticker.add(tick);
 
@@ -212,7 +186,7 @@
       hideCursor();
     });
 
-    // ── Custom flip cursor (only on hover-capable, fine pointers) ─
+    // ── Custom flip cursor (hover-capable, fine pointers only) ────
     var canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     function showCursorAt(x, y) {
       var c = getCursor();
@@ -232,14 +206,12 @@
     }
 
     // ── Tap to flip ───────────────────────────────────────────────
-    // Native "click" can't be trusted on its own: the track is still gliding
-    // when the pointer lands (hover-pause eases over ~0.9s), so mousedown and
-    // mouseup fall on different pixels and the browser suppresses click.
-    // We pair pointerdown→pointerup ourselves (small travel = a tap → flip),
-    // and keep a click fallback for the case where the track is already still.
+    // Pair pointerdown→pointerup so a tap flips even while the scroll is
+    // still easing (native click can be suppressed when the card moves
+    // between press and release). A click fallback covers the still case.
     var TAP_SLOP = 12;           // px of pointer travel still counted as a tap
     var downItem = null, downX = 0, downY = 0;
-    var lastFlipAt = 0;          // guards against pointerup + click double-toggle
+    var lastFlipAt = 0;
 
     function flipNow(item) {
       lastFlipAt = Date.now();
@@ -251,9 +223,7 @@
       downItem = flippableFrom(e.target);
       downX = e.clientX;
       downY = e.clientY;
-      // Stop the track instantly so the pressed card stays put. (Without this
-      // the card slides out from under the cursor before pointerup.)
-      if (downItem) { if (spTween) spTween.kill(); sp.v = 0; }
+      if (downItem) { if (spTween) spTween.kill(); sp.v = 0; } // freeze on press
     });
 
     root.addEventListener("pointerup", function (e) {
@@ -263,20 +233,10 @@
       downItem = null;
     });
 
-    // Fallback: when the track is already stationary a clean click fires
-    // normally. Skip if a pointerup flip just ran (≤400ms) so the same tap
-    // isn't toggled twice.
     root.addEventListener("click", function (e) {
-      if (Date.now() - lastFlipAt < 400) return;
+      if (Date.now() - lastFlipAt < 400) return;   // avoid double-toggle
       var item = flippableFrom(e.target);
       if (item) flipNow(item);
-    });
-
-    // ── Resize ────────────────────────────────────────────────────
-    var rTimer;
-    window.addEventListener("resize", function () {
-      clearTimeout(rTimer);
-      rTimer = setTimeout(function () { trackW = measureTrack(); }, 150);
     });
 
     // ── Cleanup ───────────────────────────────────────────────────

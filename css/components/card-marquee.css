@@ -1,15 +1,18 @@
 /*!
- * card-marquee.css v1.2.0
- * Two-row, auto-scroll card marquee with per-card depth (opacity),
- * tap-to-flip cards (2D-safe cross-fade), and a custom flip cursor.
- * (No drag — hover-pause only.)
+ * card-marquee.css v2.0.0
+ * Two-row, auto-scrolling card marquee with per-card depth (opacity),
+ * a TRUE 3D tap-to-flip, and a custom flip cursor.
+ *
+ * The track scrolls via the container's scrollLeft (driven by JS), NOT a CSS
+ * transform — that's what keeps the cards' preserve-3d context intact so the
+ * real rotateY flip works. (No drag — hover-pause only.)
  *
  * DOM is authored in Webflow CMS:
  *   Collection List Wrapper → .cardm            [data-card-marquee]
- *     Collection List       → .cardm__track     (2-row grid; JS moves it)
+ *     Collection List       → .cardm__track     (2-row grid)
  *       Collection Item     → .cardm__item
  *         .cardm__inner       (3D flip container)
- *           .cardm__front     (logo + big stat — always)
+ *           .cardm__front     (logo + stat — always)
  *           .cardm__back      (extra detail — only on flippable cards)
  *
  * Behaviour driven by card-marquee.js. Colours/sizing come from the
@@ -17,22 +20,27 @@
  * https://github.com/roicool/sestek
  */
 
-/* ── Root ─────────────────────────────────────────────────────── */
-/* overflow:hidden clips the scrolling track. */
+/* ── Root — the scroll viewport (JS drives scrollLeft) ─────────── */
 .cardm {
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   user-select: none;
   -webkit-user-select: none;
-  /* Don't let the browser claim taps as scroll/zoom gestures (would fire
-     pointercancel and swallow the flip on touch). */
+  /* Don't let the browser claim taps as scroll/zoom gestures. */
   touch-action: manipulation;
   padding-block: var(--spacing--6, 1.5rem);
 }
 
-/* The flip container and its faces must be hit-testable so a tap reaches a
-   card; only the floating cursor opts out of pointer events. */
+/* Hide the native scrollbar — motion is automatic. */
+.cardm {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.cardm::-webkit-scrollbar { display: none; }
+
+/* Faces must be hit-testable so a tap reaches a card. */
 .cardm__item,
 .cardm__inner,
 .cardm__front,
@@ -41,12 +49,11 @@
 /* Native cursor hidden while hovering a flippable card (JS toggles class) */
 .cardm.is-flip-hover { cursor: none; }
 
-/* ── Track — 2-row grid, translated horizontally by JS ────────── */
+/* ── Track — 2-row grid (NO transform — scrollLeft moves it) ──── */
 /*
- * grid-auto-flow:column + 2 rows means CMS items fill column-by-column
- * (item 1 → top-left, item 2 → bottom-left, item 3 → top-2nd-col …).
- * grid-auto-columns:max-content lets each card size to its content.
- * column-gap is read by JS (getComputedStyle) to compute the seamless cycle.
+ * grid-auto-flow:column + 2 rows fills column-by-column (item 1 → top-left,
+ * item 2 → bottom-left, item 3 → top of next column …).
+ * width:max-content lets the row extend past the viewport so it can scroll.
  */
 .cardm__track {
   display: grid;
@@ -56,61 +63,53 @@
   column-gap: var(--spacing--6, 1.5rem);
   row-gap: var(--spacing--6, 1.5rem);
   width: max-content;
-  will-change: transform;
 }
 
-/* ── Item — depth via opacity ─────────────────────────────────── */
+/* ── Item — depth via opacity + 3D perspective for the flip ───── */
 /*
- * Cards are dimmed by default so featured ones pop (the "layered depth"
- * look — no shadows). JS adds --featured from the CMS "Featured" field.
+ * Dimmed by default so featured cards pop (layered depth — no shadows).
+ * perspective here gives the child .cardm__inner its 3D depth on flip.
  */
 .cardm__item {
   opacity: 0.5;
+  perspective: 1000px;
   transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cardm__item--featured { opacity: 1; }
 
-/* ── Flip (opacity + small rotateY cross-fade) ────────────────── */
+/* ── True 3D flip ─────────────────────────────────────────────── */
 /*
- * IMPORTANT: a true 3D card flip (preserve-3d + backface-visibility on
- * children) breaks here because the moving track is itself transformed
- * and .cardm clips with overflow:hidden — both flatten/clip the 3D
- * context, so rotateY(180deg) renders blank. We use a robust 2D-safe
- * cross-fade instead: faces stacked, the hidden one fades out + tilts
- * slightly, the shown one fades in. Reads as a flip, never blanks out.
+ * The track is NOT transformed (it's scrolled), so this preserve-3d context
+ * stays intact and rotateY(180deg) renders a real card flip.
  */
 .cardm__inner {
   position: relative;
-  display: grid;            /* stack both faces in one cell */
-  height: 100%;
-}
-
-.cardm__front,
-.cardm__back {
-  grid-area: 1 / 1;         /* occupy the same cell → layered */
   width: 100%;
   height: 100%;
-  transition:
-    opacity 0.4s ease,
-    transform 0.5s cubic-bezier(0.45, 0.05, 0.2, 1);
-  backface-visibility: visible;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.45, 0.05, 0.2, 1);
 }
 
-/* Resting: front shown, back hidden behind it */
-.cardm__front { opacity: 1; transform: rotateY(0deg);   z-index: 2; }
-.cardm__back  { opacity: 0; transform: rotateY(-90deg); z-index: 1; pointer-events: none; }
+.cardm__item.is-flipped .cardm__inner { transform: rotateY(180deg); }
 
-/* Flipped: swap them */
-.cardm__item.is-flipped .cardm__front { opacity: 0; transform: rotateY(90deg);  z-index: 1; pointer-events: none; }
-.cardm__item.is-flipped .cardm__back  { opacity: 1; transform: rotateY(0deg);   z-index: 2; pointer-events: auto; }
+/* Both faces share the box; the one facing away is hidden. */
+.cardm__front,
+.cardm__back {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.cardm__front { position: relative; z-index: 2; }
+
+.cardm__back {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform: rotateY(180deg);    /* pre-rotated so it faces out when flipped */
+}
 
 /* ── Custom flip cursor (JS-driven floating element) ──────────── */
-/*
- * A single element is appended to <body>; JS moves it to the pointer and
- * toggles .is-visible when hovering a flippable card. Centred on the
- * pointer via the negative margins.
- */
 .cardm-cursor {
   position: fixed;
   top: 0;
@@ -154,8 +153,6 @@
 
 /* ── Reduced motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .cardm__track { will-change: auto; transform: none !important; }
-  .cardm__front,
-  .cardm__back { transition: none; }
+  .cardm__inner { transition: none; }
   .cardm-cursor { display: none; }
 }
