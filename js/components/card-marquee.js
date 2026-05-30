@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v1.1.3
+ * card-marquee.js v1.1.4
  * Two-row, scroll-driven card marquee for Webflow CMS.
  *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
@@ -126,9 +126,18 @@
       if (willOpen) item.classList.add("is-flipped");
       if (root.dataset.cardMarqueeDebug != null) {
         var inner = item.querySelector(".cardm__inner");
-        console.log("[cardm] toggleFlip → willOpen:", willOpen,
-          "| now is-flipped:", item.classList.contains("is-flipped"),
-          "| inner transform:", inner ? getComputedStyle(inner).transform : "(no .cardm__inner!)");
+        var back  = item.querySelector(".cardm__back");
+        // Read AFTER the transition has run so we see the settled transform,
+        // not the pre-transition starting value.
+        setTimeout(function () {
+          var ir = inner ? inner.getBoundingClientRect() : null;
+          var br = back  ? back.getBoundingClientRect()  : null;
+          console.log("[cardm] settled →",
+            "| inner transform:", inner ? getComputedStyle(inner).transform : "(none)",
+            "| inner size:", ir ? Math.round(ir.width) + "x" + Math.round(ir.height) : "-",
+            "| back size:", br ? Math.round(br.width) + "x" + Math.round(br.height) : "-",
+            "| back visibility:", back ? getComputedStyle(back).backfaceVisibility : "-");
+        }, 700);
       }
     }
 
