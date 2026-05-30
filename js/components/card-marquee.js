@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v1.1.2
+ * card-marquee.js v1.1.3
  * Two-row, scroll-driven card marquee for Webflow CMS.
  *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
@@ -8,6 +8,9 @@
  *   • Open flips auto-reset when the marquee resumes (mouse leaves)
  *
  * Changelog
+ * v1.1.3 — robust tap: pointerup + click fallback (double-toggle guarded),
+ *          touch-action:manipulation, explicit pointer-events on faces;
+ *          opt-in debug via data-card-marquee-debug
  * v1.1.2 — flip the PRESSED card (not the up-target) + stop track on press,
  *          so a tap reliably flips even while the marquee is still easing
  * v1.1.1 — flip via pointerdown→up pairing (native click was suppressed while
@@ -226,19 +229,29 @@
     }
 
     // ── Tap to flip ───────────────────────────────────────────────
-    // Native "click" can't be trusted here: the track is still gliding when
-    // the pointer lands (hover-pause eases over ~0.9s), so mousedown and
+    // Native "click" can't be trusted on its own: the track is still gliding
+    // when the pointer lands (hover-pause eases over ~0.9s), so mousedown and
     // mouseup fall on different pixels and the browser suppresses click.
-    // We pair pointerdown→pointerup ourselves: same card + negligible
-    // movement = a tap → flip.
-    var TAP_SLOP = 8;            // px of pointer travel still counted as a tap
+    // We pair pointerdown→pointerup ourselves (small travel = a tap → flip),
+    // and keep a click fallback for the case where the track is already still.
+    var TAP_SLOP = 12;           // px of pointer travel still counted as a tap
     var downItem = null, downX = 0, downY = 0;
+    var lastFlipAt = 0;          // guards against pointerup + click double-toggle
+
+    function flipNow(item) {
+      lastFlipAt = Date.now();
+      toggleFlip(item);
+    }
 
     root.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       downItem = flippableFrom(e.target);
       downX = e.clientX;
       downY = e.clientY;
+      if (root.dataset.cardMarqueeDebug != null) {
+        console.log("[cardm] down → target:", e.target,
+          "| flippable item:", downItem);
+      }
       // Stop the track instantly so the pressed card stays put. (Without this
       // the card slides out from under the cursor before pointerup.)
       if (downItem) { if (spTween) spTween.kill(); sp.v = 0; }
@@ -246,12 +259,21 @@
 
     root.addEventListener("pointerup", function (e) {
       if (!downItem) return;
-      // Flip the card that was PRESSED — don't re-check the up-target: the
-      // track may still be easing, so a different card can be under the
-      // cursor on release. Only the pointer's own travel must be small.
       var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-      if (moved <= TAP_SLOP) toggleFlip(downItem);
+      if (root.dataset.cardMarqueeDebug != null) {
+        console.log("[cardm] up → moved:", moved.toFixed(1), "px | flip:", moved <= TAP_SLOP);
+      }
+      if (moved <= TAP_SLOP) flipNow(downItem);
       downItem = null;
+    });
+
+    // Fallback: when the track is already stationary a clean click fires
+    // normally. Skip if a pointerup flip just ran (≤400ms) so the same tap
+    // isn't toggled twice.
+    root.addEventListener("click", function (e) {
+      if (Date.now() - lastFlipAt < 400) return;
+      var item = flippableFrom(e.target);
+      if (item) flipNow(item);
     });
 
     // ── Resize ────────────────────────────────────────────────────

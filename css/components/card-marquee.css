@@ -24,8 +24,18 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  /* Don't let the browser claim taps as scroll/zoom gestures (would fire
+     pointercancel and swallow the flip on touch). */
+  touch-action: manipulation;
   padding-block: var(--spacing--6, 1.5rem);
 }
+
+/* The flip container and its faces must be hit-testable so a tap reaches a
+   card; only the floating cursor opts out of pointer events. */
+.cardm__item,
+.cardm__inner,
+.cardm__front,
+.cardm__back { pointer-events: auto; }
 
 /* Native cursor hidden while hovering a flippable card (JS toggles class) */
 .cardm.is-flip-hover { cursor: none; }
