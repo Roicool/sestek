@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v1.1.1
+ * card-marquee.js v1.1.2
  * Two-row, scroll-driven card marquee for Webflow CMS.
  *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
@@ -8,6 +8,8 @@
  *   • Open flips auto-reset when the marquee resumes (mouse leaves)
  *
  * Changelog
+ * v1.1.2 — flip the PRESSED card (not the up-target) + stop track on press,
+ *          so a tap reliably flips even while the marquee is still easing
  * v1.1.1 — flip via pointerdown→up pairing (native click was suppressed while
  *          the track was still gliding); guard against double-init re-cloning
  * v1.1.0 — removed drag/grab entirely; auto-scroll + hover-pause + click-flip
@@ -229,7 +231,7 @@
     // mouseup fall on different pixels and the browser suppresses click.
     // We pair pointerdown→pointerup ourselves: same card + negligible
     // movement = a tap → flip.
-    var TAP_SLOP = 8;            // px of travel still counted as a tap
+    var TAP_SLOP = 8;            // px of pointer travel still counted as a tap
     var downItem = null, downX = 0, downY = 0;
 
     root.addEventListener("pointerdown", function (e) {
@@ -237,13 +239,18 @@
       downItem = flippableFrom(e.target);
       downX = e.clientX;
       downY = e.clientY;
+      // Stop the track instantly so the pressed card stays put. (Without this
+      // the card slides out from under the cursor before pointerup.)
+      if (downItem) { if (spTween) spTween.kill(); sp.v = 0; }
     });
 
     root.addEventListener("pointerup", function (e) {
       if (!downItem) return;
+      // Flip the card that was PRESSED — don't re-check the up-target: the
+      // track may still be easing, so a different card can be under the
+      // cursor on release. Only the pointer's own travel must be small.
       var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-      var upItem = flippableFrom(e.target);
-      if (moved <= TAP_SLOP && upItem === downItem) toggleFlip(downItem);
+      if (moved <= TAP_SLOP) toggleFlip(downItem);
       downItem = null;
     });
 
