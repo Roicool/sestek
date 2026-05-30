@@ -1,0 +1,44 @@
+/*!
+ * section-title.css v1.0.0
+ * Character-by-character heading reveal (the beside.com title look). Each letter
+ * eases its colour from a dim start to the heading's real colour, staggered by
+ * the inline animation-delay section-title.js sets, once the heading scrolls
+ * into view and the script stamps data-triggered. The heading itself fades in
+ * (opacity) via inline styles set by the JS.
+ *
+ * Drives: js/components/section-title.js
+ *
+ * Tunables (set on the heading or :root):
+ *   --section-title-from      letter start colour   (default: faded dark)
+ *   --section-title-to        letter end colour     (default: inherit → the
+ *                                                     heading's own colour)
+ *   --section-title-duration  per-letter duration   (default: 0.5s)
+ *   --section-title-ease      per-letter easing      (default: ease-out)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* Each split letter stays in normal inline flow (spacing/wrapping unchanged),
+   starts dim, then eases to the real colour when triggered. */
+.section-title-char {
+  color: var(--section-title-from, rgba(17, 17, 19, 0.2));
+  will-change: color;
+}
+
+/* One-shot reveal — runs when the JS stamps data-triggered, cascaded by the
+   per-letter animation-delay. `both` holds the start before and end after. */
+.section-title-char[data-triggered] {
+  animation: section-title-char-in
+    var(--section-title-duration, 0.5s)
+    var(--section-title-ease, ease-out) both;
+}
+
+@keyframes section-title-char-in {
+  to { color: var(--section-title-to, inherit); }
+}
+
+/* Reduced motion: no cascade — show the final colour immediately. */
+@media (prefers-reduced-motion: reduce) {
+  .section-title-char { color: var(--section-title-to, inherit); }
+  .section-title-char[data-triggered] { animation: none; }
+}
