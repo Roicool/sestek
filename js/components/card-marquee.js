@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v2.0.1
+ * card-marquee.js v2.0.2
  * Two-row, auto-scrolling card marquee for Webflow CMS.
  *   • Infinite loop with ZERO clones — columns recycle (first → last) as they
  *     scroll off, so ~20 CMS items loop seamlessly without duplicating the DOM
@@ -75,6 +75,15 @@
     }
     var roots = Array.from(document.querySelectorAll(selector || "[data-card-marquee]"));
     if (!roots.length) return;
+    // If [data-card-marquee] lands on both an ancestor and a descendant (e.g.
+    // the section AND the Collection List inside it), they resolve to the SAME
+    // .cardm__track. Initialising both binds duplicate tickers + flip handlers
+    // to one set of cards, which double-toggles every flip (open→close in one
+    // tap) and leaves the real scroll container stuck paused. Keep only the
+    // innermost root of any nested pair.
+    roots = roots.filter(function (r) {
+      return !roots.some(function (other) { return other !== r && r.contains(other); });
+    });
     roots.forEach(setupInstance);
   }
 
@@ -85,9 +94,13 @@
       return;
     }
 
-    // Idempotent — never re-process the same root.
+    // Idempotent — never re-process the same root…
     if (root._cardMarqueeInit) return;
     root._cardMarqueeInit = true;
+    // …and never let two roots drive the same track (belt-and-suspenders for
+    // the nested-root case the filter above already prunes).
+    if (track._cardmTrackBound) return;
+    track._cardmTrackBound = true;
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
