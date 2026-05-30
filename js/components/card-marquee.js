@@ -1,5 +1,5 @@
 /*!
- * card-marquee.js v2.0.0
+ * card-marquee.js v2.0.1
  * Two-row, auto-scrolling card marquee for Webflow CMS.
  *   • Infinite loop with ZERO clones — columns recycle (first → last) as they
  *     scroll off, so ~20 CMS items loop seamlessly without duplicating the DOM
@@ -8,7 +8,9 @@
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
  *   • Tap-to-flip cards (true 3D rotateY) — only cards with a .cardm__back
  *   • Custom floating "flip" cursor over flippable cards (hover/fine pointers)
- *   • Hover pauses the scroll; open flips reset when it resumes
+ *   • Hover (fine-pointer) pauses the scroll; on touch a press freezes it and
+ *     releasing/closing the card (or tapping outside it) resumes — so a tap no
+ *     longer strands the marquee stopped on devices that never fire mouseleave
  *
  * Why scrollLeft instead of transform:
  *   A moving CSS transform on the track flattens the descendant preserve-3d
@@ -137,6 +139,15 @@
       spTween = gsap.to(sp, { v: target, duration: dur || 0.7, ease: ease || "power3.out" });
     }
 
+    // Hover-pause is a hover-device feature; touch uses press-to-freeze instead.
+    var hovering = false;
+    function resumeScroll() { tweenSpeed(BASE_SPEED, 1.1, "power3.inOut"); }
+    function maybeResume() {
+      if (hovering) return;                                       // hover device manages resume
+      if (track.querySelector(".cardm__item.is-flipped")) return; // stay paused while a card is open
+      resumeScroll();
+    }
+
     // Sub-pixel accumulator so slow speeds still move (scrollLeft is integer).
     var acc = 0;
 
@@ -176,17 +187,9 @@
     }
     gsap.ticker.add(tick);
 
-    // ── Hover: pause scroll + reset open flips on leave ───────────
-    root.addEventListener("mouseenter", function () {
-      tweenSpeed(0, 0.9, "power3.out");
-    });
-    root.addEventListener("mouseleave", function () {
-      tweenSpeed(BASE_SPEED, 1.1, "power3.inOut");
-      resetFlips();
-      hideCursor();
-    });
-
-    // ── Custom flip cursor (hover-capable, fine pointers only) ────
+    // ── Custom flip cursor + hover-pause (hover-capable, fine pointers only) ──
+    // Gated on `canHover` so synthetic mouse events on touch devices can't set
+    // `hovering` and strand the scroll paused (touch resume runs on pointerup).
     var canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     function showCursorAt(x, y) {
       var c = getCursor();
@@ -199,6 +202,17 @@
       root.classList.remove("is-flip-hover");
     }
     if (canHover) {
+      // Hover pauses the scroll; leaving resumes it and resets any open flip.
+      root.addEventListener("mouseenter", function () {
+        hovering = true;
+        tweenSpeed(0, 0.9, "power3.out");
+      });
+      root.addEventListener("mouseleave", function () {
+        hovering = false;
+        resetFlips();
+        hideCursor();
+        resumeScroll();
+      });
       root.addEventListener("mousemove", function (e) {
         if (flippableFrom(e.target)) showCursorAt(e.clientX, e.clientY);
         else hideCursor();
@@ -223,20 +237,37 @@
       downItem = flippableFrom(e.target);
       downX = e.clientX;
       downY = e.clientY;
-      if (downItem) { if (spTween) spTween.kill(); sp.v = 0; } // freeze on press
+      if (downItem) {
+        if (spTween) spTween.kill();
+        sp.v = 0;                          // freeze while a flippable card is pressed
+      } else if (track.querySelector(".cardm__item.is-flipped")) {
+        resetFlips();                      // tap outside an open card dismisses it
+        maybeResume();
+      }
     });
 
-    root.addEventListener("pointerup", function (e) {
+    // Releasing (or a cancelled gesture) must always un-freeze the scroll —
+    // otherwise the press-to-freeze on touch, where no mouseleave ever fires,
+    // would strand the marquee stopped after the very first tap. maybeResume()
+    // keeps it paused only while a card stays flipped open or a real hover is active.
+    function endPress(flipIt, e) {
       if (!downItem) return;
-      var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-      if (moved <= TAP_SLOP) flipNow(downItem);
+      var item = downItem;
       downItem = null;
-    });
+      if (flipIt) {
+        var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+        if (moved <= TAP_SLOP) flipNow(item);   // a tap (not a drag) flips
+      }
+      maybeResume();
+    }
+
+    root.addEventListener("pointerup", function (e) { endPress(true, e); });
+    root.addEventListener("pointercancel", function (e) { endPress(false, e); });
 
     root.addEventListener("click", function (e) {
       if (Date.now() - lastFlipAt < 400) return;   // avoid double-toggle
       var item = flippableFrom(e.target);
-      if (item) flipNow(item);
+      if (item) { flipNow(item); maybeResume(); }
     });
 
     // ── Cleanup ───────────────────────────────────────────────────
