@@ -124,6 +124,12 @@
       var willOpen = !item.classList.contains("is-flipped");
       resetFlips();                       // single card open at a time
       if (willOpen) item.classList.add("is-flipped");
+      if (root.dataset.cardMarqueeDebug != null) {
+        var inner = item.querySelector(".cardm__inner");
+        console.log("[cardm] toggleFlip → willOpen:", willOpen,
+          "| now is-flipped:", item.classList.contains("is-flipped"),
+          "| inner transform:", inner ? getComputedStyle(inner).transform : "(no .cardm__inner!)");
+      }
     }
 
     // Reduced motion: static cards, click-to-flip only, no scroll/cursor.
@@ -271,8 +277,12 @@
     // normally. Skip if a pointerup flip just ran (≤400ms) so the same tap
     // isn't toggled twice.
     root.addEventListener("click", function (e) {
-      if (Date.now() - lastFlipAt < 400) return;
+      if (Date.now() - lastFlipAt < 400) {
+        if (root.dataset.cardMarqueeDebug != null) console.log("[cardm] click ignored (recent flip)");
+        return;
+      }
       var item = flippableFrom(e.target);
+      if (root.dataset.cardMarqueeDebug != null) console.log("[cardm] click → item:", item);
       if (item) flipNow(item);
     });
 
