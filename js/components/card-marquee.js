@@ -1,13 +1,15 @@
 /*!
- * card-marquee.js v1.1.0
+ * card-marquee.js v1.1.1
  * Two-row, scroll-driven card marquee for Webflow CMS.
  *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
- *   • Click-to-flip cards (3D rotateY) — only cards that have a .cardm__back
+ *   • Tap-to-flip cards (3D rotateY) — only cards that have a .cardm__back
  *   • Custom floating "flip" cursor over flippable cards (hover/fine pointers)
  *   • Open flips auto-reset when the marquee resumes (mouse leaves)
  *
  * Changelog
+ * v1.1.1 — flip via pointerdown→up pairing (native click was suppressed while
+ *          the track was still gliding); guard against double-init re-cloning
  * v1.1.0 — removed drag/grab entirely; auto-scroll + hover-pause + click-flip
  *          only (drag interfered with reliable click-to-flip)
  * v1.0.1 — (superseded) deferred pointer capture until drag slop
@@ -80,6 +82,10 @@
       console.warn("[Sestek CardMarquee] .cardm__track not found.", root);
       return;
     }
+
+    // Guard against double-init on the same root (would re-clone the track).
+    if (root._cardMarqueeInit) return;
+    root._cardMarqueeInit = true;
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -217,10 +223,28 @@
       });
     }
 
-    // ── Click to flip ─────────────────────────────────────────────
-    root.addEventListener("click", function (e) {
-      var item = flippableFrom(e.target);
-      if (item) toggleFlip(item);
+    // ── Tap to flip ───────────────────────────────────────────────
+    // Native "click" can't be trusted here: the track is still gliding when
+    // the pointer lands (hover-pause eases over ~0.9s), so mousedown and
+    // mouseup fall on different pixels and the browser suppresses click.
+    // We pair pointerdown→pointerup ourselves: same card + negligible
+    // movement = a tap → flip.
+    var TAP_SLOP = 8;            // px of travel still counted as a tap
+    var downItem = null, downX = 0, downY = 0;
+
+    root.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      downItem = flippableFrom(e.target);
+      downX = e.clientX;
+      downY = e.clientY;
+    });
+
+    root.addEventListener("pointerup", function (e) {
+      if (!downItem) return;
+      var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+      var upItem = flippableFrom(e.target);
+      if (moved <= TAP_SLOP && upItem === downItem) toggleFlip(downItem);
+      downItem = null;
     });
 
     // ── Resize ────────────────────────────────────────────────────
