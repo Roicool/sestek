@@ -65,6 +65,27 @@
   width: max-content;
 }
 
+/* ── Flex column-groups (JS opt-in via data-card-arrange) ──────── */
+/*
+ * A 2-row grid shares each row's height across ALL columns, so a tall (5:7)
+ * card paired with a short (1:1) one leaves a gap in whichever row holds the
+ * short card. When card-marquee.js wraps each pair in a .cardm__col it adds
+ * this class and the track becomes a flex row of independent columns — each
+ * pair stacks flush, no shared-row gap. column-gap is reused as the gap
+ * between columns; row-gap (set above) becomes the gap inside each column.
+ */
+.cardm__track--cols {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;        /* columns top-align; short cards don't stretch */
+}
+.cardm__col {
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--spacing--6, 1.5rem);
+  flex: 0 0 auto;                 /* keep natural width; don't grow/shrink */
+}
+
 /* ── Track — column-grouped variant (JS adds this with data-card-arrange) ──
  * Each .cardm__col is a vertical flex pair (e.g. 5:7 + 1:1); columns sit in a
  * flex row. Because every column pairs one aspect with the other, all columns

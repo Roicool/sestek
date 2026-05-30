@@ -31,10 +31,13 @@
  * Root attributes:
  *   data-card-marquee-speed   px/sec auto-scroll          (default 50)
  *   data-card-arrange         opt-in auto-stagger so each column pairs one
- *                             aspect with the other, alternating top/bottom —
- *                             no manual CMS sort field needed:
- *                               "alternate" → lead with the first card's aspect
- *                               "5:7"/"1:1" → lead each column's top with that
+ *                             aspect with the other, alternating top/bottom,
+ *                             AND wraps each pair in a .cardm__col flex group
+ *                             so the tall/short cards sit flush (no grid
+ *                             row-height gap) — no manual CMS sort field:
+ *                               "alternate" → reorder leading w/ first aspect
+ *                               "5:7"/"1:1" → reorder leading each top with it
+ *                               "columns"   → flex-group only, keep CMS order
  *
  * Item attributes (bind to CMS fields):
  *   data-card-featured        "true"/"yes"/"on"/"1" → bright; else dim
@@ -180,17 +183,20 @@
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // ── Opt-in: auto-stagger aspects + tight flex columns (no CMS sort) ──
-    // data-card-arrange="alternate" → lead with the first card's aspect
-    // data-card-arrange="5:7"       → lead each odd column's top with 5:7
-    // Reorders by aspect, then wraps each pair in a .cardm__col flex column so
-    // the stagger stacks tight (no shared-row-grid gaps).
+    // data-card-arrange="alternate"  → reorder leading with the first aspect
+    // data-card-arrange="5:7"/"1:1"  → reorder leading each column top with it
+    // data-card-arrange="columns"    → flex-group only, keep CMS order
+    // Then each pair is wrapped in a .cardm__col flex column so the stagger
+    // stacks tight (no shared-row-grid gaps).
     var columnsMode = false;
     var arrange = root.getAttribute("data-card-arrange");
-    if (arrange) {
+    if (arrange != null) {
       arrange = arrange.trim();
-      var lead = (arrange === "alternate" || arrange === "true" || arrange === "")
-        ? null : arrange;
-      arrangeByAspect(track, lead);
+      if (arrange !== "columns" && arrange !== "group") {
+        var lead = (arrange === "alternate" || arrange === "true" || arrange === "")
+          ? null : arrange;
+        arrangeByAspect(track, lead);
+      }
       columnsMode = groupIntoColumns(track);
     }
 
