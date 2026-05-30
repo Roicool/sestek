@@ -1,16 +1,19 @@
 /*!
- * card-marquee.js v1.1.4
+ * card-marquee.js v1.2.0
  * Two-row, scroll-driven card marquee for Webflow CMS.
  *   • Seamless infinite loop (GSAP ticker) — auto-scroll, hover-pause
  *   • Per-card depth: [data-card-featured] cards stay bright, others dim
- *   • Tap-to-flip cards (3D rotateY) — only cards that have a .cardm__back
+ *   • Tap-to-flip cards (cross-fade) — only cards that have a .cardm__back
  *   • Custom floating "flip" cursor over flippable cards (hover/fine pointers)
  *   • Open flips auto-reset when the marquee resumes (mouse leaves)
  *
  * Changelog
+ * v1.2.0 — flip rewritten as a 2D-safe cross-fade (CSS). A true preserve-3d
+ *          flip blanked out here because the moving track is transformed and
+ *          .cardm clips with overflow:hidden — both kill the 3D context.
+ *          Removed debug logging.
  * v1.1.3 — robust tap: pointerup + click fallback (double-toggle guarded),
- *          touch-action:manipulation, explicit pointer-events on faces;
- *          opt-in debug via data-card-marquee-debug
+ *          touch-action:manipulation, explicit pointer-events on faces
  * v1.1.2 — flip the PRESSED card (not the up-target) + stop track on press,
  *          so a tap reliably flips even while the marquee is still easing
  * v1.1.1 — flip via pointerdown→up pairing (native click was suppressed while
@@ -124,21 +127,6 @@
       var willOpen = !item.classList.contains("is-flipped");
       resetFlips();                       // single card open at a time
       if (willOpen) item.classList.add("is-flipped");
-      if (root.dataset.cardMarqueeDebug != null) {
-        var inner = item.querySelector(".cardm__inner");
-        var back  = item.querySelector(".cardm__back");
-        // Read AFTER the transition has run so we see the settled transform,
-        // not the pre-transition starting value.
-        setTimeout(function () {
-          var ir = inner ? inner.getBoundingClientRect() : null;
-          var br = back  ? back.getBoundingClientRect()  : null;
-          console.log("[cardm] settled →",
-            "| inner transform:", inner ? getComputedStyle(inner).transform : "(none)",
-            "| inner size:", ir ? Math.round(ir.width) + "x" + Math.round(ir.height) : "-",
-            "| back size:", br ? Math.round(br.width) + "x" + Math.round(br.height) : "-",
-            "| back visibility:", back ? getComputedStyle(back).backfaceVisibility : "-");
-        }, 700);
-      }
     }
 
     // Reduced motion: static cards, click-to-flip only, no scroll/cursor.
@@ -263,10 +251,6 @@
       downItem = flippableFrom(e.target);
       downX = e.clientX;
       downY = e.clientY;
-      if (root.dataset.cardMarqueeDebug != null) {
-        console.log("[cardm] down → target:", e.target,
-          "| flippable item:", downItem);
-      }
       // Stop the track instantly so the pressed card stays put. (Without this
       // the card slides out from under the cursor before pointerup.)
       if (downItem) { if (spTween) spTween.kill(); sp.v = 0; }
@@ -275,9 +259,6 @@
     root.addEventListener("pointerup", function (e) {
       if (!downItem) return;
       var moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-      if (root.dataset.cardMarqueeDebug != null) {
-        console.log("[cardm] up → moved:", moved.toFixed(1), "px | flip:", moved <= TAP_SLOP);
-      }
       if (moved <= TAP_SLOP) flipNow(downItem);
       downItem = null;
     });
@@ -286,12 +267,8 @@
     // normally. Skip if a pointerup flip just ran (≤400ms) so the same tap
     // isn't toggled twice.
     root.addEventListener("click", function (e) {
-      if (Date.now() - lastFlipAt < 400) {
-        if (root.dataset.cardMarqueeDebug != null) console.log("[cardm] click ignored (recent flip)");
-        return;
-      }
+      if (Date.now() - lastFlipAt < 400) return;
       var item = flippableFrom(e.target);
-      if (root.dataset.cardMarqueeDebug != null) console.log("[cardm] click → item:", item);
       if (item) flipNow(item);
     });
 
