@@ -1,5 +1,5 @@
 /*!
- * hero-slider.js v1.1.0
+ * hero-slider.js v1.1.1
  * Framer-style hero card slider for Webflow CMS — a premium, GPU-driven track of
  * cards that auto-advances by a configurable STEP (1, 2, 3… cards at a time, the
  * "jumps two/three" feel), supports flick/drag with momentum, and snaps cleanly
@@ -135,9 +135,14 @@
     var moveTween = null;
     function killMove() { if (moveTween) { moveTween.kill(); moveTween = null; } }
 
-    /** Animate to an absolute x, recycling on each tick + at the end. */
+    /** Animate to an absolute x, then recycle ONCE settled. */
     function animateTo(targetX, dur, e) {
       killMove();
+      // NOTE: do NOT recycle during the tween. The tween interpolates x toward a
+      // fixed targetX; if recycle() shifts x + reorders the DOM mid-flight, the
+      // next onUpdate overwrites x with the tween value while the DOM has already
+      // moved — the track visibly jumps ("kafayı yiyor"). Each advance is only a
+      // few strides, so letting x run and recycling once at the end stays bounded.
       moveTween = gsap.to({ v: x }, {
         v: targetX,
         duration: dur != null ? dur : duration,
@@ -145,7 +150,6 @@
         onUpdate: function () {
           x = this.targets()[0].v;
           gsap.set(track, { x: x });
-          recycle();
         },
         onComplete: function () {
           recycle();
