@@ -107,22 +107,28 @@
     // As the track moves left, once the leading card is fully past the left
     // edge we move it to the end and add its stride back to x — nothing jumps.
     // Dragging right does the mirror (trailing → front).
+    // Returns the NET adjustment applied to x, so a caller holding a fixed
+    // reference point (e.g. startTrackX during a drag) can stay in sync.
     function recycle() {
       var stride = cardStride();
       var safety = 0;
+      var applied = 0;
       // Moved left far enough that the first card is off-screen → send to back.
       while (-x >= stride && track.children.length > 1) {
         track.appendChild(track.children[0]);
         x += stride;
+        applied += stride;
         if (++safety > 64) break;
       }
       // Moved right past 0 → pull the last card to the front.
       while (x > 0 && track.children.length > 1) {
         track.insertBefore(track.children[track.children.length - 1], track.children[0]);
         x -= stride;
+        applied -= stride;
         if (++safety > 128) break;
       }
       gsap.set(track, { x: x });
+      return applied;
     }
 
     // ── Programmatic advance / snap ───────────────────────────────
@@ -202,7 +208,11 @@
       moved = true;
       x = startTrackX + dx;
       gsap.set(track, { x: x });
-      recycle();
+      // recycle() may shift x by ±stride and re-order the DOM. Keep the drag's
+      // fixed reference (startTrackX) in sync with that shift, otherwise the
+      // next move recomputes x = startTrackX + dx and undoes the recycle —
+      // making the track jump back and forth ("kafayı yiyor") while dragging.
+      startTrackX += recycle();
       var now = e.timeStamp || performance.now();
       var dt = now - lastT;
       if (dt > 0) vel = (e.clientX - lastX) / dt * 1000;   // px/sec
