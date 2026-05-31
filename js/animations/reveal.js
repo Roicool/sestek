@@ -1,5 +1,5 @@
 /*!
- * reveal.js v1.0.0
+ * reveal.js v1.1.0
  * Size-reveal entrance — the "Webflow grow-in" look, fully data-attribute driven.
  *
  * The element does NOT slide in from offscreen (old WordPress style). Instead it
@@ -128,6 +128,10 @@
         trigger: el,
         start: start,
         once: once,
+        // Negative priority → these refresh AFTER pinned triggers (priority ≥ 0),
+        // so by the time a reveal measures its start/end the pin-spacing above it
+        // already exists and "top 85%" resolves against the real document height.
+        refreshPriority: -1,
         toggleActions: once ? "play none none none" : "play none none reverse",
       },
       onComplete: function () { el.style.willChange = "auto"; },
@@ -154,6 +158,18 @@
       var t = reveal(el);
       if (t) tweens.push(t);
     });
+
+    // Triggers created on DOMContentLoaded are measured before images/fonts
+    // settle the layout — and before pins below them finish adding pin-spacing.
+    // Re-measure once everything has loaded so every start/end lands correctly.
+    if (typeof ScrollTrigger !== "undefined") {
+      if (document.readyState === "complete") {
+        ScrollTrigger.refresh();
+      } else {
+        window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
+      }
+    }
+
     return tweens;
   }
 

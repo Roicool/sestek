@@ -1,5 +1,5 @@
 /*!
- * scroll-tabs.js v1.3.0
+ * scroll-tabs.js v1.3.1
  * Pinned, scroll-driven tab section (Apollo-style):
  *   1. Big cards collapse into a thin tab bar
  *   2. Section pins
@@ -173,6 +173,10 @@
           pin: true,
           scrub: scrub,
           anticipatePin: 0,
+          // Pins add huge pin-spacing to the document. Refresh this BEFORE any
+          // trigger below it (e.g. [data-reveal]) so those resolve their
+          // start/end against the post-pin document height, not a stale one.
+          refreshPriority: 1,
           snap: snapOn ? {
             // Function form: nearest point, or the click target when a tab-click
             // is in flight so snap cooperates rather than fights Lenis.
@@ -277,11 +281,17 @@
 
     build();
 
-    // Rebuild on resize — handles orientation change and viewport switches
+    // Rebuild on resize — handles orientation change and viewport switches.
+    // After rebuild the pin's spacing changes, which shifts the absolute
+    // start/end of every trigger below it — refresh them all so they re-measure
+    // against the new document height (otherwise reveals fire at stale offsets).
     var resizeTimer;
     window.addEventListener("resize", function () {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(build, 180);
+      resizeTimer = setTimeout(function () {
+        build();
+        ScrollTrigger.refresh();
+      }, 180);
     });
   }
 
