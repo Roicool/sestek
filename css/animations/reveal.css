@@ -1,0 +1,54 @@
+/*!
+ * reveal.css v1.0.0
+ * Size-reveal entrance — the "Webflow grow-in" look. An element does NOT slide
+ * in from offscreen (old WordPress style); instead it appears to GROW from zero
+ * to its own CSS-defined size as it enters the viewport:
+ *   left / right  → looks like its WIDTH expands 0 → the width you set in CSS
+ *   top  / bottom → looks like its HEIGHT expands 0 → the height you set in CSS
+ *
+ * How: the element keeps its real layout box (no reflow, no content squish) and
+ * is revealed with an animated `clip-path: inset(...)` anchored to one edge —
+ * so the visible box appears to scale up to the value you set. GPU-composited,
+ * zero layout thrash, 60fps. reveal.js drives the motion via GSAP ScrollTrigger;
+ * this file only owns the pre-reveal hidden state (anti-flash) + will-change.
+ *
+ * Drives: js/animations/reveal.js
+ *
+ * ANTI-FLASH (above-the-fold elements):
+ *   The hidden state below is gated on `html.reveal-armed` so the page renders
+ *   normally if JS never runs (graceful no-JS fallback). reveal.js adds the
+ *   class, but deferred scripts can paint one frame late. To kill that flash,
+ *   add this single line to Page Settings → Custom Code → <head> (before CSS):
+ *     <script>document.documentElement.classList.add('reveal-armed')</script>
+ *
+ * Attributes (set on the element — see reveal.js for the full list):
+ *   data-reveal="left|right|top|bottom"   anchor edge / grow direction (def left)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-reveal] {
+  will-change: clip-path, transform;
+}
+
+/* Pre-reveal hidden state — only once "armed", so no-JS pages show normally.
+   inset(top right bottom bottom): collapse from the OPPOSITE edge so the box
+   stays anchored to the named side and appears to grow toward the other.      */
+html.reveal-armed [data-reveal="left"]   { clip-path: inset(0% 100% 0% 0%); }  /* anchored left  → width grows right */
+html.reveal-armed [data-reveal="right"]  { clip-path: inset(0% 0% 0% 100%); }  /* anchored right → width grows left  */
+html.reveal-armed [data-reveal="top"]    { clip-path: inset(0% 0% 100% 0%); }  /* anchored top   → height grows down */
+html.reveal-armed [data-reveal="bottom"] { clip-path: inset(100% 0% 0% 0%); }  /* anchored bottom→ height grows up   */
+
+/* Default (no direction given) behaves as "left". */
+html.reveal-armed [data-reveal=""],
+html.reveal-armed [data-reveal]:not([data-reveal="right"]):not([data-reveal="top"]):not([data-reveal="bottom"]) {
+  clip-path: inset(0% 100% 0% 0%);
+}
+
+/* Reduced motion: never hide, never animate — show the element at full size. */
+@media (prefers-reduced-motion: reduce) {
+  html.reveal-armed [data-reveal] {
+    clip-path: inset(0% 0% 0% 0%) !important;
+    transform: none !important;
+  }
+}
