@@ -1,5 +1,5 @@
 /*!
- * section-title.js v1.2.0
+ * section-title.js v1.3.0
  * One-shot, character-by-character heading reveal — each letter starts in its
  * slice of the Sestek brand gradient and eases to the heading's own defined
  * colour on a 20ms stagger as the heading scrolls into view, while the whole
@@ -22,6 +22,8 @@
  * Attributes:
  *   data-section-title          mark a heading for the reveal (required)
  *   data-section-title-step     ms between letters            (default 20)
+ *   data-section-title-hold     ms the full gradient holds before the cascade
+ *                               starts, so every colour is seen  (default 600)
  *   data-section-title-colors   comma hex stops to reveal from
  *                               (default "#EC008C,#7F81AE,#00FFEB" — Sestek)
  *
@@ -33,6 +35,7 @@
 
   var CHAR_CLASS = "section-title-char";
   var STEP_DEFAULT = 20;   // ms between letters — matches beside's 20ms cascade
+  var HOLD_DEFAULT = 600;  // ms the full gradient holds before the cascade starts
   var GRADIENT_DEFAULT = ["#EC008C", "#7F81AE", "#00FFEB"];  // Sestek brand gradient
 
   function hexToRgb(h) {
@@ -69,7 +72,7 @@
           var span = document.createElement("span");
           span.className = CHAR_CLASS;
           span.textContent = text.charAt(i);
-          span.style.animationDelay = (state.n++ * state.step) + "ms";
+          span.style.animationDelay = (state.hold + state.n++ * state.step) + "ms";
           state.chars.push(span);
           frag.appendChild(span);
         }
@@ -85,7 +88,9 @@
     el._sectionTitleInit = true;
 
     var step = parseFloat(el.getAttribute("data-section-title-step")) || STEP_DEFAULT;
-    var state = { n: 0, step: step, chars: [] };
+    var hold = parseFloat(el.getAttribute("data-section-title-hold"));
+    if (isNaN(hold)) hold = HOLD_DEFAULT;
+    var state = { n: 0, step: step, hold: hold, chars: [] };
     splitNode(el, state);
     if (!state.chars.length) return;
 
