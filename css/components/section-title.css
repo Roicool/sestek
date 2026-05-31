@@ -1,45 +1,49 @@
 /*!
- * section-title.css v1.2.0
+ * section-title.css v2.0.0
  * Character-by-character heading reveal (the beside.com title look) in the
- * Sestek brand gradient. section-title.js paints each letter its slice of the
- * gradient (left→right); when the heading scrolls into view it stamps
- * data-triggered and this keyframe eases each letter from its gradient colour
- * back to the heading's OWN defined colour, cascading on the per-letter delay.
- * The heading also fades in (opacity) via inline styles the JS applies.
+ * Sestek brand gradient. section-title.js splits the heading and staggers each
+ * letter's animation-delay; this one keyframe turns that stagger into a narrow
+ * band of gradient colour that travels left→right: a letter sits dim until the
+ * band reaches it, flares through the gradient (pink → blue → cyan), then
+ * settles to the heading's OWN defined colour. The heading also fades in
+ * (opacity) via inline styles the JS applies.
  *
  * Drives: js/components/section-title.js
  *
  * Tunables (set on the heading or :root):
- *   --section-title-to        letter end colour    (default: inherit → the
- *                                                   heading's defined colour)
- *   --section-title-duration  per-letter duration  (default: 0.6s)
- *   --section-title-ease      per-letter easing     (default: ease-out)
- * (gradient colours come from JS — default Sestek brand, or override per
- *  heading with data-section-title-colors="#EC008C,#7F81AE,#00FFEB")
+ *   --section-title-dim       dim opacity of un-revealed letters (default .14)
+ *   --section-title-c1/c2/c3  the three gradient flare colours (Sestek default)
+ *   --section-title-to        letter end colour (default inherit → defined)
+ *   --section-title-duration  per-letter sweep duration          (default .5s)
+ *   --section-title-ease      per-letter easing                  (default ease-out)
+ * Wave speed + band width are set by data-section-title-step in the JS.
  *
  * https://github.com/roicool/sestek
  */
 
-/* The per-letter start colour is set inline by the JS (its gradient slice);
-   without JS the letter just inherits the heading's colour (visible fallback). */
 .section-title-char {
-  will-change: color;
+  will-change: color, opacity;
 }
 
-/* One-shot reveal: when JS stamps data-triggered, the letter eases from its
-   gradient colour to the heading's defined colour, cascaded by the delay. */
+/* One travelling wave: each letter runs this once when JS stamps data-triggered;
+   `both` holds the dim 0% state during its delay (so letters ahead of the band
+   stay dim) and the defined 100% state after (so letters behind it settle). */
 .section-title-char[data-triggered] {
   animation: section-title-char-in
-    var(--section-title-duration, 0.6s)
+    var(--section-title-duration, 0.5s)
     var(--section-title-ease, ease-out) both;
 }
 
 @keyframes section-title-char-in {
-  to { color: var(--section-title-to, inherit); }
+  0%   { opacity: var(--section-title-dim, 0.14); color: inherit; }
+  28%  { opacity: 1; color: var(--section-title-c1, #EC008C); }  /* pink   */
+  54%  { opacity: 1; color: var(--section-title-c2, #7F81AE); }  /* violet */
+  80%  { opacity: 1; color: var(--section-title-c3, #00FFEB); }  /* cyan   */
+  100% { opacity: 1; color: var(--section-title-to, inherit); }  /* defined */
 }
 
-/* Reduced motion: no cascade — show the defined colour immediately. */
+/* Reduced motion: no wave — show the defined colour immediately. */
 @media (prefers-reduced-motion: reduce) {
-  .section-title-char { color: var(--section-title-to, inherit); }
+  .section-title-char { opacity: 1; color: var(--section-title-to, inherit); }
   .section-title-char[data-triggered] { animation: none; }
 }
