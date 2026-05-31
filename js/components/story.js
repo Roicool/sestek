@@ -13,19 +13,44 @@
  * Requires : nothing (vanilla). Optional : gsap for nicer crossfades.
  * CSS      : css/components/story.css
  *
- * DOM contract:
+ * Indexing is by DOM ORDER, not by any numeric attribute — so it works with
+ * Webflow CMS Collection Lists where you can't author per-item indices. The
+ * Nth [data-story-panel] pairs with the Nth [data-story-tab].
+ *
+ * ── Static / hand-authored DOM ──────────────────────────────────────
  *   [data-story]                       root
  *     [data-story-stage]               16:9 stage
- *       [data-story-panel="0"]         one panel per story (mark one .is-active)
+ *       [data-story-panel]             one panel per story (optional .is-active)
  *         <video data-story-media poster="..." playsinline preload="metadata">
  *           <source src="story.mp4" type="video/mp4">
  *         </video>
  *         [data-story-overlay]         poster content (fades out on play)
  *           [data-story-play]          big centre play button (optional; auto-made)
  *     [data-story-tabs]                logo row
- *       [data-story-tab="0"]           click → switch to panel 0 (PUMA, Tecovas…)
+ *       [data-story-tab]               click → switch to the matching panel
  *
- * Attributes:
+ * ── Webflow CMS (Collection List) ───────────────────────────────────
+ *   Bind ONE collection twice, in DOM order:
+ *
+ *   [data-story]
+ *     [data-story-stage]
+ *       Collection List Wrapper
+ *         Collection List
+ *           Collection Item  → [data-story-panel]                       (.is-active not needed)
+ *             data-story-src     ← CMS Video file / Link field (the .mp4 URL)
+ *             data-story-poster  ← CMS Image field (poster)   (optional)
+ *             [data-story-overlay]   logo + quote + name bound to CMS fields
+ *               [data-story-play]    empty button — JS injects the icon
+ *     [data-story-tabs]
+ *       Collection List Wrapper   (SAME collection, same sort order)
+ *         Collection List
+ *           Collection Item  → [data-story-tab]  (the brand logo, CMS Image)
+ *
+ *   Per-item video: Webflow can't place a native <video src> in the Designer,
+ *   so the Collection Item carries data-story-src / data-story-poster and JS
+ *   builds the <video> for it. (Bind data-story-type if not mp4.)
+ *
+ * Root attributes:
  *   data-story-controls  "play,seek,time,mute,fullscreen" — which controls to
  *                        build, comma list (default: all of them)
  *   data-story-idle      ms of mouse-idle before controls auto-hide (default 2600)
@@ -97,9 +122,29 @@
       panels.forEach(function (p, i) { if (p.classList.contains("is-active")) active = i; });
       panels.forEach(function (p, i) { p.classList.toggle("is-active", i === active); });
 
-      // Per-panel setup: ensure a play button + a control bar exist.
+      // Per-panel setup: find an existing <video>, or build one from CMS-bound
+      // data-attributes. In Webflow CMS you can't drop a native <video> with a
+      // per-item src into the Designer, so each Collection Item instead carries:
+      //   data-story-src     the video file URL  (bind to a CMS Video/Link field)
+      //   data-story-poster  the poster image URL (bind to a CMS Image field)
+      // When present and no <video> exists, JS creates the element inside
+      // [data-story-stage] (or the panel) so the markup stays Designer-friendly.
       var media = panels.map(function (panel) {
-        return panel.querySelector("[data-story-media]");
+        var video = panel.querySelector("[data-story-media], video");
+        if (video) return video;
+        var src = panel.getAttribute("data-story-src");
+        if (!src) return null;
+        video = el("video");
+        video.setAttribute("data-story-media", "");
+        var poster = panel.getAttribute("data-story-poster");
+        if (poster) video.setAttribute("poster", poster);
+        var source = el("source");
+        source.setAttribute("src", src);
+        source.setAttribute("type", panel.getAttribute("data-story-type") || "video/mp4");
+        video.appendChild(source);
+        var stage = panel.querySelector("[data-story-stage]") || panel;
+        stage.insertBefore(video, stage.firstChild);
+        return video;
       });
 
       panels.forEach(function (panel, i) {
