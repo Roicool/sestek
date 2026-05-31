@@ -1,5 +1,5 @@
 /*!
- * hero-slider.css v1.1.0
+ * hero-slider.css v1.1.1
  * Framer-style hero card slider. A horizontal flex track of equal-width cards
  * driven by translateX in hero-slider.js (auto-advance N cards at a time, drag +
  * momentum, clone-free infinite loop, snap to card edge).
@@ -90,19 +90,16 @@
 }
 [data-hslider-logo] img { position: static; width: auto; height: auto; }
 
-/* "Visit site →" link — Framer's underline that wipes in left→right on hover. */
+/* "Visit site →" link — laid out in normal flow (position your own placement in
+   Designer). Only the Framer underline that wipes in left→right on hover is
+   handled here. */
 [data-hslider-link] {
-  position: absolute;
-  right: clamp(1rem, 1.5vw, 1.5rem);
-  bottom: clamp(1rem, 1.5vw, 1.5rem);
-  z-index: 2;
+  position: relative;          /* in-flow; anchors the underline pseudo-element */
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   color: #fff;
   text-decoration: none;
-  font-size: 1rem;
-  line-height: 1.2;
 }
 [data-hslider-link]::after {
   content: "";
