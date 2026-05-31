@@ -1,15 +1,17 @@
 /*!
- * section-title.js v1.0.0
- * One-shot, character-by-character heading reveal — each letter eases its
- * colour in on a 20ms stagger as the heading scrolls into view, while the whole
+ * section-title.js v1.2.0
+ * One-shot, character-by-character heading reveal — each letter starts in its
+ * slice of the Sestek brand gradient and eases to the heading's own defined
+ * colour on a 20ms stagger as the heading scrolls into view, while the whole
  * heading fades in (opacity 0→1). The beside.com title look.
  *
- * What it does (pure CSS drives the motion; JS only splits + triggers):
+ * What it does (JS splits + colours + triggers; CSS keyframe does the ease):
  *   1. Splits a heading's text into <span class="section-title-char"> letters,
- *      giving each an incremental inline animation-delay (index × step).
+ *      each with an incremental inline animation-delay (index × step) and an
+ *      inline colour sampled from the gradient at its position (left→right).
  *   2. One IntersectionObserver per heading; on first intersection it fades the
  *      heading in and stamps data-triggered on every letter, so the CSS keyframe
- *      runs exactly once, cascading left-to-right.
+ *      runs exactly once — gradient colour → defined colour — cascading.
  *
  * No dependencies — vanilla JS + IntersectionObserver.
  * CSS : css/components/section-title.css
@@ -20,6 +22,8 @@
  * Attributes:
  *   data-section-title          mark a heading for the reveal (required)
  *   data-section-title-step     ms between letters            (default 20)
+ *   data-section-title-colors   comma hex stops to reveal from
+ *                               (default "#EC008C,#7F81AE,#00FFEB" — Sestek)
  *
  * https://github.com/roicool/sestek
  */
@@ -29,6 +33,27 @@
 
   var CHAR_CLASS = "section-title-char";
   var STEP_DEFAULT = 20;   // ms between letters — matches beside's 20ms cascade
+  var GRADIENT_DEFAULT = ["#EC008C", "#7F81AE", "#00FFEB"];  // Sestek brand gradient
+
+  function hexToRgb(h) {
+    h = h.trim().replace(/^#/, "");
+    if (h.length === 3) h = h.replace(/(.)/g, "$1$1");
+    var n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  /** Linear sample of an RGB-stop list at fraction f∈[0,1]. */
+  function sampleGradient(stops, f) {
+    if (stops.length === 1) return stops[0];
+    var seg = f * (stops.length - 1);
+    var i = Math.min(stops.length - 2, Math.floor(seg));
+    var t = seg - i, a = stops[i], b = stops[i + 1];
+    return [
+      Math.round(a[0] + (b[0] - a[0]) * t),
+      Math.round(a[1] + (b[1] - a[1]) * t),
+      Math.round(a[2] + (b[2] - a[2]) * t)
+    ];
+  }
 
   /**
    * Recursively wrap each character of the heading's text nodes in a span,
@@ -72,9 +97,19 @@
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce || !("IntersectionObserver" in window)) {
-      trigger();                                          // no motion → final state
+      trigger();                                          // no motion → defined colour
       return;
     }
+
+    // Paint each letter its slice of the gradient (left→right across the run).
+    // The CSS keyframe then eases this back to the heading's own defined colour.
+    var attr = el.getAttribute("data-section-title-colors");
+    var stops = (attr ? attr.split(",") : GRADIENT_DEFAULT).map(hexToRgb);
+    var last = state.chars.length - 1;
+    state.chars.forEach(function (c, i) {
+      var rgb = sampleGradient(stops, last > 0 ? i / last : 0);
+      c.style.color = "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
+    });
 
     // Hidden until revealed (no transition here, so it doesn't fade OUT on load).
     // Applied inline — not via CSS — so the text still shows if the script never

@@ -1,35 +1,36 @@
 /*!
- * section-title.css v1.0.0
- * Character-by-character heading reveal (the beside.com title look). Each letter
- * eases its colour from a dim start to the heading's real colour, staggered by
- * the inline animation-delay section-title.js sets, once the heading scrolls
- * into view and the script stamps data-triggered. The heading itself fades in
- * (opacity) via inline styles set by the JS.
+ * section-title.css v1.2.0
+ * Character-by-character heading reveal (the beside.com title look) in the
+ * Sestek brand gradient. section-title.js paints each letter its slice of the
+ * gradient (left→right); when the heading scrolls into view it stamps
+ * data-triggered and this keyframe eases each letter from its gradient colour
+ * back to the heading's OWN defined colour, cascading on the per-letter delay.
+ * The heading also fades in (opacity) via inline styles the JS applies.
  *
  * Drives: js/components/section-title.js
  *
  * Tunables (set on the heading or :root):
- *   --section-title-from      letter start colour   (default: faded dark)
- *   --section-title-to        letter end colour     (default: inherit → the
- *                                                     heading's own colour)
- *   --section-title-duration  per-letter duration   (default: 0.5s)
- *   --section-title-ease      per-letter easing      (default: ease-out)
+ *   --section-title-to        letter end colour    (default: inherit → the
+ *                                                   heading's defined colour)
+ *   --section-title-duration  per-letter duration  (default: 0.6s)
+ *   --section-title-ease      per-letter easing     (default: ease-out)
+ * (gradient colours come from JS — default Sestek brand, or override per
+ *  heading with data-section-title-colors="#EC008C,#7F81AE,#00FFEB")
  *
  * https://github.com/roicool/sestek
  */
 
-/* Each split letter stays in normal inline flow (spacing/wrapping unchanged),
-   starts dim, then eases to the real colour when triggered. */
+/* The per-letter start colour is set inline by the JS (its gradient slice);
+   without JS the letter just inherits the heading's colour (visible fallback). */
 .section-title-char {
-  color: var(--section-title-from, rgba(17, 17, 19, 0.2));
   will-change: color;
 }
 
-/* One-shot reveal — runs when the JS stamps data-triggered, cascaded by the
-   per-letter animation-delay. `both` holds the start before and end after. */
+/* One-shot reveal: when JS stamps data-triggered, the letter eases from its
+   gradient colour to the heading's defined colour, cascaded by the delay. */
 .section-title-char[data-triggered] {
   animation: section-title-char-in
-    var(--section-title-duration, 0.5s)
+    var(--section-title-duration, 0.6s)
     var(--section-title-ease, ease-out) both;
 }
 
@@ -37,7 +38,7 @@
   to { color: var(--section-title-to, inherit); }
 }
 
-/* Reduced motion: no cascade — show the final colour immediately. */
+/* Reduced motion: no cascade — show the defined colour immediately. */
 @media (prefers-reduced-motion: reduce) {
   .section-title-char { color: var(--section-title-to, inherit); }
   .section-title-char[data-triggered] { animation: none; }
