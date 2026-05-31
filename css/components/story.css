@@ -1,5 +1,5 @@
 /*!
- * story.css v1.0.0
+ * story.css v1.1.0
  * Featured customer-story player (Sanity-style): an inline native <video> that
  * does NOT autoplay — it shows a poster with overlay content (logo, pull-quote,
  * name) on top. Clicking the big play button fades the overlay out, starts the
@@ -214,6 +214,43 @@
 [data-story-tab] { cursor: pointer; transition: opacity 0.25s ease; }
 [data-story-tab]:not(.is-active) { opacity: 0.5; }
 [data-story-tab].is-active { opacity: 1; }
+
+/* ── Touch devices (no hover) ─────────────────────────────────────────
+   Pointer-only affordances break on touch: hover-revealed knob, idle
+   auto-hide (you'd have to tap the video — which toggles play — just to see
+   the bar), and small tap targets. Fix all three for any hover:none device. */
+@media (hover: none) {
+  /* Seek knob is always visible (no hover to reveal it) and the bar is
+     thicker for easier dragging. */
+  .story__seek { height: 6px; }
+  .story__seek-knob { transform: translate(-50%, -50%) scale(1); }
+
+  /* Never auto-hide controls on touch — they'd be unreachable without a tap
+     that also pauses the video. Keep them up whenever playing. */
+  [data-story].is-playing.is-idle .story__controls { opacity: 1; }
+  [data-story].is-playing.is-idle [data-story-stage] { cursor: auto; }
+
+  /* ≥44px touch targets (Apple HIG) without changing the visual icon size. */
+  .story__btn { width: 2.75rem; height: 2.75rem; }
+  [data-story-play] { width: clamp(4rem, 16vw, 5rem); }
+
+  /* Disable hover scale on the big play button (sticks after tap on touch). */
+  [data-story-play]:hover {
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* ── Narrow screens: keep overlay text + tab row usable ──────────────── */
+@media (max-width: 600px) {
+  /* Long pull-quotes can overflow the short 16:9 box on phones — let the
+     overlay scroll internally instead of spilling out of the stage. */
+  [data-story-overlay] { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Tighter control bar so play + seek + time + mute + fullscreen all fit. */
+  .story__controls { gap: 0.4rem; }
+  .story__time { font-size: 0.75rem; }
+}
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
