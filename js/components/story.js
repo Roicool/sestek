@@ -38,9 +38,18 @@
  *         Collection List
  *           Collection Item  → [data-story-panel]                       (.is-active not needed)
  *             data-story-src     ← CMS Video file / Link field (the .mp4 URL)
- *             data-story-poster  ← CMS Image field (poster)   (optional)
  *             [data-story-overlay]   logo + quote + name bound to CMS fields
+ *               [data-story-poster-img]  ← a Webflow Image bound to a CMS Image
+ *                                          field — covers the stage, fades out on
+ *                                          play. The Webflow-native poster (no
+ *                                          poster="" attribute needed). Optional.
  *               [data-story-play]    empty button — JS injects the icon
+ *
+ *   Poster, two ways (pick one):
+ *     • [data-story-poster-img]  a real Webflow Image in the overlay → bind to a
+ *       CMS Image field. Responsive (srcset), alt text, Designer-controlled. REC.
+ *     • data-story-poster="url"  attribute on the panel → set as <video poster>.
+ *       Bind its value to a CMS Image field if you prefer the native poster.
  *     [data-story-tabs]
  *       Collection List Wrapper   (SAME collection, same sort order)
  *         Collection List

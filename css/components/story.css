@@ -65,6 +65,20 @@
   transition: opacity 0.45s ease, visibility 0s linear 0.45s;
 }
 
+/* Poster image: drop a Webflow Image bound to a CMS Image field inside the
+   overlay and tag it [data-story-poster-img]. It full-covers the stage behind
+   your logo/quote/name and fades out with the overlay on play — so the poster
+   is fully Webflow-controlled, responsive, no poster="" attribute needed. */
+[data-story-poster-img] {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 [data-story].is-playing [data-story-overlay] {
   opacity: 0;
   visibility: hidden;
