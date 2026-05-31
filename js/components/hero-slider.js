@@ -1,5 +1,5 @@
 /*!
- * hero-slider.js v1.0.0
+ * hero-slider.js v1.1.0
  * Framer-style hero card slider for Webflow CMS — a premium, GPU-driven track of
  * cards that auto-advances by a configurable STEP (1, 2, 3… cards at a time, the
  * "jumps two/three" feel), supports flick/drag with momentum, and snaps cleanly
@@ -165,22 +165,29 @@
     function prev() { advance(-step); }
 
     // ── Autoplay ──────────────────────────────────────────────────
-    var timer = null, paused = false;
+    // Three INDEPENDENT pause conditions; autoplay only runs when none hold.
+    // Kept separate (not one shared flag) so ending a drag can't clear a still
+    // active hover — the cursor staying inside must keep it paused.
+    var hovering = false, draggingPause = false, offscreen = false;
+    function isPaused() { return hovering || draggingPause || offscreen; }
+
+    var timer = null;
     function startAuto() {
       if (!autoplay || timer) return;
-      timer = setInterval(function () { if (!paused) next(); }, interval);
+      timer = setInterval(function () { if (!isPaused()) next(); }, interval);
     }
     function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
 
     if (canHover) {
-      root.addEventListener("mouseenter", function () { paused = true; });
-      root.addEventListener("mouseleave", function () { paused = false; });
+      // Mouse inside the slider → never autoslide, period.
+      root.addEventListener("mouseenter", function () { hovering = true; });
+      root.addEventListener("mouseleave", function () { hovering = false; });
     }
     // Pause when the tab/section isn't visible — saves work, avoids a "catch-up"
     // burst of advances when the user returns.
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
-        paused = !entries[0].isIntersecting;
+        offscreen = !entries[0].isIntersecting;
       }, { threshold: 0.1 }).observe(root);
     }
 
@@ -192,7 +199,7 @@
     function onDown(e) {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       dragging = true; moved = false;
-      paused = true;
+      draggingPause = true;
       killMove();
       startX = e.clientX;
       startTrackX = x;
@@ -222,7 +229,9 @@
       if (!dragging) return;
       dragging = false;
       root.classList.remove("is-dragging");
-      paused = false;
+      // Release the drag pause only. Hover (cursor still inside) is tracked
+      // separately, so autoplay stays paused as long as the mouse is in.
+      draggingPause = false;
       var stride = cardStride();
 
       if (reduce) {
