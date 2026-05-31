@@ -26,11 +26,12 @@ js/
   core/        lenis-init.js, nav.js
   components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
   effects/     grain.js, btn-glow.js
-  animations/  height-reveal.js
+  animations/  height-reveal.js, reveal.js
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
   effects/     grain.css, btn-glow.css
+  animations/  reveal.css
 ```
 
 ---
@@ -315,6 +316,73 @@ Webflow `</body>` öncesi:
 | File | CDN (`@main`) |
 |---|---|
 | `js/animations/height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js` |
+| `js/animations/reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/reveal.js` |
+| `css/animations/reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/animations/reveal.css` |
+
+### Size Reveal
+
+"Webflow tarzı" giriş animasyonu — element ekrana girerken **kendi boyutunu**
+0'dan CSS'te tanımladığın değere doğru büyütüyormuş gibi açılır (eski WordPress
+"kenardan kaydır" tarzı **değil**). `left`/`right` → genişlik, `top`/`bottom` →
+yükseklik büyür. Animasyon `clip-path` ile yapılır: layout'a dokunmaz (reflow yok,
+içerik ezilmez, komşular zıplamaz), GPU'da çalışır, 60fps.
+
+```html
+<!-- in <head> — anti-flash guard'ı CSS'ten ÖNCE arm et (above-the-fold için) -->
+<script>document.documentElement.classList.add('reveal-armed')</script>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/animations/reveal.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/reveal.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initReveal(); // tüm [data-reveal] elementlerini başlatır
+  });
+</script>
+```
+
+> **Anti-flash:** `<head>`'e eklenen tek satırlık `reveal-armed` script'i, ekranın
+> üst kısmındaki (above-the-fold) elementlerin JS yüklenmeden bir kare tam boyutta
+> görünmesini (flash) engeller. JS de bu sınıfı ekler — script çalışmazsa element
+> normal görünür (graceful no-JS fallback). Ekranın altındaki elementler için bu
+> satır şart değildir.
+
+DOM (Webflow — herhangi bir elemente attribute ekle):
+
+```html
+<!--
+  data-reveal              "left" | "right" → genişlik büyür
+                           "top"  | "bottom" → yükseklik büyür   (default "left")
+  data-reveal-duration     reveal süresi sn — hız                (default 1.1)
+  data-reveal-delay        başlama gecikmesi sn                  (default 0)
+  data-reveal-ease         GSAP ease                             (default "expo.out")
+  data-reveal-scale        opsiyonel zoom-settle (örn 1.08 → 1)  (default 1, kapalı)
+  data-reveal-start        ScrollTrigger tetik noktası           (default "top 85%")
+  data-reveal-once         "false" → geri scroll'da tekrar oynar (default true)
+-->
+<div class="card" data-reveal="left" data-reveal-delay="0.1" data-reveal-duration="1.2">…</div>
+
+<!-- yukarıdan yüksekliği büyüyerek açılan bir panel -->
+<div class="panel" data-reveal="top" data-reveal-ease="power4.out">…</div>
+
+<!-- ekstra premium derinlik için hafif zoom-settle -->
+<img src="hero.jpg" data-reveal="right" data-reveal-scale="1.08" data-reveal-duration="1.4">
+```
+
+**Notlar**
+- `left`/`right` → element CSS'teki **genişliğine**, `top`/`bottom` → CSS'teki
+  **yüksekliğine** doğru, seçtiğin kenardan sabitlenip büyüyerek açılır.
+- Birden çok elemente sırayla stagger için her birine artan `data-reveal-delay` ver.
+- Programatik: `Sestek.reveal(el, { direction:"top", duration:1.2, delay:0.2 })`.
+- `prefers-reduced-motion`: animasyon yapılmaz, element anında tam boyutta gösterilir.
 
 ### Height Reveal
 
