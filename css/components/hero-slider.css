@@ -1,5 +1,5 @@
 /*!
- * hero-slider.css v1.1.1
+ * hero-slider.css v1.1.2
  * Framer-style hero card slider. A horizontal flex track of equal-width cards
  * driven by translateX in hero-slider.js (auto-advance N cards at a time, drag +
  * momentum, clone-free infinite loop, snap to card edge).
@@ -20,7 +20,7 @@
   position: relative;
   width: 100%;
   overflow: hidden;          /* viewport clip — cards outside are hidden */
-  --hslider-card-w: clamp(15rem, 26vw, 22rem);
+  --hslider-card-w: clamp(18rem, 30vw, 25rem);  /* ~288px → ~400px desktop */
   --hslider-gap: clamp(0.75rem, 1.5vw, 1.25rem);
 }
 
