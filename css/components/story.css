@@ -1,0 +1,211 @@
+/*!
+ * story.css v1.0.0
+ * Featured customer-story player (Sanity-style): an inline native <video> that
+ * does NOT autoplay — it shows a poster with overlay content (logo, pull-quote,
+ * name) on top. Clicking the big play button fades the overlay out, starts the
+ * video, and reveals a custom Sestek control bar (play/pause · seek · time ·
+ * mute · fullscreen). A logo row below switches between multiple stories.
+ *
+ * Drives: js/components/story.js  (JS builds the control bar + wires everything)
+ *
+ * This file owns ONLY structure/behaviour (aspect ratio, layering, the control
+ * bar look, show/hide states). Colours, spacing, fonts, radii → set from Webflow
+ * Designer / RC Structure variables on the elements themselves.
+ *
+ * State classes JS toggles:
+ *   [data-story-panel].is-active   the visible story panel
+ *   [data-story].is-playing        a video is currently playing (hides overlay,
+ *                                  shows controls, reveals the stage cursor)
+ *   [data-story-media].is-paused   paused mid-playback (overlay stays hidden)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Stage: 16:9 frame, panels stacked ───────────────────────────── */
+[data-story-stage] {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
+}
+
+[data-story-panel] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* Fallback crossfade when GSAP isn't present */
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+}
+
+[data-story-panel].is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.5s ease;
+}
+
+[data-story-media] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Overlay (poster content: logo, quote, name) ─────────────────── */
+[data-story-overlay] {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  /* JS fades this out on play; transition is the no-GSAP fallback */
+  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+}
+
+[data-story].is-playing [data-story-overlay] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ── Big centre play button ──────────────────────────────────────── */
+[data-story-play] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: 50%;
+  width: clamp(3.5rem, 6vw, 5rem);
+  aspect-ratio: 1;
+  color: #fff;
+  transition: transform 0.25s cubic-bezier(.16,1,.3,1), background 0.25s ease;
+}
+
+[data-story-play]:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-story-play] svg { width: 38%; height: 38%; margin-left: 6%; fill: currentColor; }
+
+[data-story].is-playing [data-story-play] { display: none; }
+
+/* ── Custom control bar (built by JS) ────────────────────────────── */
+.story__controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: clamp(0.6rem, 2vw, 1.1rem);
+  background: linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0));
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+[data-story].is-playing .story__controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Auto-hide while playing + idle (JS toggles .is-idle on the root) */
+[data-story].is-playing.is-idle .story__controls { opacity: 0; }
+[data-story].is-playing.is-idle [data-story-stage] { cursor: none; }
+
+.story__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.18s ease;
+}
+.story__btn:hover { background: rgba(255,255,255,0.15); }
+.story__btn svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+.story__btn:focus-visible { outline: 2px solid rgba(255,255,255,0.6); outline-offset: 2px; }
+
+/* Icon swap: JS sets data-state on the root for play/pause + mute */
+.story__btn .icon-pause,
+[data-story].is-playing .story__btn--play .icon-play { display: none; }
+[data-story].is-playing .story__btn--play .icon-pause { display: block; }
+.story__btn--mute .icon-muted { display: none; }
+[data-story].is-muted .story__btn--mute .icon-sound { display: none; }
+[data-story].is-muted .story__btn--mute .icon-muted { display: block; }
+
+/* ── Seek bar ─────────────────────────────────────────────────────── */
+.story__seek {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.25);
+  cursor: pointer;
+}
+.story__seek-buffered,
+.story__seek-played {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 999px;
+}
+.story__seek-buffered { background: rgba(255,255,255,0.2); width: 0; }
+.story__seek-played   { background: #fff; width: 0; }
+.story__seek-knob {
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+.story__seek:hover .story__seek-knob { transform: translate(-50%, -50%) scale(1); }
+
+.story__time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+}
+.story__spacer { flex: 1 1 auto; }
+
+/* ── Logo tab row ─────────────────────────────────────────────────── */
+[data-story-tab] { cursor: pointer; transition: opacity 0.25s ease; }
+[data-story-tab]:not(.is-active) { opacity: 0.5; }
+[data-story-tab].is-active { opacity: 1; }
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-story-panel],
+  [data-story-overlay],
+  .story__controls,
+  [data-story-play],
+  [data-story-tab] { transition: none; }
+}
