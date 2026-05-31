@@ -1,5 +1,5 @@
 /*!
- * hero-slider.css v1.1.2
+ * hero-slider.css v1.2.0
  * Framer-style hero card slider. A horizontal flex track of equal-width cards
  * driven by translateX in hero-slider.js (auto-advance N cards at a time, drag +
  * momentum, clone-free infinite loop, snap to card edge).
@@ -22,6 +22,23 @@
   overflow: hidden;          /* viewport clip — cards outside are hidden */
   --hslider-card-w: clamp(18rem, 30vw, 25rem);  /* ~288px → ~400px desktop */
   --hslider-gap: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+/* ── Full-bleed (Framer look) ──────────────────────────────────────────────
+   Break the slider out of its (often max-width) container so the track spans
+   the whole viewport and cards peek off BOTH edges. Add data-hslider-bleed to
+   the root. Works even when the slider sits inside a centered container.        */
+[data-hslider][data-hslider-bleed] {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  max-width: 100vw;
+}
+/* Optional inner inset so the first card doesn't kiss the screen edge — match
+   it to your site's page gutter via --hslider-edge (default 0). */
+[data-hslider][data-hslider-bleed] [data-hslider-track] {
+  padding-left: var(--hslider-edge, 0px);
+  padding-right: var(--hslider-edge, 0px);
 }
 
 [data-hslider-track] {
