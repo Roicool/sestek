@@ -1,0 +1,33 @@
+/*!
+ * text-rotator.css v1.0.0
+ * Auto-rotating line (the "Dribbble ships landing pages 10x faster" strip),
+ * built from plain hand-authored divs (no CMS). Items are stacked in one spot
+ * and crossfaded by text-rotator.js; this file only owns the stacking context
+ * + a no-JS fallback. Type, colour, spacing, logo sizing → Webflow Designer.
+ *
+ * Drives: js/components/text-rotator.js
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-rotator] {
+  position: relative;
+  display: block;
+}
+
+/* Items get absolutely stacked + faded by JS. The base rule here keeps the
+   layout sane if the script hasn't run yet (all items flow, first visible). */
+[data-rotator-item] {
+  will-change: opacity, transform;
+}
+
+/* No-JS / pre-init fallback: before JS positions the items, show only the
+   first so the line isn't a vertical stack of every phrase. Once JS runs it
+   adds .is-ready to the root and takes over (absolute stacking + crossfade). */
+[data-rotator]:not(.is-ready) [data-rotator-item] ~ [data-rotator-item] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-rotator-item] { will-change: auto; }
+}

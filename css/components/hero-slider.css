@@ -1,0 +1,66 @@
+/*!
+ * hero-slider.css v1.0.0
+ * Framer-style hero card slider. A horizontal flex track of equal-width cards
+ * driven by translateX in hero-slider.js (auto-advance N cards at a time, drag +
+ * momentum, clone-free infinite loop, snap to card edge).
+ *
+ * This file owns ONLY structure/behaviour: the clipping viewport, the flex
+ * track, card sizing via a CSS variable, drag affordances. Colours, radii,
+ * card internals, shadows → design in Webflow Designer / RC Structure.
+ *
+ * Card width is set with --hslider-card-w (responsive). Override per breakpoint
+ * from Designer or here; the JS reads the rendered width, so any unit works.
+ *
+ * Drives: js/components/hero-slider.js
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-hslider] {
+  position: relative;
+  width: 100%;
+  overflow: hidden;          /* viewport clip — cards outside are hidden */
+  --hslider-card-w: clamp(15rem, 26vw, 22rem);
+  --hslider-gap: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+[data-hslider-track] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: var(--hslider-gap);
+  /* Track is moved via GSAP translateX; promote to its own layer. */
+  will-change: transform;
+  touch-action: pan-y;       /* let vertical page scroll through; we own horizontal */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-hslider].is-dragging [data-hslider-track] { cursor: grabbing; }
+
+[data-hslider-card] {
+  flex: 0 0 var(--hslider-card-w);
+  width: var(--hslider-card-w);
+  /* Block the browser's native image drag-ghost while flicking. */
+  -webkit-user-drag: none;
+}
+
+[data-hslider-card] img { -webkit-user-drag: none; pointer-events: none; }
+
+/* Optional prev/next controls (author-supplied [data-hslider-prev/next]) */
+[data-hslider-prev],
+[data-hslider-next] { cursor: pointer; }
+
+/* ── Mobile: show ~1.15 cards so the next one peeks (Framer feel) ──── */
+@media (max-width: 600px) {
+  [data-hslider] {
+    --hslider-card-w: 78vw;
+    --hslider-gap: 0.75rem;
+  }
+}
+
+/* Reduced motion: keep it usable, drop the will-change layer hint. */
+@media (prefers-reduced-motion: reduce) {
+  [data-hslider-track] { will-change: auto; }
+}
