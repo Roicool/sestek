@@ -9,6 +9,16 @@ Use `@main` for development. Pin to a tag (e.g. `@v1.0.0`) in production.
 > `DOMContentLoaded` callback instead (see Webflow patterns below).  
 > Add `<link rel="preconnect" href="https://cdn.jsdelivr.net">` in `<head>` to cut DNS + TLS latency.
 
+> **⚠️ Birden fazla pinli bölüm (hero + scroll-tabs) varsa**  
+> Init çağrılarının **sırası önemsizdir** — hepsini tek `DOMContentLoaded`
+> bloğunda istediğin sırayla çağırabilirsin. Pinli bölümlerin üst üste
+> binmemesi `refreshPriority` ile sağlanır (kod içinde tanımlı: hero `2` >
+> scroll-tabs `1` > reveal `-1`), init sırasıyla **değil**. Detay ve yeni
+> component eklerken uyulacak kurallar:
+> [`PROJECT.md` → ScrollTrigger — Pinli Bölüm Kuralları](./PROJECT.md#scrolltrigger--pinli-bölüm-kuralları-önemli).  
+> Init bloğunda manuel `ScrollTrigger.refresh()` çağırma — gerekmez ve yanlış
+> zamanda çağrılırsa pinleri bozar.
+
 ---
 
 ## Format
