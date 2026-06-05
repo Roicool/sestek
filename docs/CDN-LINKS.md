@@ -365,6 +365,10 @@ DOM:
     data-cs-start     string      ScrollTrigger start   (default "top 75%")
     data-cs-end       string      ScrollTrigger end     (default "bottom 25%")
     data-cs-scrub     number      scrub süresi sn       (default 0.8)
+    data-cs-once      flag        scroll'a kilitlemek yerine girişte bir kerelik oynat
+    data-cs-duration  number      once modunda oynatma süresi sn (default 0.8)
+    data-cs-ease      string      once modunda GSAP ease (default power2.out)
+    data-cs-disable-mobile flag   768px altında animasyonu kapat, bitiş rengine snap et
 -->
 <section
   data-color-shift
@@ -416,11 +420,37 @@ script çözer). Üç form da geçerli:
 > override edilmiş değişken doğru scope'tan çözülür. PROJECT.md'nin "raw hex
 > kullanma" kuralına uymak için token formunu tercih et.
 
+**Girişte kısa animasyon (scrub modu):** `start`/`end` penceresini girişe yakın
+ve dar tut — animasyon o kısa scroll aralığında oynayıp biter:
+
+```html
+<section data-color-shift
+  data-cs-bg-from="--neutral--050" data-cs-bg-to="--neutral--900"
+  data-cs-start="top 90%"   <!-- ucu görünür görünmez başla -->
+  data-cs-end="top 65%"     <!-- kısa pencerede bitir -->
+  data-cs-scrub="0.4">      <!-- daha çevik -->
+```
+
+**Bir kerelik oynat (once modu):** Scroll'a kilitlemeden, girişte sabit süreli
+oynayıp biten animasyon. Mobil için en hafif seçenek (`once:true` → asla tekrar oynamaz):
+
+```html
+<section data-color-shift
+  data-cs-bg-from="--neutral--050" data-cs-bg-to="--neutral--900"
+  data-cs-once
+  data-cs-duration="0.8"
+  data-cs-ease="power2.out"
+  data-cs-start="top 80%">
+```
+
 **Notlar**
 - Background değişimi paint-only operasyon — layout recalc yok, PageSpeed'e etkisi sıfır.
 - Birden fazla section'a eklenebilir; her biri bağımsız ScrollTrigger'a sahip olur.
 - `prefers-reduced-motion`: animasyon yapılmaz, bitiş rengi anında uygulanır.
 - `data-cs-scrub="0"` → scroll pozisyonuna 1-to-1 kilitli (lag yok). `0.8` → hafif yumuşatılmış.
+- `data-cs-disable-mobile` → 768px altında animasyon çalışmaz, bitiş rengine snap eder.
+  Tüm sayfa (`data-cs-target="body"`) bg'sini scrub'larken düşük seviye telefonlarda
+  her frame repaint maliyetini sıfırlamak için kullan.
 - `refreshPriority: -1` — hero (2) ve scroll-tabs (1) pinlendikten sonra refresh eder, pin sıraları bozulmaz.
 
 ### Size Reveal

@@ -1,10 +1,15 @@
 /*!
- * color-shift.js v1.1.0
+ * color-shift.js v1.2.0
  * Scroll-driven background + text colour transitions — data-attribute driven.
  *
  * Colour values accept either a literal (#hex, rgb()) or a CSS variable token
  * ("--neutral--900" or "var(--neutral--900)") — RC Structure tokens work
  * directly; they're resolved to a computed colour before tweening.
+ *
+ * Two playback modes:
+ *   scrub (default) — colour tracks scroll position between start/end
+ *   once            — data-cs-once: fixed-duration one-shot on entry, no scrub
+ * Optional data-cs-disable-mobile snaps to the end colour below 768px.
  *
  * As a section scrolls through the viewport the background of a target element
  * (the section itself, a wrapper, or <body>) smoothly transitions between two
@@ -48,7 +53,15 @@
  *                              (default: the [data-color-shift] section itself)
  *   data-cs-start     string   ScrollTrigger start      (default "top 75%")
  *   data-cs-end       string   ScrollTrigger end        (default "bottom 25%")
+ *                              (ignored in once mode)
  *   data-cs-scrub     number   scrub lag in seconds     (default 0.8)
+ *                              (ignored in once mode)
+ *   data-cs-once      flag     one-shot on entry instead of scrub. Fires a
+ *                              fixed-duration tween once when start is hit.
+ *   data-cs-duration  number   once-mode play time in seconds   (default 0.8)
+ *   data-cs-ease      string   once-mode GSAP ease           (default power2.out)
+ *   data-cs-disable-mobile  flag  below 768px skip the animation and snap to
+ *                              the end colour (lighter on low-end devices)
  *
  * Text child attributes (place on any child of the section):
  *   data-cs-text               marks a text element to colour-shift
@@ -60,6 +73,17 @@
 
 (function (global) {
   "use strict";
+
+  /**
+   * Treat a data-attribute as a boolean flag. Present-but-empty (the Webflow
+   * default when you add an attribute with no value) counts as TRUE; only an
+   * explicit "false"/"0"/"no" — or a missing attribute — counts as false.
+   * @param {string|undefined} v
+   * @returns {boolean}
+   */
+  function flag(v) {
+    return v !== undefined && v !== "false" && v !== "0" && v !== "no";
+  }
 
   /**
    * Resolve a colour value to something GSAP can interpolate.
@@ -113,6 +137,15 @@
     var end      = d.csEnd      || "bottom 25%";
     var scrub    = d.csScrub    !== undefined ? parseFloat(d.csScrub) : 0.8;
 
+    // once: scroll-independent one-shot — plays a fixed-duration tween when the
+    // section enters, instead of scrubbing the colour to scroll position.
+    var once     = flag(d.csOnce);
+    var duration = d.csDuration !== undefined ? parseFloat(d.csDuration) : 0.8;
+    var ease     = d.csEase || "power2.out";
+
+    // disableMobile: below 768px skip the animation and snap to the end colour.
+    var disableMobile = flag(d.csDisableMobile);
+
     // Background target — defaults to the section, can point anywhere (e.g. "body")
     var bgTarget = d.csTarget
       ? document.querySelector(d.csTarget)
@@ -134,14 +167,23 @@
     // Nothing to animate → bail silently
     if (!bgFrom && !bgTo && !textEls.length) return;
 
-    // ── prefers-reduced-motion ──────────────────────────────────────
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Jump straight to the end state so content is readable
-      if (bgTo)  gsap.set(bgTarget, { backgroundColor: bgTo });
+    // Jump straight to the end colours (no animation) — shared by the
+    // reduced-motion and disable-mobile escape hatches.
+    function snapToEnd() {
+      if (bgTo) gsap.set(bgTarget, { backgroundColor: bgTo });
       textEls.forEach(function (el) {
         if (el.dataset.csTo) gsap.set(el, { color: resolveColor(el.dataset.csTo, el) });
       });
-      return;
+    }
+
+    // ── prefers-reduced-motion ──────────────────────────────────────
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      snapToEnd(); return;
+    }
+
+    // ── disable-mobile ──────────────────────────────────────────────
+    if (disableMobile && window.matchMedia("(max-width: 767px)").matches) {
+      snapToEnd(); return;
     }
 
     // ── Set initial states ──────────────────────────────────────────
@@ -152,24 +194,37 @@
     });
 
     // ── Build timeline ──────────────────────────────────────────────
-    var tl = gsap.timeline({
-      scrollTrigger: {
-        trigger      : section,
-        start        : start,
-        end          : end,
-        scrub        : scrub,
-        // Not a pin — stays below hero (2) and scroll-tabs (1) in refresh order.
-        // Negative priority ensures reveal.js and color-shift never fight the pins.
-        refreshPriority: -1,
-      },
-    });
+    // Two modes share one timeline shape, only the ScrollTrigger differs:
+    //   scrub mode  → colour tracks scroll position between start/end
+    //   once  mode  → fixed-duration tween fires once on entry (scroll-free)
+    var stConfig = {
+      trigger        : section,
+      start          : start,
+      // Not a pin — stays below hero (2) and scroll-tabs (1) in refresh order.
+      // Negative priority ensures reveal.js and color-shift never fight the pins.
+      refreshPriority: -1,
+    };
+    if (once) {
+      stConfig.toggleActions = "play none none none";
+      stConfig.once = true;          // never replays — cheapest on mobile
+    } else {
+      stConfig.end   = end;
+      stConfig.scrub = scrub;
+    }
+
+    var tl = gsap.timeline({ scrollTrigger: stConfig });
+
+    // In scrub mode the absolute duration is irrelevant (scrub maps the whole
+    // timeline to the scroll window); in once mode it's the real play time.
+    var tweenDur  = once ? duration : 0.5;
+    var tweenEase = once ? ease : "none";
 
     // Background
     if (bgFrom && bgTo) {
       tl.fromTo(
         bgTarget,
         { backgroundColor: bgFrom },
-        { backgroundColor: bgTo, ease: "none" },
+        { backgroundColor: bgTo, ease: tweenEase, duration: tweenDur },
         0
       );
     }
@@ -182,7 +237,7 @@
         tl.fromTo(
           el,
           { color: resolveColor(from, el) },
-          { color: resolveColor(to, el), ease: "none" },
+          { color: resolveColor(to, el), ease: tweenEase, duration: tweenDur },
           0  // same position → all change together
         );
       }
