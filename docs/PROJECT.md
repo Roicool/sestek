@@ -119,6 +119,70 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
 
 ---
 
+## ScrollTrigger — Pinli Bölüm Kuralları (ÖNEMLİ)
+
+> Aynı sayfada **birden fazla pinli (`pin: true`) ScrollTrigger** varsa
+> (örn. hero + scroll-tabs), bu kurallar **zorunludur**. Aksi halde pinli
+> bölümler birbirinin üstüne çöker (pin-spacing yanlış hesaplanır).
+
+### Kural 1 — `refreshPriority` sayfa sırasına göre verilir
+
+`ScrollTrigger.refresh()` çalışırken trigger'lar **`refreshPriority` sırasına**
+göre işlenir (yüksek olan önce). Sayfada **üstte** olan pin, kendi pin-spacing'ini
+**önce** eklemeli ki altındaki bölümler start/end değerlerini gerçek (pin sonrası)
+doküman yüksekliğine göre ölçsün. Bu yüzden: **sayfada üstte = en yüksek priority.**
+
+> İnit çağrılarının **sırası bunu çözmez** — sorun init anında değil, refresh
+> anındaki öncelik sırasındadır. Doğru olan yer `refreshPriority`'dir, init sırası değil.
+
+#### refreshPriority Kayıt Tablosu
+
+Yeni bir pinli/scroll-tetikli component eklerken priority'sini sayfadaki
+dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
+
+| Component | Sayfadaki konum | `refreshPriority` |
+|---|---|---|
+| `hero.js` (pin) | En üst | `2` |
+| `scroll-tabs.js` (pin) | Orta | `1` |
+| `reveal.js` (pin değil) | Her yerde | `-1` |
+
+> Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
+> **kesirli değil**, mevcut değerleri yeniden numaralandırarak yerleştir
+> (örn. hero=3, yeni=2, scroll-tabs=1). Reveal her zaman en düşük kalsın.
+
+### Kural 2 — Tüm pinler kurulduktan sonra TEK bir refresh
+
+ScrollTrigger, `window.load` (font/görsel/CMS yüklendikten sonra) otomatik bir
+refresh tetikler ve o refresh'te tüm trigger'lar `refreshPriority`'ye göre
+yeniden sıralanır. `reveal.js` ayrıca kendi `window.load` refresh'ini çağırır.
+**Init sırasına güvenme** — priority'ler doğruysa bir tek refresh her şeyi
+doğru hizalar. Init bloğunda manuel `ScrollTrigger.refresh()` çağırma
+**gerekmez** ve yanlış zamanda çağrılırsa (örn. tüm pinler kurulmadan)
+**zarar verir**.
+
+### Kural 3 — Pinli bölümün hiçbir ANCESTOR'ında transform olmasın
+
+ScrollTrigger pin için `position: fixed` kullanır. Pinli elementin herhangi bir
+üst elementinde (ancestor) `transform`, `filter`, `perspective` veya
+`will-change: transform` varsa, `position: fixed` o ancestor'a göre konumlanır →
+pin kayar, bölümler üst üste biner. Pinli `[data-hero]` / `[data-scroll-tabs]`
+zincirinde bu özellikleri **kullanma** (Webflow page wrapper'larına dikkat).
+
+DevTools'ta hızlı kontrol:
+
+```js
+let el = document.querySelector('[data-scroll-tabs]').parentElement;
+while (el) {
+  const s = getComputedStyle(el);
+  if (s.transform !== 'none' || s.filter !== 'none' ||
+      s.perspective !== 'none' || s.willChange.includes('transform'))
+    console.warn('PIN KIRAN ANCESTOR:', el);
+  el = el.parentElement;
+}
+```
+
+---
+
 ## Changelog
 
 See individual file headers for per-file version history.
