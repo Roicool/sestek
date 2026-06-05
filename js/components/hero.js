@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.0.1
+ * hero.js v1.0.2
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  * https://github.com/roicool/sestek
@@ -104,6 +104,12 @@
           pin        : true,
           scrub      : 1,         // 1s lag behind scroll — feels heavy/premium
           anticipatePin: 1,
+          // Hero sits at the very top of the page, so its pin must refresh
+          // BEFORE any pin below it (scroll-tabs = 1, reveals = -1). Higher
+          // priority refreshes first → hero adds its pin-spacing, then the
+          // sections below measure their start/end against the real, post-pin
+          // document height instead of overlapping the pinned hero.
+          refreshPriority: 2,
           onUpdate: function (self) {
             var inScene2 = self.progress >= 0.34;
             // Nav theme
