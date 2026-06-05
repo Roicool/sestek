@@ -36,7 +36,7 @@ js/
   core/        lenis-init.js, nav.js
   components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
   effects/     grain.js, btn-glow.js
-  animations/  height-reveal.js, reveal.js
+  animations/  height-reveal.js, reveal.js, color-shift.js
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
@@ -327,7 +327,80 @@ Webflow `</body>` öncesi:
 |---|---|
 | `js/animations/height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js` |
 | `js/animations/reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/reveal.js` |
+| `js/animations/color-shift.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/color-shift.js` |
 | `css/animations/reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/animations/reveal.css` |
+
+### Color Shift
+
+Scroll'a bağlı background + metin rengi geçişi — aynı timeline'da, `scrub` ile birebir scroll pozisyonuna kilitli.
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/color-shift.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initColorShift();
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Section attributes:
+    data-color-shift              trigger olarak işaretler — zorunlu
+    data-cs-bg-from   renk        arka plan başlangıç rengi
+    data-cs-bg-to     renk        arka plan bitiş rengi
+    data-cs-target    selector    bg'yi kimin üzerinde değiştireceği — örn "body"
+                                  (default: section'ın kendisi)
+    data-cs-start     string      ScrollTrigger start   (default "top 75%")
+    data-cs-end       string      ScrollTrigger end     (default "bottom 25%")
+    data-cs-scrub     number      scrub süresi sn       (default 0.8)
+-->
+<section
+  data-color-shift
+  data-cs-bg-from="#ffffff"
+  data-cs-bg-to="#0a0a0f"
+>
+  <!--
+    data-cs-text      section içinde renk değiştirecek metin elementleri
+    data-cs-from      başlangıç metin rengi
+    data-cs-to        bitiş metin rengi
+    (background ile aynı timeline'da — lockstep değişir)
+  -->
+  <h2 data-cs-text data-cs-from="#111111" data-cs-to="#ffffff">Başlık</h2>
+  <p  data-cs-text data-cs-from="#444444" data-cs-to="#aaaaaa">Açıklama</p>
+</section>
+```
+
+**Tam sayfa background değişimi** (`body`'nin arka planı değişsin):
+
+```html
+<section
+  data-color-shift
+  data-cs-target="body"
+  data-cs-bg-from="#ffffff"
+  data-cs-bg-to="#0a0a0f"
+  data-cs-start="top 60%"
+  data-cs-end="top 20%"
+>
+```
+
+**Notlar**
+- Background değişimi paint-only operasyon — layout recalc yok, PageSpeed'e etkisi sıfır.
+- Birden fazla section'a eklenebilir; her biri bağımsız ScrollTrigger'a sahip olur.
+- `prefers-reduced-motion`: animasyon yapılmaz, bitiş rengi anında uygulanır.
+- `data-cs-scrub="0"` → scroll pozisyonuna 1-to-1 kilitli (lag yok). `0.8` → hafif yumuşatılmış.
+- `refreshPriority: -1` — hero (2) ve scroll-tabs (1) pinlendikten sonra refresh eder, pin sıraları bozulmaz.
 
 ### Size Reveal
 
