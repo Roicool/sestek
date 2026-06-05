@@ -1,6 +1,10 @@
 /*!
- * color-shift.js v1.0.0
+ * color-shift.js v1.1.0
  * Scroll-driven background + text colour transitions — data-attribute driven.
+ *
+ * Colour values accept either a literal (#hex, rgb()) or a CSS variable token
+ * ("--neutral--900" or "var(--neutral--900)") — RC Structure tokens work
+ * directly; they're resolved to a computed colour before tweening.
  *
  * As a section scrolls through the viewport the background of a target element
  * (the section itself, a wrapper, or <body>) smoothly transitions between two
@@ -58,6 +62,42 @@
   "use strict";
 
   /**
+   * Resolve a colour value to something GSAP can interpolate.
+   * GSAP tweens between two rgba() values — it cannot interpolate a raw
+   * `var(--token)`, so any CSS variable must be resolved to its computed
+   * colour FIRST. Supports three input forms:
+   *   "#0a0a0f"            → returned as-is (literal colour)
+   *   "--neutral--900"     → bare token, resolved on `contextEl`
+   *   "var(--neutral--900)"→ var() wrapper, resolved on `contextEl`
+   *
+   * The token is read from the element's own computed style so scoped
+   * overrides (a variable redefined on a parent) resolve correctly.
+   *
+   * @param {string} value
+   * @param {HTMLElement} contextEl  element the variable is resolved against
+   * @returns {string} a literal colour string (or the original value)
+   */
+  function resolveColor(value, contextEl) {
+    if (!value) return value;
+    var v = value.trim();
+
+    // Extract the custom-property name from either "var(--x)" or "--x"
+    var name = null;
+    var m = v.match(/^var\(\s*(--[^,)\s]+)/);
+    if (m) name = m[1];
+    else if (v.indexOf("--") === 0) name = v;
+
+    if (!name) return v; // literal colour (#hex, rgb(), named) — use directly
+
+    var resolved = getComputedStyle(contextEl).getPropertyValue(name).trim();
+    if (!resolved) {
+      console.warn("[Sestek ColorShift] CSS variable not found:", name);
+      return v;
+    }
+    return resolved;
+  }
+
+  /**
    * Wire up one [data-color-shift] section.
    * @param {HTMLElement} section
    */
@@ -69,8 +109,6 @@
     var d = section.dataset;
 
     // ── Config ─────────────────────────────────────────────────────
-    var bgFrom   = d.csBgFrom   || null;
-    var bgTo     = d.csBgTo     || null;
     var start    = d.csStart    || "top 75%";
     var end      = d.csEnd      || "bottom 25%";
     var scrub    = d.csScrub    !== undefined ? parseFloat(d.csScrub) : 0.8;
@@ -84,6 +122,12 @@
       console.warn("[Sestek ColorShift] data-cs-target not found:", d.csTarget); return;
     }
 
+    // Resolve colours (literal #hex or CSS var token → computed colour).
+    // Variables resolve against the element they apply to, so bg tokens use
+    // the bgTarget's scope and text tokens use each text element's scope.
+    var bgFrom = d.csBgFrom ? resolveColor(d.csBgFrom, bgTarget) : null;
+    var bgTo   = d.csBgTo   ? resolveColor(d.csBgTo,   bgTarget) : null;
+
     // Text children
     var textEls = Array.prototype.slice.call(section.querySelectorAll("[data-cs-text]"));
 
@@ -95,7 +139,7 @@
       // Jump straight to the end state so content is readable
       if (bgTo)  gsap.set(bgTarget, { backgroundColor: bgTo });
       textEls.forEach(function (el) {
-        if (el.dataset.csTo) gsap.set(el, { color: el.dataset.csTo });
+        if (el.dataset.csTo) gsap.set(el, { color: resolveColor(el.dataset.csTo, el) });
       });
       return;
     }
@@ -104,7 +148,7 @@
     // Only if an explicit from-colour was given — don't override CSS otherwise.
     if (bgFrom) gsap.set(bgTarget, { backgroundColor: bgFrom });
     textEls.forEach(function (el) {
-      if (el.dataset.csFrom) gsap.set(el, { color: el.dataset.csFrom });
+      if (el.dataset.csFrom) gsap.set(el, { color: resolveColor(el.dataset.csFrom, el) });
     });
 
     // ── Build timeline ──────────────────────────────────────────────
@@ -137,8 +181,8 @@
       if (from && to) {
         tl.fromTo(
           el,
-          { color: from },
-          { color: to, ease: "none" },
+          { color: resolveColor(from, el) },
+          { color: resolveColor(to, el), ease: "none" },
           0  // same position → all change together
         );
       }

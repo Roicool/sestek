@@ -395,6 +395,27 @@ DOM:
 >
 ```
 
+**Renk değerleri — hex VEYA CSS variable:**
+
+Literal renk de, RC Structure token'ı da kabul edilir. Token verirsen computed
+değerine çözülüp öyle tween edilir (GSAP ham `var()` interpolate edemez, bu yüzden
+script çözer). Üç form da geçerli:
+
+```html
+<!-- literal -->
+<section data-color-shift data-cs-bg-from="#ffffff" data-cs-bg-to="#0a0a0f">
+
+<!-- bare token -->
+<section data-color-shift data-cs-bg-from="--neutral--050" data-cs-bg-to="--neutral--900">
+
+<!-- var() wrapper -->
+<h2 data-cs-text data-cs-from="var(--color-text--900)" data-cs-to="var(--neutral--050)">…</h2>
+```
+
+> Token, uygulandığı elementin computed style'ından okunur — bir parent'ta
+> override edilmiş değişken doğru scope'tan çözülür. PROJECT.md'nin "raw hex
+> kullanma" kuralına uymak için token formunu tercih et.
+
 **Notlar**
 - Background değişimi paint-only operasyon — layout recalc yok, PageSpeed'e etkisi sıfır.
 - Birden fazla section'a eklenebilir; her biri bağımsız ScrollTrigger'a sahip olur.
