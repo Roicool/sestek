@@ -24,7 +24,7 @@ sestek/
 │   ├── components/  # UI — hero.js, hero-slider.js, marquee.js, scroll-tabs.js,
 │   │                #      video-modal.js, card-marquee.js, section-title.js,
 │   │                #      text-rotator.js, story.js, accordion.js,
-│   │                #      blog-utils.js, site-utils.js
+│   │                #      blog-utils.js, site-utils.js, sticky-utms.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js
 ├── css/

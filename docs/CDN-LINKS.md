@@ -44,7 +44,7 @@ js/
   core/        lenis-init.js, nav.js
   components/  hero.js, hero-slider.js, marquee.js, scroll-tabs.js, video-modal.js,
                card-marquee.js, section-title.js, text-rotator.js, story.js,
-               accordion.js, blog-utils.js, site-utils.js
+               accordion.js, blog-utils.js, site-utils.js, sticky-utms.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js, reveal.js, color-shift.js
 css/
@@ -628,6 +628,7 @@ DOM yapısı:
 | `js/components/accordion.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/accordion.js` |
 | `css/components/accordion.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css` |
 | `js/components/site-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js` |
+| `js/components/sticky-utms.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-utms.js` |
 
 ### Accordion
 
@@ -729,6 +730,45 @@ DOM:
 
 **Footer yılı**
 - `new Date().getFullYear()` ile her sayfa yüklemesinde güncellenir.
+
+### Sticky UTMs
+
+Landing URL'deki UTM parametrelerini `sessionStorage`'a kaydeder ve sayfadaki tüm eşleşen linklere otomatik ekler. CMS, modal veya Webflow IX2 ile sonradan eklenen linkler de (MutationObserver sayesinde) yakalanır.
+
+CSS bağımlılığı yok.
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-utms.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initStickyUtms();
+  });
+</script>
+```
+
+**Konfigürasyon** (`<body>` attribute'ları — hepsi opsiyonel):
+
+```html
+<!-- Hangi domainlerin linklerine UTM eklensin (virgülle ayrılmış) -->
+<!-- Default: sadece mevcut sayfanın hostname'i -->
+<body data-utm-domains="acme.com,app.acme.com">
+
+<!-- Hangi paramları takip et — default: 5 standart UTM param -->
+<body data-utm-params="utm_source,utm_medium,utm_campaign">
+```
+
+**Nasıl çalışır:**
+1. Ziyaretçi `?utm_source=google&utm_medium=cpc` ile gelir
+2. UTM'ler `sessionStorage`'a kaydedilir
+3. Sayfadaki tüm izin verilen domain linkleri güncellenir
+4. Farklı sayfaya geçilse bile (URL'de UTM olmasa da) sessionStorage'dan okur — aynı session boyunca UTM takibi devam eder
+5. Linkte zaten UTM varsa dokunulmaz
 
 ### Blog Utils
 
