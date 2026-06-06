@@ -31,7 +31,7 @@ sestek/
 │   ├── core/        # nav.css, nav-full.css
 │   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,
 │   │                #   video-modal, card-marquee, section-title, text-rotator,
-│   │                #   story, hero-slider, accordion, site-utils)
+│   │                #   story, hero-slider, accordion)
 │   ├── effects/     # grain.css, btn-glow.css
 │   └── animations/  # reveal.css
 └── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md,
