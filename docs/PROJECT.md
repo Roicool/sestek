@@ -29,7 +29,7 @@ sestek/
 │   ├── components/  # Component styles — hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
 │   ├── effects/     # Effect styles — grain.css, btn-glow.css
 │   └── animations/  # Animation styles — reveal.css
-└── docs/            # PROJECT.md, CDN-LINKS.md, RC-STRUCTURE-REFERENCE.css, changelogs
+└── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md, RC-STRUCTURE-REFERENCE.css
 ```
 
 ---
