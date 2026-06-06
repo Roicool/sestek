@@ -34,7 +34,7 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 ```
 js/
   core/        lenis-init.js, nav.js
-  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
+  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js, blog-utils.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js, reveal.js, color-shift.js
 css/
@@ -612,6 +612,117 @@ DOM yapısı:
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
+| `js/components/blog-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/blog-utils.js` |
+
+### Blog Utils
+
+Üç bağımsız blog utility tek dosyada — AI özet, sosyal paylaşım, içindekiler.
+Bağımlılık yok; her utility ayrı ayrı da çağrılabilir.
+
+```html
+<!-- in <head> — CSS bağımlılığı yok -->
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/blog-utils.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initBlogUtils(); // üçünü birden başlatır
+    // ya da ayrı ayrı:
+    // Sestek.initAiSummarize();
+    // Sestek.initSocialShare();
+    // Sestek.initToc();
+  });
+</script>
+```
+
+> Lenis sayfada kuruluysa (`Sestek.initLenis()`) TOC scroll'u otomatik
+> olarak `Sestek.scrollTo` üzerinden çalışır — ekstra bir şey yapmana gerek yok.
+
+---
+
+#### 1. AI Summarize
+
+Sayfanın URL'ini ve başlığını AI prompt'una gömerek doğrudan AI platformuna gönderir.
+
+```html
+<!-- Sayfa başlığında ya da herhangi bir gizli elementte brand adı -->
+<span data-brand="Sestek" style="display:none"></span>
+
+<!-- Butonlar / linkler -->
+<a data-ai-summarize="chatgpt">ChatGPT'de Oku</a>
+<a data-ai-summarize="claude">Claude'da Oku</a>
+<a data-ai-summarize="perplexity">Perplexity'de Oku</a>
+<a data-ai-summarize="grok">Grok'ta Oku</a>
+<a data-ai-summarize="google">Google AI'da Oku</a>
+```
+
+- `<a>` ise `href`/`target` atanır. Başka bir element (`<button>`, `<div>`) ise `click` listener eklenir.
+- `[data-brand]` yoksa prompt'ta brand boş geçer; sorun olmaz.
+
+---
+
+#### 2. Social Share
+
+Mevcut sayfayı sosyal platformlara paylaşır veya linki panoya kopyalar.
+
+```html
+<a data-share="twitter">Twitter</a>
+<a data-share="linkedin">LinkedIn</a>
+<a data-share="facebook">Facebook</a>
+<a data-share="whatsapp">WhatsApp</a>
+<a data-share="telegram">Telegram</a>
+<a data-share="reddit">Reddit</a>
+<a data-share="email">E-posta ile Gönder</a>
+<button data-share="copy">Linki Kopyala</button>
+```
+
+- `copy` / `copy-link` → `navigator.clipboard` kullanır; eski tarayıcılarda `execCommand` fallback'i var. Kopyalanınca altta toast mesajı görünür.
+- `email` → aynı sekmede açılır; diğerleri yeni sekme.
+
+---
+
+#### 3. Table of Contents
+
+`[data-toc-source]` içindeki başlıkları okuyup otomatik ID atar, TOC listesini oluşturur.
+Tıklamada Lenis (varsa) veya native smooth scroll ile hedef başlığa gider.
+
+```html
+<!-- Kaynak alan — blog içerik wrapper'ı -->
+<div data-toc-source class="blog-content">
+  <h2>Birinci Bölüm</h2>
+  <h2>İkinci Bölüm</h2>
+  <h3>Alt Başlık</h3>
+</div>
+
+<!--
+  TOC container
+    data-toc-offset      sticky nav yüksekliği kadar px boşluk (default 80)
+    data-toc-headings    hangi tag'leri indeksle (default "h2")
+-->
+<nav data-toc data-toc-offset="100" data-toc-headings="h2,h3">
+
+  <!--
+    data-toc-template  → bu element her başlık için klonlanır (Webflow için).
+    Webflow Designer'da istediğin class / style'ı ver; JS sadece href ve
+    metni doldurur. Yoksa sade <a data-toc-item> oluşturur.
+  -->
+  <a data-toc-template href="#">
+    <span data-toc-text></span>
+  </a>
+
+  <!-- Oluşturulan item'lar buraya eklenir -->
+  <div data-toc-list></div>
+
+</nav>
+```
+
+- Başlığın zaten `id`'si varsa dokunulmaz; yoksa slug'dan üretilir (Türkçe karakter desteği var).
+- Hiç başlık bulunamazsa container'a `data-toc-empty="true"` eklenir — Webflow'da `display:none` koşulu için kullanılabilir.
+- Birden fazla `[data-toc]` container'ı desteklenir (sidebar + mobile ayrı TOC gibi).
+- `data-toc-headings` ilk container'dan okunur; tüm container'lara uygulanır.
 
 ### Hero
 
