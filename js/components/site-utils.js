@@ -33,6 +33,8 @@
  *   [data-view-target].is-grid   — container in grid mode (default)
  *   [data-view-card].is-list     — each card in list mode
  *   [data-view-card].is-grid     — each card in grid mode (default)
+ *   [data-view-item].is-list     — any element in list mode
+ *   [data-view-item].is-grid     — any element in grid mode (default)
  *   [data-view-btn].is-active    — the currently active button
  *
  * Optional: persist last selection across pages with localStorage.
@@ -76,6 +78,14 @@
       card.classList.add("is-" + view);
       card.classList.remove("is-" + other);
     });
+
+    Array.prototype.forEach.call(
+      document.querySelectorAll("[data-view-item]"),
+      function (el) {
+        el.classList.add("is-" + view);
+        el.classList.remove("is-" + other);
+      }
+    );
 
     Array.prototype.forEach.call(btns, function (btn) {
       var isActive = btn.getAttribute("data-view-btn") === view;
