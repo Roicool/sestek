@@ -46,7 +46,7 @@ js/
                card-marquee.js, section-title.js, text-rotator.js, story.js,
                accordion.js, blog-utils.js, site-utils.js, sticky-utms.js
   effects/     grain.js, btn-glow.js
-  animations/  height-reveal.js, reveal.js, color-shift.js
+  animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,

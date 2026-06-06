@@ -26,7 +26,7 @@ sestek/
 │   │                #      text-rotator.js, story.js, accordion.js,
 │   │                #      blog-utils.js, site-utils.js, sticky-utms.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
-│   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js
+│   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js
 ├── css/
 │   ├── core/        # nav.css, nav-full.css
 │   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,
