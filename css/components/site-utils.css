@@ -1,0 +1,45 @@
+/*!
+ * site-utils.css v1.0.0
+ * Skip-to-main link — visually hidden until keyboard-focused.
+ * Colours/spacing override from the Webflow Designer + RC tokens.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Skip link ───────────────────────────────────────────────── */
+/*
+ * Off-screen by default so it never disturbs the visual design, but reachable
+ * by Tab as the first focusable element. On focus it slides into view at the
+ * top-left so sighted keyboard users can see where they're jumping.
+ */
+.skip-link,
+[data-skip-link] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  /* Hidden: pulled off-screen but still focusable (not display:none) */
+  transform: translateY(-120%);
+  margin: var(--spacing--2, 0.5rem);
+  padding: var(--spacing--3, 0.75rem) var(--spacing--5, 1.25rem);
+  border-radius: var(--radius--md, 8px);
+  background: var(--neutral--900, #18181b);
+  color: var(--neutral--050, #fafafa);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-skip-link]:focus,
+[data-skip-link]:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--brand-primary--500, #5983f8);
+  outline-offset: 2px;
+}
+
+/* The skip target shouldn't show a focus ring when jumped to programmatically */
+[data-skip-target]:focus,
+#main:focus {
+  outline: none;
+}

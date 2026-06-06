@@ -20,16 +20,22 @@
 ```
 sestek/
 ├── js/
-│   ├── core/        # Foundation utilities — lenis-init.js, nav.js
-│   ├── components/  # UI components — hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
+│   ├── core/        # Foundation — lenis-init.js, nav.js
+│   ├── components/  # UI — hero.js, hero-slider.js, marquee.js, scroll-tabs.js,
+│   │                #      video-modal.js, card-marquee.js, section-title.js,
+│   │                #      text-rotator.js, story.js, accordion.js,
+│   │                #      blog-utils.js, site-utils.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
-│   └── animations/  # Reusable GSAP animation presets — height-reveal.js, reveal.js
+│   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js
 ├── css/
-│   ├── core/        # Core styles — nav.css, nav-full.css
-│   ├── components/  # Component styles — hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
-│   ├── effects/     # Effect styles — grain.css, btn-glow.css
-│   └── animations/  # Animation styles — reveal.css
-└── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md, RC-STRUCTURE-REFERENCE.css
+│   ├── core/        # nav.css, nav-full.css
+│   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,
+│   │                #   video-modal, card-marquee, section-title, text-rotator,
+│   │                #   story, hero-slider, accordion, site-utils)
+│   ├── effects/     # grain.css, btn-glow.css
+│   └── animations/  # reveal.css
+└── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md,
+                     #   RC-STRUCTURE-REFERENCE.css
 ```
 
 ---
@@ -85,6 +91,25 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
 ### Page Settings → Custom Code → `<head>` bölümü
 
 ```html
+<!--
+  Webflow IX2 (native Interactions) kapatma — en üste, defer'DEN ÖNCE.
+  Sestek animasyonları GSAP ile yönetir; Webflow'un kendi interaction'larının
+  araya girip flash/çakışma yapmasını engellemek için body oluşur oluşmaz
+  data-wf-ix-vacation="1" basıp gözlemciyi kapatır. (Webflow IX2 KULLANMIYORSAN
+  ekle; Designer'da native interaction kullanıyorsan EKLEME.)
+-->
+<script>
+  (function () {
+    var mo = new MutationObserver(function (m, obs) {
+      if (document.body) {
+        document.body.setAttribute("data-wf-ix-vacation", "1");
+        obs.disconnect();
+      }
+    });
+    mo.observe(document, { childList: true, subtree: true });
+  })();
+</script>
+
 <!-- DNS + TLS pre-warm -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
@@ -95,6 +120,11 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js" defer></script>
 <!-- Kullanılan component scriptleri buraya eklenir -->
 ```
+
+> **`data-wf-ix-vacation` nedir?** Webflow'un yerleşik IX2 Interactions motorunu
+> "tatile" çıkarır (devre dışı bırakır). Inline ve `defer`'den önce çalışması
+> şart — yoksa Webflow animasyonu bir kare oynayıp flash yapabilir. Bu satır
+> bir MutationObserver ile body'yi bekler, attribute'u basar, kendini kapatır.
 
 ### Page Settings → Custom Code → `</body>` öncesi bölümü
 

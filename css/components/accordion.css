@@ -1,0 +1,57 @@
+/*!
+ * accordion.css v1.0.0
+ * Accessible accordion — critical/behavioural styles only.
+ * Colours, fonts, borders and spacing come from the Webflow Designer + RC tokens.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Trigger (header button) ─────────────────────────────────── */
+.accordion__trigger,
+[data-accordion-trigger] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--spacing--4, 1rem);
+  /* Reset native button chrome so Designer styles win */
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Visible keyboard focus — accessibility */
+[data-accordion-trigger]:focus-visible {
+  outline: 2px solid var(--brand-primary--500, #5983f8);
+  outline-offset: 2px;
+}
+
+/* ── Panel — height is GSAP-driven; overflow clips during animation ── */
+[data-accordion-panel] {
+  height: 0;
+  overflow: hidden;
+  /* No CSS transition — GSAP owns the height tween so it can settle to auto */
+  will-change: height;
+}
+
+/* ── Icon — rotates when its item is open (cosmetic, CSS-driven) ── */
+[data-accordion-icon] {
+  flex: 0 0 auto;
+  transition: transform var(--accordion-icon-speed, 0.3s) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.is-open > [data-accordion-trigger] [data-accordion-icon],
+[data-accordion-item].is-open [data-accordion-trigger] [data-accordion-icon] {
+  transform: rotate(180deg);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-accordion-panel],
+  [data-accordion-icon] {
+    will-change: auto;
+    transition: none !important;
+  }
+}

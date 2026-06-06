@@ -9,6 +9,14 @@ Use `@main` for development. Pin to a tag (e.g. `@v1.0.0`) in production.
 > `DOMContentLoaded` callback instead (see Webflow patterns below).  
 > Add `<link rel="preconnect" href="https://cdn.jsdelivr.net">` in `<head>` to cut DNS + TLS latency.
 
+> **Webflow IX2 kapatma (opsiyonel ama önerilir)**  
+> Sestek animasyonları GSAP ile yönetir. Webflow'un yerleşik Interactions (IX2)
+> motorunu kullanmıyorsan, `<head>`'in en üstüne (defer'den önce) aşağıdaki
+> inline snippet'i koy — body oluşur oluşmaz `data-wf-ix-vacation="1"` basıp
+> Webflow'un animasyonlarının araya girip flash/çakışma yapmasını engeller.
+> Tam snippet ve açıklama: [`PROJECT.md` → Getting Started (Webflow)](./PROJECT.md#getting-started-webflow).
+> (Designer'da native IX2 interaction KULLANIYORSAN ekleme.)
+
 > **⚠️ Birden fazla pinli bölüm (hero + scroll-tabs) varsa**  
 > Init çağrılarının **sırası önemsizdir** — hepsini tek `DOMContentLoaded`
 > bloğunda istediğin sırayla çağırabilirsin. Pinli bölümlerin üst üste
@@ -34,12 +42,16 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 ```
 js/
   core/        lenis-init.js, nav.js
-  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js, blog-utils.js
+  components/  hero.js, hero-slider.js, marquee.js, scroll-tabs.js, video-modal.js,
+               card-marquee.js, section-title.js, text-rotator.js, story.js,
+               accordion.js, blog-utils.js, site-utils.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js, reveal.js, color-shift.js
 css/
   core/        nav.css, nav-full.css
-  components/  hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
+  components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
+               card-marquee.css, section-title.css, text-rotator.css, story.css,
+               accordion.css, site-utils.css
   effects/     grain.css, btn-glow.css
   animations/  reveal.css
 ```
@@ -613,6 +625,120 @@ DOM yapısı:
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 | `js/components/blog-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/blog-utils.js` |
+| `js/components/accordion.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/accordion.js` |
+| `css/components/accordion.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css` |
+| `js/components/site-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js` |
+| `css/components/site-utils.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/site-utils.css` |
+
+### Accordion
+
+Erişilebilir akordeon (SSS / disclosure blokları). ARIA, klavye navigasyonu
+(Enter/Space + ok tuşları), GSAP height animasyonu. Tek-açık ya da çoklu-açık.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/accordion.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initAccordion(); // tüm [data-accordion] gruplarını başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök:
+    data-accordion
+    data-accordion-multiple="false"   "true" → birden fazla panel açık kalabilir
+    data-accordion-duration="0.4"     aç/kapa süresi sn
+    data-accordion-ease="power2.inOut"
+-->
+<div data-accordion data-accordion-multiple="false">
+
+  <!-- data-accordion-open → bu item açık başlar -->
+  <div data-accordion-item data-accordion-open>
+    <button data-accordion-trigger>
+      Soru başlığı
+      <svg data-accordion-icon width="16" height="16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div data-accordion-panel>
+      <div data-accordion-content>Cevap metni…</div>
+    </div>
+  </div>
+
+  <div data-accordion-item>
+    <button data-accordion-trigger>
+      İkinci soru
+      <svg data-accordion-icon width="16" height="16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div data-accordion-panel>
+      <div data-accordion-content>İkinci cevap…</div>
+    </div>
+  </div>
+
+</div>
+```
+
+**Notlar**
+- ARIA otomatik bağlanır: `aria-expanded`, `aria-controls`, `aria-hidden`, `role="region"`.
+- Klavye: Enter/Space açıp kapatır; ↑/↓/Home/End başlıklar arasında gezer.
+- `[data-accordion-icon]` varsa açık item'da CSS ile 180° döner (rotate).
+- Açık item'a ve trigger'ına `is-open` class'ı eklenir — Designer'dan aktif stil verebilirsin.
+- `prefers-reduced-motion`: animasyon yerine anında açılır/kapanır.
+- `Sestek.initAccordion()` her gruba bir controller döndürür.
+
+### Site Utils
+
+Site geneli küçük profesyonellik / erişilebilirlik yardımcıları — bağımlılık yok.
+Skip-to-main link + otomatik footer yılı.
+
+```html
+<!-- in <head> — skip-link CSS'i için -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/site-utils.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initSiteUtils(); // skip-link + footer yılı
+    // ya da ayrı ayrı:
+    // Sestek.initSkipLink();
+    // Sestek.initFooterYear();
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!-- Skip link — <body>'nin İLK odaklanabilir elementi olmalı -->
+<a data-skip-link href="#main" class="skip-link">İçeriğe geç</a>
+...
+<main id="main"> … </main>   <!-- ya da herhangi bir elemente data-skip-target -->
+
+<!-- Footer yılı — boş bırak → "2026" -->
+<span data-current-year></span>
+
+<!-- ya da template: {year} değişkenle değişir -->
+<span data-current-year="© {year} Sestek. Tüm hakları saklıdır."></span>
+```
+
+**Notlar**
+- Skip link normalde ekran dışında; Tab ile odaklanınca sol üstte belirir (CSS dosyasında).
+- Aktivasyonda hedefe `focus()` verir — bir sonraki Tab ana içerikten devam eder (sadece scroll değil).
+- Footer yılı `new Date().getFullYear()` ile her sayfa yüklemesinde güncellenir.
 
 ### Blog Utils
 
