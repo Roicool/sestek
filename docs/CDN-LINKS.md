@@ -723,8 +723,13 @@ Webflow `</body>` öncesi:
 DOM:
 
 ```html
-<!-- Skip link — <body>'nin İLK odaklanabilir elementi olmalı -->
-<a data-skip-link href="#main" class="skip-link">İçeriğe geç</a>
+<!--
+  Skip link — <body>'nin İLK odaklanabilir elementi olmalı.
+  Webflow'da bir Link Block ekle, Custom Attribute: data-skip-link,
+  URL: #main. Üzerine ekstra Webflow class'ı VERME (çakışma yaratır) —
+  görünüm tamamen site-utils.css'ten gelir.
+-->
+<a data-skip-link href="#main">İçeriğe geç</a>
 ...
 <main id="main"> … </main>   <!-- ya da herhangi bir elemente data-skip-target -->
 
@@ -735,10 +740,18 @@ DOM:
 <span data-current-year="© {year} Sestek. Tüm hakları saklıdır."></span>
 ```
 
-**Notlar**
-- Skip link normalde ekran dışında; Tab ile odaklanınca sol üstte belirir (CSS dosyasında).
-- Aktivasyonda hedefe `focus()` verir — bir sonraki Tab ana içerikten devam eder (sadece scroll değil).
-- Footer yılı `new Date().getFullYear()` ile her sayfa yüklemesinde güncellenir.
+**Skip link nasıl davranır (mantık)**
+- **Fare kullanıcısı hiç görmez** — link her zaman DOM'da ama viewport'un üstünde gizli.
+- **Tab'a basınca** (klavye) üstten ortaya kayar — markalı bir "pill" olarak belirir.
+- **Odak kalkınca** (blur / Tab ile geçince) tekrar yukarı kayıp kaybolur.
+- Tıklanınca/Enter'lanınca hedefe **gerçek `focus()`** verir → bir sonraki Tab ana
+  içerikten devam eder (sadece scroll değil — ekran okuyucu da oraya taşınır).
+- Renkler RC semantic token'larından gelir (`--interactive--color-primary-*`),
+  yani **renk seçicine/temaya göre** otomatik uyar — hardcode renk yok.
+- Konum top-center + `max-width` + `nowrap` → ekran kenarından taşmaz.
+
+**Footer yılı**
+- `new Date().getFullYear()` ile her sayfa yüklemesinde güncellenir.
 
 ### Blog Utils
 

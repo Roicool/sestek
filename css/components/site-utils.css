@@ -1,45 +1,68 @@
 /*!
- * site-utils.css v1.0.0
- * Skip-to-main link — visually hidden until keyboard-focused.
- * Colours/spacing override from the Webflow Designer + RC tokens.
+ * site-utils.css v1.1.0
+ * Skip-to-main link — visually hidden until keyboard focus, then slides into
+ * view at the top-centre as a branded pill. Colours follow the RC semantic
+ * tokens (interactive/surface), so it tracks the site's colour selector.
  * https://github.com/roicool/sestek
  */
 
 /* ── Skip link ───────────────────────────────────────────────── */
 /*
- * Off-screen by default so it never disturbs the visual design, but reachable
- * by Tab as the first focusable element. On focus it slides into view at the
- * top-left so sighted keyboard users can see where they're jumping.
+ * Logic:
+ *   • Always in the DOM and focusable (NOT display:none) so keyboard users
+ *     reach it with the very first Tab.
+ *   • Hidden by sitting just above the viewport (translateY up). It has zero
+ *     visual footprint for mouse users — they never see it.
+ *   • On focus it slides DOWN to a fixed top-centre position. Leaving it
+ *     (blur) slides it back up. One clear, predictable motion.
+ *   • Centred + max-width + nowrap → never overflows the screen edge.
  */
-.skip-link,
 [data-skip-link] {
   position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 10000;
-  /* Hidden: pulled off-screen but still focusable (not display:none) */
-  transform: translateY(-120%);
-  margin: var(--spacing--2, 0.5rem);
-  padding: var(--spacing--3, 0.75rem) var(--spacing--5, 1.25rem);
-  border-radius: var(--radius--md, 8px);
-  background: var(--neutral--900, #18181b);
-  color: var(--neutral--050, #fafafa);
-  font: inherit;
-  font-weight: 500;
+  top: var(--spacing--4, 1rem);
+  left: 50%;
+  z-index: 1000;
+
+  /* Hidden state: pushed fully above the top edge (incl. its top offset) */
+  transform: translate(-50%, calc(-100% - var(--spacing--6, 1.5rem)));
+
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100vw - var(--spacing--8, 2rem));
+  padding: var(--spacing--2-5, 0.625rem) var(--spacing--5, 1.25rem);
+
+  border-radius: var(--radius--full, 9999px);
+  background: var(--interactive--color-primary-base, #1a1a1a);
+  color: var(--interactive--color-primary-text, #ffffff);
+
+  font-family: var(--font--primary, inherit);
+  font-size: var(--text--sm, 0.875rem);
+  font-weight: var(--font-weight--medium, 500);
+  line-height: var(--leading--none, 1);
   text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Visible state — slid into view, with a clear focus ring */
 [data-skip-link]:focus,
 [data-skip-link]:focus-visible {
-  transform: translateY(0);
-  outline: 2px solid var(--brand-primary--500, #5983f8);
+  transform: translate(-50%, 0);
+  outline: 2px solid var(--interactive--color-accent-base, currentColor);
   outline-offset: 2px;
 }
 
-/* The skip target shouldn't show a focus ring when jumped to programmatically */
+/* The jump target is focused programmatically — don't flash a ring on it */
 [data-skip-target]:focus,
 #main:focus {
   outline: none;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-skip-link] {
+    transition: none;
+  }
 }
