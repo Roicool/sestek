@@ -1,0 +1,26 @@
+/*!
+ * site-utils.css v1.0.0
+ * Behavioural CSS for site-utils.js view toggle — fade transition only.
+ * Layout styles (grid columns, card direction etc.) go in Webflow Designer
+ * via is-grid / is-list combo classes.
+ * https://github.com/roicool/sestek
+ */
+
+/* Cards fade during layout switch */
+[data-view-target] [data-view-card],
+[data-view-target] [data-view-item] {
+  transition: opacity 0.15s ease;
+}
+
+[data-view-target].is-switching [data-view-card],
+[data-view-target].is-switching [data-view-item] {
+  opacity: 0;
+}
+
+/* Reduced motion — no fade */
+@media (prefers-reduced-motion: reduce) {
+  [data-view-target] [data-view-card],
+  [data-view-target] [data-view-item] {
+    transition: none;
+  }
+}

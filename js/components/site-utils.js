@@ -68,30 +68,41 @@
    * Apply a view ("grid" or "list") to a target + its cards.
    * Also marks the correct button as active.
    */
-  function applyView(view, target, cards, btns) {
+  function applyView(view, target, cards, btns, animate) {
     var other = view === "list" ? "grid" : "list";
 
-    target.classList.add("is-" + view);
-    target.classList.remove("is-" + other);
+    function commit() {
+      target.classList.add("is-" + view);
+      target.classList.remove("is-" + other);
 
-    Array.prototype.forEach.call(cards, function (card) {
-      card.classList.add("is-" + view);
-      card.classList.remove("is-" + other);
-    });
+      Array.prototype.forEach.call(cards, function (card) {
+        card.classList.add("is-" + view);
+        card.classList.remove("is-" + other);
+      });
 
-    Array.prototype.forEach.call(
-      document.querySelectorAll("[data-view-item]"),
-      function (el) {
-        el.classList.add("is-" + view);
-        el.classList.remove("is-" + other);
-      }
-    );
+      Array.prototype.forEach.call(
+        document.querySelectorAll("[data-view-item]"),
+        function (el) {
+          el.classList.add("is-" + view);
+          el.classList.remove("is-" + other);
+        }
+      );
 
-    Array.prototype.forEach.call(btns, function (btn) {
-      var isActive = btn.getAttribute("data-view-btn") === view;
-      btn.classList.toggle("is-active", isActive);
-      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
-    });
+      Array.prototype.forEach.call(btns, function (btn) {
+        var isActive = btn.getAttribute("data-view-btn") === view;
+        btn.classList.toggle("is-active", isActive);
+        btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+    }
+
+    if (!animate) { commit(); return; }
+
+    /* Fade out → commit layout → fade in */
+    target.classList.add("is-switching");
+    setTimeout(function () {
+      commit();
+      target.classList.remove("is-switching");
+    }, 150);
   }
 
   /**
@@ -112,13 +123,13 @@
     var defAttr = wrapper.getAttribute("data-view-default") || "grid";
     var initial = (stored === "grid" || stored === "list") ? stored : defAttr;
 
-    applyView(initial, target, cards, btns);
+    applyView(initial, target, cards, btns, false);
 
     Array.prototype.forEach.call(btns, function (btn) {
       btn.addEventListener("click", function () {
         var view = btn.getAttribute("data-view-btn");
         if (view !== "grid" && view !== "list") return;
-        applyView(view, target, cards, btns);
+        applyView(view, target, cards, btns, true);
         if (persistKey) {
           try { localStorage.setItem("sv_" + persistKey, view); } catch (_) {}
         }
