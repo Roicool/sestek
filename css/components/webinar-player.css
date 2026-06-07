@@ -1,5 +1,5 @@
 /*!
- * webinar-player.css v1.3.0
+ * webinar-player.css v1.4.0
  * Sestek-style controller skin for webinar-player.js. The player injects the
  * DOM (.swp__bigplay, .swp__bar, …); this file owns the look. Accent colour
  * comes from --swp-accent (set per-player from data-webinar-accent, defaults
@@ -10,13 +10,18 @@
 /* ── No-CLS reservation ───────────────────────────────────────────
  * Reserve the 16:9 box at CSS-parse time — BEFORE the (lazy) poster image
  * loads and BEFORE the JS adds .swp. This is what prevents Cumulative Layout
- * Shift: the box never grows, so nothing below it moves. Requires the
- * stylesheet to be in <head> (render-blocking), which it is.
- * The poster is absolute from the start so it can't push layout either. */
-[data-webinar] {
+ * Shift: the box never grows, so nothing below it moves.
+ *
+ * MUST be loaded in <head> (render-blocking) to apply before first paint.
+ * The doubled [data-webinar][data-webinar] selector (specificity 0,2,0) and
+ * height:auto are deliberate — they beat a single Webflow class that may set
+ * a height, which would otherwise cancel aspect-ratio. */
+[data-webinar][data-webinar] {
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 0;
   overflow: hidden;
   border-radius: var(--radius--xl, 1rem);
   background: #000;
