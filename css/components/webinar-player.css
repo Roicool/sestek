@@ -1,0 +1,216 @@
+/*!
+ * webinar-player.css v1.0.0
+ * Sestek-style controller skin for webinar-player.js. The player injects the
+ * DOM (.swp__bigplay, .swp__bar, …); this file owns the look. Accent colour
+ * comes from --swp-accent (set per-player from data-webinar-accent, defaults
+ * to --interactive--color-primary-base).
+ * https://github.com/roicool/sestek
+ */
+
+/* Accent fallback — JS sets --swp-accent inline per wrapper */
+.swp {
+  --swp-accent: var(--interactive--color-primary-base, #ec008c);
+  --swp-bar-h: 3.25rem;
+  background: #000;
+}
+
+.swp,
+.swp * { box-sizing: border-box; }
+
+/* ── Big centre play button ───────────────────────────────────── */
+.swp__bigplay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: clamp(3.5rem, 6vw, 5rem);
+  height: clamp(3.5rem, 6vw, 5rem);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius--full, 9999px);
+  background: var(--swp-accent);
+  color: #fff;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+}
+
+.swp__bigplay svg {
+  width: 44%;
+  height: 44%;
+  fill: currentColor;
+  margin-left: 6%; /* optical centring of the play triangle */
+}
+
+.swp__bigplay:hover { transform: translate(-50%, -50%) scale(1.08); }
+.swp__bigplay:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Hide the big button while playing */
+.swp.is-playing .swp__bigplay {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+/* ── Bottom control bar ───────────────────────────────────────── */
+.swp__bar {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--3, 0.75rem);
+  height: var(--swp-bar-h);
+  padding: 0 var(--spacing--4, 1rem);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0) 100%);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Auto-hide while playing + idle */
+.swp.is-idle .swp__bar {
+  opacity: 0;
+  transform: translateY(0.5rem);
+  pointer-events: none;
+}
+
+/* ── Buttons in the bar ───────────────────────────────────────── */
+.swp__btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius--base, 0.5rem);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.swp__btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Filled glyphs (play / pause) read better solid */
+.swp__toggle svg { fill: currentColor; stroke: none; }
+
+.swp__btn:hover { background: rgba(255, 255, 255, 0.14); }
+.swp__btn:focus-visible { outline: 2px solid var(--swp-accent); outline-offset: 2px; }
+.swp__toggle:hover { color: var(--swp-accent); }
+
+/* ── Time labels ──────────────────────────────────────────────── */
+.swp__time {
+  flex: 0 0 auto;
+  min-width: 3ch;
+  font-family: var(--font--mono, var(--font--primary, inherit));
+  font-size: var(--text--xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  user-select: none;
+}
+
+/* ── Scrubber ─────────────────────────────────────────────────── */
+.swp__scrub {
+  position: relative;
+  flex: 1 1 auto;
+  height: 0.375rem;
+  display: flex;
+  align-items: center;
+}
+
+.swp__scrub::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius--full, 9999px);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.swp__buffered,
+.swp__fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius--full, 9999px);
+  pointer-events: none;
+}
+
+.swp__buffered { width: 0; background: rgba(255, 255, 255, 0.35); }
+.swp__fill     { width: 0; background: var(--swp-accent); }
+
+/* Native range sits on top — invisible track, draggable thumb */
+.swp__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.swp__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--swp-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+.swp__range::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--swp-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.swp__range:hover::-webkit-slider-thumb,
+.swp__range:active::-webkit-slider-thumb { transform: scale(1.25); }
+.swp__range:focus-visible { outline: none; }
+.swp__range:focus-visible::-webkit-slider-thumb { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ── Fullscreen ───────────────────────────────────────────────── */
+.swp.is-fullscreen { width: 100%; height: 100%; aspect-ratio: auto; }
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .swp { --swp-bar-h: 2.75rem; }
+  .swp__btn { width: 1.75rem; height: 1.75rem; }
+  .swp__btn svg { width: 1.1rem; height: 1.1rem; }
+  .swp__time { font-size: 0.7rem; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .swp__bigplay,
+  .swp__bar,
+  .swp__btn,
+  .swp__range::-webkit-slider-thumb { transition: none; }
+}
