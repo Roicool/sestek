@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v1.0.1
+ * webinar-player.js v1.1.0
  * Inline YouTube playback with fully custom controls — no native YouTube
  * chrome, no click-through to youtube.com. Lazy-loads the IFrame Player API,
  * crossfades a poster thumbnail, and exposes play/pause buttons you design
@@ -71,19 +71,25 @@
     return /^[\w-]{6,}$/.test(raw.trim()) ? raw.trim() : null;
   }
 
+  /* Match ANY element carrying the attribute — <picture>, <img>, <div>… —
+   * not just <picture>. Webflow usually outputs a bare <img>. */
   function findPicture(wrapper, id) {
-    return wrapper.querySelector('picture[data-webinar-picture="' + id + '"]')
-        || document.querySelector('picture[data-webinar-picture="' + id + '"]');
+    return wrapper.querySelector('[data-webinar-picture="' + id + '"]')
+        || document.querySelector('[data-webinar-picture="' + id + '"]');
   }
 
   function showPicture(wrapper, id) {
     var pic = findPicture(wrapper, id);
-    if (pic) pic.style.opacity = "1";
+    if (!pic) return;
+    pic.style.opacity = "1";
+    pic.style.pointerEvents = "";
   }
 
   function hidePicture(wrapper, id) {
     var pic = findPicture(wrapper, id);
-    if (pic) pic.style.opacity = "0";
+    if (!pic) return;
+    pic.style.opacity = "0";
+    pic.style.pointerEvents = "none"; /* let clicks fall through once hidden */
   }
 
   /** Load the YouTube IFrame Player API once, share the promise across players. */
@@ -115,12 +121,20 @@
   // ── Custom play/pause buttons ─────────────────────────────────
 
   function wirePlaybackButtons(wrapper, id, requestPlay, requestPause) {
-    var playBtn  = wrapper.querySelector('[data-webinar-playback="play"][data-webinar="' + id + '"]')
+    /* Prefer a buttons scoped inside this wrapper (no data-webinar needed);
+     * fall back to an explicit data-webinar match elsewhere in the document. */
+    var playBtn  = wrapper.querySelector('[data-webinar-playback="play"]')
                 || document.querySelector('[data-webinar-playback="play"][data-webinar="' + id + '"]');
-    var pauseBtn = wrapper.querySelector('[data-webinar-playback="pause"][data-webinar="' + id + '"]')
+    var pauseBtn = wrapper.querySelector('[data-webinar-playback="pause"]')
                 || document.querySelector('[data-webinar-playback="pause"][data-webinar="' + id + '"]');
 
     if (!playBtn || !pauseBtn) return null;
+
+    /* Buttons sit above the iframe; make sure they're clickable + on top. */
+    [playBtn, pauseBtn].forEach(function (btn) {
+      if (getComputedStyle(btn).position === "static") btn.style.position = "relative";
+      btn.style.zIndex = "3";
+    });
 
     function setPlaying(isPlaying) {
       var show = isPlaying ? pauseBtn : playBtn;
@@ -163,10 +177,62 @@
       return;
     }
 
-    var mount = wrapper.querySelector('[data-webinar-frame="' + id + '"]') || wrapper;
-
     var autoplay = flag(wrapper.getAttribute("data-webinar-autoplay")) && !prefersReducedMotion;
     var loop     = flag(wrapper.getAttribute("data-webinar-loop"));
+
+    /* ── Layout (forced via inline styles, no CSS dependency) ──────
+     * The wrapper is the positioning context; the frame fills it; YT.Player
+     * REPLACES whatever element we hand it with a fresh <iframe>, so we mount
+     * on a throwaway child <div> inside the frame — that way the iframe ends
+     * up INSIDE the frame container and we can size it to fill. */
+    if (getComputedStyle(wrapper).position === "static") {
+      wrapper.style.position = "relative";
+    }
+
+    /* Natural height now, while the poster is still in-flow. After we go
+     * absolute the wrapper may collapse to 0 — we restore this below. */
+    var naturalHeight = wrapper.getBoundingClientRect().height;
+
+    var frame = wrapper.querySelector('[data-webinar-frame="' + id + '"]')
+             || wrapper.querySelector("[data-webinar-frame]");
+
+    /* If the frame is missing or the user dropped a raw <iframe> in (e.g. a
+     * Webflow YouTube embed), normalise it to an empty positioned <div>. */
+    if (!frame || frame.tagName === "IFRAME") {
+      var fresh = document.createElement("div");
+      fresh.setAttribute("data-webinar-frame", id);
+      if (frame && frame.parentNode) frame.parentNode.replaceChild(fresh, frame);
+      else wrapper.appendChild(fresh);
+      frame = fresh;
+    }
+
+    frame.style.position = "absolute";
+    frame.style.inset = "0";
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+    frame.style.zIndex = "1";
+
+    var mount = document.createElement("div");
+    frame.appendChild(mount);
+
+    /* Poster overlays the frame and fades out on play. */
+    var poster = findPicture(wrapper, id);
+    if (poster) {
+      poster.style.position = "absolute";
+      poster.style.inset = "0";
+      poster.style.width = "100%";
+      poster.style.height = "100%";
+      poster.style.objectFit = "cover";
+      poster.style.zIndex = "2";
+      poster.style.transition = "opacity 0.4s ease";
+    }
+
+    /* Poster + iframe are now absolute — if the wrapper collapsed, give it back
+     * its height (or a 16:9 box if it never had an explicit one). */
+    if (wrapper.getBoundingClientRect().height < 10) {
+      if (naturalHeight >= 10) wrapper.style.height = naturalHeight + "px";
+      else wrapper.style.aspectRatio = "16 / 9";
+    }
 
     var player        = null;
     var pendingAction = null; /* "play" | "pause" — queued while the player boots */
@@ -189,6 +255,8 @@
     loadYouTubeAPI().then(function (YT) {
       player = new YT.Player(mount, {
         videoId: videoId,
+        width: "100%",
+        height: "100%",
         playerVars: {
           autoplay: autoplay ? 1 : 0,
           controls: 0,
@@ -200,6 +268,17 @@
         },
         events: {
           onReady: function (e) {
+            /* The freshly-created iframe defaults to 640×360 at top-left and
+             * carries no class — force it to fill the frame container. */
+            var iframe = e.target.getIframe();
+            if (iframe) {
+              iframe.style.position = "absolute";
+              iframe.style.inset = "0";
+              iframe.style.width = "100%";
+              iframe.style.height = "100%";
+              iframe.style.border = "0";
+            }
+
             var shouldPlay = autoplay || pendingAction === "play";
             pendingAction = null;
             if (shouldPlay) {
