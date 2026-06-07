@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v2.1.1
+ * webinar-player.js v2.1.2
  * Inline YouTube playback with a full, self-building Sestek-style controller —
  * no native YouTube chrome, no click-through to youtube.com.
  *
@@ -502,6 +502,21 @@
     if (autoplay) boot(); /* autoplay must load eagerly; otherwise facade */
   }
 
+  // ── CLS guard ─────────────────────────────────────────────────
+
+  /* Reserve the 16:9 box synchronously at init — BEFORE the (lazy) poster image
+   * loads — so the box never grows and nothing below it shifts. Setting it
+   * INLINE beats any height on the Webflow class (inline > stylesheet); forcing
+   * height:auto lets aspect-ratio actually compute. This is the placeholder /
+   * spacer idea, done for you — no extra DOM, no Webflow CSS fight. */
+  function reserveBox(wrapper) {
+    var s = wrapper.style;
+    if (!s.aspectRatio) s.aspectRatio = "16 / 9";
+    s.height = "auto";
+    if (getComputedStyle(wrapper).position === "static") s.position = "relative";
+    s.overflow = "hidden";
+  }
+
   // ── Desktop-only players ──────────────────────────────────────
 
   function setDesktopOnlyVisibility() {
@@ -532,6 +547,7 @@
     }, { root: null, rootMargin: ROOT_MARGIN, threshold: 0 });
 
     Array.prototype.forEach.call(wrappers, function (wrapper) {
+      reserveBox(wrapper);          /* reserve space NOW → zero CLS */
       lazyObserver.observe(wrapper);
     });
   }
