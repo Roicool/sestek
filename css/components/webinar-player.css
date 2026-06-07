@@ -1,5 +1,5 @@
 /*!
- * webinar-player.css v1.1.0
+ * webinar-player.css v1.1.1
  * Sestek-style controller skin for webinar-player.js. The player injects the
  * DOM (.swp__bigplay, .swp__bar, …); this file owns the look. Accent colour
  * comes from --swp-accent (set per-player from data-webinar-accent, defaults
@@ -54,8 +54,8 @@
   width: 42%;
   height: 42%;
   fill: currentColor;
-  /* Optical centring — the play triangle's mass sits right of geometric centre */
-  transform: translateX(7%);
+  /* Path is bbox-centred; tiny nudge right for true optical centring */
+  transform: translateX(3%);
 }
 
 .swp__bigplay:hover {

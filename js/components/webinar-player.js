@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v2.0.2
+ * webinar-player.js v2.0.3
  * Inline YouTube playback with a full, self-building Sestek-style controller —
  * no native YouTube chrome, no click-through to youtube.com.
  *
@@ -116,7 +116,7 @@
 
   /* Icon path sets (filled, 24×24) */
   var ICONS = {
-    play:  ["M8 5v14l11-7z"],
+    play:  ["M6.5 5v14l11-7z"], /* bbox-centred in the 24×24 viewBox */
     pause: ["M6 5h4v14H6z", "M14 5h4v14h-4z"],
     volume:["M3 10v4h4l5 5V5L7 10H3z", "M16 8.5a4 4 0 0 1 0 7"],
     muted: ["M3 10v4h4l5 5V5L7 10H3z", "M22 9l-5 6M17 9l5 6"],
