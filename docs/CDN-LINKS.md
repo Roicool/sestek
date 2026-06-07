@@ -34,7 +34,8 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 ```
 js/
   core/        lenis-init.js, nav.js
-  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
+  components/  hero.js, marquee.js, scroll-tabs.js, video-modal.js, video-inline.js,
+               webinar-player.js, card-marquee.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js, reveal.js
 css/
@@ -486,6 +487,8 @@ DOM yapısı:
 | `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
+| `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
+| `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 
@@ -683,6 +686,113 @@ Tetikleyici (herhangi bir element — buton, link, kapak görseli):
 - Kapanışta iframe/video anında DOM'dan silinir → arka planda ses kalmaz.
 - `Sestek.initVideoModal()` bir API döner: `.open(url, title)` ve `.close()` ile
   programatik kontrol edilebilir.
+
+### Video Inline
+
+Self-hosted `<video>` dosyaları için lazy-load, poster crossfade,
+hover-to-play, scroll-in-play ve tamamen özel play/pause kontrolleri sunan
+sıfır bağımlılıklı kütüphane. YouTube/Vimeo lightbox için `video-modal.js`,
+inline custom-controls YouTube player için `webinar-player.js` kullan.
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initVideoInline(); // tüm [data-video] elementlerini başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<div data-video-trigger="clip-1">          <!-- sadece hover-play için gerekli -->
+  <picture data-video-picture="clip-1">    <!-- opsiyonel poster, crossfade'li -->
+    <img src="poster.jpg" alt="">
+  </picture>
+
+  <video data-video="clip-1" muted playsinline>
+    <source data-src="https://cdn.example.com/clip.mp4" type="video/mp4">
+  </video>
+
+  <button data-video-playback="play"  data-video="clip-1">▶</button>
+  <button data-video-playback="pause" data-video="clip-1">⏸</button>
+</div>
+```
+
+Attribute'lar (hepsi `<video data-video="…">` üzerinde):
+
+- **`data-video`** — benzersiz id, her parçayı birbirine bağlar (zorunlu).
+- **`data-video-hover="true"`** — mouse-enter'da oynat, mouse-leave'de durdur
+  + posteri geri getir (`[data-video-trigger]` gerekir).
+- **`data-video-scroll-in-play="true"`** — viewport'a ≥%50 girince oynat,
+  çıkınca durdur + posteri geri getir.
+- **`data-video-desktop-only="true"`** — 991px altında video + kontrolleri gizler.
+
+Yukarıdakilerin hiçbiri yoksa video lazy-load olur ve yüklenince otomatik oynar.
+
+> Kaynak `<source>` mutlaka `data-src` kullanmalı (NOT `src`) — dosya ancak
+> viewport'a yaklaşınca çekilir, bu PageSpeed'i korur:
+> `<source data-src="clip.mp4" type="video/mp4">`
+
+`prefers-reduced-motion` aktifse: hiçbir otomatik/hover/scroll tetiklemeli
+oynatma olmaz, videolar posterinde duraklamış kalır.
+
+### Webinar Player
+
+YouTube embed'lerini kendi marka kontrollerinle (kendi play/pause butonların,
+poster crossfade) sunan inline player — YouTube'un kendi arayüzü/click-through'u
+yok. YouTube IFrame Player API'sini ihtiyaç anında lazy-load eder.
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initWebinarPlayer(); // tüm [data-webinar] elementlerini başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<div data-webinar="session-1" data-webinar-video-id="dQw4w9WgXcQ">
+  <picture data-webinar-picture="session-1">    <!-- opsiyonel poster, crossfade'li -->
+    <img src="poster.jpg" alt="">
+  </picture>
+
+  <div data-webinar-frame="session-1"></div>    <!-- iframe buraya enjekte edilir -->
+
+  <button data-webinar-playback="play"  data-webinar="session-1">▶</button>
+  <button data-webinar-playback="pause" data-webinar="session-1">⏸</button>
+</div>
+```
+
+Attribute'lar (hepsi `[data-webinar]` wrapper'ı üzerinde):
+
+- **`data-webinar`** — benzersiz id, her parçayı birbirine bağlar (zorunlu).
+- **`data-webinar-video-id`** — YouTube video id'si (zorunlu); tam bir
+  watch/share/embed URL'i de kabul edilir, otomatik çıkarılır.
+- **`data-webinar-autoplay="true"`** — player hazır olur olmaz oynatmaya başlar.
+- **`data-webinar-loop="true"`** — tek videoyu sonsuz döngüde oynatır.
+- **`data-webinar-desktop-only="true"`** — 991px altında player + kontrolleri gizler.
+
+Player'lar lazy-load olur: YouTube IFrame API ve iframe'in kendisi yalnızca
+wrapper viewport'a yaklaşınca oluşturulur (`IntersectionObserver`,
+`rootMargin: 300px`) — bu PageSpeed'i korur.
+
+`prefers-reduced-motion` aktifse: `data-webinar-autoplay` yok sayılır,
+player'lar tıklanana kadar posterinde bekler.
 
 ### Card Marquee
 

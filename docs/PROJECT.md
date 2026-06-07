@@ -21,7 +21,8 @@
 sestek/
 ├── js/
 │   ├── core/        # Foundation utilities — lenis-init.js, nav.js
-│   ├── components/  # UI components — hero.js, marquee.js, scroll-tabs.js, video-modal.js, card-marquee.js
+│   ├── components/  # UI components — hero.js, marquee.js, scroll-tabs.js, video-modal.js,
+│   │                #   video-inline.js, webinar-player.js, card-marquee.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable GSAP animation presets — height-reveal.js, reveal.js
 ├── css/
