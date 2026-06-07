@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v2.0.3
+ * webinar-player.js v2.1.0
  * Inline YouTube playback with a full, self-building Sestek-style controller —
  * no native YouTube chrome, no click-through to youtube.com.
  *
@@ -11,8 +11,12 @@
  *   • controls auto-hide while playing and reappear on hover / mouse-move
  *   • poster thumbnail that crossfades out on play
  *
- * Lazy-loads the YouTube IFrame API and the iframe only when the wrapper
- * nears the viewport, so PageSpeed is unaffected.
+ * PageSpeed: this is a FACADE. On load it shows only the poster + play button
+ * and ships ZERO YouTube payload. The heavy IFrame API + iframe (~hundreds of
+ * KB) load only on the first play click (or for data-webinar-autoplay, when the
+ * wrapper nears the viewport). Hover/touch pre-warms the connection so the
+ * eventual load feels instant. This is exactly Lighthouse's "lazy-load
+ * third-party resources with facades" recommendation.
  *
  * For self-hosted <video> files use video-inline.js. For a lightbox use
  * video-modal.js.
@@ -127,6 +131,28 @@
   function setIcon(btn, name) {
     btn.innerHTML = "";
     btn.appendChild(icon(ICONS[name]));
+  }
+
+  /* Pre-warm DNS/TLS to YouTube's hosts — injected once, just before the
+   * iframe is needed (on hover/touch or first play), never on page load. */
+  var warmed = false;
+  function warmConnections() {
+    if (warmed) return;
+    warmed = true;
+    [
+      "https://www.youtube-nocookie.com",
+      "https://www.youtube.com",
+      "https://www.google.com",
+      "https://googleads.g.doubleclick.net",
+      "https://static.doubleclick.net",
+      "https://i.ytimg.com",
+    ].forEach(function (href) {
+      var l = document.createElement("link");
+      l.rel = "preconnect";
+      l.href = href;
+      l.crossOrigin = "";
+      document.head.appendChild(l);
+    });
   }
 
   function loadYouTubeAPI() {
@@ -286,6 +312,7 @@
     var ui = buildControls(wrapper, accent);
 
     var player        = null;
+    var booted        = false;  /* has the YouTube iframe been loaded yet? */
     var pendingAction = null;   /* "play" | "pause" queued during boot */
     var scrubbing     = false;
     var pollTimer     = null;
@@ -293,13 +320,16 @@
 
     function ready() { return player && typeof player.playVideo === "function"; }
 
+    /* Facade: nothing from YouTube loads until the first play. requestPlay
+     * boots the player on demand; everything else no-ops until then. */
     function requestPlay() {
-      if (ready()) player.playVideo();
-      else pendingAction = "play";
+      if (ready()) { player.playVideo(); return; }
+      pendingAction = "play";
+      boot();
     }
     function requestPause() {
       if (ready()) player.pauseVideo();
-      else pendingAction = "pause";
+      else pendingAction = null; /* cancel a queued play */
     }
 
     function showPoster() { if (poster) { poster.style.opacity = "1"; poster.style.pointerEvents = ""; } }
@@ -351,14 +381,17 @@
     });
 
     // ── Wire controls ──
+    /* Don't hide the poster on click — keep it up (with a loading state) until
+     * the video actually starts, so there's no black flash while YT boots. */
     ui.bigPlay.addEventListener("click", function (e) {
-      e.preventDefault(); hidePoster();
-      if (wrapper.classList.contains("is-playing")) requestPause(); else requestPlay();
+      e.preventDefault();
+      if (wrapper.classList.contains("is-playing")) requestPause();
+      else { wrapper.classList.add("is-loading"); requestPlay(); }
     });
     ui.toggle.addEventListener("click", function (e) {
       e.preventDefault();
       if (wrapper.classList.contains("is-playing")) requestPause();
-      else { hidePoster(); requestPlay(); }
+      else { wrapper.classList.add("is-loading"); requestPlay(); }
     });
 
     ui.range.addEventListener("input", function () {
@@ -399,10 +432,25 @@
       setIcon(ui.fs, on ? "exit" : "full");
     });
 
-    // ── Boot the YT player ──
+    // ── Warm the connection on intent (cheap, no payload yet) ──
+    // A preconnect just before the click shaves latency off the iframe load
+    // without costing anything on initial page load.
+    function warm() {
+      warmConnections();
+      wrapper.removeEventListener("pointerenter", warm);
+      wrapper.removeEventListener("touchstart", warm);
+    }
+    wrapper.addEventListener("pointerenter", warm);
+    wrapper.addEventListener("touchstart", warm, { passive: true });
+
+    // ── Boot the YT player (facade → only on first play / autoplay) ──
     reflect(false);
 
-    loadYouTubeAPI().then(function (YT) {
+    function boot() {
+      if (booted) return;
+      booted = true;
+      warmConnections();
+      loadYouTubeAPI().then(function (YT) {
       player = new YT.Player(mount, {
         videoId: videoId,
         width: "100%",
@@ -434,6 +482,7 @@
           },
           onStateChange: function (e) {
             if (e.data === YT.PlayerState.PLAYING) {
+              wrapper.classList.remove("is-loading");
               hidePoster(); reflect(true); wake();
             } else if (e.data === YT.PlayerState.PAUSED) {
               reflect(false); wrapper.classList.remove("is-idle");
@@ -444,7 +493,10 @@
           },
         },
       });
-    });
+      }); // loadYouTubeAPI().then
+    } // boot()
+
+    if (autoplay) boot(); /* autoplay must load eagerly; otherwise facade */
   }
 
   // ── Desktop-only players ──────────────────────────────────────

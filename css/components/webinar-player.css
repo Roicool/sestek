@@ -1,5 +1,5 @@
 /*!
- * webinar-player.css v1.1.1
+ * webinar-player.css v1.2.0
  * Sestek-style controller skin for webinar-player.js. The player injects the
  * DOM (.swp__bigplay, .swp__bar, …); this file owns the look. Accent colour
  * comes from --swp-accent (set per-player from data-webinar-accent, defaults
@@ -91,6 +91,22 @@
   pointer-events: none;
   transform: translate(-50%, -50%) scale(0.8);
 }
+
+/* Loading state: swap the triangle for a spinner while YouTube boots */
+.swp.is-loading .swp__bigplay { pointer-events: none; }
+.swp.is-loading .swp__bigplay::before { animation: none; opacity: 0; }
+.swp.is-loading .swp__bigplay svg { display: none; }
+.swp.is-loading .swp__bigplay::after {
+  content: "";
+  width: 42%;
+  height: 42%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: swp-spin 0.7s linear infinite;
+}
+
+@keyframes swp-spin { to { transform: rotate(360deg); } }
 
 /* ── Bottom control bar (floating frosted glass) ──────────────── */
 .swp__bar {
