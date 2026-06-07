@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v1.0.0
+ * webinar-player.js v1.0.1
  * Inline YouTube playback with fully custom controls — no native YouTube
  * chrome, no click-through to youtube.com. Lazy-loads the IFrame Player API,
  * crossfades a poster thumbnail, and exposes play/pause buttons you design
@@ -114,7 +114,7 @@
 
   // ── Custom play/pause buttons ─────────────────────────────────
 
-  function wirePlaybackButtons(wrapper, id, getPlayer) {
+  function wirePlaybackButtons(wrapper, id, requestPlay, requestPause) {
     var playBtn  = wrapper.querySelector('[data-webinar-playback="play"][data-webinar="' + id + '"]')
                 || document.querySelector('[data-webinar-playback="play"][data-webinar="' + id + '"]');
     var pauseBtn = wrapper.querySelector('[data-webinar-playback="pause"][data-webinar="' + id + '"]')
@@ -138,16 +138,16 @@
     setPlaying(false);
 
     playBtn.addEventListener("click", function (e) {
+      e.preventDefault();
       e.stopPropagation();
       hidePicture(wrapper, id);
-      var player = getPlayer();
-      if (player) player.playVideo();
+      requestPlay();
     });
 
     pauseBtn.addEventListener("click", function (e) {
+      e.preventDefault();
       e.stopPropagation();
-      var player = getPlayer();
-      if (player) player.pauseVideo();
+      requestPause();
     });
 
     return setPlaying;
@@ -168,8 +168,23 @@
     var autoplay = flag(wrapper.getAttribute("data-webinar-autoplay")) && !prefersReducedMotion;
     var loop     = flag(wrapper.getAttribute("data-webinar-loop"));
 
-    var player    = null;
-    var setPlaying = wirePlaybackButtons(wrapper, id, function () { return player; });
+    var player        = null;
+    var pendingAction = null; /* "play" | "pause" — queued while the player boots */
+
+    /* Buttons can be clicked before the IFrame API finishes loading and the
+     * player fires onReady — queue the request and apply it once ready,
+     * instead of silently dropping it. */
+    function requestPlay() {
+      if (player && typeof player.playVideo === "function") player.playVideo();
+      else pendingAction = "play";
+    }
+
+    function requestPause() {
+      if (player && typeof player.pauseVideo === "function") player.pauseVideo();
+      else pendingAction = "pause";
+    }
+
+    var setPlaying = wirePlaybackButtons(wrapper, id, requestPlay, requestPause);
 
     loadYouTubeAPI().then(function (YT) {
       player = new YT.Player(mount, {
@@ -185,7 +200,9 @@
         },
         events: {
           onReady: function (e) {
-            if (autoplay) {
+            var shouldPlay = autoplay || pendingAction === "play";
+            pendingAction = null;
+            if (shouldPlay) {
               hidePicture(wrapper, id);
               e.target.playVideo();
             }
