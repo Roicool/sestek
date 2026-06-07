@@ -22,9 +22,10 @@ sestek/
 ├── js/
 │   ├── core/        # Foundation — lenis-init.js, nav.js
 │   ├── components/  # UI — hero.js, hero-slider.js, marquee.js, scroll-tabs.js,
-│   │                #      video-modal.js, card-marquee.js, section-title.js,
-│   │                #      text-rotator.js, story.js, accordion.js,
-│   │                #      blog-utils.js, site-utils.js, sticky-utms.js
+│   │                #      video-modal.js, video-inline.js, webinar-player.js,
+│   │                #      card-marquee.js, section-title.js, text-rotator.js,
+│   │                #      story.js, accordion.js, blog-utils.js, site-utils.js,
+│   │                #      sticky-utms.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js
 ├── css/
