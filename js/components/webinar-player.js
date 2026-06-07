@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v2.0.0
+ * webinar-player.js v2.0.1
  * Inline YouTube playback with a full, self-building Sestek-style controller —
  * no native YouTube chrome, no click-through to youtube.com.
  *
@@ -240,10 +240,27 @@
       wrapper
     ) || "#EC008C";
 
-    // ── Layout (forced inline, no CSS dependency for the structural bits) ──
+    // ── Layout ────────────────────────────────────────────────────
+    // The poster stays IN FLOW and defines the box size (just like before the
+    // script ran) — so the wrapper never collapses in width OR height. The
+    // iframe is layered behind it; on play the poster fades to opacity:0 but
+    // still occupies space, keeping the box sized. No height/width hacks.
     if (getComputedStyle(wrapper).position === "static") wrapper.style.position = "relative";
     wrapper.style.overflow = "hidden";
-    var naturalHeight = wrapper.getBoundingClientRect().height;
+
+    var poster = findPicture(wrapper, id);
+    if (poster) {
+      poster.style.position = "relative"; /* in flow → it sizes the wrapper */
+      poster.style.display = "block";
+      poster.style.width = "100%";
+      poster.style.height = "auto";
+      poster.style.zIndex = "2";
+      poster.style.transition = "opacity 0.4s ease";
+    } else if (!wrapper.style.aspectRatio &&
+               wrapper.getBoundingClientRect().height < 10) {
+      /* No poster to size the box and no height of its own → lock 16:9 */
+      wrapper.style.aspectRatio = "16 / 9";
+    }
 
     var frame = wrapper.querySelector('[data-webinar-frame="' + id + '"]')
              || wrapper.querySelector("[data-webinar-frame]");
@@ -254,7 +271,7 @@
       else wrapper.appendChild(fresh);
       frame = fresh;
     }
-    frame.style.position = "absolute";
+    frame.style.position = "absolute"; /* behind the poster, fills the box */
     frame.style.inset = "0";
     frame.style.width = "100%";
     frame.style.height = "100%";
@@ -263,21 +280,6 @@
 
     var mount = document.createElement("div");
     frame.appendChild(mount);
-
-    var poster = findPicture(wrapper, id);
-    if (poster) {
-      poster.style.position = "absolute";
-      poster.style.inset = "0";
-      poster.style.width = "100%";
-      poster.style.height = "100%";
-      poster.style.objectFit = "cover";
-      poster.style.zIndex = "2";
-      poster.style.transition = "opacity 0.4s ease";
-    }
-    if (wrapper.getBoundingClientRect().height < 10) {
-      if (naturalHeight >= 10) wrapper.style.height = naturalHeight + "px";
-      else wrapper.style.aspectRatio = "16 / 9";
-    }
 
     // ── Build controls ──
     var ui = buildControls(wrapper, accent);
