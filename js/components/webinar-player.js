@@ -1,5 +1,5 @@
 /*!
- * webinar-player.js v2.1.0
+ * webinar-player.js v2.1.1
  * Inline YouTube playback with a full, self-building Sestek-style controller —
  * no native YouTube chrome, no click-through to youtube.com.
  *
@@ -285,9 +285,12 @@
       poster.style.transition = "opacity 0.4s ease";
     }
 
-    /* Safety net: if the wrapper still has no width (e.g. it's a content-sized
-     * flex/grid item), stretch it so the absolute children have a box. */
+    /* Safety nets (only bite if the CSS file is missing — when it's loaded the
+     * box is already a reserved 16:9, so these are no-ops and cause no shift). */
     if (wrapper.getBoundingClientRect().width < 10) wrapper.style.width = "100%";
+    if (wrapper.getBoundingClientRect().height < 10 && !wrapper.style.aspectRatio) {
+      wrapper.style.aspectRatio = "16 / 9";
+    }
 
     var frame = wrapper.querySelector('[data-webinar-frame="' + id + '"]')
              || wrapper.querySelector("[data-webinar-frame]");
