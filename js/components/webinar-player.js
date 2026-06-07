@@ -1,44 +1,46 @@
 /*!
- * webinar-player.js v1.1.0
- * Inline YouTube playback with fully custom controls — no native YouTube
- * chrome, no click-through to youtube.com. Lazy-loads the IFrame Player API,
- * crossfades a poster thumbnail, and exposes play/pause buttons you design
- * yourself. Zero dependencies beyond the YouTube IFrame API (loaded on demand).
+ * webinar-player.js v2.0.0
+ * Inline YouTube playback with a full, self-building Sestek-style controller —
+ * no native YouTube chrome, no click-through to youtube.com.
  *
- * For self-hosted <video> files, use video-inline.js. For a YouTube/Vimeo/
- * Cloudflare Stream lightbox, use video-modal.js.
+ * The script injects its own UI (you do NOT wire any buttons):
+ *   • a big centred play button shown while paused / before start
+ *   • a bottom control bar that appears on play: play-pause toggle,
+ *     scrubber with buffered + progress fill, current / total time,
+ *     mute toggle and fullscreen
+ *   • controls auto-hide while playing and reappear on hover / mouse-move
+ *   • poster thumbnail that crossfades out on play
+ *
+ * Lazy-loads the YouTube IFrame API and the iframe only when the wrapper
+ * nears the viewport, so PageSpeed is unaffected.
+ *
+ * For self-hosted <video> files use video-inline.js. For a lightbox use
+ * video-modal.js.
  *
  * API:
- *   Sestek.initWebinarPlayer()   — wire every [data-webinar] element on the page
+ *   Sestek.initWebinarPlayer()   — wire every [data-webinar] element
  *
- * ── DOM ──────────────────────────────────────────────────────────
+ * ── DOM (minimal — everything else is injected) ──────────────────
  *
- *   <div data-webinar="session-1" data-webinar-video-id="dQw4w9WgXcQ">
- *     <picture data-webinar-picture="session-1">    ← optional poster, crossfades
- *       <img src="poster.jpg" alt="">
- *     </picture>
- *
- *     <div data-webinar-frame="session-1"></div>    ← iframe is injected here
- *
- *     <button data-webinar-playback="play"  data-webinar="session-1">▶</button>
- *     <button data-webinar-playback="pause" data-webinar="session-1">⏸</button>
+ *   <div data-webinar="ajman" data-webinar-video-id="Q7fGqFGVtuk" class="webinar">
+ *     <img  data-webinar-picture="ajman" src="poster.jpg" alt="">  <!-- optional -->
+ *     <div  data-webinar-frame="ajman"></div>                       <!-- empty div -->
  *   </div>
  *
- * ── Attributes (all on the [data-webinar] wrapper) ───────────────
+ * ⚠️ data-webinar-frame MUST be an empty <div> — NOT a Webflow YouTube embed.
  *
- *   data-webinar                    unique id — required, links every part
- *   data-webinar-video-id           YouTube video id — required (e.g. "dQw4w9WgXcQ")
- *                                   a full watch/share/embed URL also works
- *   data-webinar-autoplay="true"    start playing as soon as the player is ready
- *   data-webinar-loop="true"        loop the single video endlessly
- *   data-webinar-desktop-only="true" hide player + controls below 991px
+ * ── Attributes (on the [data-webinar] wrapper) ───────────────────
  *
- * Players lazy-load: the YouTube IFrame API and the iframe itself are only
- * created when the wrapper nears the viewport (IntersectionObserver,
- * rootMargin 300px) — this is what keeps PageSpeed unaffected.
+ *   data-webinar                 unique id — required, links the parts
+ *   data-webinar-video-id        YouTube id OR full URL — required
+ *   data-webinar-autoplay="true" muted autoplay once ready
+ *   data-webinar-loop="true"     loop the single video endlessly
+ *   data-webinar-accent="#EC008C" controller accent colour (CSS var or hex);
+ *                                defaults to --interactive--color-primary-base
+ *   data-webinar-desktop-only="true" hide below 991px
  *
- * Respects prefers-reduced-motion — no autoplay for users who opt out;
- * players stay on their poster until explicitly pressed play.
+ * Styling lives in css/components/webinar-player.css (load it too).
+ * Respects prefers-reduced-motion — no autoplay for users who opt out.
  *
  * https://github.com/roicool/sestek
  */
@@ -49,6 +51,8 @@
   var ROOT_MARGIN        = "300px";
   var DESKTOP_BREAKPOINT = 991;
   var API_SRC            = "https://www.youtube.com/iframe_api";
+  var IDLE_DELAY         = 2600; /* ms of no input before controls fade */
+  var SVGNS              = "http://www.w3.org/2000/svg";
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -63,7 +67,6 @@
     return v !== "false" && v !== "0" && v !== "off";
   }
 
-  /** Accepts a bare id or a full YouTube URL and returns the video id. */
   function extractVideoId(raw) {
     if (!raw) return null;
     var match = raw.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]+)/);
@@ -71,100 +74,153 @@
     return /^[\w-]{6,}$/.test(raw.trim()) ? raw.trim() : null;
   }
 
-  /* Match ANY element carrying the attribute — <picture>, <img>, <div>… —
-   * not just <picture>. Webflow usually outputs a bare <img>. */
+  /** Match ANY element carrying the attribute — Webflow outputs a bare <img>. */
   function findPicture(wrapper, id) {
     return wrapper.querySelector('[data-webinar-picture="' + id + '"]')
         || document.querySelector('[data-webinar-picture="' + id + '"]');
   }
 
-  function showPicture(wrapper, id) {
-    var pic = findPicture(wrapper, id);
-    if (!pic) return;
-    pic.style.opacity = "1";
-    pic.style.pointerEvents = "";
+  function resolveColor(value, contextEl) {
+    if (!value) return value;
+    var v = value.trim();
+    var match = v.match(/^var\(\s*(--[^,)]+)/) || (v.indexOf("--") === 0 ? [null, v] : null);
+    if (match) {
+      var resolved = getComputedStyle(contextEl).getPropertyValue(match[1]).trim();
+      if (resolved) return resolved;
+    }
+    return v;
   }
 
-  function hidePicture(wrapper, id) {
-    var pic = findPicture(wrapper, id);
-    if (!pic) return;
-    pic.style.opacity = "0";
-    pic.style.pointerEvents = "none"; /* let clicks fall through once hidden */
+  function formatTime(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    var s = Math.floor(sec % 60);
+    var m = Math.floor((sec / 60) % 60);
+    var h = Math.floor(sec / 3600);
+    var mm = (h && m < 10 ? "0" : "") + m;
+    var ss = (s < 10 ? "0" : "") + s;
+    return (h ? h + ":" : "") + mm + ":" + ss;
   }
 
-  /** Load the YouTube IFrame Player API once, share the promise across players. */
+  function icon(paths) {
+    var svg = document.createElementNS(SVGNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    paths.forEach(function (d) {
+      var p = document.createElementNS(SVGNS, "path");
+      p.setAttribute("d", d);
+      svg.appendChild(p);
+    });
+    return svg;
+  }
+
+  /* Icon path sets (filled, 24×24) */
+  var ICONS = {
+    play:  ["M8 5v14l11-7z"],
+    pause: ["M6 5h4v14H6z", "M14 5h4v14h-4z"],
+    volume:["M3 10v4h4l5 5V5L7 10H3z", "M16 8.5a4 4 0 0 1 0 7"],
+    muted: ["M3 10v4h4l5 5V5L7 10H3z", "M22 9l-5 6M17 9l5 6"],
+    full:  ["M4 9V4h5", "M20 9V4h-5", "M4 15v5h5", "M20 15v5h-5"],
+    exit:  ["M9 4H4v5", "M15 4h5v5", "M9 20H4v-5", "M15 20h5v-5"],
+  };
+
+  function setIcon(btn, name) {
+    btn.innerHTML = "";
+    btn.appendChild(icon(ICONS[name]));
+  }
+
   function loadYouTubeAPI() {
     if (apiPromise) return apiPromise;
-
     apiPromise = new Promise(function (resolve) {
-      if (global.YT && global.YT.Player) {
-        resolve(global.YT);
-        return;
-      }
-
+      if (global.YT && global.YT.Player) { resolve(global.YT); return; }
       var prevReady = global.onYouTubeIframeAPIReady;
       global.onYouTubeIframeAPIReady = function () {
         if (typeof prevReady === "function") prevReady();
         resolve(global.YT);
       };
-
       if (!document.querySelector('script[src="' + API_SRC + '"]')) {
         var script = document.createElement("script");
         script.src = API_SRC;
         document.head.appendChild(script);
       }
     });
-
     return apiPromise;
   }
 
-  // ── Custom play/pause buttons ─────────────────────────────────
+  // ── Controller UI ─────────────────────────────────────────────
 
-  function wirePlaybackButtons(wrapper, id, requestPlay, requestPause) {
-    /* Prefer a buttons scoped inside this wrapper (no data-webinar needed);
-     * fall back to an explicit data-webinar match elsewhere in the document. */
-    var playBtn  = wrapper.querySelector('[data-webinar-playback="play"]')
-                || document.querySelector('[data-webinar-playback="play"][data-webinar="' + id + '"]');
-    var pauseBtn = wrapper.querySelector('[data-webinar-playback="pause"]')
-                || document.querySelector('[data-webinar-playback="pause"][data-webinar="' + id + '"]');
+  /** Build the whole control layer and return handles the player wires to. */
+  function buildControls(wrapper, accent) {
+    wrapper.classList.add("swp");
+    wrapper.style.setProperty("--swp-accent", accent);
 
-    if (!playBtn || !pauseBtn) return null;
+    // Big centre play button
+    var bigPlay = document.createElement("button");
+    bigPlay.type = "button";
+    bigPlay.className = "swp__bigplay";
+    bigPlay.setAttribute("aria-label", "Play");
+    bigPlay.appendChild(icon(ICONS.play));
 
-    /* Buttons sit above the iframe; make sure they're clickable + on top. */
-    [playBtn, pauseBtn].forEach(function (btn) {
-      if (getComputedStyle(btn).position === "static") btn.style.position = "relative";
-      btn.style.zIndex = "3";
-    });
+    // Bottom bar
+    var bar = document.createElement("div");
+    bar.className = "swp__bar";
 
-    function setPlaying(isPlaying) {
-      var show = isPlaying ? pauseBtn : playBtn;
-      var hide = isPlaying ? playBtn  : pauseBtn;
+    var toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "swp__btn swp__toggle";
+    toggle.setAttribute("aria-label", "Play");
+    setIcon(toggle, "play");
 
-      show.style.display = "";
-      show.removeAttribute("aria-hidden");
-      show.removeAttribute("tabindex");
+    var cur = document.createElement("span");
+    cur.className = "swp__time";
+    cur.textContent = "0:00";
 
-      hide.style.display = "none";
-      hide.setAttribute("aria-hidden", "true");
-      hide.setAttribute("tabindex", "-1");
-    }
+    // Scrubber: buffered + progress fill + native range on top for a11y/drag
+    var scrub = document.createElement("div");
+    scrub.className = "swp__scrub";
+    var buffered = document.createElement("div");
+    buffered.className = "swp__buffered";
+    var fill = document.createElement("div");
+    fill.className = "swp__fill";
+    var range = document.createElement("input");
+    range.type = "range";
+    range.className = "swp__range";
+    range.min = "0"; range.max = "1000"; range.value = "0"; range.step = "1";
+    range.setAttribute("aria-label", "Seek");
+    scrub.appendChild(buffered);
+    scrub.appendChild(fill);
+    scrub.appendChild(range);
 
-    setPlaying(false);
+    var dur = document.createElement("span");
+    dur.className = "swp__time";
+    dur.textContent = "0:00";
 
-    playBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      hidePicture(wrapper, id);
-      requestPlay();
-    });
+    var mute = document.createElement("button");
+    mute.type = "button";
+    mute.className = "swp__btn swp__mute";
+    mute.setAttribute("aria-label", "Mute");
+    setIcon(mute, "volume");
 
-    pauseBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      requestPause();
-    });
+    var fs = document.createElement("button");
+    fs.type = "button";
+    fs.className = "swp__btn swp__fs";
+    fs.setAttribute("aria-label", "Fullscreen");
+    setIcon(fs, "full");
 
-    return setPlaying;
+    bar.appendChild(toggle);
+    bar.appendChild(cur);
+    bar.appendChild(scrub);
+    bar.appendChild(dur);
+    bar.appendChild(mute);
+    bar.appendChild(fs);
+
+    wrapper.appendChild(bigPlay);
+    wrapper.appendChild(bar);
+
+    return {
+      bigPlay: bigPlay, bar: bar, toggle: toggle, range: range,
+      fill: fill, buffered: buffered, cur: cur, dur: dur, mute: mute, fs: fs,
+    };
   }
 
   // ── Player creation ───────────────────────────────────────────
@@ -179,25 +235,18 @@
 
     var autoplay = flag(wrapper.getAttribute("data-webinar-autoplay")) && !prefersReducedMotion;
     var loop     = flag(wrapper.getAttribute("data-webinar-loop"));
+    var accent   = resolveColor(
+      wrapper.getAttribute("data-webinar-accent") || "--interactive--color-primary-base",
+      wrapper
+    ) || "#EC008C";
 
-    /* ── Layout (forced via inline styles, no CSS dependency) ──────
-     * The wrapper is the positioning context; the frame fills it; YT.Player
-     * REPLACES whatever element we hand it with a fresh <iframe>, so we mount
-     * on a throwaway child <div> inside the frame — that way the iframe ends
-     * up INSIDE the frame container and we can size it to fill. */
-    if (getComputedStyle(wrapper).position === "static") {
-      wrapper.style.position = "relative";
-    }
-
-    /* Natural height now, while the poster is still in-flow. After we go
-     * absolute the wrapper may collapse to 0 — we restore this below. */
+    // ── Layout (forced inline, no CSS dependency for the structural bits) ──
+    if (getComputedStyle(wrapper).position === "static") wrapper.style.position = "relative";
+    wrapper.style.overflow = "hidden";
     var naturalHeight = wrapper.getBoundingClientRect().height;
 
     var frame = wrapper.querySelector('[data-webinar-frame="' + id + '"]')
              || wrapper.querySelector("[data-webinar-frame]");
-
-    /* If the frame is missing or the user dropped a raw <iframe> in (e.g. a
-     * Webflow YouTube embed), normalise it to an empty positioned <div>. */
     if (!frame || frame.tagName === "IFRAME") {
       var fresh = document.createElement("div");
       fresh.setAttribute("data-webinar-frame", id);
@@ -205,17 +254,16 @@
       else wrapper.appendChild(fresh);
       frame = fresh;
     }
-
     frame.style.position = "absolute";
     frame.style.inset = "0";
     frame.style.width = "100%";
     frame.style.height = "100%";
     frame.style.zIndex = "1";
+    frame.style.pointerEvents = "none"; /* clicks go to our overlay, never YouTube */
 
     var mount = document.createElement("div");
     frame.appendChild(mount);
 
-    /* Poster overlays the frame and fades out on play. */
     var poster = findPicture(wrapper, id);
     if (poster) {
       poster.style.position = "absolute";
@@ -226,31 +274,130 @@
       poster.style.zIndex = "2";
       poster.style.transition = "opacity 0.4s ease";
     }
-
-    /* Poster + iframe are now absolute — if the wrapper collapsed, give it back
-     * its height (or a 16:9 box if it never had an explicit one). */
     if (wrapper.getBoundingClientRect().height < 10) {
       if (naturalHeight >= 10) wrapper.style.height = naturalHeight + "px";
       else wrapper.style.aspectRatio = "16 / 9";
     }
 
-    var player        = null;
-    var pendingAction = null; /* "play" | "pause" — queued while the player boots */
+    // ── Build controls ──
+    var ui = buildControls(wrapper, accent);
 
-    /* Buttons can be clicked before the IFrame API finishes loading and the
-     * player fires onReady — queue the request and apply it once ready,
-     * instead of silently dropping it. */
+    var player        = null;
+    var pendingAction = null;   /* "play" | "pause" queued during boot */
+    var scrubbing     = false;
+    var pollTimer     = null;
+    var idleTimer     = null;
+
+    function ready() { return player && typeof player.playVideo === "function"; }
+
     function requestPlay() {
-      if (player && typeof player.playVideo === "function") player.playVideo();
+      if (ready()) player.playVideo();
       else pendingAction = "play";
     }
-
     function requestPause() {
-      if (player && typeof player.pauseVideo === "function") player.pauseVideo();
+      if (ready()) player.pauseVideo();
       else pendingAction = "pause";
     }
 
-    var setPlaying = wirePlaybackButtons(wrapper, id, requestPlay, requestPause);
+    function showPoster() { if (poster) { poster.style.opacity = "1"; poster.style.pointerEvents = ""; } }
+    function hidePoster() { if (poster) { poster.style.opacity = "0"; poster.style.pointerEvents = "none"; } }
+
+    // Reflect playing state on the toggle + wrapper class
+    function reflect(isPlaying) {
+      wrapper.classList.toggle("is-playing", isPlaying);
+      wrapper.classList.toggle("is-paused", !isPlaying);
+      setIcon(ui.toggle, isPlaying ? "pause" : "play");
+      ui.toggle.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+      ui.bigPlay.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+      if (isPlaying) startPoll(); else stopPoll();
+    }
+
+    // Progress polling (YT has no timeupdate event)
+    function startPoll() {
+      if (pollTimer) return;
+      pollTimer = setInterval(tick, 250);
+    }
+    function stopPoll() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+    function tick() {
+      if (!ready() || scrubbing) return;
+      var d = player.getDuration() || 0;
+      var t = player.getCurrentTime() || 0;
+      ui.dur.textContent = formatTime(d);
+      ui.cur.textContent = formatTime(t);
+      var pct = d ? (t / d) * 100 : 0;
+      ui.fill.style.width = pct + "%";
+      ui.range.value = String(Math.round((d ? t / d : 0) * 1000));
+      var loaded = (typeof player.getVideoLoadedFraction === "function")
+        ? player.getVideoLoadedFraction() : 0;
+      ui.buffered.style.width = (loaded * 100) + "%";
+    }
+
+    // Idle auto-hide while playing
+    function wake() {
+      wrapper.classList.remove("is-idle");
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(function () {
+        if (wrapper.classList.contains("is-playing")) wrapper.classList.add("is-idle");
+      }, IDLE_DELAY);
+    }
+    wrapper.addEventListener("mousemove", wake);
+    wrapper.addEventListener("mouseleave", function () {
+      if (wrapper.classList.contains("is-playing")) wrapper.classList.add("is-idle");
+    });
+
+    // ── Wire controls ──
+    ui.bigPlay.addEventListener("click", function (e) {
+      e.preventDefault(); hidePoster();
+      if (wrapper.classList.contains("is-playing")) requestPause(); else requestPlay();
+    });
+    ui.toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (wrapper.classList.contains("is-playing")) requestPause();
+      else { hidePoster(); requestPlay(); }
+    });
+
+    ui.range.addEventListener("input", function () {
+      scrubbing = true;
+      var ratio = Number(ui.range.value) / 1000;
+      ui.fill.style.width = (ratio * 100) + "%";
+      if (ready()) ui.cur.textContent = formatTime(ratio * (player.getDuration() || 0));
+    });
+    function commitSeek() {
+      if (!ready()) { scrubbing = false; return; }
+      var ratio = Number(ui.range.value) / 1000;
+      player.seekTo(ratio * (player.getDuration() || 0), true);
+      scrubbing = false;
+    }
+    ui.range.addEventListener("change", commitSeek);
+    ui.range.addEventListener("mouseup", commitSeek);
+    ui.range.addEventListener("touchend", commitSeek);
+
+    ui.mute.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!ready()) return;
+      if (player.isMuted()) { player.unMute(); setIcon(ui.mute, "volume"); ui.mute.setAttribute("aria-label", "Mute"); }
+      else { player.mute(); setIcon(ui.mute, "muted"); ui.mute.setAttribute("aria-label", "Unmute"); }
+    });
+
+    ui.fs.addEventListener("click", function (e) {
+      e.preventDefault();
+      var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl) {
+        (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+      } else {
+        (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen || function () {}).call(wrapper);
+      }
+    });
+    document.addEventListener("fullscreenchange", function () {
+      var on = document.fullscreenElement === wrapper;
+      wrapper.classList.toggle("is-fullscreen", on);
+      setIcon(ui.fs, on ? "exit" : "full");
+    });
+
+    // ── Boot the YT player ──
+    reflect(false);
 
     loadYouTubeAPI().then(function (YT) {
       player = new YT.Player(mount, {
@@ -259,17 +406,13 @@
         height: "100%",
         playerVars: {
           autoplay: autoplay ? 1 : 0,
-          controls: 0,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
+          controls: 0, rel: 0, modestbranding: 1, playsinline: 1,
+          disablekb: 1, iv_load_policy: 3, fs: 0,
           loop: loop ? 1 : 0,
           playlist: loop ? videoId : undefined,
         },
         events: {
           onReady: function (e) {
-            /* The freshly-created iframe defaults to 640×360 at top-left and
-             * carries no class — force it to fill the frame container. */
             var iframe = e.target.getIframe();
             if (iframe) {
               iframe.style.position = "absolute";
@@ -278,22 +421,22 @@
               iframe.style.height = "100%";
               iframe.style.border = "0";
             }
-
+            ui.dur.textContent = formatTime(e.target.getDuration() || 0);
+            if (e.target.isMuted && e.target.isMuted()) {
+              setIcon(ui.mute, "muted"); ui.mute.setAttribute("aria-label", "Unmute");
+            }
             var shouldPlay = autoplay || pendingAction === "play";
             pendingAction = null;
-            if (shouldPlay) {
-              hidePicture(wrapper, id);
-              e.target.playVideo();
-            }
+            if (shouldPlay) { hidePoster(); e.target.playVideo(); }
           },
           onStateChange: function (e) {
-            if (!setPlaying) return;
             if (e.data === YT.PlayerState.PLAYING) {
-              hidePicture(wrapper, id);
-              setPlaying(true);
-            } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
-              setPlaying(false);
-              if (e.data === YT.PlayerState.ENDED && !loop) showPicture(wrapper, id);
+              hidePoster(); reflect(true); wake();
+            } else if (e.data === YT.PlayerState.PAUSED) {
+              reflect(false); wrapper.classList.remove("is-idle");
+            } else if (e.data === YT.PlayerState.ENDED) {
+              reflect(false); wrapper.classList.remove("is-idle");
+              if (!loop) { showPoster(); ui.fill.style.width = "0%"; ui.range.value = "0"; }
             }
           },
         },
@@ -305,21 +448,9 @@
 
   function setDesktopOnlyVisibility() {
     var isMobile = window.innerWidth <= DESKTOP_BREAKPOINT;
-
     document.querySelectorAll('[data-webinar][data-webinar-desktop-only="true"]').forEach(function (wrapper) {
-      var id = wrapper.getAttribute("data-webinar");
-
       wrapper.style.display = isMobile ? "none" : "";
       wrapper.setAttribute("aria-hidden", isMobile ? "true" : "false");
-
-      ["play", "pause"].forEach(function (kind) {
-        var btn = document.querySelector('[data-webinar-playback="' + kind + '"][data-webinar="' + id + '"]');
-        if (!btn) return;
-        btn.style.display = isMobile ? "none" : "";
-        btn.setAttribute("aria-hidden", isMobile ? "true" : "false");
-        if (isMobile) btn.setAttribute("tabindex", "-1");
-        else btn.removeAttribute("tabindex");
-      });
     });
   }
 

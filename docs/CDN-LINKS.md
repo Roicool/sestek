@@ -489,6 +489,7 @@ DOM yapısı:
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
 | `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
+| `css/components/webinar-player.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/webinar-player.css` |
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 
@@ -745,11 +746,21 @@ oynatma olmaz, videolar posterinde duraklamış kalır.
 
 ### Webinar Player
 
-YouTube embed'lerini kendi marka kontrollerinle (kendi play/pause butonların,
-poster crossfade) sunan inline player — YouTube'un kendi arayüzü/click-through'u
-yok. YouTube IFrame Player API'sini ihtiyaç anında lazy-load eder.
+YouTube embed'lerini **Sestek tarzı, kendi kendini kuran tam bir controller** ile
+sunan inline player — YouTube'un kendi arayüzü/click-through'u yok. Script tüm
+UI'ı kendisi inject eder; sen buton wire ETMEZSİN:
+
+- Ortada büyük play butonu (duraklatılmışken / başlamadan önce görünür)
+- Oynayınca altta premium kontrol barı: play/pause, scrubber (ilerleme +
+  buffered dolgu), geçen/toplam süre, ses, tam ekran
+- Oynarken fare hareketsizse kontroller otomatik gizlenir, hareket/hover'da gelir
+- Poster oynayınca crossfade ile kaybolur
+
+YouTube IFrame Player API'sini ihtiyaç anında lazy-load eder.
 
 ```html
+<!-- CSS controller skin'i + JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/webinar-player.css">
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js" defer></script>
 ```
 
@@ -763,33 +774,33 @@ Webflow `</body>` öncesi:
 </script>
 ```
 
-DOM yapısı:
+DOM yapısı (minimal — kontrolleri script ekler):
 
 ```html
-<div data-webinar="session-1" data-webinar-video-id="dQw4w9WgXcQ">
-  <picture data-webinar-picture="session-1">    <!-- opsiyonel poster, crossfade'li -->
-    <img src="poster.jpg" alt="">
-  </picture>
-
-  <div data-webinar-frame="session-1"></div>    <!-- iframe buraya enjekte edilir -->
-
-  <button data-webinar-playback="play"  data-webinar="session-1">▶</button>
-  <button data-webinar-playback="pause" data-webinar="session-1">⏸</button>
+<div data-webinar="session-1" data-webinar-video-id="dQw4w9WgXcQ" class="webinar">
+  <img data-webinar-picture="session-1" src="poster.jpg" alt="">  <!-- opsiyonel -->
+  <div data-webinar-frame="session-1"></div>                      <!-- BOŞ div -->
 </div>
 ```
 
+> ⚠️ `data-webinar-frame` **boş bir `<div>` olmalı** — Webflow'un YouTube Video
+> embed elementi DEĞİL. (Yanlışlıkla iframe koyarsan script otomatik boş div'e
+> çevirir ama temiz kullanım boş Div Block'tur.) Buton koymana gerek yok.
+
 Attribute'lar (hepsi `[data-webinar]` wrapper'ı üzerinde):
 
-- **`data-webinar`** — benzersiz id, her parçayı birbirine bağlar (zorunlu).
+- **`data-webinar`** — benzersiz id, parçaları birbirine bağlar (zorunlu).
 - **`data-webinar-video-id`** — YouTube video id'si (zorunlu); tam bir
-  watch/share/embed URL'i de kabul edilir, otomatik çıkarılır.
+  watch/share/embed URL'i de kabul edilir, id otomatik çıkarılır.
 - **`data-webinar-autoplay="true"`** — player hazır olur olmaz oynatmaya başlar.
 - **`data-webinar-loop="true"`** — tek videoyu sonsuz döngüde oynatır.
-- **`data-webinar-desktop-only="true"`** — 991px altında player + kontrolleri gizler.
+- **`data-webinar-accent="#EC008C"`** — controller vurgu rengi (CSS var token'ı
+  ya da hex); varsayılan `--interactive--color-primary-base`.
+- **`data-webinar-desktop-only="true"`** — 991px altında player'ı gizler.
 
-Player'lar lazy-load olur: YouTube IFrame API ve iframe'in kendisi yalnızca
-wrapper viewport'a yaklaşınca oluşturulur (`IntersectionObserver`,
-`rootMargin: 300px`) — bu PageSpeed'i korur.
+Player'lar lazy-load olur: YouTube IFrame API ve iframe yalnızca wrapper
+viewport'a yaklaşınca oluşturulur (`IntersectionObserver`, `rootMargin: 300px`)
+— bu PageSpeed'i korur.
 
 `prefers-reduced-motion` aktifse: `data-webinar-autoplay` yok sayılır,
 player'lar tıklanana kadar posterinde bekler.
