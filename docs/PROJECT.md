@@ -22,12 +22,12 @@ sestek/
 ├── js/
 │   ├── core/        # Foundation utilities — lenis-init.js, nav.js
 │   ├── components/  # UI components — hero.js, marquee.js, scroll-tabs.js, video-modal.js,
-│   │                #   video-inline.js, webinar-player.js, card-marquee.js
+│   │                #   video-inline.js, webinar-player.js, card-marquee.js, search.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable GSAP animation presets — height-reveal.js, reveal.js
 ├── css/
 │   ├── core/        # Core styles — nav.css, nav-full.css
-│   ├── components/  # Component styles — hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css
+│   ├── components/  # Component styles — hero.css, marquee.css, scroll-tabs.css, video-modal.css, card-marquee.css, search.css
 │   ├── effects/     # Effect styles — grain.css, btn-glow.css
 │   └── animations/  # Animation styles — reveal.css
 └── docs/            # PROJECT.md, CDN-LINKS.md, RC-STRUCTURE-REFERENCE.css, changelogs
