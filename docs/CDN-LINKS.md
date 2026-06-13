@@ -633,6 +633,8 @@ DOM yapısı:
 | `css/components/accordion.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css` |
 | `js/components/site-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js` |
 | `js/components/sticky-utms.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-utms.js` |
+| `js/components/search.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/search.js` |
+| `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
 
 ### Accordion
 
@@ -1267,6 +1269,77 @@ Webflow `</body>` öncesi:
   üzerinde native cursor gizlenir, dönme ikonlu bir cursor belirir.
 - CMS item sayısı **tek** ise JS 2 satır düzeninin sorunsuz dönmesi için repeat
   birimini otomatik ikiye katlar — yine de **çift sayı** önerilir.
+
+### Search
+
+Tüm site arkası bulanıklaşan (frosted) tam ekran arama overlay'i. Bir veya
+birden fazla `[data-search-trigger]`'a tıklanınca açılır; yazarken blog
+postlarını **client-side** (API çağrısı yok) filtreler — görsel + başlık
+kartları halinde, eşleşen kısım vurgulanmış (`<mark>`) olarak gösterir.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/search.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initSearch(); // [data-search] bloğunu başlatır
+  });
+</script>
+```
+
+#### DOM yapısı
+
+```html
+<div data-search data-search-limit="8" data-search-min-chars="2">
+
+  <!-- tetikleyici(ler) — nav içinde dahil, sayfada herhangi bir yerde olabilir -->
+  <button data-search-trigger aria-label="Search">…icon…</button>
+
+  <div data-search-overlay>
+    <div data-search-panel role="dialog" aria-modal="true">
+      <div data-search-bar>
+        <input data-search-input type="text" placeholder="Search…" autocomplete="off">
+        <button data-search-close aria-label="Close">×</button>
+      </div>
+      <div data-search-results></div>
+      <p data-search-empty hidden>No results found.</p>
+    </div>
+  </div>
+
+  <!-- Collection List Wrapper — TÜM blog postları, gizli -->
+  <div data-search-source>
+    <!-- Collection Item — link block -->
+    <a data-search-item href="[CMS post link]" data-search-title="[CMS post title]">
+      <img data-search-image src="[CMS post image]" alt="">
+    </a>
+    <!-- … -->
+  </div>
+
+</div>
+```
+
+- **`data-search-limit`** — gösterilecek max sonuç sayısı (varsayılan `8`).
+- **`data-search-min-chars`** — filtrelemenin başlaması için yazılması gereken
+  min. karakter (varsayılan `2`).
+- **`data-search-title`** — eşleşen ve vurgulanan metin; yoksa elementin
+  `textContent`'i kullanılır.
+- **`[data-search-item]`** — `href` veya `data-search-url` zorunlu (sonuç
+  kartının linki); içindeki `[data-search-image]` thumbnail olarak kullanılır.
+
+Eşleştirme Türkçe karakter duyarsız (ş/ç/ğ/ö/ü/ı/İ → düz ASCII'ye katlanır),
+büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece
+**içeren** başlıkların önüne sıralanır.
+
+ESC, dış tıklama veya `[data-search-close]` ile kapanır; açıkken sayfa
+scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/`startScroll`, yoksa
+`html.search-lock { overflow: hidden }` fallback'i). Finsweet filtreleri
+(kategori vb.) ile birlikte kullanılabilir — bu component sadece metin
+arama/sonuç render'ını yönetir.
 
 ---
 
