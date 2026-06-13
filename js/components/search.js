@@ -1,5 +1,5 @@
 /*!
- * search.js v1.0.0
+ * search.js v1.1.0
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -24,7 +24,11 @@
  *       </div>
  *     </div>
  *
- *     <!-- Webflow Collection List, ALL blog posts, hidden -->
+ *     <!-- Webflow Collection List of blog posts — read-only source for the
+ *          index. Can be the page's existing VISIBLE list (e.g. the blog
+ *          grid itself) or a separate hidden one; search.js never hides or
+ *          alters it. Note: if Webflow paginates this list, only the posts
+ *          rendered on the current page are searchable. -->
  *     <div data-search-source>
  *       <a data-search-item href="/blog/post-slug" data-search-title="Post title">
  *         <img data-search-image src="…" alt="">

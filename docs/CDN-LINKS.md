@@ -920,7 +920,7 @@ Webflow `</body>` öncesi:
     </div>
   </div>
 
-  <!-- Collection List Wrapper — TÜM blog postları, gizli -->
+  <!-- Collection List Wrapper — blog postları -->
   <div data-search-source>
     <!-- Collection Item — link block -->
     <a data-search-item href="[CMS post link]" data-search-title="[CMS post title]">
@@ -939,6 +939,14 @@ Webflow `</body>` öncesi:
   `textContent`'i kullanılır.
 - **`[data-search-item]`** — `href` veya `data-search-url` zorunlu (sonuç
   kartının linki); içindeki `[data-search-image]` thumbnail olarak kullanılır.
+- **`[data-search-source]`** — search.js bunu **sadece okur**, gizlemez/değiştirmez.
+  Sayfada zaten görünen blog listesini (mevcut Collection List) kullanabilirsin —
+  her Collection Item'a `data-search-item` + `data-search-title` ekleyip
+  içindeki görsele `data-search-image` koyman yeterli. Ayrı/gizli bir liste
+  istersen kendin `display:none` (Webflow "Hide" ayarı) ile gizle.
+  > ⚠️ Webflow Collection List **sayfalama (pagination)** kullanıyorsa, sadece
+  > o sayfada render edilen postlar arama indeksine girer — site genelinde
+  > arama için listenin tamamını (limit'i yüksek tutarak) tek sayfada render et.
 
 Eşleştirme Türkçe karakter duyarsız (ş/ç/ğ/ö/ü/ı/İ → düz ASCII'ye katlanır),
 büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece

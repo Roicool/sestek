@@ -1,12 +1,15 @@
 /*!
- * search.css v1.0.0
+ * search.css v1.1.0
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim, with a floating search bar + live results grid on top.
+ *
+ * [data-search-source] visibility is intentionally NOT controlled here —
+ * it can be an on-page (visible) Collection List that search.js reads from,
+ * or a dedicated hidden one. Hide it yourself (Webflow "Hide" / display:none)
+ * only if you don't want it visible on the page.
+ *
  * https://github.com/roicool/sestek
  */
-
-/* Webflow Collection List holding every searchable post — never rendered */
-[data-search-source] { display: none !important; }
 
 /* CSS-only scroll lock fallback while the overlay is open */
 html.search-lock { overflow: hidden; }
