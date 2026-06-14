@@ -952,11 +952,24 @@ Eşleştirme Türkçe karakter duyarsız (ş/ç/ğ/ö/ü/ı/İ → düz ASCII'ye
 büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece
 **içeren** başlıkların önüne sıralanır.
 
-ESC, dış tıklama veya `[data-search-close]` ile kapanır; açıkken sayfa
-scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/`startScroll`, yoksa
-`html.search-lock { overflow: hidden }` fallback'i). Finsweet filtreleri
-(kategori vb.) ile birlikte kullanılabilir — bu component sadece metin
-arama/sonuç render'ını yönetir.
+**Davranış (v1.2.0):**
+- Trigger'a tekrar basınca overlay **toggle** olur (aç/kapa).
+- İndeks **her açılışta yeniden kurulur** ve `[data-search-source]` taze
+  sorgulanır — lazy-load / CMS / Finsweet "load more" ile sonradan gelen
+  postlar da otomatik aranır.
+- Arka plana tıklayınca kapanır, ama **sadece** tıklama hem arka planda
+  başlayıp hem arka planda biterse — açılış tıklaması, panel içinden
+  sıçrayan tıklama veya metin seçip arka plana bırakma yanlışlıkla
+  kapatmaz.
+- **Erişilebilir:** açıkken Tab panel içinde hapsolur (focus trap), ESC
+  kapatır, **↑/↓** ile sonuçlar arasında gezinilir, **Enter** seçili sonuca
+  gider; trigger'larda `aria-expanded`, overlay'de `aria-hidden` güncellenir.
+
+Açıkken sayfa scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/
+`startScroll`, yoksa `html.search-lock { overflow: hidden }` fallback'i).
+Finsweet filtreleri (kategori vb.) ile birlikte kullanılabilir — bu
+component sadece metin arama/sonuç render'ını yönetir. Beklenen bir element
+eksikse konsola `[Sestek.search]` ön ekiyle uyarı basar (sessizce ölmez).
 
 ---
 

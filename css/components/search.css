@@ -1,5 +1,5 @@
 /*!
- * search.css v1.1.0
+ * search.css v1.2.0
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim, with a floating search bar + live results grid on top.
  *
@@ -127,8 +127,15 @@ html.search-lock { overflow: hidden; }
   transition: transform 0.25s ease;
 }
 
-.search__result:hover {
+.search__result:hover,
+.search__result.is-active {
   transform: translateY(-0.25rem);
+}
+
+/* Keyboard-highlighted result (↑/↓ navigation) */
+.search__result.is-active .search__result-media {
+  outline: 2px solid var(--brand-primary--600, #c8772e);
+  outline-offset: 2px;
 }
 
 .search__result-media {
