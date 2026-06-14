@@ -1,5 +1,5 @@
 /*!
- * search.css v1.3.0
+ * search.css v1.4.0
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
@@ -62,11 +62,12 @@ html.search-lock { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: var(--spacing--3, 0.75rem);
-  padding: var(--spacing--3, 0.75rem);
+  padding: var(--spacing--2, 0.5rem);
   padding-left: var(--spacing--6, 1.5rem);
   border-radius: var(--radius--full, 9999px);
   background: var(--surface--base, #fff);
-  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 28px -12px rgba(0, 0, 0, 0.12);
 }
 
 [data-search-input] {
@@ -88,13 +89,13 @@ html.search-lock { overflow: hidden; }
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   border: 0;
-  border-radius: var(--radius--lg, 0.75rem);
-  background: var(--brand-primary--100, #fde6f3);
-  color: var(--color-text--accent, #EC008C);
+  border-radius: var(--radius--full, 9999px);
+  background: transparent;
+  color: var(--color-text--muted, rgba(26, 26, 26, 0.45));
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
@@ -102,8 +103,8 @@ html.search-lock { overflow: hidden; }
 }
 
 [data-search-close]:hover {
-  background: var(--color-text--accent, #EC008C);
-  color: var(--surface--base, #fff);
+  background: var(--brand-primary--100, #fde6f3);
+  color: var(--color-text--accent, #EC008C);
   transform: scale(1.06);
 }
 
@@ -140,15 +141,19 @@ html.search-lock { overflow: hidden; }
 .search__result {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing--2, 0.5rem);
+  gap: var(--spacing--3, 0.75rem);
+  padding: var(--spacing--3, 0.75rem);
+  border-radius: var(--radius--xl, 0.75rem);
+  background: var(--surface--muted, #f5f5f6);
   text-decoration: none;
   color: var(--color-text--base, #1a1a1a);
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, background-color 0.25s ease;
 }
 
 .search__result:hover,
 .search__result.is-active {
   transform: translateY(-0.25rem);
+  background: var(--brand-primary--100, #fde6f3);
 }
 
 /* Keyboard-highlighted result (↑/↓ navigation) */
@@ -160,9 +165,9 @@ html.search-lock { overflow: hidden; }
 .search__result-media {
   position: relative;
   aspect-ratio: 16 / 10;
-  border-radius: var(--radius--xl, 0.75rem);
+  border-radius: var(--radius--lg, 0.5rem);
   overflow: hidden;
-  background: var(--surface--muted, #f5f5f5);
+  background: var(--surface--base, #fff);
 }
 
 .search__result-media img {
@@ -178,6 +183,7 @@ html.search-lock { overflow: hidden; }
   font-weight: var(--font-weight--regular, 400);
   line-height: 1.35;
   color: var(--color-text--base, #1a1a1a);
+  padding: 0 var(--spacing--1, 0.25rem) var(--spacing--1, 0.25rem);
 }
 
 /* Matched substring — bold, same color (Ramp-style), no chip/background */
