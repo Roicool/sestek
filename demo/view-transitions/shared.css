@@ -1,0 +1,140 @@
+/* ── View Transitions demo — shared styles ───────────────────── */
+
+* { box-sizing: border-box; }
+
+:root {
+  --accent: #EC008C;
+  --bg: #fff;
+  --text: #1a1a1a;
+  --muted: #6b6b6b;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Enable native cross-document view transitions ───────────── */
+@view-transition {
+  navigation: auto;
+}
+
+/* ── Nav (stays put — no fade, feels like a persistent shell) ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  view-transition-name: site-nav;
+}
+
+.nav__logo { font-weight: 700; font-size: 1.1rem; text-decoration: none; color: var(--text); }
+
+.nav__links { display: flex; gap: 1.5rem; }
+
+.nav__links a {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav__links a:hover { background: #f5f5f5; color: var(--text); }
+.nav__links a.is-active { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* ── Page content ─────────────────────────────────────────────── */
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+main h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  margin: 0 0 0.5rem;
+}
+
+main p.lead {
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin: 0 0 2.5rem;
+}
+
+.post {
+  display: block;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-bottom: 0.9rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.12);
+}
+
+.post strong { display: block; margin-bottom: 0.25rem; }
+.post span { color: var(--muted); font-size: 0.9rem; }
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* ── Custom cross-fade + subtle scale (premium feel) ─────────────
+ * Default browser view-transition is a plain cross-fade. We
+ * override root old/new with a slightly slower fade + scale so
+ * the new page "settles in" instead of just popping.
+ */
+::view-transition-old(root) {
+  animation: vt-fade-out 0.22s ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: vt-fade-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: scale(0.99); }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: scale(1.01); }
+}
+
+/* The nav has its own view-transition-name (site-nav) so it
+   participates separately — keep it a plain, instant cross-fade
+   so it never visibly "moves". */
+::view-transition-old(site-nav),
+::view-transition-new(site-nav) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
