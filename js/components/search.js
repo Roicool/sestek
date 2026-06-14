@@ -1,5 +1,5 @@
 /*!
- * search.js v1.1.1
+ * search.js v1.1.2
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -27,7 +27,9 @@
  *     <!-- Webflow Collection List of blog posts — read-only source for the
  *          index. Can be the page's existing VISIBLE list (e.g. the blog
  *          grid itself) or a separate hidden one; search.js never hides or
- *          alters it. Note: if Webflow paginates this list, only the posts
+ *          alters it. It does NOT have to live inside [data-search] — the
+ *          source is looked up inside the wrapper first, then anywhere on the
+ *          page. Note: if Webflow paginates this list, only the posts
  *          rendered on the current page are searchable. -->
  *     <div data-search-source>
  *       <a data-search-item href="/blog/post-slug" data-search-title="Post title">
@@ -190,7 +192,11 @@
     var closeBtn  = root.querySelector("[data-search-close]");
     var resultsEl = root.querySelector("[data-search-results]");
     var emptyEl   = root.querySelector("[data-search-empty]");
-    var source    = root.querySelector("[data-search-source]");
+    // Source can live inside the [data-search] block OR anywhere on the page
+    // (e.g. the existing visible blog grid in its own section) — look inside
+    // the wrapper first, then fall back to a document-wide search.
+    var source    = root.querySelector("[data-search-source]") ||
+                    document.querySelector("[data-search-source]");
     var triggers  = Array.from(document.querySelectorAll("[data-search-trigger]"));
 
     // Overlay + input are the bare minimum for the panel to open/work.
