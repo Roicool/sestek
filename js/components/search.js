@@ -1,5 +1,5 @@
 /*!
- * search.js v1.2.0
+ * search.js v1.3.0
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -30,6 +30,8 @@
  *           <input data-search-input type="text" placeholder="Search…" autocomplete="off">
  *           <button data-search-close aria-label="Close">×</button>
  *         </div>
+ *         <!-- optional heading shown above results, e.g. "Blog" / "Resources" -->
+ *         <p data-search-results-label hidden>Blog</p>
  *         <div data-search-results></div>
  *         <p data-search-empty hidden>No results found.</p>
  *       </div>
@@ -207,6 +209,7 @@
     var closeBtn  = root.querySelector("[data-search-close]");
     var resultsEl = root.querySelector("[data-search-results]");
     var emptyEl   = root.querySelector("[data-search-empty]");
+    var labelEl   = root.querySelector("[data-search-results-label]");
     // Source can live inside the [data-search] block OR anywhere on the page
     // (e.g. the existing visible blog grid in its own section) — look inside
     // the wrapper first, then fall back to a document-wide search.
@@ -284,11 +287,14 @@
         resultsEl.innerHTML = "";
         resultCards = [];
         if (emptyEl) emptyEl.hidden = true;
+        if (labelEl) labelEl.hidden = true;
         return;
       }
 
-      renderResults(resultsEl, emptyEl, filterIndex(index, query, limit), query);
+      var matches = filterIndex(index, query, limit);
+      renderResults(resultsEl, emptyEl, matches, query);
       resultCards = Array.prototype.slice.call(resultsEl.querySelectorAll(".search__result"));
+      if (labelEl) labelEl.hidden = !matches.length;
     }
 
     function onKeydown(e) {
@@ -333,6 +339,7 @@
       input.value       = "";
       resultsEl.innerHTML = "";
       if (emptyEl) emptyEl.hidden = true;
+      if (labelEl) labelEl.hidden = true;
 
       overlay.classList.add("is-open");
       overlay.removeAttribute("aria-hidden");
@@ -364,6 +371,7 @@
       resultCards = [];
       activeResult = -1;
       if (emptyEl) emptyEl.hidden = true;
+      if (labelEl) labelEl.hidden = true;
 
       if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
     }

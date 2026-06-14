@@ -1306,6 +1306,8 @@ Webflow `</body>` öncesi:
         <input data-search-input type="text" placeholder="Search…" autocomplete="off">
         <button data-search-close aria-label="Close">×</button>
       </div>
+      <!-- opsiyonel başlık, sonuç varken görünür (örn. "Blog" / "Resources") -->
+      <p data-search-results-label hidden>Blog</p>
       <div data-search-results></div>
       <p data-search-empty hidden>No results found.</p>
     </div>
@@ -1330,6 +1332,9 @@ Webflow `</body>` öncesi:
   `textContent`'i kullanılır.
 - **`[data-search-item]`** — `href` veya `data-search-url` zorunlu (sonuç
   kartının linki); içindeki `[data-search-image]` thumbnail olarak kullanılır.
+- **`[data-search-results-label]`** — opsiyonel; sonuç listesinin üstünde
+  gösterilen başlık (örn. "Blog" / "Resources"). Sonuç varken otomatik
+  görünür, sonuç yokken/sorgu kısayken `hidden` olur.
 - **`[data-search-source]`** — search.js bunu **sadece okur**, gizlemez/değiştirmez.
   Sayfada zaten görünen blog listesini (mevcut Collection List) kullanabilirsin —
   her Collection Item'a `data-search-item` + `data-search-title` ekleyip
@@ -1343,7 +1348,7 @@ Eşleştirme Türkçe karakter duyarsız (ş/ç/ğ/ö/ü/ı/İ → düz ASCII'ye
 büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece
 **içeren** başlıkların önüne sıralanır.
 
-**Davranış (v1.2.0):**
+**Davranış (v1.3.0):**
 - Trigger'a tekrar basınca overlay **toggle** olur (aç/kapa).
 - İndeks **her açılışta yeniden kurulur** ve `[data-search-source]` taze
   sorgulanır — lazy-load / CMS / Finsweet "load more" ile sonradan gelen
@@ -1355,6 +1360,13 @@ büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece
 - **Erişilebilir:** açıkken Tab panel içinde hapsolur (focus trap), ESC
   kapatır, **↑/↓** ile sonuçlar arasında gezinilir, **Enter** seçili sonuca
   gider; trigger'larda `aria-expanded`, overlay'de `aria-hidden` güncellenir.
+
+**Görsel (v1.3.0 — Ramp-tarzı):** Eşleşen metin artık renkli "chip" yerine
+sadece **bold** gösteriliyor (`<mark>` arka planı yok); kapatma butonu ve
+klavye-seçili sonuç çerçevesi Sestek pembesini (`#EC008C` /
+`--color-text--accent`) kullanıyor. Renkler `--brand-primary--100/600` ve
+`--color-text--accent` Webflow değişkenlerinden geliyor — bu değişkenleri
+Designer'da tanımlamadıysan CSS'teki pembe fallback'ler devreye girer.
 
 Açıkken sayfa scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/
 `startScroll`, yoksa `html.search-lock { overflow: hidden }` fallback'i).

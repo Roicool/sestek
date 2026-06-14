@@ -1,12 +1,17 @@
 /*!
- * search.css v1.2.0
+ * search.css v1.3.0
  * Full-site search overlay skin for search.js. The page behind blurs through
- * a frosted scrim, with a floating search bar + live results grid on top.
+ * a frosted scrim; a search bar sits near the top with a results grid below
+ * (image + title cards, matched text shown in bold — Ramp-style).
  *
  * [data-search-source] visibility is intentionally NOT controlled here —
  * it can be an on-page (visible) Collection List that search.js reads from,
  * or a dedicated hidden one. Hide it yourself (Webflow "Hide" / display:none)
  * only if you don't want it visible on the page.
+ *
+ * Optional: add an element with [data-search-results-label] (e.g. a
+ * "Resources" / "Blog" heading) right before [data-search-results] — it's
+ * shown only while results are rendered.
  *
  * https://github.com/roicool/sestek
  */
@@ -39,8 +44,8 @@ html.search-lock { overflow: hidden; }
 /* ── Panel ────────────────────────────────────────────────────────── */
 [data-search-panel] {
   width: 100%;
-  max-width: 60rem;
-  margin-top: clamp(2rem, 8vw, 6rem);
+  max-width: 64rem;
+  margin-top: clamp(1.5rem, 6vw, 4rem);
   display: flex;
   flex-direction: column;
   gap: var(--spacing--6, 1.5rem);
@@ -58,7 +63,7 @@ html.search-lock { overflow: hidden; }
   align-items: center;
   gap: var(--spacing--3, 0.75rem);
   padding: var(--spacing--3, 0.75rem);
-  padding-left: var(--spacing--5, 1.25rem);
+  padding-left: var(--spacing--6, 1.5rem);
   border-radius: var(--radius--full, 9999px);
   background: var(--surface--base, #fff);
   box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.18);
@@ -71,25 +76,25 @@ html.search-lock { overflow: hidden; }
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: var(--text--lg, 1.125rem);
+  font-size: var(--text--xl, 1.375rem);
   color: var(--color-text--base, #1a1a1a);
 }
 
 [data-search-input]::placeholder {
-  color: var(--color-text--muted, rgba(26, 26, 26, 0.5));
+  color: var(--color-text--muted, rgba(26, 26, 26, 0.45));
 }
 
 [data-search-close] {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
   padding: 0;
   border: 0;
-  border-radius: var(--radius--full, 9999px);
-  background: var(--surface--muted, #f5f5f5);
-  color: var(--color-text--base, #1a1a1a);
+  border-radius: var(--radius--lg, 0.75rem);
+  background: var(--brand-primary--100, #fde6f3);
+  color: var(--color-text--accent, #EC008C);
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
@@ -97,21 +102,35 @@ html.search-lock { overflow: hidden; }
 }
 
 [data-search-close]:hover {
-  background: var(--brand-primary--100, #f5f1ec);
-  color: var(--color-text--accent, #8a5a2e);
+  background: var(--color-text--accent, #EC008C);
+  color: var(--surface--base, #fff);
   transform: scale(1.06);
 }
 
 [data-search-close]:focus-visible {
-  outline: 2px solid var(--color-text--accent, #8a5a2e);
+  outline: 2px solid var(--color-text--accent, #EC008C);
   outline-offset: 2px;
+}
+
+/* ── Results label (optional, e.g. "Resources" / "Blog") ─────────────── */
+[data-search-results-label] {
+  font-size: var(--text--sm, 0.875rem);
+  font-weight: var(--font-weight--semibold, 600);
+  color: var(--color-text--muted, rgba(26, 26, 26, 0.5));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+[data-search-results-label][hidden] {
+  display: none;
 }
 
 /* ── Results grid ─────────────────────────────────────────────────── */
 [data-search-results] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing--5, 1.25rem);
+  gap: var(--spacing--5, 1.25rem) var(--spacing--4, 1rem);
 }
 
 [data-search-results]:empty {
@@ -134,13 +153,13 @@ html.search-lock { overflow: hidden; }
 
 /* Keyboard-highlighted result (↑/↓ navigation) */
 .search__result.is-active .search__result-media {
-  outline: 2px solid var(--brand-primary--600, #c8772e);
+  outline: 2px solid var(--color-text--accent, #EC008C);
   outline-offset: 2px;
 }
 
 .search__result-media {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 10;
   border-radius: var(--radius--xl, 0.75rem);
   overflow: hidden;
   background: var(--surface--muted, #f5f5f5);
@@ -156,15 +175,18 @@ html.search-lock { overflow: hidden; }
 
 .search__result-title {
   font-size: var(--text--base, 1rem);
-  font-weight: var(--font-weight--semibold, 600);
-  line-height: 1.3;
+  font-weight: var(--font-weight--regular, 400);
+  line-height: 1.35;
+  color: var(--color-text--base, #1a1a1a);
 }
 
+/* Matched substring — bold, same color (Ramp-style), no chip/background */
 .search__result-title mark {
-  background: var(--brand-primary--100, #f5f1ec);
-  color: var(--color-text--accent, #8a5a2e);
-  border-radius: var(--radius--sm, 2px);
-  padding: 0 0.1em;
+  background: none;
+  color: inherit;
+  font-weight: var(--font-weight--bold, 700);
+  padding: 0;
+  border-radius: 0;
 }
 
 /* ── Empty state ──────────────────────────────────────────────────── */
@@ -187,6 +209,7 @@ html.search-lock { overflow: hidden; }
   [data-search-panel] { margin-top: var(--spacing--8, 2rem); }
   [data-search-results] { grid-template-columns: 1fr; }
   [data-search-bar] { padding-left: var(--spacing--4, 1rem); }
+  [data-search-input] { font-size: var(--text--lg, 1.125rem); }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
