@@ -1,5 +1,5 @@
 /*!
- * search.js v1.1.2
+ * search.js v1.1.3
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -225,6 +225,7 @@
 
     var debounceTimer = null;
     var lastFocused   = null;
+    var openedAt      = 0;
 
     function handleInput() {
       var query = input.value.trim();
@@ -245,6 +246,7 @@
     function open() {
       if (overlay.classList.contains("is-open")) return;
 
+      openedAt = Date.now();
       overlay.classList.add("is-open");
       document.documentElement.classList.add("search-lock");
       if (global.Sestek && typeof global.Sestek.stopScroll === "function") {
@@ -274,13 +276,24 @@
     }
 
     triggers.forEach(function (trigger) {
-      trigger.addEventListener("click", open);
+      trigger.addEventListener("click", function (e) {
+        // Stop the opening click from bubbling to any close/outside handler
+        // and from following an href (search icon is often an <a>).
+        e.preventDefault();
+        e.stopPropagation();
+        open();
+      });
     });
 
     if (closeBtn) closeBtn.addEventListener("click", close);
 
     overlay.addEventListener("click", function (e) {
-      if (!panel || !panel.contains(e.target)) close();
+      // Ignore the very click that opened the overlay (it can land here as it
+      // settles) so the panel doesn't open-then-instantly-close.
+      if (Date.now() - openedAt < 250) return;
+      // Only close on a click on the backdrop itself, not bubbled-up clicks
+      // from inside the panel's children.
+      if (e.target === overlay) close();
     });
 
     input.addEventListener("input", function () {
