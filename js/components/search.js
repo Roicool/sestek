@@ -1,7 +1,18 @@
 /*!
- * search.js v1.1.3
+ * search.js v1.2.0
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
+ *
+ * Behaviour:
+ *   • Trigger toggles the overlay open/closed (icon is usually an <a>).
+ *   • Index is rebuilt on every open, so lazily/CMS/Finsweet-rendered posts
+ *     are always included; the source is re-resolved each time too.
+ *   • Backdrop closes only on a click that both starts AND ends on the
+ *     backdrop — never the opening click, a bubbled click from the panel,
+ *     or a text-drag released over the backdrop.
+ *   • Accessible: focus is trapped in the panel, ESC closes, ↑/↓ move
+ *     through results and Enter opens the highlighted one; triggers carry
+ *     aria-expanded and the overlay carries aria-hidden.
  *
  * API:
  *   Sestek.initSearch()   — wire the [data-search] block on the page
@@ -67,6 +78,10 @@
   var DEFAULT_LIMIT     = 8;
   var DEFAULT_MIN_CHARS = 2;
   var DEBOUNCE_MS       = 120;
+
+  var raf = global.requestAnimationFrame
+    ? global.requestAnimationFrame.bind(global)
+    : function (cb) { return setTimeout(cb, 16); };
 
   // 1:1 char map so highlight indices stay aligned after normalizing.
   var FOLD_MAP = {
@@ -221,33 +236,107 @@
 
     var limit    = parseInt(root.getAttribute("data-search-limit"), 10) || DEFAULT_LIMIT;
     var minChars = parseInt(root.getAttribute("data-search-min-chars"), 10) || DEFAULT_MIN_CHARS;
-    var index    = buildIndex(source);
 
-    var debounceTimer = null;
-    var lastFocused   = null;
-    var openedAt      = 0;
+    var debounceTimer     = null;
+    var lastFocused       = null;
+    var pressedOnBackdrop = false;
+    var index             = [];   // (re)built on every open — survives lazy/CMS/Finsweet renders
+    var resultCards       = [];   // anchors currently on screen, for keyboard nav
+    var activeResult      = -1;   // highlighted result (-1 = none)
 
-    function handleInput() {
+    // Source can be re-rendered/replaced after load (Finsweet, pagination),
+    // so resolve it fresh each time rather than caching one node reference.
+    function currentSource() {
+      return root.querySelector("[data-search-source]") ||
+             document.querySelector("[data-search-source]");
+    }
+
+    // Visible, tabbable elements inside the panel — for the focus trap.
+    function focusables() {
+      return Array.prototype.slice
+        .call(panel.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), ' +
+          'textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ))
+        .filter(function (el) {
+          return el.offsetWidth || el.offsetHeight || el.getClientRects().length;
+        });
+    }
+
+    function setActiveResult(next) {
+      if (!resultCards.length) { activeResult = -1; return; }
+      if (activeResult > -1 && resultCards[activeResult]) {
+        resultCards[activeResult].classList.remove("is-active");
+      }
+      activeResult = (next + resultCards.length) % resultCards.length;
+      var card = resultCards[activeResult];
+      card.classList.add("is-active");
+      if (typeof card.scrollIntoView === "function") {
+        card.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function runSearch() {
       var query = input.value.trim();
+      activeResult = -1;
 
       if (query.length < minChars) {
         resultsEl.innerHTML = "";
+        resultCards = [];
         if (emptyEl) emptyEl.hidden = true;
         return;
       }
 
       renderResults(resultsEl, emptyEl, filterIndex(index, query, limit), query);
+      resultCards = Array.prototype.slice.call(resultsEl.querySelectorAll(".search__result"));
     }
 
     function onKeydown(e) {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") { close(); return; }
+
+      // Focus trap — keep Tab inside the panel while open.
+      if (e.key === "Tab") {
+        var f = focusables();
+        if (!f.length) return;
+        var first = f[0];
+        var last  = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+        return;
+      }
+
+      // Arrow keys move through results; Enter opens the highlighted one.
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveResult(activeResult + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveResult(activeResult - 1);
+      } else if (e.key === "Enter" && activeResult > -1 && resultCards[activeResult]) {
+        e.preventDefault();
+        global.location.href = resultCards[activeResult].href;
+      }
     }
 
     function open() {
       if (overlay.classList.contains("is-open")) return;
 
-      openedAt = Date.now();
+      index             = buildIndex(currentSource());  // fresh every open
+      pressedOnBackdrop = false;
+      activeResult      = -1;
+      resultCards       = [];
+      input.value       = "";
+      resultsEl.innerHTML = "";
+      if (emptyEl) emptyEl.hidden = true;
+
       overlay.classList.add("is-open");
+      overlay.removeAttribute("aria-hidden");
+      triggers.forEach(function (t) { t.setAttribute("aria-expanded", "true"); });
       document.documentElement.classList.add("search-lock");
       if (global.Sestek && typeof global.Sestek.stopScroll === "function") {
         global.Sestek.stopScroll();
@@ -255,13 +344,15 @@
 
       lastFocused = document.activeElement;
       document.addEventListener("keydown", onKeydown);
-      requestAnimationFrame(function () { input.focus(); });
+      raf(function () { input.focus(); });
     }
 
     function close() {
       if (!overlay.classList.contains("is-open")) return;
 
       overlay.classList.remove("is-open");
+      overlay.setAttribute("aria-hidden", "true");
+      triggers.forEach(function (t) { t.setAttribute("aria-expanded", "false"); });
       document.documentElement.classList.remove("search-lock");
       if (global.Sestek && typeof global.Sestek.startScroll === "function") {
         global.Sestek.startScroll();
@@ -270,36 +361,42 @@
       document.removeEventListener("keydown", onKeydown);
       input.value = "";
       resultsEl.innerHTML = "";
+      resultCards = [];
+      activeResult = -1;
       if (emptyEl) emptyEl.hidden = true;
 
       if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
     }
 
     triggers.forEach(function (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
       trigger.addEventListener("click", function (e) {
-        // Stop the opening click from bubbling to any close/outside handler
-        // and from following an href (search icon is often an <a>).
-        e.preventDefault();
-        e.stopPropagation();
-        open();
+        e.preventDefault();   // the search icon is often an <a href="#">
+        if (overlay.classList.contains("is-open")) close();
+        else open();
       });
     });
 
     if (closeBtn) closeBtn.addEventListener("click", close);
 
+    // Backdrop-to-close: only fire when a click BOTH starts and ends on the
+    // backdrop itself. This ignores (a) the click that opened the overlay,
+    // (b) clicks bubbling up from inside the panel, and (c) a text selection
+    // drag that happens to release over the backdrop.
+    overlay.addEventListener("mousedown", function (e) {
+      pressedOnBackdrop = (e.target === overlay);
+    });
     overlay.addEventListener("click", function (e) {
-      // Ignore the very click that opened the overlay (it can land here as it
-      // settles) so the panel doesn't open-then-instantly-close.
-      if (Date.now() - openedAt < 250) return;
-      // Only close on a click on the backdrop itself, not bubbled-up clicks
-      // from inside the panel's children.
-      if (e.target === overlay) close();
+      if (pressedOnBackdrop && e.target === overlay) close();
+      pressedOnBackdrop = false;
     });
 
     input.addEventListener("input", function () {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(handleInput, DEBOUNCE_MS);
+      debounceTimer = setTimeout(runSearch, DEBOUNCE_MS);
     });
+
+    overlay.setAttribute("aria-hidden", "true");
   }
 
   global.Sestek = global.Sestek || {};
