@@ -1,5 +1,5 @@
 /*!
- * search.css v1.6.0
+ * search.css v1.6.1
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
@@ -244,11 +244,6 @@ html.search-lock { overflow: hidden; }
 }
 
 /* ── Responsive grid ──────────────────────────────────────────────── */
-/* Desktop gets a 4th column — smaller, denser result cards. */
-@media (min-width: 992px) {
-  [data-search-results] { grid-template-columns: repeat(4, 1fr); }
-}
-
 @media (max-width: 991px) {
   [data-search-results] { grid-template-columns: repeat(2, 1fr); }
 }
