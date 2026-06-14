@@ -1,5 +1,5 @@
 /*!
- * search.css v1.5.0
+ * search.css v1.5.1
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
@@ -44,11 +44,10 @@ html.search-lock { overflow: hidden; }
 /* ── Panel ────────────────────────────────────────────────────────── */
 [data-search-panel] {
   width: 100%;
-  max-width: 64rem;
+  max-width: 48rem;
   margin-top: clamp(1.5rem, 6vw, 4rem);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing--4, 1rem);
   transform: translateY(-0.75rem);
   transition: transform 0.3s ease;
 }
@@ -68,6 +67,7 @@ html.search-lock { overflow: hidden; }
   background: var(--surface--base, #fff);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 8px 28px -12px rgba(0, 0, 0, 0.12);
+  margin-bottom: var(--spacing--4, 1rem);
 }
 
 [data-search-input] {
@@ -115,21 +115,21 @@ html.search-lock { overflow: hidden; }
 
 /* ── Results card — ONE shared background holding the label + grid ──── */
 [data-search-results-label] {
-  margin: 0 0 var(--spacing--4, 1rem);
+  margin: 0;
   font-size: var(--text--sm, 0.875rem);
   font-weight: var(--font-weight--regular, 400);
   color: var(--color-text--muted, rgba(26, 26, 26, 0.45));
 }
 
-/* The white panel appears as soon as there is a label OR results to show.
-   It's hidden when both the label is [hidden] and the grid is empty. */
 [data-search-results] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing--6, 1.5rem) var(--spacing--5, 1.25rem);
 }
 
-/* card surface: wraps label + grid together */
+/* The white card surface. The label and the grid each get it, then the
+   adjacency rule below stitches them into a single seamless card.
+   (The panel's flex gap is cancelled between them so no scrim shows.) */
 [data-search-results-label]:not([hidden]),
 [data-search-results]:not(:empty) {
   background: var(--surface--base, #fff);
@@ -137,7 +137,7 @@ html.search-lock { overflow: hidden; }
   box-shadow: 0 8px 28px -14px rgba(0, 0, 0, 0.14);
 }
 [data-search-results-label]:not([hidden]) {
-  padding: var(--spacing--6, 1.5rem) var(--spacing--6, 1.5rem) 0;
+  padding: var(--spacing--6, 1.5rem) var(--spacing--6, 1.5rem) var(--spacing--4, 1rem);
   border-radius: var(--radius--2xl, 1.25rem) var(--radius--2xl, 1.25rem) 0 0;
   border-bottom: 0;
 }
