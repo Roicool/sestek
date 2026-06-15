@@ -22,7 +22,12 @@
  *   <div data-search data-search-limit="8" data-search-min-chars="2">
  *
  *     <!-- one or more triggers, anywhere on the page (e.g. in nav) -->
- *     <button data-search-trigger aria-label="Search">…icon…</button>
+ *     <button data-search-trigger aria-label="Search">
+ *       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ *         <circle cx="11" cy="11" r="8"></circle>
+ *         <path d="m21 21-4.3-4.3"></path>
+ *       </svg>
+ *     </button>
  *
  *     <div data-search-overlay>
  *       <div data-search-panel role="dialog" aria-modal="true">
