@@ -1347,6 +1347,9 @@ Webflow `</body>` öncesi:
   her Collection Item'a `data-search-item` + `data-search-title` ekleyip
   içindeki görsele `data-search-image` koyman yeterli. Ayrı/gizli bir liste
   istersen kendin `display:none` (Webflow "Hide" ayarı) ile gizle.
+  > 💡 Sayfada **birden fazla** `[data-search-source]` olabilir (örn. farklı
+  > kategoriler için ayrı Collection List'ler) — hepsi tek bir indekste
+  > birleştirilir, nerede olduklarının önemi yok.
   > ⚠️ Webflow Collection List **sayfalama (pagination)** kullanıyorsa, sadece
   > o sayfada render edilen postlar arama indeksine girer — site genelinde
   > arama için listenin tamamını (limit'i yüksek tutarak) tek sayfada render et.
@@ -1355,8 +1358,10 @@ Eşleştirme Türkçe karakter duyarsız (ş/ç/ğ/ö/ü/ı/İ → düz ASCII'ye
 büyük/küçük harf duyarsızdır; sorguyla **başlayan** başlıklar, sadece
 **içeren** başlıkların önüne sıralanır.
 
-**Davranış (v1.3.0):**
+**Davranış (v1.4.0):**
 - Trigger'a tekrar basınca overlay **toggle** olur (aç/kapa).
+- Sayfadaki **tüm** `[data-search-source]` blokları (kaç adet olursa olsun)
+  okunup tek bir indekste birleştirilir.
 - İndeks **her açılışta yeniden kurulur** ve `[data-search-source]` taze
   sorgulanır — lazy-load / CMS / Finsweet "load more" ile sonradan gelen
   postlar da otomatik aranır.
