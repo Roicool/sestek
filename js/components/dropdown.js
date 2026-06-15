@@ -1,5 +1,5 @@
 /*!
- * dropdown.js v1.1.0
+ * dropdown.js v1.2.0
  * Simple disclosure dropdown (e.g. "Explore categories"): clicking the
  * trigger reveals a floating panel of links below it.
  *
@@ -106,6 +106,21 @@
         }
       }
 
+      // The panel is `width: 100%` of the trigger's box, so widen the
+      // trigger (min-width) to fit the widest item — keeps both the same
+      // width instead of the panel overflowing past a narrow trigger.
+      function matchWidth() {
+        var prevPanelWidth = panel.style.width;
+        panel.style.width = "max-content";
+        var panelWidth = panel.offsetWidth;
+        panel.style.width = prevPanelWidth;
+
+        trigger.style.minWidth = "";
+        var triggerWidth = trigger.offsetWidth;
+
+        trigger.style.minWidth = Math.max(triggerWidth, panelWidth) + "px";
+      }
+
       // Flip the panel to align with the trigger's right edge if it would
       // otherwise overflow the viewport — keeps it on-screen at any width.
       function reposition() {
@@ -119,6 +134,7 @@
       function open() {
         closeAll(instance);
         refreshItems();
+        matchWidth();
         panel.classList.add("is-open");
         panel.setAttribute("aria-hidden", "false");
         trigger.setAttribute("aria-expanded", "true");
@@ -186,8 +202,11 @@
       });
 
       global.addEventListener("resize", function () {
+        matchWidth();
         if (isOpen()) reposition();
       });
+
+      matchWidth();
 
       var instance = { isOpen: isOpen, close: close };
       instances.push(instance);
