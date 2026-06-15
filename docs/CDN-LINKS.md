@@ -494,6 +494,8 @@ DOM yapısı:
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 | `js/components/search.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/search.js` |
 | `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
+| `js/components/dropdown.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/dropdown.js` |
+| `css/components/dropdown.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/dropdown.css` |
 
 ### Hero
 
@@ -987,6 +989,64 @@ Açıkken sayfa scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/
 Finsweet filtreleri (kategori vb.) ile birlikte kullanılabilir — bu
 component sadece metin arama/sonuç render'ını yönetir. Beklenen bir element
 eksikse konsola `[Sestek.search]` ön ekiyle uyarı basar (sessizce ölmez).
+
+### Dropdown
+
+Basit bir "disclosure" dropdown: bir buton ("Explore categories" gibi) tıklanınca
+altında bir link listesi paneli açılır (Ramp-tarzı kategori menüsü).
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/dropdown.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/dropdown.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initDropdown(); // sayfadaki tüm [data-dropdown] bloklarını başlatır
+  });
+</script>
+```
+
+#### DOM yapısı
+
+```html
+<div data-dropdown>
+  <button data-dropdown-trigger aria-haspopup="true" aria-expanded="false">
+    Explore categories
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6 9 6 6 6-6"></path>
+    </svg>
+  </button>
+  <div data-dropdown-panel role="menu">
+    <a class="dropdown__item" role="menuitem" href="/blog/category/ai">AI</a>
+    <a class="dropdown__item" role="menuitem" href="/blog/category/accounting">Accounting</a>
+    <!-- … diğer kategori linkleri … -->
+  </div>
+</div>
+```
+
+- **`[data-dropdown-trigger]`** — butona basınca panel açılır/kapanır
+  (toggle). `aria-expanded` otomatik güncellenir.
+- **`[data-dropdown-panel]`** — link listesini tutan kart; `.dropdown__item`
+  class'lı `<a>` etiketleri kategori linkleridir.
+- Sayfada birden fazla `[data-dropdown]` olabilir — biri açılınca diğer
+  açık olan otomatik kapanır.
+
+**Davranış (v1.0.0):**
+- Trigger tıklaması paneli **toggle** eder; dışarı tıklama veya bir linke
+  tıklama paneli kapatır.
+- **↑/↓** linkler arasında gezinir (kenarlarda wrap eder), **Home/End**
+  ilk/son linke atlar, **ESC** kapatır ve focus'u trigger'a döndürür.
+- Trigger'da `aria-haspopup`/`aria-expanded`, panelde `aria-hidden`
+  güncellenir.
+
+**Görsel (v1.0.0):** Trigger beyaz, ince border, `0.75rem` köşe; açıkken
+border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel beyaz kart,
+`0.75rem` köşe, gölgeli; linkler hover/aktifken pembe (`--brand-primary--100`)
+arka plan + pembe metin alır — search sonuç kartlarıyla aynı tonlar.
 
 ---
 
