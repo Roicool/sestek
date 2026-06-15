@@ -1430,16 +1430,27 @@ Webflow `</body>` öncesi:
   class'lı `<a>` etiketleri kategori linkleridir.
 - Sayfada birden fazla `[data-dropdown]` olabilir — biri açılınca diğer
   açık olan otomatik kapanır.
+- **CMS Collection List ile:** `[data-dropdown-panel]` doğrudan bir
+  Collection List Wrapper olabilir; her Collection Item link block'una
+  `dropdown__item` class'ını eklemen yeterli — başka bir attribute gerekmez.
 
-**Davranış (v1.0.0):**
+**Davranış (v1.1.0):**
 - Trigger tıklaması paneli **toggle** eder; dışarı tıklama veya bir linke
   tıklama paneli kapatır.
+- `.dropdown__item` elemanları **her açılışta yeniden taranır** — Finsweet/
+  "load more"/filtreleme ile sonradan eklenen CMS item'ları da otomatik
+  klavye navigasyonu ve tıklama-ile-kapanma alır (ekstra kurulum gerekmez).
 - **↑/↓** linkler arasında gezinir (kenarlarda wrap eder), **Home/End**
   ilk/son linke atlar, **ESC** kapatır ve focus'u trigger'a döndürür.
 - Trigger'da `aria-haspopup`/`aria-expanded`, panelde `aria-hidden`
   güncellenir.
+- **Responsive:** panel viewport'un sağından taşacaksa otomatik olarak
+  trigger'ın sağ kenarına hizalanır (`is-align-right` class'ı), pencere
+  yeniden boyutlandırıldığında da güncellenir. Mobilde (`≤599px`) panel
+  genişliği `100vw - 2rem` ile sınırlanır ve uzun kategori adları satır
+  kaydırır.
 
-**Görsel (v1.0.0):** Trigger beyaz, ince border, `0.75rem` köşe; açıkken
+**Görsel (v1.1.0):** Trigger beyaz, ince border, `0.75rem` köşe; açıkken
 border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel beyaz kart,
 `0.75rem` köşe, gölgeli; linkler hover/aktifken pembe (`--brand-primary--100`)
 arka plan + pembe metin alır — search sonuç kartlarıyla aynı tonlar.

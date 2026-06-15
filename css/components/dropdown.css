@@ -1,5 +1,5 @@
 /*!
- * dropdown.css v1.0.0
+ * dropdown.css v1.1.0
  * Simple disclosure dropdown (e.g. "Explore categories"): a pill/button
  * trigger that reveals a floating card panel of links below it.
  *
@@ -87,6 +87,13 @@
   transform: translateY(0);
 }
 
+/* Flip to the trigger's right edge when the panel would overflow the
+   viewport (set by dropdown.js on open/resize). */
+[data-dropdown].is-align-right [data-dropdown-panel] {
+  left: auto;
+  right: 0;
+}
+
 [data-dropdown-panel]::-webkit-scrollbar {
   width: 6px;
 }
@@ -135,5 +142,11 @@
 @media (max-width: 599px) {
   [data-dropdown-panel] {
     max-width: calc(100vw - var(--spacing--8, 2rem));
+  }
+
+  /* Long category names wrap instead of forcing the panel wider than
+     the viewport (which "is-align-right" can't fully prevent on its own). */
+  .dropdown__item {
+    white-space: normal;
   }
 }
