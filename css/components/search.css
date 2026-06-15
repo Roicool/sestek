@@ -1,5 +1,5 @@
 /*!
- * search.css v1.6.1
+ * search.css v1.7.0
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
@@ -18,6 +18,49 @@
 
 /* CSS-only scroll lock fallback while the overlay is open */
 html.search-lock { overflow: hidden; }
+
+/* ── Trigger (icon button, lives anywhere on the page e.g. nav) ──────── */
+[data-search-trigger] {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius--lg, 0.75rem);
+  background: var(--surface--base, #fff);
+  color: var(--color-text--base, #1a1a1a);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+[data-search-trigger] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
+
+[data-search-trigger]:hover {
+  background: var(--brand-primary--100, #fde6f3);
+  border-color: transparent;
+  color: var(--color-text--accent, #EC008C);
+  transform: scale(1.06);
+}
+
+[data-search-trigger]:focus-visible {
+  outline: 2px solid var(--color-text--accent, #EC008C);
+  outline-offset: 2px;
+}
+
+[data-search-trigger][aria-expanded="true"] {
+  background: var(--brand-primary--100, #fde6f3);
+  border-color: transparent;
+  color: var(--color-text--accent, #EC008C);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-search-trigger] { transition: none; }
+}
 
 /* ── Overlay (frosted scrim over the whole site) ─────────────────── */
 [data-search-overlay] {
