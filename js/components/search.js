@@ -1,5 +1,5 @@
 /*!
- * search.js v1.3.0
+ * search.js v1.4.0
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -45,9 +45,10 @@
  *     <!-- Webflow Collection List of blog posts — read-only source for the
  *          index. Can be the page's existing VISIBLE list (e.g. the blog
  *          grid itself) or a separate hidden one; search.js never hides or
- *          alters it. It does NOT have to live inside [data-search] — the
- *          source is looked up inside the wrapper first, then anywhere on the
- *          page. Note: if Webflow paginates this list, only the posts
+ *          alters it. It does NOT have to live inside [data-search] — every
+ *          [data-search-source] anywhere on the page is found and merged
+ *          into one index (e.g. multiple Collection Lists for different
+ *          categories). Note: if Webflow paginates a list, only the posts
  *          rendered on the current page are searchable. -->
  *     <div data-search-source>
  *       <a data-search-item href="/blog/post-slug" data-search-title="Post title">
@@ -55,6 +56,9 @@
  *       </a>
  *       …
  *     </div>
+ *
+ *     <!-- optional: more sources elsewhere on the page are merged in too -->
+ *     <div data-search-source>…</div>
  *
  *   </div>
  *
@@ -128,21 +132,24 @@
     return escapeHtml(before) + "<mark>" + escapeHtml(match) + "</mark>" + escapeHtml(after);
   }
 
-  function buildIndex(source) {
-    if (!source) return [];
-    return Array.from(source.querySelectorAll("[data-search-item]")).map(function (el) {
-      var title = el.getAttribute("data-search-title") || el.textContent.trim();
-      var img   = el.querySelector("[data-search-image]");
+  function buildIndex(sources) {
+    var items = [];
+    sources.forEach(function (source) {
+      Array.from(source.querySelectorAll("[data-search-item]")).forEach(function (el) {
+        var title = el.getAttribute("data-search-title") || el.textContent.trim();
+        var img   = el.querySelector("[data-search-image]");
 
-      return {
-        title: title,
-        norm: normalize(title),
-        url: el.getAttribute("href") || el.getAttribute("data-search-url") || "#",
-        imgSrc: img ? (img.currentSrc || img.src) : "",
-        imgSrcset: img ? (img.getAttribute("srcset") || "") : "",
-        imgAlt: img ? (img.getAttribute("alt") || "") : ""
-      };
+        items.push({
+          title: title,
+          norm: normalize(title),
+          url: el.getAttribute("href") || el.getAttribute("data-search-url") || "#",
+          imgSrc: img ? (img.currentSrc || img.src) : "",
+          imgSrcset: img ? (img.getAttribute("srcset") || "") : "",
+          imgAlt: img ? (img.getAttribute("alt") || "") : ""
+        });
+      });
     });
+    return items;
   }
 
   function filterIndex(index, query, limit) {
@@ -215,11 +222,10 @@
     var resultsEl = root.querySelector("[data-search-results]");
     var emptyEl   = root.querySelector("[data-search-empty]");
     var labelEl   = root.querySelector("[data-search-results-label]");
-    // Source can live inside the [data-search] block OR anywhere on the page
-    // (e.g. the existing visible blog grid in its own section) — look inside
-    // the wrapper first, then fall back to a document-wide search.
-    var source    = root.querySelector("[data-search-source]") ||
-                    document.querySelector("[data-search-source]");
+    // Sources can live inside the [data-search] block OR anywhere on the
+    // page (e.g. one or more Collection Lists for different categories) —
+    // every [data-search-source] in the document is found and merged.
+    var sources   = Array.from(document.querySelectorAll("[data-search-source]"));
     var triggers  = Array.from(document.querySelectorAll("[data-search-trigger]"));
 
     // Overlay + input are the bare minimum for the panel to open/work.
@@ -233,7 +239,7 @@
 
     // Missing source/triggers are non-fatal — warn so it's debuggable, but
     // still wire the overlay so the open/close UI at least works.
-    if (!source) {
+    if (!sources.length) {
       warn("No [data-search-source] found — the overlay will open but results " +
         "will be empty. Add data-search-source to your blog Collection List.");
     }
@@ -252,11 +258,10 @@
     var resultCards       = [];   // anchors currently on screen, for keyboard nav
     var activeResult      = -1;   // highlighted result (-1 = none)
 
-    // Source can be re-rendered/replaced after load (Finsweet, pagination),
-    // so resolve it fresh each time rather than caching one node reference.
-    function currentSource() {
-      return root.querySelector("[data-search-source]") ||
-             document.querySelector("[data-search-source]");
+    // Sources can be re-rendered/replaced after load (Finsweet, pagination),
+    // so resolve them fresh each time rather than caching node references.
+    function currentSources() {
+      return Array.from(document.querySelectorAll("[data-search-source]"));
     }
 
     // Visible, tabbable elements inside the panel — for the focus trap.
@@ -337,7 +342,7 @@
     function open() {
       if (overlay.classList.contains("is-open")) return;
 
-      index             = buildIndex(currentSource());  // fresh every open
+      index             = buildIndex(currentSources());  // fresh every open
       pressedOnBackdrop = false;
       activeResult      = -1;
       resultCards       = [];
