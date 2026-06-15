@@ -1,5 +1,5 @@
 /*!
- * dropdown.css v1.1.0
+ * dropdown.css v1.2.0
  * Simple disclosure dropdown (e.g. "Explore categories"): a pill/button
  * trigger that reveals a floating card panel of links below it.
  *
@@ -16,7 +16,7 @@
 [data-dropdown-trigger] {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: var(--spacing--2, 0.5rem);
   padding: var(--spacing--3, 0.75rem) var(--spacing--5, 1.25rem);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -63,8 +63,9 @@
   top: calc(100% + var(--spacing--2, 0.5rem));
   left: 0;
   z-index: 50;
-  min-width: 100%;
-  width: max-content;
+  /* Same width as the trigger — dropdown.js widens the trigger (min-width)
+     to fit the widest item, so this just mirrors that width. */
+  width: 100%;
   max-width: 22rem;
   max-height: 24rem;
   overflow-y: auto;

@@ -1043,7 +1043,7 @@ Webflow `</body>` öncesi:
   Collection List Wrapper olabilir; her Collection Item link block'una
   `dropdown__item` class'ını eklemen yeterli — başka bir attribute gerekmez.
 
-**Davranış (v1.1.0):**
+**Davranış (v1.2.0):**
 - Trigger tıklaması paneli **toggle** eder; dışarı tıklama veya bir linke
   tıklama paneli kapatır.
 - `.dropdown__item` elemanları **her açılışta yeniden taranır** — Finsweet/
@@ -1053,16 +1053,21 @@ Webflow `</body>` öncesi:
   ilk/son linke atlar, **ESC** kapatır ve focus'u trigger'a döndürür.
 - Trigger'da `aria-haspopup`/`aria-expanded`, panelde `aria-hidden`
   güncellenir.
+- **Aynı genişlik:** panel her zaman trigger'ın genişliğinde (`width: 100%`)
+  — trigger, panel'deki en geniş item'a sığacak şekilde otomatik genişler
+  (`min-width`), böylece buton hiçbir zaman panelden daha dar kalmaz.
+  Pencere yeniden boyutlandırıldığında yeniden hesaplanır.
 - **Responsive:** panel viewport'un sağından taşacaksa otomatik olarak
   trigger'ın sağ kenarına hizalanır (`is-align-right` class'ı), pencere
   yeniden boyutlandırıldığında da güncellenir. Mobilde (`≤599px`) panel
   genişliği `100vw - 2rem` ile sınırlanır ve uzun kategori adları satır
   kaydırır.
 
-**Görsel (v1.1.0):** Trigger beyaz, ince border, `0.75rem` köşe; açıkken
-border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel beyaz kart,
-`0.75rem` köşe, gölgeli; linkler hover/aktifken pembe (`--brand-primary--100`)
-arka plan + pembe metin alır — search sonuç kartlarıyla aynı tonlar.
+**Görsel (v1.2.0):** Trigger beyaz, ince border, `0.75rem` köşe, ok ikonu
+sağda; açıkken border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel
+beyaz kart, `0.75rem` köşe, gölgeli; linkler hover/aktifken pembe
+(`--brand-primary--100`) arka plan + pembe metin alır — search sonuç
+kartlarıyla aynı tonlar.
 
 ---
 
