@@ -1,5 +1,5 @@
 /*!
- * dropdown.js v1.0.0
+ * dropdown.js v1.1.0
  * Simple disclosure dropdown (e.g. "Explore categories"): clicking the
  * trigger reveals a floating panel of links below it.
  *
@@ -10,6 +10,12 @@
  *   • ↑/↓ move through the links, Home/End jump to first/last, Enter
  *     follows the highlighted link, ESC returns focus to the trigger.
  *   • Trigger carries aria-expanded/aria-haspopup; panel carries aria-hidden.
+ *   • Links (.dropdown__item) are re-scanned every time the panel opens, so
+ *     CMS lists that load/filter items after page load (Finsweet, pagination,
+ *     "load more") still get keyboard nav + click-to-close automatically —
+ *     no per-item listeners to rebind.
+ *   • Responsive: if the panel would overflow the right edge of the
+ *     viewport, it flips to align to the trigger's right edge instead.
  *
  * API:
  *   Sestek.initDropdown()   — wire every [data-dropdown] block on the page
@@ -23,6 +29,9 @@
  *         <path d="m6 9 6 6 6-6"></path>
  *       </svg>
  *     </button>
+ *
+ *     <!-- can be a static list OR a Webflow CMS Collection List Wrapper —
+ *          each Collection Item link block just needs class="dropdown__item" -->
  *     <div data-dropdown-panel role="menu">
  *       <a class="dropdown__item" role="menuitem" href="/blog/category/ai">AI</a>
  *       <a class="dropdown__item" role="menuitem" href="/blog/category/accounting">Accounting</a>
@@ -67,10 +76,8 @@
         return;
       }
 
-      var items = Array.prototype.slice.call(panel.querySelectorAll(".dropdown__item"));
+      var items = [];
       var activeIndex = -1;
-
-      items.forEach(function (item) { item.setAttribute("tabindex", "-1"); });
 
       trigger.setAttribute("aria-haspopup", "true");
       trigger.setAttribute("aria-expanded", "false");
@@ -78,6 +85,16 @@
 
       function isOpen() {
         return panel.classList.contains("is-open");
+      }
+
+      // Re-scan on every open so CMS/Finsweet items added after init are included.
+      function refreshItems() {
+        items = Array.prototype.slice.call(panel.querySelectorAll(".dropdown__item"));
+        items.forEach(function (item) {
+          item.setAttribute("tabindex", "-1");
+          item.classList.remove("is-active");
+        });
+        activeIndex = -1;
       }
 
       function setActive(index) {
@@ -89,11 +106,23 @@
         }
       }
 
+      // Flip the panel to align with the trigger's right edge if it would
+      // otherwise overflow the viewport — keeps it on-screen at any width.
+      function reposition() {
+        root.classList.remove("is-align-right");
+        var rect = panel.getBoundingClientRect();
+        if (rect.right > (global.innerWidth || document.documentElement.clientWidth)) {
+          root.classList.add("is-align-right");
+        }
+      }
+
       function open() {
         closeAll(instance);
+        refreshItems();
         panel.classList.add("is-open");
         panel.setAttribute("aria-hidden", "false");
         trigger.setAttribute("aria-expanded", "true");
+        reposition();
       }
 
       function close(focusTrigger) {
@@ -145,14 +174,19 @@
         }
       });
 
-      items.forEach(function (item) {
-        item.addEventListener("click", function () { close(); });
+      // Delegated — covers items rendered/added after init too.
+      panel.addEventListener("click", function (e) {
+        if (e.target.closest(".dropdown__item")) close();
       });
 
       document.addEventListener("click", function (e) {
         if (!isOpen()) return;
         if (root.contains(e.target)) return;
         close();
+      });
+
+      global.addEventListener("resize", function () {
+        if (isOpen()) reposition();
       });
 
       var instance = { isOpen: isOpen, close: close };
