@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog — Tümü</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="../../css/components/page-transitions.css">
+  <!-- In <head> (not deferred) so the pagereveal hook is registered before the
+       new page's first render — that's what makes slide-direction + the image
+       morph reliable. The file is tiny and only defines functions, so it costs
+       nothing on render. -->
+  <script src="../../js/components/page-transitions.js"></script>
+  <script>Sestek.initPageTransitions({ remember: true });</script>
+</head>
+<body>
+  <nav class="nav" data-pt-persist="nav">
+    <a class="nav__logo" href="index.html">Sestek</a>
+    <div class="nav__links">
+      <a href="index.html" class="is-active">Tümü</a>
+      <a href="pazarlama.html">Pazarlama</a>
+      <a href="teknoloji.html">Teknoloji</a>
+    </div>
+  </nav>
+
+  <main>
+    <span class="badge">Blog</span>
+    <h1>Tüm Yazılar</h1>
+    <p class="lead">Aşağıdaki butonlardan geçiş stilini seç, sonra bir karta veya kategoriye tıkla. Gerçek sayfa geçişi — URL değişiyor, SEO sağlam — ama his SPA gibi.</p>
+
+    <div class="cards">
+      <a class="post-card" href="article.html" data-pt-card>
+        <div class="post-card__img grad-a" data-pt-card-img></div>
+        <div class="post-card__body">
+          <strong>Konuşma Analitiği 101 →</strong>
+          <span>Bu karta tıkla — görsel makalenin hero'suna "morph" oluyor</span>
+        </div>
+      </a>
+
+      <a class="post-card" href="teknoloji.html" data-pt-card>
+        <div class="post-card__img grad-b" data-pt-card-img></div>
+        <div class="post-card__body">
+          <strong>Teknoloji kategorisi →</strong>
+          <span>Seçtiğin geçiş stiliyle normal sayfa geçişi</span>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <!-- ── Mode switcher (demo only) ─────────────────────────────── -->
+  <div class="pt-switch" role="group" aria-label="Geçiş stili">
+    <span class="pt-switch__label">Geçiş</span>
+    <button data-mode="fade">Fade</button>
+    <button data-mode="wipe">Wipe</button>
+    <button data-mode="slide">Slide</button>
+  </div>
+  <script defer src="switcher.js"></script>
+</body>
+</html>

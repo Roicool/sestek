@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog — Teknoloji</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="../../css/components/page-transitions.css">
+  <script src="../../js/components/page-transitions.js"></script>
+  <script>Sestek.initPageTransitions({ remember: true });</script>
+</head>
+<body>
+  <nav class="nav" data-pt-persist="nav">
+    <a class="nav__logo" href="index.html">Sestek</a>
+    <div class="nav__links">
+      <a href="index.html">Tümü</a>
+      <a href="pazarlama.html">Pazarlama</a>
+      <a href="teknoloji.html" class="is-active">Teknoloji</a>
+    </div>
+  </nav>
+
+  <main>
+    <span class="badge">Teknoloji</span>
+    <h1>Teknoloji Yazıları</h1>
+    <p class="lead">Bu da kendi URL'i olan ayrı bir kategori sayfası — içerik server-side render, JS gerekmiyor.</p>
+
+    <a class="post" href="index.html">
+      <strong>← Tüm yazılara dön</strong>
+      <span>Geri dönüşte de aynı yumuşak geçiş</span>
+    </a>
+
+    <a class="post" href="pazarlama.html">
+      <strong>Pazarlama kategorisine geç →</strong>
+      <span>Kategoriler arası geçiş de aynı hissi veriyor</span>
+    </a>
+  </main>
+
+  <div class="pt-switch" role="group" aria-label="Geçiş stili">
+    <span class="pt-switch__label">Geçiş</span>
+    <button data-mode="fade">Fade</button>
+    <button data-mode="wipe">Wipe</button>
+    <button data-mode="slide">Slide</button>
+  </div>
+  <script defer src="switcher.js"></script>
+</body>
+</html>
