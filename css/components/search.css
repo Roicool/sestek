@@ -1,5 +1,5 @@
 /*!
- * search.css v1.7.0
+ * search.css v1.7.1
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
@@ -31,7 +31,7 @@ html.search-lock { overflow: hidden; }
   background: var(--surface--base, #fff);
   color: var(--color-text--base, #1a1a1a);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 [data-search-trigger] svg {
@@ -41,10 +41,7 @@ html.search-lock { overflow: hidden; }
 }
 
 [data-search-trigger]:hover {
-  background: var(--brand-primary--100, #fde6f3);
-  border-color: transparent;
-  color: var(--color-text--accent, #EC008C);
-  transform: scale(1.06);
+  border-color: rgba(0, 0, 0, 0.16);
 }
 
 [data-search-trigger]:focus-visible {
@@ -53,8 +50,7 @@ html.search-lock { overflow: hidden; }
 }
 
 [data-search-trigger][aria-expanded="true"] {
-  background: var(--brand-primary--100, #fde6f3);
-  border-color: transparent;
+  border-color: var(--color-text--accent, #EC008C);
   color: var(--color-text--accent, #EC008C);
 }
 
