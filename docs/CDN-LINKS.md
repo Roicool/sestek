@@ -496,6 +496,8 @@ DOM yapısı:
 | `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
 | `js/components/dropdown.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/dropdown.js` |
 | `css/components/dropdown.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/dropdown.css` |
+| `js/components/page-transitions.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/page-transitions.js` |
+| `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
 
 ### Hero
 
@@ -1068,6 +1070,86 @@ sağda; açıkken border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel
 beyaz kart, `0.75rem` köşe, gölgeli; linkler hover/aktifken pembe
 (`--brand-primary--100`) arka plan + pembe metin alır — search sonuç
 kartlarıyla aynı tonlar.
+
+---
+
+### Page Transitions
+
+Site geneli **native sayfa geçişleri** — gerçek navigasyon, gerçek URL, tam
+SEO; ama his SPA gibi. Cross-document **View Transitions** kullanır: her sayfa
+sıfırdan yüklendiği için ScrollTrigger / Lenis / observer'lar **sızmaz veya
+çift bağlanmaz** (Barba'nın aksine — JS lifecycle riski yok).
+
+Üç imza his, `<html>` üzerindeki bir attribute ile seçilir:
+
+| `data-pt` | His |
+|---|---|
+| `fade` *(varsayılan)* | İnce fade + derinlik (scale/blur) — sakin, editöryel |
+| `wipe` | Markalı pembe panel ekranı süpürür — cesur, "studio" |
+| `slide` | Yönlü kayma; geri navigasyonda yön otomatik tersine döner (JS gerekli) |
+
+Hepsinin üstüne binen **shared-element morph**: bir blog kartının görseli, gidilen
+makalenin hero görseline "dönüşür" (`view-transition-name: pt-hero`, isimler JS
+tarafından navigasyon anında atanır).
+
+> **⚠️ Bu component `<head>` içinde, `defer` OLMADAN yüklenir.**
+> `page-transitions.js` yalnızca fonksiyon tanımlar + `pageswap`/`pagereveal`
+> dinleyicilerini kaydeder; render maliyeti yoktur. `pagereveal` yeni sayfanın
+> ilk render'ından **önce** tetiklendiği için dinleyici erken kaydedilmeli —
+> bu yüzden `defer` kullanılmaz (slide yönü + morph'un güvenilir çalışması için
+> gerekli). CSS normal `<link>`.
+
+```html
+<!-- <head> içine -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/page-transitions.js"></script>
+<script>Sestek.initPageTransitions({ mode: "fade" });</script>
+```
+
+`initPageTransitions(options)`:
+
+| Option | Varsayılan | Açıklama |
+|---|---|---|
+| `mode` | `<html data-pt>` veya `"fade"` | `"fade"` \| `"wipe"` \| `"slide"` |
+| `morph` | `true` | Kart → hero görsel morph'unu aç/kapat |
+| `remember` | `false` | Seçilen his'i `sessionStorage`'da hatırla (demo switcher için; production'da `false` bırak) |
+
+**DOM (morph — opsiyonel, sadece istediğin yerde):**
+
+```html
+<!-- Blog listesi: her kart makalesine link verir -->
+<a class="post-card" href="/blog-categories/conversational-analytics" data-pt-card>
+  <img data-pt-card-img src="thumb.jpg" alt="">
+  …
+</a>
+
+<!-- Makale sayfası: thumb'ın dönüşeceği hero görseli -->
+<img data-pt-hero-img src="hero.jpg" alt="">
+
+<!-- Sabit kabuk (nav/footer geçişte sabit kalır, fade olmaz) -->
+<nav data-pt-persist="nav">…</nav>
+<footer data-pt-persist="footer">…</footer>
+```
+
+| Attribute | Açıklama |
+|---|---|
+| `data-pt` (`<html>`) | Aktif his — `initPageTransitions` ayarlar; CSS buna göre çalışır |
+| `data-pt-card` | Morph kaynağı kart (link). `href`'i gidilen sayfayla eşleşince görseli etiketlenir |
+| `data-pt-card-img` | Kart içindeki morph olacak görsel |
+| `data-pt-hero-img` | Gidilen sayfadaki morph hedefi (hero görseli) |
+| `data-pt-persist="nav"` / `"footer"` | Geçişte sabit kalan kabuk elemanı (benzersiz olmalı) |
+
+**Davranış (v1.0.0):**
+- Pure-CSS fade bedavaya gelir; JS yalnızca **slide yönü** + **morph** ekler.
+- **Chromium** (Chrome/Edge 126+) cross-document VT'yi destekler. **Firefox/Safari**
+  `@view-transition`'ı sessizce yok sayar → normal navigasyon, fallback kodu
+  gerekmez, hata olmaz.
+- `prefers-reduced-motion: reduce` → tüm geçişler anında, hareketsiz.
+- Mevcut blog kategori geçişleriyle (`/blog-categories/*`) sorunsuz çalışır;
+  daha önce inline eklenen `@view-transition` bloğunu bu component'le değiştir.
+
+**Demo:** `demo/view-transitions/` — üç his'i alttaki switcher'dan tek tek
+deneyebileceğin, kart → hero morph'lu çalışan örnek.
 
 ---
 

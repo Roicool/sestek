@@ -1,0 +1,172 @@
+/*!
+ * page-transitions.css v1.0.0
+ * Site-wide *native* page transitions (cross-document View Transitions).
+ * Real navigations, real URLs, full SEO — but the page swap feels like a
+ * premium SPA. No Barba, no JS lifecycle hazard: each page loads fresh, so
+ * ScrollTrigger / Lenis / observers never leak or double-bind.
+ *
+ * Three signature feels, switched by an attribute on <html>:
+ *   <html data-pt="fade">   refined fade + depth  (default if attr omitted)
+ *   <html data-pt="wipe">   branded panel wipe
+ *   <html data-pt="slide">  directional slide/push  (needs page-transitions.js)
+ *
+ * Layered on top of any feel: a shared-element image morph — a blog card's
+ * image flies/morphs into the destination article's hero. Names are assigned
+ * by page-transitions.js at navigation time (pt-hero).
+ *
+ * Persistent shell (no flicker across nav): add data-pt-persist="nav" /
+ * "footer" to elements that should stay pinned instead of fading.
+ *
+ * Progressive enhancement: pure-CSS gives the fade for free; JS only adds
+ * slide-direction + the image morph. Non-Chromium browsers ignore it all and
+ * navigate normally — no fallback code required.
+ *
+ * Drives / paired with: js/components/page-transitions.js
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Enable native cross-document transitions site-wide ──────────────── */
+@view-transition {
+  navigation: auto;
+}
+
+/* The overlay root the snapshots animate within. A brand-tinted backdrop so
+   any gap between the old/new snapshots flashes brand colour (used by wipe). */
+::view-transition {
+  background: transparent;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PERSISTENT SHELL — elements that stay pinned (nav/footer) instead of
+   cross-fading with the page body. Each name must be unique on the page.
+   ════════════════════════════════════════════════════════════════════ */
+[data-pt-persist="nav"]    { view-transition-name: pt-nav; }
+[data-pt-persist="footer"] { view-transition-name: pt-footer; }
+
+/* Hold them perfectly still — no fade, no move, no blend flicker. */
+::view-transition-old(pt-nav),
+::view-transition-new(pt-nav),
+::view-transition-old(pt-footer),
+::view-transition-new(pt-footer) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FEEL 1 — REFINED FADE + DEPTH  (default)
+   Quiet, editorial, content-first. Old settles back + softens; new rises
+   in from a hair forward and sharpens. Slight overlap so it never "pops".
+   ════════════════════════════════════════════════════════════════════ */
+::view-transition-old(root) {
+  animation: pt-fade-out 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+::view-transition-new(root) {
+  animation: pt-fade-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pt-fade-out {
+  to   { opacity: 0; transform: scale(0.985); filter: blur(4px); }
+}
+@keyframes pt-fade-in {
+  from { opacity: 0; transform: scale(1.012); filter: blur(6px); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FEEL 2 — BRANDED PANEL WIPE
+   A Sestek-pink panel sweeps up across the screen: the old page lifts away
+   revealing brand colour, then the new page rises in over it. Bold, "studio".
+   The brand flash comes from tinting the overlay root; the snapshots clip to
+   expose it, so it stays pure CSS (no extra DOM curtain element).
+   ════════════════════════════════════════════════════════════════════ */
+html[data-pt="wipe"]::view-transition {
+  background: var(--brand-primary--600, #EC008C);
+}
+
+html[data-pt="wipe"]::view-transition-old(root) {
+  animation: pt-wipe-old 0.30s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+html[data-pt="wipe"]::view-transition-new(root) {
+  animation: pt-wipe-new 0.42s 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* old page lifts away upward, uncovering the brand panel from the bottom up */
+@keyframes pt-wipe-old {
+  to   { clip-path: inset(0 0 100% 0); transform: translateY(-4%); }
+}
+/* new page is revealed from the bottom up, sliding over the brand panel */
+@keyframes pt-wipe-new {
+  from { clip-path: inset(100% 0 0 0); transform: translateY(4%); }
+  to   { clip-path: inset(0 0 0 0);   transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FEEL 3 — DIRECTIONAL SLIDE / PUSH
+   New page slides in from the right while the old drifts left (with a touch
+   of parallax + dim). page-transitions.js adds the "pt-back" transition type
+   on back/up navigation to reverse the direction.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-pt="slide"]::view-transition-old(root) {
+  animation: pt-slide-out-left 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+html[data-pt="slide"]::view-transition-new(root) {
+  animation: pt-slide-in-right 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Reverse for back/up navigation (type set by JS via :active-view-transition-type) */
+html[data-pt="slide"]:active-view-transition-type(pt-back)::view-transition-old(root) {
+  animation: pt-slide-out-right 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+html[data-pt="slide"]:active-view-transition-type(pt-back)::view-transition-new(root) {
+  animation: pt-slide-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pt-slide-out-left {
+  to   { transform: translateX(-22%); opacity: 0.4; filter: brightness(0.92); }
+}
+@keyframes pt-slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes pt-slide-out-right {
+  to   { transform: translateX(22%); opacity: 0.4; filter: brightness(0.92); }
+}
+@keyframes pt-slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SHARED-ELEMENT IMAGE MORPH  (layers on top of every feel)
+   page-transitions.js tags the clicked card image + the destination hero
+   with `view-transition-name: pt-hero`; the browser tweens position, size
+   and shape between them. We just supply the easing + a clean cross-fade.
+   ════════════════════════════════════════════════════════════════════ */
+::view-transition-group(pt-hero) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  /* float the morphing image above the page fade so it reads as continuous */
+  z-index: 1;
+}
+::view-transition-image-pair(pt-hero) {
+  isolation: isolate;
+}
+::view-transition-old(pt-hero),
+::view-transition-new(pt-hero) {
+  /* cross-fade the two images while the box morphs — avoids a hard cut when
+     the source thumbnail and destination hero have different art */
+  height: 100%;
+  animation-duration: 0.5s;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY — honour reduced-motion: instant, no movement/blur.
+   ════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(pt-hero),
+  ::view-transition-new(pt-hero) {
+    animation: none !important;
+  }
+}

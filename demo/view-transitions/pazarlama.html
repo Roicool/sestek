@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Blog — Pazarlama</title>
   <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="../../css/components/page-transitions.css">
+  <script src="../../js/components/page-transitions.js"></script>
+  <script>Sestek.initPageTransitions({ remember: true });</script>
 </head>
 <body>
-  <nav class="nav">
+  <nav class="nav" data-pt-persist="nav">
     <a class="nav__logo" href="index.html">Sestek</a>
     <div class="nav__links">
       <a href="index.html">Tümü</a>
@@ -31,5 +34,13 @@
       <span>Kategoriler arası geçiş de aynı hissi veriyor</span>
     </a>
   </main>
+
+  <div class="pt-switch" role="group" aria-label="Geçiş stili">
+    <span class="pt-switch__label">Geçiş</span>
+    <button data-mode="fade">Fade</button>
+    <button data-mode="wipe">Wipe</button>
+    <button data-mode="slide">Slide</button>
+  </div>
+  <script defer src="switcher.js"></script>
 </body>
 </html>
