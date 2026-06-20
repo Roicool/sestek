@@ -1,0 +1,30 @@
+/*!
+ * link-underline.css v1.0.0
+ * Drives: js/effects/link-underline.js
+ *
+ * The line itself has no transition — link-underline.js scrubs its
+ * transform with GSAP. This file only sets up the static layout: the link
+ * becomes the positioning context, the line is absolutely placed under it
+ * and starts collapsed (scaleX:0, see the JS).
+ */
+
+[data-underline] {
+  position: relative;
+  display: inline-block;
+}
+
+.link-underline__line {
+  position: absolute;
+  left: 0;
+  bottom: -0.1em;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-underline__line { transform: scaleX(1); }
+}
