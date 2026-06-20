@@ -1,11 +1,19 @@
 /*!
- * nav.js v2.2.0
+ * nav.js v2.3.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.3.0 — richer open animation: inner items now cascade in (stagger) over an
+ *           expo.out height morph + subtle scale, so panels feel alive instead
+ *           of a flat fade. Adds a sliding active-trigger indicator (underline
+ *           that glides under the open menu) — auto-created, or bring your own
+ *           [data-nav-indicator]; disable with initNav(sel, { indicator:false }).
+ *           Mark custom cascade items with [data-nav-stagger]. Adaptive theme
+ *           ([data-nav-theme]) now uses ScrollTrigger when available so it stays
+ *           correct on pages that PIN sections (IntersectionObserver fallback).
  * v2.2.0 — fix rapid panel-switch race (stale onComplete activating the wrong
  *           panel / stacked tweens / "gap" frame). Single reconciling open
  *           path with simultaneous cross-fade + directional micro-slide, every
@@ -29,11 +37,13 @@
    * @param {string} [selector="[data-nav]"]
    * @returns {{ _destroy: Function } | undefined}
    */
-  function initNav(selector) {
+  function initNav(selector, options) {
     if (typeof gsap === "undefined") {
       console.error("[Sestek Nav] GSAP is required but not found.");
       return;
     }
+
+    options = options || {};
 
     var nav = document.querySelector(selector || "[data-nav]");
     if (!nav) return;
@@ -54,6 +64,41 @@
 
     // Dropdown is the animatable height-container; bail hard without it.
     if (!dropdown) return;
+
+    // ── Active-trigger indicator (sliding underline) ──────────────
+    // A small bar that slides under the open trigger so it's always clear
+    // which mega-menu is active. Opt-in element [data-nav-indicator] is used
+    // if present; otherwise one is created (unless options.indicator === false)
+    // and parented to the position:relative nav bar. Colour/height come from
+    // CSS (--nav-indicator-color / styling [data-nav-indicator] in Webflow).
+    var indicator = nav.querySelector("[data-nav-indicator]");
+    if (!indicator && options.indicator !== false && navBar) {
+      indicator = document.createElement("span");
+      indicator.setAttribute("data-nav-indicator", "");
+      navBar.appendChild(indicator);
+    }
+    if (indicator) {
+      // The indicator is absolutely positioned against the bar, so the bar must
+      // be a positioning context. (The component CSS already sets this, but the
+      // nav may be built in Webflow without it.)
+      var host = indicator.parentElement || navBar;
+      if (host && global.getComputedStyle &&
+          global.getComputedStyle(host).position === "static") {
+        host.style.position = "relative";
+      }
+    }
+    if (indicator) {
+      // Inline fallbacks so it works even without the component CSS loaded.
+      var iSt = indicator.style;
+      if (!iSt.position) iSt.position = "absolute";
+      iSt.bottom = iSt.bottom || "0";
+      iSt.left = "0";
+      iSt.pointerEvents = "none";
+      if (!iSt.height) iSt.height = "2px";
+      if (!iSt.borderRadius) iSt.borderRadius = "2px";
+      if (!iSt.background) iSt.background = "var(--nav-indicator-color, currentColor)";
+      gsap.set(indicator, { opacity: 0, width: 0, x: 0 });
+    }
 
     // ── Listeners registry ────────────────────────────────────────
     // Collecting all listeners so _destroy can remove every one.
@@ -124,10 +169,59 @@
     function hideAllPanels() {
       panels.forEach(function (p) {
         gsap.killTweensOf(p);
+        gsap.killTweensOf(staggerTargets(p));
         p.classList.remove("is-active");
         gsap.set(p, { opacity: 0, x: 0, y: 0, pointerEvents: "none" });
       });
       triggers.forEach(function (t) { markTrigger(t, false); });
+    }
+
+    /*
+     * Inner elements to cascade in when a panel opens — this stagger is what
+     * makes the menu feel alive instead of a flat fade. Preference order:
+     *   1. anything you explicitly mark [data-nav-stagger]
+     *   2. the component's item types (icon/plain/highlight/featured cards)
+     *   3. the columns, as a last resort
+     * Cached per panel so we don't re-query on every hover.
+     */
+    var _staggerCache = {};
+    function staggerTargets(panel) {
+      if (!panel) return [];
+      var key = panel.getAttribute("data-nav-panel") || "";
+      if (_staggerCache[key]) return _staggerCache[key];
+      var sel = panel.querySelectorAll("[data-nav-stagger]");
+      if (!sel.length) {
+        sel = panel.querySelectorAll(
+          ".nav__item-icon, .nav__item-plain, .nav__item-highlight, .nav__featured-card"
+        );
+      }
+      if (!sel.length) sel = panel.querySelectorAll(".nav__col");
+      var arr = Array.prototype.slice.call(sel);
+      _staggerCache[key] = arr;
+      return arr;
+    }
+
+    // ── Active-trigger indicator movement ─────────────────────────
+    function moveIndicator(trigger) {
+      if (!indicator || !trigger) return;
+      var host = indicator.offsetParent || navBar;
+      var hostRect = host.getBoundingClientRect();
+      var r = trigger.getBoundingClientRect();
+      var x = r.left - hostRect.left;
+      if (reduceMotion) {
+        gsap.set(indicator, { x: x, width: r.width, opacity: 1 });
+      } else {
+        gsap.to(indicator, {
+          x: x, width: r.width, opacity: 1,
+          duration: 0.34, ease: "power3.out", overwrite: true,
+        });
+      }
+    }
+
+    function hideIndicator() {
+      if (!indicator) return;
+      if (reduceMotion) gsap.set(indicator, { opacity: 0 });
+      else gsap.to(indicator, { opacity: 0, duration: 0.2, ease: "power2.out", overwrite: true });
     }
 
     // ── Open / switch — single reconciling path ───────────────────
@@ -185,29 +279,50 @@
       gsap.set(targetPanel, { pointerEvents: "auto" });
 
       triggers.forEach(function (t) { markTrigger(t, t.dataset.navTrigger === id); });
+      moveIndicator(getTrigger(id));
+
+      var items = staggerTargets(targetPanel);
 
       if (reduceMotion) {
         gsap.set(dropdown, { height: h });
-        gsap.set(targetPanel, { opacity: 1, x: 0, y: 0 });
+        gsap.set(targetPanel, { opacity: 1, x: 0, y: 0, scale: 1 });
+        if (items.length) gsap.set(items, { opacity: 1, y: 0 });
         if (overlay) gsap.set(overlay, { opacity: 1 });
         return;
       }
 
       // Height morphs from its CURRENT value (0 closed, old height when
       // switching, mid-value when reopening during a close) → never jumps.
-      gsap.to(dropdown, { height: h, duration: wasOpen ? 0.26 : 0.3, ease: "power3.out" });
+      // expo.out gives a snappier, more dynamic settle than a flat power-curve.
+      gsap.to(dropdown, { height: h, duration: wasOpen ? 0.34 : 0.42, ease: "expo.out" });
 
       if (overlay) {
-        gsap.to(overlay, { opacity: 1, duration: 0.25, ease: "power2.out" });
+        gsap.to(overlay, { opacity: 1, duration: 0.3, ease: "power2.out" });
       }
 
-      // Incoming reveal: a small directional slide when switching panels, a
-      // gentle lift on first open.
-      var fromVars = wasOpen ? { opacity: 0, x: dir * 18, y: 0 }
-                             : { opacity: 0, x: 0, y: 8 };
+      // The container itself comes in quick + subtle (a directional drift when
+      // switching, a touch of depth via scale) — the *content* below carries
+      // the motion via the stagger, so the panel never feels like a flat fade.
+      gsap.killTweensOf(items);
+      var fromVars = wasOpen
+        ? { opacity: 0, x: dir * 26, scale: 0.985, y: 0 }
+        : { opacity: 0, x: 0, y: 6, scale: 0.99 };
       gsap.fromTo(targetPanel, fromVars, {
-        opacity: 1, x: 0, y: 0, duration: 0.26, ease: "power3.out", overwrite: true,
+        opacity: 1, x: 0, y: 0, scale: 1,
+        duration: 0.3, ease: "power3.out", overwrite: true,
       });
+
+      // Cascade the inner items in — the signature "alive" motion.
+      if (items.length) {
+        gsap.fromTo(items,
+          { opacity: 0, y: 14 },
+          {
+            opacity: 1, y: 0,
+            duration: 0.5, ease: "power3.out", overwrite: true,
+            stagger: { each: 0.04, from: dir < 0 ? "end" : "start" },
+          }
+        );
+      }
     }
 
     // ── Close ─────────────────────────────────────────────────────
@@ -226,6 +341,7 @@
       nav.classList.remove("nav--open");
 
       triggers.forEach(function (t) { markTrigger(t, false); });
+      hideIndicator();
 
       gsap.killTweensOf(dropdown);
       if (pendingReset) { pendingReset.kill(); pendingReset = null; }
@@ -303,6 +419,11 @@
         closeDropdown({ focus: true });   // return focus to the open trigger
         closeMobileMenu();
       }
+    });
+
+    // Keep the active-trigger indicator aligned when the layout reflows.
+    on(global, "resize", function () {
+      if (isOpen && activeId) moveIndicator(getTrigger(activeId));
     });
 
     // ── Mobile state ──────────────────────────────────────────────
@@ -445,32 +566,75 @@
 
     // ── Adaptive theme (light/dark background detection) ─────────
     // Sections declare their background via [data-nav-theme="light|dark"].
-    // When a light-background section scrolls behind the nav bar,
-    // .nav--on-light is toggled so CSS variables flip text to dark.
+    // Whichever themed section currently sits behind the bar toggles
+    // .nav--on-light so the CSS can flip text/logo colour.
+    //
+    // Preferred engine: GSAP ScrollTrigger (when present). Unlike an
+    // IntersectionObserver — which reads raw viewport geometry and gets
+    // confused by ScrollTrigger pins (pin-spacers, position:fixed swaps) —
+    // ScrollTrigger computes start positions with pinning already factored in,
+    // so the theme stays correct on pages that pin sections. Falls back to an
+    // IntersectionObserver when ScrollTrigger isn't loaded.
     var _themeObserver = null;
+    var _themeST = [];
+    var _themeRefresh = null;
 
     (function initAdaptiveTheme() {
       var themed = Array.from(document.querySelectorAll("[data-nav-theme]"));
-      if (!themed.length || !("IntersectionObserver" in window)) return;
+      if (!themed.length) return;
 
-      var navH = nav.offsetHeight || 60;
+      var navH = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
 
+      function applyTheme(isLight) {
+        nav.classList.toggle("nav--on-light", isLight);
+      }
+
+      // Set the correct theme for whatever section is under the bar right now
+      // (covers initial load + every ScrollTrigger.refresh on pinned pages).
+      function applyInitial() {
+        for (var i = themed.length - 1; i >= 0; i--) {
+          var r = themed[i].getBoundingClientRect();
+          if (r.top <= navH && r.bottom > navH) {
+            applyTheme(themed[i].dataset.navTheme === "light");
+            return;
+          }
+        }
+      }
+
+      if (typeof ScrollTrigger !== "undefined") {
+        themed.forEach(function (section) {
+          var isLight = section.dataset.navTheme === "light";
+          _themeST.push(ScrollTrigger.create({
+            trigger: section,
+            // Fires when the section's top crosses the bottom of the bar — in
+            // both scroll directions — so the section under the bar always wins.
+            start: "top " + navH + "px",
+            onEnter:     function () { applyTheme(isLight); },
+            onEnterBack: function () { applyTheme(isLight); },
+          }));
+        });
+        applyInitial();
+        // Re-evaluate after layout settles / pins recompute.
+        ScrollTrigger.addEventListener("refresh", applyInitial);
+        _themeRefresh = applyInitial;
+        if (document.readyState === "complete") ScrollTrigger.refresh();
+        else window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
+        return;
+      }
+
+      // ── Fallback: IntersectionObserver (no ScrollTrigger on the page) ──
+      if (!("IntersectionObserver" in window)) return;
       _themeObserver = new IntersectionObserver(
         function (entries) {
           entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              var isLight = entry.target.dataset.navTheme === "light";
-              nav.classList.toggle("nav--on-light", isLight);
-            }
+            if (entry.isIntersecting) applyTheme(entry.target.dataset.navTheme === "light");
           });
         },
         {
-          // The observation band is exactly the nav bar's height at the top.
           rootMargin: "-" + navH + "px 0px -" + (window.innerHeight - navH - 1) + "px 0px",
           threshold: 0,
         }
       );
-
       themed.forEach(function (el) { _themeObserver.observe(el); });
     })();
 
@@ -510,6 +674,8 @@
       _destroy: function () {
         clearTimeout(closeTimer);
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
+        if (indicator) gsap.killTweensOf(indicator);
+        panels.forEach(function (p) { gsap.killTweensOf(staggerTargets(p)); });
         if (_mq && _onMq) {
           if (_mq.removeEventListener) _mq.removeEventListener("change", _onMq);
           else if (_mq.removeListener) _mq.removeListener(_onMq);
@@ -522,6 +688,11 @@
         document.body.style.overflow = "";
         if (_themeObserver) _themeObserver.disconnect();
         if (_hideObserver)  _hideObserver.disconnect();
+        _themeST.forEach(function (st) { st.kill(); });
+        _themeST.length = 0;
+        if (_themeRefresh && typeof ScrollTrigger !== "undefined") {
+          ScrollTrigger.removeEventListener("refresh", _themeRefresh);
+        }
 
         _listeners.forEach(function (l) {
           l.el.removeEventListener(l.type, l.fn);

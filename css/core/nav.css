@@ -143,6 +143,23 @@
   transform: rotate(180deg);
 }
 
+/* ── Active-trigger indicator (sliding underline) ────────────────
+ * nav.js positions this under the open trigger (transform + width via GSAP).
+ * It is auto-created if you don't provide a [data-nav-indicator] element.
+ * Override the colour with --nav-indicator-color, or just style
+ * [data-nav-indicator] directly in Webflow (height, colour, radius).
+ */
+[data-nav-indicator] {
+  position      : absolute;
+  bottom        : 0;
+  left          : 0;
+  height        : 2px;
+  border-radius : 2px;
+  background    : var(--nav-indicator-color, currentColor);
+  pointer-events: none;
+  will-change   : transform, width;
+}
+
 /* ── Actions (CTA area) ──────────────────────────────────────── */
 .nav__actions {
   display     : flex;
