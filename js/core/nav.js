@@ -1,11 +1,19 @@
 /*!
- * nav.js v2.5.0
+ * nav.js v2.6.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.6.0 — the dropdown now MORPHS width as well as height: each mega-menu is
+ *           measured at its own natural width (capped to the bar) and the
+ *           container glides between differently-sized menus, growing from /
+ *           collapsing to a centred point with an expo morph — a premium
+ *           magic-move feel. The active panel is pinned to its measured width
+ *           so its columns stay rigid while the box reveals them. Pair with the
+ *           CSS that ties the dropdown shadow to .nav--open so the shadow fades
+ *           in on open and lifts off the page once every menu is closed.
  * v2.5.0 — remove the adaptive light/dark theme system entirely
  *           ([data-nav-theme], .nav--on-light/.nav--on-dark, Sestek.setNavTheme,
  *           the ScrollTrigger/IntersectionObserver detection). The bar now uses
@@ -162,20 +170,38 @@
     }
 
     /**
-     * Briefly positions the panel as relative+invisible to read offsetHeight
-     * without triggering a visible flash or a CSS transition.
+     * Briefly positions the panel as relative + shrink-to-content + invisible
+     * to read BOTH its natural width and height (no visible flash, no CSS
+     * transition). Width is capped to the available bar width so a very wide
+     * panel can never overflow the page. This is what lets each mega-menu have
+     * its own width and the container morph between them.
      */
-    function measurePanelHeight(id) {
+    function measurePanel(id) {
       var p = getPanel(id);
-      if (!p) return 0;
-      var prevOpacity  = p.style.opacity;
-      var prevPosition = p.style.position;
-      p.style.opacity  = "0";
-      p.style.position = "relative";
+      if (!p) return { w: 0, h: 0 };
+      var s = p.style;
+      var prev = {
+        opacity : s.opacity, position: s.position, width: s.width,
+        maxWidth: s.maxWidth, left: s.left, right: s.right,
+      };
+      s.opacity  = "0";
+      s.position = "relative";
+      s.left     = "auto";
+      s.right    = "auto";
+      s.width    = "max-content";
+      // Cap to the wrap's width so an over-wide panel doesn't break the page.
+      var capEl = (dropdown.parentElement || dropdown);
+      var cap   = capEl.clientWidth || 0;
+      if (cap) s.maxWidth = cap + "px";
+      var w = p.offsetWidth;
       var h = p.offsetHeight;
-      p.style.opacity  = prevOpacity;
-      p.style.position = prevPosition;
-      return h;
+      s.opacity  = prev.opacity;
+      s.position = prev.position;
+      s.width    = prev.width;
+      s.maxWidth = prev.maxWidth;
+      s.left     = prev.left;
+      s.right    = prev.right;
+      return { w: w, h: h };
     }
 
     /** Sync a trigger's visual + a11y open state. */
@@ -190,6 +216,9 @@
         gsap.killTweensOf(staggerTargets(p));
         p.classList.remove("is-active");
         gsap.set(p, { opacity: 0, x: 0, y: 0, pointerEvents: "none" });
+        // Drop the pinned measure-width so it's re-read fresh next open.
+        p.style.width = "";
+        p.style.right = "";
       });
       triggers.forEach(function (t) { markTrigger(t, false); });
     }
@@ -264,7 +293,9 @@
 
       var wasOpen = isOpen;
       var fromId  = activeId;
-      var h       = measurePanelHeight(id);
+      var dim     = measurePanel(id);
+      var h       = dim.h;
+      var w       = dim.w;
       // Slide direction follows the trigger order (left→right vs right→left).
       var dir = (wasOpen && fromId !== null)
         ? (triggerIndex(id) > triggerIndex(fromId) ? 1 : -1)
@@ -295,6 +326,11 @@
       gsap.killTweensOf(targetPanel);
       targetPanel.classList.add("is-active");
       gsap.set(targetPanel, { pointerEvents: "auto" });
+      // Pin the panel to its measured width so its columns stay rigid while the
+      // container morphs around it — the box reveals the panel, it doesn't
+      // squeeze it. (right:auto lets the explicit width take effect.)
+      targetPanel.style.right = "auto";
+      targetPanel.style.width = w + "px";
 
       triggers.forEach(function (t) { markTrigger(t, t.dataset.navTrigger === id); });
       moveIndicator(getTrigger(id));
@@ -302,17 +338,23 @@
       var items = staggerTargets(targetPanel);
 
       if (reduceMotion) {
-        gsap.set(dropdown, { height: h });
+        gsap.set(dropdown, { width: w, height: h });
         gsap.set(targetPanel, { opacity: 1, x: 0, y: 0, scale: 1 });
         if (items.length) gsap.set(items, { opacity: 1, y: 0 });
         if (overlay) gsap.set(overlay, { opacity: 1 });
         return;
       }
 
-      // Height morphs from its CURRENT value (0 closed, old height when
-      // switching, mid-value when reopening during a close) → never jumps.
-      // expo.out gives a snappier, more dynamic settle than a flat power-curve.
-      gsap.to(dropdown, { height: h, duration: wasOpen ? 0.34 : 0.42, ease: "expo.out" });
+      // The container MORPHS both width and height from its CURRENT values
+      // (0×0 when closed → grows from centre; old panel's size when switching →
+      // glides between two differently-sized menus) so it never jumps. expo.out
+      // gives a snappier, more dynamic settle than a flat power-curve.
+      gsap.to(dropdown, {
+        width   : w,
+        height  : h,
+        duration: wasOpen ? 0.44 : 0.5,
+        ease    : "expo.out",
+      });
 
       if (overlay) {
         gsap.to(overlay, { opacity: 1, duration: 0.3, ease: "power2.out" });
@@ -365,13 +407,14 @@
       if (pendingReset) { pendingReset.kill(); pendingReset = null; }
 
       if (reduceMotion) {
-        gsap.set(dropdown, { height: 0 });
+        gsap.set(dropdown, { width: 0, height: 0 });
         if (overlay) gsap.set(overlay, { opacity: 0 });
         hideAllPanels();
       } else {
-        gsap.to(dropdown, { height: 0, duration: 0.24, ease: "power3.inOut" });
+        // Collapse both axes back to a point — the box closes the way it opened.
+        gsap.to(dropdown, { width: 0, height: 0, duration: 0.32, ease: "expo.inOut" });
         if (overlay) {
-          gsap.to(overlay, { opacity: 0, duration: 0.2, ease: "power2.in" });
+          gsap.to(overlay, { opacity: 0, duration: 0.26, ease: "power2.in" });
         }
         // Reset panels after the collapse. Tracked so a reopen within the
         // window cancels it (else it would wipe the freshly-opened panel).
@@ -569,7 +612,9 @@
     }
 
     // ── Initial state ─────────────────────────────────────────────
-    gsap.set(dropdown, { height: 0 });
+    // Closed = zero on both axes so the first open grows from a point (centred
+    // horizontally via the dropdown's auto margins).
+    gsap.set(dropdown, { width: 0, height: 0 });
     if (overlay) gsap.set(overlay, { opacity: 0 });
     hideAllPanels();
 
