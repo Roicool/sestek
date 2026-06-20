@@ -1,11 +1,15 @@
 /*!
- * nav.js v2.3.1
+ * nav.js v2.3.2
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.3.2 — add Sestek.setNavTheme("dark"|"light"|"auto") for cases auto-detect
+ *           can't see (pinned hero whose bg changes via a scrubbed animation,
+ *           or any scripted moment). Manual mode pauses auto-detection; "auto"
+ *           resumes it and re-evaluates. Also on instance as .setTheme().
  * v2.3.1 — adaptive theme now toggles BOTH .nav--on-light and .nav--on-dark so
  *           it works whether the bar's default is dark (style on-light) or
  *           light (style on-dark). [data-nav-theme] can sit on inner blocks,
@@ -582,6 +586,9 @@
     var _themeObserver = null;
     var _themeST = [];
     var _themeRefresh = null;
+    // When the page drives the theme manually (e.g. from a pinned section's own
+    // ScrollTrigger), auto-detection steps aside until setNavTheme("auto").
+    var manualTheme = false;
 
     (function initAdaptiveTheme() {
       var themed = Array.from(document.querySelectorAll("[data-nav-theme]"));
@@ -595,6 +602,7 @@
       // At the top of the page / over an unthemed area neither class is set,
       // so the bar keeps its Webflow default colours.
       function applyTheme(isLight) {
+        if (manualTheme) return;   // page is driving it — don't fight
         nav.classList.toggle("nav--on-light", isLight);
         nav.classList.toggle("nav--on-dark", !isLight);
       }
@@ -648,6 +656,32 @@
       themed.forEach(function (el) { _themeObserver.observe(el); });
     })();
 
+    // Manual theme control for cases auto-detection can't see — a pinned hero
+    // whose background changes via a scrubbed animation (no element scrolls
+    // past the bar), or any scripted moment. Drive it from your own
+    // ScrollTrigger, e.g.:
+    //   onToggle: function (self) {
+    //     Sestek.setNavTheme(self.isActive ? "dark" : "auto");
+    //   }
+    // "dark"/"light" force the theme (and pause auto-detection); "auto" hands
+    // control back to scroll detection and re-evaluates immediately.
+    function setNavTheme(mode) {
+      if (mode === "dark") {
+        manualTheme = true;
+        nav.classList.add("nav--on-dark");
+        nav.classList.remove("nav--on-light");
+      } else if (mode === "light") {
+        manualTheme = true;
+        nav.classList.add("nav--on-light");
+        nav.classList.remove("nav--on-dark");
+      } else { // "auto" | "none" | undefined
+        manualTheme = false;
+        nav.classList.remove("nav--on-dark");
+        nav.classList.remove("nav--on-light");
+        if (_themeRefresh) _themeRefresh();   // re-apply the section under the bar
+      }
+    }
+
     // ── Auto-hide on [data-nav-hide] sections ────────────────────
     // Any section with [data-nav-hide] slides the nav off the top while it
     // covers the viewport (e.g. a pinned scroll-tabs section), then the nav
@@ -680,7 +714,13 @@
     })();
 
     // ── Public API ────────────────────────────────────────────────
+    // Expose manual theme control globally too, so page scripts (pin
+    // ScrollTriggers etc.) can drive it without holding the instance.
+    global.Sestek = global.Sestek || {};
+    global.Sestek.setNavTheme = setNavTheme;
+
     var instance = {
+      setTheme: setNavTheme,
       _destroy: function () {
         clearTimeout(closeTimer);
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
