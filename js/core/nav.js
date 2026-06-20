@@ -1,18 +1,21 @@
 /*!
- * nav.js v2.4.0
+ * nav.js v2.5.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.5.0 — remove the adaptive light/dark theme system entirely
+ *           ([data-nav-theme], .nav--on-light/.nav--on-dark, Sestek.setNavTheme,
+ *           the ScrollTrigger/IntersectionObserver detection). The bar now uses
+ *           one fixed background colour; use [data-nav-autohide] so it slides
+ *           cleanly out of the way on scroll-down instead of changing colour.
  * v2.4.0 — add [data-nav-autohide] on the nav root: hides the bar (slide up +
  *           fade, via .nav--hidden) while scrolling down, brings it back while
  *           scrolling up. rAF-throttled scroll listener, ignores small jitter,
  *           never hides at the very top, and steps aside while a mega-menu is
- *           open. Opt-in, works alongside (or instead of) the adaptive theme —
- *           pick a single fixed background colour and skip [data-nav-theme]
- *           entirely if that's all you need.
+ *           open.
  * v2.3.2 — add Sestek.setNavTheme("dark"|"light"|"auto") for cases auto-detect
  *           can't see (pinned hero whose bg changes via a scrubbed animation,
  *           or any scripted moment). Manual mode pauses auto-detection; "auto"
@@ -579,116 +582,6 @@
     if (mobileBrand)  mobileBrand.style.display  = "";
     if (mobileSlider) gsap.set(mobileSlider, { x: 0 });
 
-    // ── Adaptive theme (light/dark background detection) ─────────
-    // Sections declare their background via [data-nav-theme="light|dark"].
-    // Whichever themed section currently sits behind the bar toggles
-    // .nav--on-light so the CSS can flip text/logo colour.
-    //
-    // Preferred engine: GSAP ScrollTrigger (when present). Unlike an
-    // IntersectionObserver — which reads raw viewport geometry and gets
-    // confused by ScrollTrigger pins (pin-spacers, position:fixed swaps) —
-    // ScrollTrigger computes start positions with pinning already factored in,
-    // so the theme stays correct on pages that pin sections. Falls back to an
-    // IntersectionObserver when ScrollTrigger isn't loaded.
-    var _themeObserver = null;
-    var _themeST = [];
-    var _themeRefresh = null;
-    // When the page drives the theme manually (e.g. from a pinned section's own
-    // ScrollTrigger), auto-detection steps aside until setNavTheme("auto").
-    var manualTheme = false;
-
-    (function initAdaptiveTheme() {
-      var themed = Array.from(document.querySelectorAll("[data-nav-theme]"));
-      if (!themed.length) return;
-
-      var navH = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
-
-      // Toggle BOTH classes so either mental model works:
-      //   • default-dark nav  → style .nav--on-light (dark text on light bg)
-      //   • default-light nav → style .nav--on-dark  (light text on dark bg)
-      // At the top of the page / over an unthemed area neither class is set,
-      // so the bar keeps its Webflow default colours.
-      function applyTheme(isLight) {
-        if (manualTheme) return;   // page is driving it — don't fight
-        nav.classList.toggle("nav--on-light", isLight);
-        nav.classList.toggle("nav--on-dark", !isLight);
-      }
-
-      // Set the correct theme for whatever section is under the bar right now
-      // (covers initial load + every ScrollTrigger.refresh on pinned pages).
-      function applyInitial() {
-        for (var i = themed.length - 1; i >= 0; i--) {
-          var r = themed[i].getBoundingClientRect();
-          if (r.top <= navH && r.bottom > navH) {
-            applyTheme(themed[i].dataset.navTheme === "light");
-            return;
-          }
-        }
-      }
-
-      if (typeof ScrollTrigger !== "undefined") {
-        themed.forEach(function (section) {
-          var isLight = section.dataset.navTheme === "light";
-          _themeST.push(ScrollTrigger.create({
-            trigger: section,
-            // Fires when the section's top crosses the bottom of the bar — in
-            // both scroll directions — so the section under the bar always wins.
-            start: "top " + navH + "px",
-            onEnter:     function () { applyTheme(isLight); },
-            onEnterBack: function () { applyTheme(isLight); },
-          }));
-        });
-        applyInitial();
-        // Re-evaluate after layout settles / pins recompute.
-        ScrollTrigger.addEventListener("refresh", applyInitial);
-        _themeRefresh = applyInitial;
-        if (document.readyState === "complete") ScrollTrigger.refresh();
-        else window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
-        return;
-      }
-
-      // ── Fallback: IntersectionObserver (no ScrollTrigger on the page) ──
-      if (!("IntersectionObserver" in window)) return;
-      _themeObserver = new IntersectionObserver(
-        function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) applyTheme(entry.target.dataset.navTheme === "light");
-          });
-        },
-        {
-          rootMargin: "-" + navH + "px 0px -" + (window.innerHeight - navH - 1) + "px 0px",
-          threshold: 0,
-        }
-      );
-      themed.forEach(function (el) { _themeObserver.observe(el); });
-    })();
-
-    // Manual theme control for cases auto-detection can't see — a pinned hero
-    // whose background changes via a scrubbed animation (no element scrolls
-    // past the bar), or any scripted moment. Drive it from your own
-    // ScrollTrigger, e.g.:
-    //   onToggle: function (self) {
-    //     Sestek.setNavTheme(self.isActive ? "dark" : "auto");
-    //   }
-    // "dark"/"light" force the theme (and pause auto-detection); "auto" hands
-    // control back to scroll detection and re-evaluates immediately.
-    function setNavTheme(mode) {
-      if (mode === "dark") {
-        manualTheme = true;
-        nav.classList.add("nav--on-dark");
-        nav.classList.remove("nav--on-light");
-      } else if (mode === "light") {
-        manualTheme = true;
-        nav.classList.add("nav--on-light");
-        nav.classList.remove("nav--on-dark");
-      } else { // "auto" | "none" | undefined
-        manualTheme = false;
-        nav.classList.remove("nav--on-dark");
-        nav.classList.remove("nav--on-light");
-        if (_themeRefresh) _themeRefresh();   // re-apply the section under the bar
-      }
-    }
-
     // ── Auto-hide on [data-nav-hide] sections ────────────────────
     // Any section with [data-nav-hide] slides the nav off the top while it
     // covers the viewport (e.g. a pinned scroll-tabs section), then the nav
@@ -761,13 +654,7 @@
     })();
 
     // ── Public API ────────────────────────────────────────────────
-    // Expose manual theme control globally too, so page scripts (pin
-    // ScrollTriggers etc.) can drive it without holding the instance.
-    global.Sestek = global.Sestek || {};
-    global.Sestek.setNavTheme = setNavTheme;
-
     var instance = {
-      setTheme: setNavTheme,
       _destroy: function () {
         clearTimeout(closeTimer);
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
@@ -783,13 +670,7 @@
         if (mobileSlider) gsap.killTweensOf(mobileSlider);
         panels.forEach(function (p) { gsap.killTweensOf(p); });
         document.body.style.overflow = "";
-        if (_themeObserver) _themeObserver.disconnect();
-        if (_hideObserver)  _hideObserver.disconnect();
-        _themeST.forEach(function (st) { st.kill(); });
-        _themeST.length = 0;
-        if (_themeRefresh && typeof ScrollTrigger !== "undefined") {
-          ScrollTrigger.removeEventListener("refresh", _themeRefresh);
-        }
+        if (_hideObserver) _hideObserver.disconnect();
 
         _listeners.forEach(function (l) {
           l.el.removeEventListener(l.type, l.fn);

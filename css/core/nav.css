@@ -1,9 +1,11 @@
 /*!
- * nav.css v2.1.0
+ * nav.css v2.2.0
  * Mega-menu navbar — positioning, animation containers, state classes
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.2.0 — premium asymmetric auto-hide: longer easeOutExpo settle on the way
+ *           back in, a slightly quicker accelerating curve on the way out
  * v2.1.0 — .nav--hidden auto-hide state (slide off top + fade)
  * v2.0.0 — full rewrite: 4-col panel layout, featured column, mobile slider,
  *           level-0/1 structure, overlay z-index layers, hamburger→X transform,
@@ -64,22 +66,31 @@
 
 /* ── Auto-hide ───────────────────────────────────────────────── */
 /*
- * Sections marked [data-nav-hide] slide the whole nav off the top while
- * they cover the viewport (e.g. a pinned scroll section), then it eases
- * back in when the section ends. JS toggles .nav--hidden (see nav.js).
- * transform stays "none" when visible, so it never becomes a containing
- * block for the fixed mobile menu.
+ * The whole nav slides off the top when JS adds .nav--hidden — either while a
+ * [data-nav-hide] section covers the viewport, or (with [data-nav-autohide])
+ * while the user scrolls down. transform stays "none" when visible so it never
+ * becomes a containing block for the fixed mobile menu.
+ *
+ * The motion is intentionally asymmetric for a premium feel: the bar EASES IN
+ * (returns) on a long, soft expo settle, and slips OUT (leaves) a touch
+ * quicker with an accelerating curve — so it never feels abrupt either way.
  */
 .nav {
+  /* Show / return: easeOutExpo — a slow, graceful settle into place. */
   transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity   0.35s ease;
+    transform 0.72s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity   0.5s  cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .nav--hidden {
   transform     : translateY(-110%);
   opacity       : 0;
   pointer-events: none;
+  /* Hide / leave: easeInQuart — accelerates away, slightly shorter. */
+  transition:
+    transform 0.55s cubic-bezier(0.5, 0, 0.75, 0),
+    opacity   0.4s  cubic-bezier(0.5, 0, 0.75, 0);
 }
 
 /* ── Backdrop ────────────────────────────────────────────────── */
