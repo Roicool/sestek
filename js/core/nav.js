@@ -1,11 +1,17 @@
 /*!
- * nav.js v2.1.1
+ * nav.js v2.2.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.2.0 — fix rapid panel-switch race (stale onComplete activating the wrong
+ *           panel / stacked tweens / "gap" frame). Single reconciling open
+ *           path with simultaneous cross-fade + directional micro-slide, every
+ *           in-flight tween killed/overwritten first. Pending close-reset is
+ *           cancelled on reopen. Adds aria-haspopup/expanded/controls, ↓-to-open,
+ *           Esc returns focus, and prefers-reduced-motion support.
  * v2.1.1 — mobile menu also stops Lenis (virtual scroll) while open
  * v2.1.0 — auto-hide: [data-nav-hide] sections slide the nav off-screen
  *           while they cover the viewport (pin-friendly), back on exit
@@ -60,9 +66,21 @@
     }
 
     // ── Desktop state ─────────────────────────────────────────────
-    var activeId   = null;
-    var isOpen     = false;
-    var closeTimer = null;
+    var activeId     = null;
+    var isOpen       = false;
+    var closeTimer   = null;
+    var pendingReset = null;   // GSAP delayedCall that resets panels after close
+
+    // Honour reduced-motion: snap instead of animate (kept live via listener).
+    var reduceMotion = false;
+    var _mq = null, _onMq = null;
+    if (global.matchMedia) {
+      _mq = global.matchMedia("(prefers-reduced-motion: reduce)");
+      reduceMotion = _mq.matches;
+      _onMq = function (e) { reduceMotion = e.matches; };
+      if (_mq.addEventListener) _mq.addEventListener("change", _onMq);
+      else if (_mq.addListener) _mq.addListener(_onMq); // Safari < 14
+    }
 
     // ── Panel helpers ─────────────────────────────────────────────
     function getPanel(id) {
@@ -71,6 +89,13 @@
 
     function getTrigger(id) {
       return nav.querySelector("[data-nav-trigger='" + id + "']");
+    }
+
+    function triggerIndex(id) {
+      for (var i = 0; i < triggers.length; i++) {
+        if (triggers[i].dataset.navTrigger === id) return i;
+      }
+      return -1;
     }
 
     /**
@@ -90,89 +115,99 @@
       return h;
     }
 
+    /** Sync a trigger's visual + a11y open state. */
+    function markTrigger(t, open) {
+      t.setAttribute("data-state", open ? "open" : "closed");
+      t.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
     function hideAllPanels() {
       panels.forEach(function (p) {
+        gsap.killTweensOf(p);
         p.classList.remove("is-active");
-        gsap.set(p, { opacity: 0, pointerEvents: "none" });
+        gsap.set(p, { opacity: 0, x: 0, y: 0, pointerEvents: "none" });
       });
-      triggers.forEach(function (t) {
-        t.setAttribute("data-state", "closed");
-      });
+      triggers.forEach(function (t) { markTrigger(t, false); });
     }
 
-    function activatePanel(id) {
-      var p = getPanel(id);
-      if (!p) return;
-      p.classList.add("is-active");
-      gsap.set(p, { opacity: 1, pointerEvents: "auto" });
-      var t = getTrigger(id);
-      if (t) t.setAttribute("data-state", "open");
-    }
-
-    // ── Open / switch ─────────────────────────────────────────────
+    // ── Open / switch — single reconciling path ───────────────────
+    /*
+     * One function drives BOTH first-open and panel-to-panel switching. Each
+     * call reconciles the entire state straight from the requested id, so no
+     * matter how fast the user hovers across triggers it can never:
+     *   • run a stale onComplete that activates the wrong (intermediate) panel,
+     *   • stack height/opacity tweens that fight each other, or
+     *   • show a "gap" frame where no panel is visible.
+     * The outgoing panel fades out while the incoming fades in at the SAME time
+     * (true cross-fade), the container height morphs in parallel, and every
+     * in-flight tween is killed/overwritten first.
+     */
     function openPanel(id) {
       clearTimeout(closeTimer);
+      if (pendingReset) { pendingReset.kill(); pendingReset = null; }
 
       var targetPanel = getPanel(id);
       if (!targetPanel) return;
+      if (isOpen && id === activeId) return; // already showing this one
 
-      var h = measurePanelHeight(id);
+      var wasOpen = isOpen;
+      var fromId  = activeId;
+      var h       = measurePanelHeight(id);
+      // Slide direction follows the trigger order (left→right vs right→left).
+      var dir = (wasOpen && fromId !== null)
+        ? (triggerIndex(id) > triggerIndex(fromId) ? 1 : -1)
+        : 0;
 
-      if (!isOpen) {
-        // First open: animate height from 0, no cross-fade needed.
-        isOpen = true;
-        nav.classList.add("nav--open");
-        hideAllPanels();
-        activatePanel(id);
-
-        gsap.fromTo(dropdown,
-          { height: 0 },
-          { height: h, duration: 0.28, ease: "power3.out" }
-        );
-
-        if (overlay) {
-          gsap.to(overlay, { opacity: 1, duration: 0.25, ease: "power2.out" });
-        }
-
-      } else if (activeId !== id) {
-        // Already open: cross-fade outgoing → incoming, adjust height in parallel.
-        var oldPanel    = getPanel(activeId);
-        var prevTrigger = getTrigger(activeId);
-
-        gsap.to(dropdown, { height: h, duration: 0.22, ease: "power2.inOut" });
-
-        if (prevTrigger) prevTrigger.setAttribute("data-state", "closed");
-
-        if (oldPanel) {
-          gsap.to(oldPanel, {
-            opacity  : 0,
-            duration : 0.12,
-            ease     : "power1.in",
-            onComplete: function () {
-              oldPanel.classList.remove("is-active");
-              gsap.set(oldPanel, { pointerEvents: "none" });
-              activatePanel(id);
-              gsap.fromTo(targetPanel,
-                { opacity: 0 },
-                { opacity: 1, duration: 0.16, ease: "power1.out" }
-              );
-            },
-          });
-        } else {
-          activatePanel(id);
-        }
-
-        activeId = id;
-        return; // trigger state handled inside onComplete via activatePanel
-      }
-
-      // Sync outgoing trigger state when there was no oldPanel branch.
-      if (activeId && activeId !== id) {
-        var pt = getTrigger(activeId);
-        if (pt) pt.setAttribute("data-state", "closed");
-      }
-
+      isOpen   = true;
       activeId = id;
+      nav.classList.add("nav--open");
+
+      gsap.killTweensOf(dropdown);
+
+      // Fade out every panel that isn't the target — simultaneously.
+      panels.forEach(function (p) {
+        if (p === targetPanel) return;
+        gsap.killTweensOf(p);
+        p.classList.remove("is-active");
+        if (reduceMotion || gsap.getProperty(p, "opacity") === 0) {
+          gsap.set(p, { opacity: 0, x: 0, y: 0, pointerEvents: "none" });
+        } else {
+          gsap.to(p, {
+            opacity: 0, duration: 0.18, ease: "power2.out", overwrite: true,
+            onComplete: function () { gsap.set(p, { pointerEvents: "none", x: 0, y: 0 }); },
+          });
+        }
+      });
+
+      // Activate the target up-front (state is never deferred to a callback).
+      gsap.killTweensOf(targetPanel);
+      targetPanel.classList.add("is-active");
+      gsap.set(targetPanel, { pointerEvents: "auto" });
+
+      triggers.forEach(function (t) { markTrigger(t, t.dataset.navTrigger === id); });
+
+      if (reduceMotion) {
+        gsap.set(dropdown, { height: h });
+        gsap.set(targetPanel, { opacity: 1, x: 0, y: 0 });
+        if (overlay) gsap.set(overlay, { opacity: 1 });
+        return;
+      }
+
+      // Height morphs from its CURRENT value (0 closed, old height when
+      // switching, mid-value when reopening during a close) → never jumps.
+      gsap.to(dropdown, { height: h, duration: wasOpen ? 0.26 : 0.3, ease: "power3.out" });
+
+      if (overlay) {
+        gsap.to(overlay, { opacity: 1, duration: 0.25, ease: "power2.out" });
+      }
+
+      // Incoming reveal: a small directional slide when switching panels, a
+      // gentle lift on first open.
+      var fromVars = wasOpen ? { opacity: 0, x: dir * 18, y: 0 }
+                             : { opacity: 0, x: 0, y: 8 };
+      gsap.fromTo(targetPanel, fromVars, {
+        opacity: 1, x: 0, y: 0, duration: 0.26, ease: "power3.out", overwrite: true,
+      });
     }
 
     // ── Close ─────────────────────────────────────────────────────
@@ -180,31 +215,43 @@
       clearTimeout(closeTimer);
       // 180 ms grace period — lets the cursor travel from trigger to panel
       // without accidentally closing the dropdown.
-      closeTimer = setTimeout(closeDropdown, 180);
+      closeTimer = setTimeout(function () { closeDropdown(); }, 180);
     }
 
-    function closeDropdown() {
+    function closeDropdown(opts) {
       if (!isOpen) return;
-      isOpen   = false;
+      isOpen = false;
+      var closingId = activeId;
       activeId = null;
       nav.classList.remove("nav--open");
 
-      gsap.to(dropdown, { height: 0, duration: 0.22, ease: "power3.in" });
+      triggers.forEach(function (t) { markTrigger(t, false); });
 
-      if (overlay) {
-        gsap.to(overlay, {
-          opacity   : 0,
-          duration  : 0.2,
-          ease      : "power2.in",
-          onComplete: hideAllPanels,
-        });
+      gsap.killTweensOf(dropdown);
+      if (pendingReset) { pendingReset.kill(); pendingReset = null; }
+
+      if (reduceMotion) {
+        gsap.set(dropdown, { height: 0 });
+        if (overlay) gsap.set(overlay, { opacity: 0 });
+        hideAllPanels();
       } else {
-        gsap.delayedCall(0.22, hideAllPanels);
+        gsap.to(dropdown, { height: 0, duration: 0.24, ease: "power3.inOut" });
+        if (overlay) {
+          gsap.to(overlay, { opacity: 0, duration: 0.2, ease: "power2.in" });
+        }
+        // Reset panels after the collapse. Tracked so a reopen within the
+        // window cancels it (else it would wipe the freshly-opened panel).
+        pendingReset = gsap.delayedCall(0.24, function () {
+          pendingReset = null;
+          hideAllPanels();
+        });
       }
 
-      triggers.forEach(function (t) {
-        t.setAttribute("data-state", "closed");
-      });
+      // Keyboard close returns focus to the trigger that was open.
+      if (opts && opts.focus && closingId) {
+        var t = getTrigger(closingId);
+        if (t) t.focus();
+      }
     }
 
     // ── Trigger bindings ──────────────────────────────────────────
@@ -212,12 +259,27 @@
       var id = trigger.dataset.navTrigger;
       if (!id) return;
 
+      // a11y: announce the trigger controls a pop-up panel.
+      trigger.setAttribute("aria-haspopup", "true");
+      trigger.setAttribute("aria-expanded", "false");
+      var panel = getPanel(id);
+      if (panel) {
+        if (!panel.id) panel.id = "nav-panel-" + id;
+        trigger.setAttribute("aria-controls", panel.id);
+      }
+
       on(trigger, "mouseenter", function () { openPanel(id); });
-      // keyboard users can tab-focus a trigger to open the panel
-      on(trigger, "focus", function () { openPanel(id); });
       on(trigger, "click", function () {
         if (activeId === id && isOpen) closeDropdown();
         else openPanel(id);
+      });
+      // Keyboard: open with Enter/Space/↓ (click already covers Enter/Space on
+      // a <button>; ArrowDown opens without following a link).
+      on(trigger, "keydown", function (e) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          openPanel(id);
+        }
       });
     });
 
@@ -238,7 +300,7 @@
 
     on(document, "keydown", function (e) {
       if (e.key === "Escape") {
-        closeDropdown();
+        closeDropdown({ focus: true });   // return focus to the open trigger
         closeMobileMenu();
       }
     });
@@ -447,6 +509,11 @@
     var instance = {
       _destroy: function () {
         clearTimeout(closeTimer);
+        if (pendingReset) { pendingReset.kill(); pendingReset = null; }
+        if (_mq && _onMq) {
+          if (_mq.removeEventListener) _mq.removeEventListener("change", _onMq);
+          else if (_mq.removeListener) _mq.removeListener(_onMq);
+        }
         gsap.killTweensOf(dropdown);
         if (overlay)      gsap.killTweensOf(overlay);
         if (mobileMenu)   gsap.killTweensOf(mobileMenu);
