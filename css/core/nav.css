@@ -1,9 +1,14 @@
 /*!
- * nav.css v2.2.0
+ * nav.css v2.3.0
  * Mega-menu navbar — positioning, animation containers, state classes
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.3.0 — dropdown shadow is now bound to .nav--open (fades in on open, lifts
+ *           off the page when every menu closes) instead of being always-on —
+ *           box-shadow renders outside the box, so a closed height:0 dropdown
+ *           used to leave a shadow line across the page. Pairs with nav.js
+ *           v2.6.0 width-morph.
  * v2.2.0 — premium asymmetric auto-hide: longer easeOutExpo settle on the way
  *           back in, a slightly quicker accelerating curve on the way out
  * v2.1.0 — .nav--hidden auto-hide state (slide off top + fade)
@@ -201,10 +206,20 @@
 .nav__dropdown {
   overflow      : hidden;
   border-radius : 0 0 0.75rem 0.75rem;
-  box-shadow    : var(--nav-dropdown-shadow);
+  /* Shadow is bound to .nav--open (below), NOT here — box-shadow renders
+     OUTSIDE the box, so a closed (height:0) dropdown would otherwise still
+     cast a shadow line across the page. Off by default; fades in on open. */
+  box-shadow    : none;
+  transition    : box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   max-width     : 90rem;
   margin-inline : auto;
   position      : relative;
+}
+
+/* Shadow only while a menu is open — premium fade in/out, and it lifts off
+   the page the moment every mega-menu is closed. */
+.nav--open .nav__dropdown {
+  box-shadow : var(--nav-dropdown-shadow);
 }
 
 /* ── Panel — absolute stack ──────────────────────────────────── */
