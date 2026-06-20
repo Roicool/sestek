@@ -1,11 +1,15 @@
 /*!
- * nav.js v2.3.0
+ * nav.js v2.3.1
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.3.1 — adaptive theme now toggles BOTH .nav--on-light and .nav--on-dark so
+ *           it works whether the bar's default is dark (style on-light) or
+ *           light (style on-dark). [data-nav-theme] can sit on inner blocks,
+ *           not just sections, to mark light/dark zones within one section.
  * v2.3.0 — richer open animation: inner items now cascade in (stagger) over an
  *           expo.out height morph + subtle scale, so panels feel alive instead
  *           of a flat fade. Adds a sliding active-trigger indicator (underline
@@ -585,8 +589,14 @@
 
       var navH = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
 
+      // Toggle BOTH classes so either mental model works:
+      //   • default-dark nav  → style .nav--on-light (dark text on light bg)
+      //   • default-light nav → style .nav--on-dark  (light text on dark bg)
+      // At the top of the page / over an unthemed area neither class is set,
+      // so the bar keeps its Webflow default colours.
       function applyTheme(isLight) {
         nav.classList.toggle("nav--on-light", isLight);
+        nav.classList.toggle("nav--on-dark", !isLight);
       }
 
       // Set the correct theme for whatever section is under the bar right now
