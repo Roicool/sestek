@@ -1,11 +1,17 @@
 /*!
- * nav.js v2.6.1
+ * nav.js v2.7.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.0 — always-on .nav--scrolled toggle: no class at the very top (style
+ *           the bar transparent so it sits embedded in a hero), .nav--scrolled
+ *           added past a small threshold (style the solid background + text/
+ *           logo colours there). Runs in the same rAF-throttled scroll listener
+ *           as the [data-nav-autohide] direction logic, correct on load too if
+ *           the page opens mid-scroll (e.g. back/forward navigation).
  * v2.6.1 — hovering a non-trigger bar item (Pricing, logo, Log in…) while a
  *           mega-menu is open now closes it, instead of staying open as long as
  *           the cursor sat anywhere in the bar.
@@ -671,34 +677,53 @@
       hideEls.forEach(function (el) { _hideObserver.observe(el); });
     })();
 
+    // ── Scroll-position state (transparent over hero → solid once scrolled) ──
+    // Always on (no opt-in): at the very top the bar gets no extra class, so
+    // it can sit transparent/blended into a hero in Webflow; past a small
+    // threshold it gains .nav--scrolled, which is where you set the solid
+    // background + matching text/logo colours. Combined with the scroll-
+    // direction auto-hide below into one rAF-throttled scroll listener.
+    var scrolled = false;
+    function applyScrolled(y, topGuard) {
+      var next = y > topGuard;
+      if (next !== scrolled) {
+        scrolled = next;
+        nav.classList.toggle("nav--scrolled", scrolled);
+      }
+    }
+
     // ── Auto-hide on scroll direction ─────────────────────────────
     // Opt-in via [data-nav-autohide] on the nav root: the bar slides away
     // while scrolling down and eases back in while scrolling up — no theme
     // detection needed, just give it one fixed background colour in CSS.
     // Independent of the [data-nav-hide] (section-coverage) mechanism above;
     // reuses the same .nav--hidden slide+fade so both share one CSS rule.
-    (function initScrollAutoHide() {
-      if (!nav.hasAttribute("data-nav-autohide")) return;
-
+    (function initScroll() {
+      var autoHide  = nav.hasAttribute("data-nav-autohide");
       var lastY     = global.pageYOffset || document.documentElement.scrollTop || 0;
       var ticking   = false;
       var threshold = 8;  // ignore trackpad/sub-pixel jitter
       var topGuard  = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
+
+      applyScrolled(lastY, topGuard); // correct on load if the page opens mid-scroll
 
       function update() {
         ticking = false;
         var y     = global.pageYOffset || document.documentElement.scrollTop || 0;
         var delta = y - lastY;
 
-        if (isOpen) { lastY = y; return; } // leave the bar alone mid mega-menu
+        applyScrolled(y, topGuard);
 
-        if (y <= topGuard) {
-          nav.classList.remove("nav--hidden");
-        } else if (delta > threshold) {
-          nav.classList.add("nav--hidden");
-          closeDropdown();
-        } else if (delta < -threshold) {
-          nav.classList.remove("nav--hidden");
+        if (autoHide) {
+          if (isOpen) { lastY = y; return; } // leave the bar alone mid mega-menu
+          if (y <= topGuard) {
+            nav.classList.remove("nav--hidden");
+          } else if (delta > threshold) {
+            nav.classList.add("nav--hidden");
+            closeDropdown();
+          } else if (delta < -threshold) {
+            nav.classList.remove("nav--hidden");
+          }
         }
         lastY = y;
       }
@@ -710,6 +735,7 @@
         }
       });
     })();
+
 
     // ── Public API ────────────────────────────────────────────────
     var instance = {
