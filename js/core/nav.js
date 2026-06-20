@@ -1,11 +1,18 @@
 /*!
- * nav.js v2.3.2
+ * nav.js v2.4.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.4.0 — add [data-nav-autohide] on the nav root: hides the bar (slide up +
+ *           fade, via .nav--hidden) while scrolling down, brings it back while
+ *           scrolling up. rAF-throttled scroll listener, ignores small jitter,
+ *           never hides at the very top, and steps aside while a mega-menu is
+ *           open. Opt-in, works alongside (or instead of) the adaptive theme —
+ *           pick a single fixed background colour and skip [data-nav-theme]
+ *           entirely if that's all you need.
  * v2.3.2 — add Sestek.setNavTheme("dark"|"light"|"auto") for cases auto-detect
  *           can't see (pinned hero whose bg changes via a scrubbed animation,
  *           or any scripted moment). Manual mode pauses auto-detection; "auto"
@@ -711,6 +718,46 @@
       );
 
       hideEls.forEach(function (el) { _hideObserver.observe(el); });
+    })();
+
+    // ── Auto-hide on scroll direction ─────────────────────────────
+    // Opt-in via [data-nav-autohide] on the nav root: the bar slides away
+    // while scrolling down and eases back in while scrolling up — no theme
+    // detection needed, just give it one fixed background colour in CSS.
+    // Independent of the [data-nav-hide] (section-coverage) mechanism above;
+    // reuses the same .nav--hidden slide+fade so both share one CSS rule.
+    (function initScrollAutoHide() {
+      if (!nav.hasAttribute("data-nav-autohide")) return;
+
+      var lastY     = global.pageYOffset || document.documentElement.scrollTop || 0;
+      var ticking   = false;
+      var threshold = 8;  // ignore trackpad/sub-pixel jitter
+      var topGuard  = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
+
+      function update() {
+        ticking = false;
+        var y     = global.pageYOffset || document.documentElement.scrollTop || 0;
+        var delta = y - lastY;
+
+        if (isOpen) { lastY = y; return; } // leave the bar alone mid mega-menu
+
+        if (y <= topGuard) {
+          nav.classList.remove("nav--hidden");
+        } else if (delta > threshold) {
+          nav.classList.add("nav--hidden");
+          closeDropdown();
+        } else if (delta < -threshold) {
+          nav.classList.remove("nav--hidden");
+        }
+        lastY = y;
+      }
+
+      on(global, "scroll", function () {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      });
     })();
 
     // ── Public API ────────────────────────────────────────────────
