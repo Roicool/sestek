@@ -1,11 +1,14 @@
 /*!
- * nav.js v2.7.0
+ * nav.js v2.7.1
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.1 — closing the mobile menu now moves focus back to the hamburger before
+ *           the menu becomes aria-hidden, fixing the "Blocked aria-hidden on an
+ *           element because its descendant retained focus" console warning.
  * v2.7.0 — always-on .nav--scrolled toggle: no class at the very top (style
  *           the bar transparent so it sits embedded in a hero), .nav--scrolled
  *           added past a small threshold (style the solid background + text/
@@ -542,6 +545,15 @@
         global.Sestek.startScroll();
       }
       if (hamburger) hamburger.setAttribute("data-state", "closed");
+
+      // a11y: never leave focus inside an element we're about to aria-hide —
+      // browsers (correctly) warn and block it. Return focus to the hamburger.
+      if (mobileMenu.contains(document.activeElement)) {
+        if (hamburger && hamburger.focus) hamburger.focus();
+        else if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+      }
 
       gsap.to(mobileMenu, {
         opacity   : 0,
