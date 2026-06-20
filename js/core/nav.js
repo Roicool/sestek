@@ -1,11 +1,14 @@
 /*!
- * nav.js v2.6.0
+ * nav.js v2.6.1
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.6.1 — hovering a non-trigger bar item (Pricing, logo, Log in…) while a
+ *           mega-menu is open now closes it, instead of staying open as long as
+ *           the cursor sat anywhere in the bar.
  * v2.6.0 — the dropdown now MORPHS width as well as height: each mega-menu is
  *           measured at its own natural width (capped to the bar) and the
  *           container glides between differently-sized menus, growing from /
@@ -465,6 +468,16 @@
       on(navBar, "mouseleave", scheduleClose);
       // Cancel any pending close when re-entering the bar.
       on(navBar, "mouseenter", function () { clearTimeout(closeTimer); });
+      // Hovering a NON-trigger bar item (Pricing, logo, Log in…) while a menu
+      // is open should close it — otherwise it stays open as long as the cursor
+      // is anywhere in the bar. The trigger's own mouseenter still rules when
+      // moving between menus; the grace period keeps the trip down to the panel
+      // safe (the panel's mouseenter cancels the pending close).
+      on(navBar, "mouseover", function (e) {
+        if (!isOpen) return;
+        if (e.target.closest("[data-nav-trigger]")) return;
+        scheduleClose();
+      });
     }
 
     on(dropdown, "mouseleave", scheduleClose);
