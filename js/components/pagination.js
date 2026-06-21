@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.3.0
+ * pagination.js v1.4.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -82,7 +82,7 @@
 
       global.addEventListener("popstate", function () {
         if (getCurrentPage(pageParam) === activePage(container)) return;
-        loadPage(global.location.href, listEl, countEl, function (newCountEl) {
+        loadPage(global.location.href, listEl, countEl, pageParam, function (newCountEl) {
           container = render(wrapper, listEl, newCountEl, pageParam, getTotalPages(newCountEl), getCurrentPage(pageParam));
         });
       });
@@ -129,7 +129,7 @@
         var href = link.getAttribute("href");
         if (!href || href === "#") return;
         e.preventDefault();
-        loadPage(href, listEl, countEl, function (newCountEl) {
+        loadPage(href, listEl, countEl, pageParam, function (newCountEl) {
           render(wrapper, listEl, newCountEl, pageParam, getTotalPages(newCountEl), getCurrentPage(pageParam));
           var section = wrapper.closest("[data-pagination-scope]") || listEl;
           if (section && section.scrollIntoView) {
@@ -213,20 +213,47 @@
       return frag;
     }
 
-    function loadPage(url, listEl, countEl, onDone) {
+    // Finds the same scope inside a freshly fetched page's document by
+    // matching the .w-pagination-wrapper whose links carry this instance's
+    // pageParam — mirrors getPageParam(), just run in reverse. Needed
+    // because a fetched page can contain other (non-paginated-here) CMS
+    // lists too, and a plain doc-wide ".w-dyn-items" lookup would grab
+    // whichever one happens to come first in the markup.
+    function findScopeInDoc(doc, pageParam) {
+      var docWrappers = doc.querySelectorAll(".w-pagination-wrapper");
+      for (var i = 0; i < docWrappers.length; i++) {
+        var links = docWrappers[i].querySelectorAll("a");
+        for (var j = 0; j < links.length; j++) {
+          var href = links[j].getAttribute("href") || "";
+          if (href.indexOf(pageParam + "=") !== -1) {
+            return docWrappers[i].closest("[data-pagination-scope]") ||
+                   (docWrappers.length === 1 && (docWrappers[i].closest(".w-dyn-list") || doc));
+          }
+        }
+      }
+      return null;
+    }
+
+    function loadPage(url, listEl, countEl, pageParam, onDone) {
       listEl.classList.add("is-loading");
       listEl.appendChild(buildSkeleton(listEl));
 
       fetchPage(url).then(function (html) {
         var doc = new global.DOMParser().parseFromString(html, "text/html");
+        var scope = findScopeInDoc(doc, pageParam);
+        if (!scope) {
+          warn("Couldn't find this list's scope in the fetched page — aborting swap to avoid pulling another CMS list's data.");
+          listEl.classList.remove("is-loading");
+          return;
+        }
 
-        var newItems = doc.querySelector(".w-dyn-items");
+        var newItems = scope.querySelector(".w-dyn-items");
         if (newItems) {
           listEl.classList.add("is-entering"); // start the new items at opacity:0
           listEl.innerHTML = newItems.innerHTML; // also clears the skeleton + old items
         }
 
-        var newCount = doc.querySelector(".w-page-count");
+        var newCount = scope.querySelector(".w-page-count");
         if (newCount) countEl.textContent = newCount.textContent;
 
         listEl.classList.remove("is-loading");
