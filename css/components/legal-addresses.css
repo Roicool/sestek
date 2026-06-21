@@ -1,0 +1,86 @@
+/*!
+ * legal-addresses.css v1.0.0
+ * Card layout for the office-address blocks read by legal-addresses.js —
+ * turns [data-legal-address] into an even grid of bordered cards (city as a
+ * small heading, street + phone below), with a subtle hover lift.
+ *
+ * Drives: js/components/legal-addresses.js (reads the same markup, doesn't
+ * need this file to function — this is presentation only).
+ *
+ * Tunables (set on [data-legal-addresses] or :root):
+ *   --legal-address-bg            card background        (default transparent)
+ *   --legal-address-border        card border colour      (default rgba(255,255,255,.12))
+ *   --legal-address-border-hover  card border colour, hover (default rgba(255,255,255,.3))
+ *   --legal-address-radius        card corner radius      (default 12px)
+ *   --legal-address-gap           gap between cards       (default 24px)
+ *   --legal-address-accent        city label accent colour (default inherit)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-legal-addresses] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--legal-address-gap, 24px);
+}
+
+[data-legal-address] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: var(--legal-address-bg, transparent);
+  border: 1px solid var(--legal-address-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--legal-address-radius, 12px);
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+[data-legal-address]:hover {
+  border-color: var(--legal-address-border-hover, rgba(255, 255, 255, 0.3));
+  transform: translateY(-3px);
+}
+
+[data-legal-address-city] {
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--legal-address-accent, inherit);
+}
+
+[data-legal-address-street] {
+  margin: 0;
+  font-size: 0.85em;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+[data-legal-address-phone] {
+  margin: 0;
+  font-size: 0.85em;
+}
+
+[data-legal-address-phone] a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (max-width: 991px) {
+  [data-legal-addresses] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 567px) {
+  [data-legal-addresses] {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-legal-address] {
+    transition: none;
+  }
+  [data-legal-address]:hover {
+    transform: none;
+  }
+}
