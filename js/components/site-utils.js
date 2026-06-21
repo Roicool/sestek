@@ -1,5 +1,5 @@
 /*!
- * site-utils.js v2.3.0
+ * site-utils.js v2.3.1
  * Small site-wide professionalism helpers — zero dependencies.
  *
  *   1. Footer year   [data-current-year]  — auto-updates the © year
@@ -134,9 +134,10 @@
     applyView(currentView, target, cards(), btns, false);
 
     Array.prototype.forEach.call(btns, function (btn) {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (e) {
         var view = btn.getAttribute("data-view-btn");
         if (view !== "grid" && view !== "list") return;
+        e.preventDefault();   // buttons are often <a href="#">, don't jump/scroll
         currentView = view;
         applyView(view, target, cards(), btns, true);
         if (persistKey) {
