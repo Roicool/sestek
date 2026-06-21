@@ -1,5 +1,5 @@
 /*!
- * pagination.css v1.0.0
+ * pagination.css v1.1.0
  * Custom numbered pagination for a Webflow Collection List: replaces the
  * native Prev/Next-only pagination with clickable page numbers + arrows,
  * driven entirely by js/components/pagination.js.
@@ -25,6 +25,39 @@
 
 .w-page-count {
   display: none !important;
+}
+
+/* ── Loading state ────────────────────────────────────────────────── */
+/* Toggled by pagination.js on the .w-dyn-items list for the duration of
+   the fetch — dims the (still-visible, so no layout jump) old items and
+   centers a spinner over them. */
+.w-dyn-items.is-loading {
+  position: relative;
+  min-height: 6rem;
+  pointer-events: none;
+}
+
+.w-dyn-items.is-loading > * {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.w-dyn-items.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
+  border: 2px solid var(--surface--muted, #f5f5f6);
+  border-top-color: var(--color-text--accent, #EC008C);
+  border-radius: var(--radius--full, 9999px);
+  animation: pagination-spin 0.6s linear infinite;
+}
+
+@keyframes pagination-spin {
+  to { transform: rotate(360deg); }
 }
 
 .pagination-numbers {
@@ -91,6 +124,11 @@
   .pagination-number,
   .pagination-arrow {
     transition: none;
+  }
+
+  .w-dyn-items.is-loading::after {
+    animation: none;
+    border-top-color: var(--surface--muted, #f5f5f6);
   }
 }
 

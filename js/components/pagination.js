@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.0.0
+ * pagination.js v1.1.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -163,6 +163,8 @@
     }
 
     function loadPage(url, listEl, countEl, onDone) {
+      listEl.classList.add("is-loading");
+
       fetchPage(url).then(function (html) {
         var doc = new global.DOMParser().parseFromString(html, "text/html");
 
@@ -172,7 +174,10 @@
         var newCount = doc.querySelector(".w-page-count");
         if (newCount) countEl.textContent = newCount.textContent;
 
+        listEl.classList.remove("is-loading");
         onDone(countEl);
+      }, function () {
+        listEl.classList.remove("is-loading"); // fetch failed — don't leave the spinner stuck
       });
     }
 
