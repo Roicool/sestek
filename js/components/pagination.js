@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.2.0
+ * pagination.js v1.3.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -17,10 +17,11 @@
  *   • Hovering a page link (or idle time, throttled via requestIdleCallback)
  *     prefetches that page's HTML so the click feels instant. Skipped on
  *     Save-Data / 2G connections.
- *   • Multiple paginated lists on one page are supported — each instance
- *     scopes its item-list/page-count lookups to its own nearest
- *     [data-pagination-scope] (falls back to the Collection List's
- *     ".w-dyn-list" wrapper, then the whole document).
+ *   • Multiple paginated lists on one page are supported, but each one
+ *     MUST be wrapped in its own [data-pagination-scope] — with only a
+ *     single paginated list on the page, that's optional and the nearest
+ *     ".w-dyn-list" (or the whole document) is used instead. This avoids
+ *     ever grabbing the wrong Collection List's items/page-count.
  *   • Back/forward browser navigation re-fetches and re-renders correctly.
  *
  * API:
@@ -47,11 +48,21 @@
     }
 
     var cache = {};
+    var singleInstance = wrappers.length === 1;
 
     Array.prototype.forEach.call(wrappers, function (wrapper) {
+      // With only one paginated list on the page, falling back to the
+      // nearest .w-dyn-list (or the whole document) is unambiguous. With
+      // multiple lists, an explicit [data-pagination-scope] is required —
+      // guessing risks grabbing another Collection List's items/page-count.
       var scope = wrapper.closest("[data-pagination-scope]") ||
-                  wrapper.closest(".w-dyn-list") ||
-                  global.document;
+                  (singleInstance && (wrapper.closest(".w-dyn-list") || global.document));
+
+      if (!scope) {
+        warn("Skipping a pagination block — multiple paginated lists found on the page; " +
+          "add [data-pagination-scope] around this one's Collection List Wrapper to disambiguate.");
+        return;
+      }
 
       var listEl  = scope.querySelector(".w-dyn-items");
       var countEl = scope.querySelector(".w-page-count");
