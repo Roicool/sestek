@@ -23,21 +23,55 @@
 (function (global) {
   "use strict";
 
+  function wrapWord(word) {
+    var mask = global.document.createElement("span");
+    mask.className = "word-reveal__mask";
+    var inner = global.document.createElement("span");
+    inner.className = "word-reveal__inner";
+    inner.textContent = word;
+    mask.appendChild(inner);
+    return { mask: mask, inner: inner };
+  }
+
+  // Walks the heading's existing DOM (text nodes + any inline elements such
+  // as a styled <span> sub-line) and rebuilds it word-by-word, keeping every
+  // element wrapper, attribute, and class exactly where it was.
+  function splitNode(node, inners) {
+    if (node.nodeType === 3) {
+      var frag = global.document.createDocumentFragment();
+      var tokens = node.textContent.split(/(\s+)/);
+      tokens.forEach(function (token) {
+        if (!token) return;
+        if (/^\s+$/.test(token)) {
+          frag.appendChild(global.document.createTextNode(token));
+        } else {
+          var wrapped = wrapWord(token);
+          frag.appendChild(wrapped.mask);
+          inners.push(wrapped.inner);
+        }
+      });
+      return frag;
+    }
+
+    if (node.nodeType === 1) {
+      var clone = node.cloneNode(false);
+      Array.prototype.forEach.call(node.childNodes, function (child) {
+        clone.appendChild(splitNode(child, inners));
+      });
+      return clone;
+    }
+
+    return node.cloneNode(true);
+  }
+
   function splitWords(el) {
-    var words = el.textContent.trim().split(/\s+/);
-    el.textContent = "";
     var inners = [];
-    words.forEach(function (word, i) {
-      var mask = global.document.createElement("span");
-      mask.className = "word-reveal__mask";
-      var inner = global.document.createElement("span");
-      inner.className = "word-reveal__inner";
-      inner.textContent = word;
-      mask.appendChild(inner);
-      el.appendChild(mask);
-      inners.push(inner);
-      if (i < words.length - 1) el.appendChild(global.document.createTextNode(" "));
+    var frag = global.document.createDocumentFragment();
+    Array.prototype.forEach.call(el.childNodes, function (child) {
+      frag.appendChild(splitNode(child, inners));
     });
+    el.textContent = "";
+    el.appendChild(frag);
     return inners;
   }
 
