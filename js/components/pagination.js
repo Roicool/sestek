@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.4.0
+ * pagination.js v1.5.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -23,6 +23,9 @@
  *     ".w-dyn-list" (or the whole document) is used instead. This avoids
  *     ever grabbing the wrong Collection List's items/page-count.
  *   • Back/forward browser navigation re-fetches and re-renders correctly.
+ *   • After swapping in new items, dispatches a "sestek:list-updated" event
+ *     on document so other components (e.g. site-utils.js's grid/list view
+ *     toggle) can re-decorate the freshly swapped-in cards.
  *
  * API:
  *   Sestek.initPagination()   — wire every [data-page-count] block on the page
@@ -251,6 +254,10 @@
         if (newItems) {
           listEl.classList.add("is-entering"); // start the new items at opacity:0
           listEl.innerHTML = newItems.innerHTML; // also clears the skeleton + old items
+          // Let anything that decorates list items (e.g. site-utils.js's
+          // grid/list view toggle) re-stamp its classes onto the new cards —
+          // they arrive with none of that runtime state.
+          global.document.dispatchEvent(new CustomEvent("sestek:list-updated", { detail: { listEl: listEl } }));
         }
 
         var newCount = scope.querySelector(".w-page-count");
