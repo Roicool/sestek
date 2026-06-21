@@ -1,5 +1,5 @@
 /*!
- * site-utils.js v2.3.1
+ * site-utils.js v2.3.2
  * Small site-wide professionalism helpers — zero dependencies.
  *
  *   1. Footer year   [data-current-year]  — auto-updates the © year
@@ -97,6 +97,11 @@
         var isActive = btn.getAttribute("data-view-btn") === view;
         btn.classList.toggle("is-active", isActive);
         btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+        // aria-pressed is only valid on role="button" — toggles are often
+        // <a> tags (implicit role="link"), so stamp the role to stay valid.
+        if (btn.tagName !== "BUTTON" && !btn.hasAttribute("role")) {
+          btn.setAttribute("role", "button");
+        }
       });
     }
 
