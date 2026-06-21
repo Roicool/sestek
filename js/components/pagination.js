@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.1.0
+ * pagination.js v1.2.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -128,6 +128,24 @@
         history.pushState(null, "", href);
       });
 
+      // ←/→ move focus between page links (Home/End jump to first/last) —
+      // Enter/Space then activate the focused link natively, no extra wiring.
+      container.addEventListener("keydown", function (e) {
+        var keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+        if (keys.indexOf(e.key) === -1) return;
+
+        var links = Array.prototype.slice.call(container.querySelectorAll("a"))
+          .filter(function (a) { return a.className.indexOf("is-disabled") === -1; });
+        var idx = links.indexOf(closestLink(e.target, container));
+        if (idx === -1) return;
+
+        e.preventDefault();
+        if (e.key === "ArrowLeft")  links[Math.max(idx - 1, 0)].focus();
+        if (e.key === "ArrowRight") links[Math.min(idx + 1, links.length - 1)].focus();
+        if (e.key === "Home")       links[0].focus();
+        if (e.key === "End")        links[links.length - 1].focus();
+      });
+
       wrapper.parentNode.insertBefore(container, wrapper.nextSibling);
       return container;
     }
@@ -162,22 +180,52 @@
       fetchPage(url);
     }
 
+    // Real-size skeleton cards: measure each current item's box and stamp a
+    // shimmering placeholder of the exact same size/position over it, so the
+    // loading state never jumps once real content lands.
+    function buildSkeleton(listEl) {
+      var frag = global.document.createDocumentFragment();
+      var listRect = listEl.getBoundingClientRect();
+
+      Array.prototype.forEach.call(listEl.children, function (item) {
+        var r = item.getBoundingClientRect();
+        var skel = global.document.createElement("div");
+        skel.className = "pagination-skeleton-card";
+        skel.style.position = "absolute";
+        skel.style.top    = (r.top  - listRect.top)  + "px";
+        skel.style.left   = (r.left - listRect.left) + "px";
+        skel.style.width  = r.width  + "px";
+        skel.style.height = r.height + "px";
+        frag.appendChild(skel);
+      });
+
+      return frag;
+    }
+
     function loadPage(url, listEl, countEl, onDone) {
       listEl.classList.add("is-loading");
+      listEl.appendChild(buildSkeleton(listEl));
 
       fetchPage(url).then(function (html) {
         var doc = new global.DOMParser().parseFromString(html, "text/html");
 
         var newItems = doc.querySelector(".w-dyn-items");
-        if (newItems) listEl.innerHTML = newItems.innerHTML;
+        if (newItems) {
+          listEl.classList.add("is-entering"); // start the new items at opacity:0
+          listEl.innerHTML = newItems.innerHTML; // also clears the skeleton + old items
+        }
 
         var newCount = doc.querySelector(".w-page-count");
         if (newCount) countEl.textContent = newCount.textContent;
 
         listEl.classList.remove("is-loading");
+        // Next frame, so the opacity:0 -> 1 change is a transition, not a jump.
+        global.requestAnimationFrame(function () {
+          listEl.classList.remove("is-entering");
+        });
         onDone(countEl);
       }, function () {
-        listEl.classList.remove("is-loading"); // fetch failed — don't leave the spinner stuck
+        listEl.classList.remove("is-loading"); // fetch failed — don't leave the skeleton stuck
       });
     }
 
