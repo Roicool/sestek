@@ -1,0 +1,161 @@
+/*!
+ * pagination.css v1.2.0
+ * Custom numbered pagination for a Webflow Collection List: replaces the
+ * native Prev/Next-only pagination with clickable page numbers + arrows,
+ * driven entirely by js/components/pagination.js.
+ *
+ * The native Webflow pagination links stay in the DOM (visually hidden,
+ * not display:none) so the list keeps a no-JS-fallback / crawlable trail
+ * of page links — this CSS just hides them and the raw page-count text.
+ *
+ * Drives: js/components/pagination.js
+ * https://github.com/roicool/sestek
+ */
+
+/* Native Webflow pagination — kept in the DOM but out of sight; the
+   pagination.js-rendered .pagination-numbers bar replaces it visually. */
+.w-pagination-wrapper {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.w-page-count {
+  display: none !important;
+}
+
+/* ── Loading state ────────────────────────────────────────────────── */
+/* Toggled by pagination.js on the .w-dyn-items list for the duration of
+   the fetch. The old items are hidden (not removed — their boxes are what
+   pagination.js measures to size the skeleton cards) and a shimmering
+   placeholder is stamped over each one at its exact size, so nothing jumps
+   once the real content lands. */
+.w-dyn-items.is-loading {
+  position: relative;
+  min-height: 6rem;
+  pointer-events: none;
+}
+
+.w-dyn-items.is-loading > :not(.pagination-skeleton-card) {
+  visibility: hidden;
+}
+
+.pagination-skeleton-card {
+  border-radius: var(--radius--xl, 0.75rem);
+  background: linear-gradient(
+    100deg,
+    var(--surface--muted, #f5f5f6) 30%,
+    var(--surface--base, #fff) 50%,
+    var(--surface--muted, #f5f5f6) 70%
+  );
+  background-size: 200% 100%;
+  animation: pagination-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes pagination-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* New items fade in once the swap commits — pagination.js toggles
+   .is-entering off one frame after the innerHTML swap. */
+.w-dyn-items > * {
+  transition: opacity 0.25s ease;
+}
+
+.w-dyn-items.is-entering > * {
+  opacity: 0;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing--1, 0.25rem);
+  margin-top: var(--spacing--8, 2rem);
+  font-family: var(--font--primary, inherit);
+  font-size: var(--text--sm, 0.9375rem);
+  line-height: 1;
+}
+
+.pagination-number,
+.pagination-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius--full, 9999px);
+  color: var(--color-text--base, #1a1a1a);
+  text-decoration: none;
+  font-weight: var(--font-weight--medium, 500);
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pagination-number:hover,
+.pagination-arrow:hover {
+  background: var(--surface--muted, #f5f5f6);
+}
+
+.pagination-number:focus-visible,
+.pagination-arrow:focus-visible {
+  outline: 2px solid var(--color-text--accent, #EC008C);
+  outline-offset: 2px;
+}
+
+.pagination-number.is-active {
+  background: var(--color-text--base, #1a1a1a);
+  color: var(--surface--base, #fff);
+}
+
+.pagination-arrow--prev::before {
+  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='12' viewBox='0 0 7 12' fill='none'%3E%3Cpath d='M6 1L1 6L6 11' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  display: flex;
+  align-items: center;
+}
+
+.pagination-arrow--next::before {
+  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='12' viewBox='0 0 7 12' fill='none'%3E%3Cpath d='M1 1L6 6L1 11' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  display: flex;
+  align-items: center;
+}
+
+.pagination-arrow.is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .pagination-number,
+  .pagination-arrow {
+    transition: none;
+  }
+
+  .pagination-skeleton-card {
+    animation: none;
+    background-position: 0 0;
+  }
+
+  .w-dyn-items > * {
+    transition: none;
+  }
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+  .pagination-numbers {
+    gap: 0;
+  }
+
+  .pagination-number,
+  .pagination-arrow {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: var(--text--xs, 0.8125rem);
+  }
+}

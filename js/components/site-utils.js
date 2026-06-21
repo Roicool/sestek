@@ -1,5 +1,5 @@
 /*!
- * site-utils.js v2.1.0
+ * site-utils.js v2.3.0
  * Small site-wide professionalism helpers — zero dependencies.
  *
  *   1. Footer year   [data-current-year]  — auto-updates the © year
@@ -40,6 +40,11 @@
  * Optional: persist last selection across pages with localStorage.
  *   <div data-view-toggle data-view-persist="my-collection">…</div>
  *   (value = unique key, so multiple toggles on a site don't clash)
+ *
+ * Plays nicely with AJAX content swaps (e.g. pagination.js): listens for a
+ * "sestek:list-updated" document event and re-stamps the current view onto
+ * whatever [data-view-card]s exist at that moment, so newly swapped-in
+ * cards don't lose is-grid/is-list.
  *
  * https://github.com/roicool/sestek
  */
@@ -112,28 +117,39 @@
     var btns    = wrapper.querySelectorAll("[data-view-btn]");
     var persistKey = wrapper.getAttribute("data-view-persist");
 
-    /* Target and cards can live anywhere — look globally */
+    /* Target can live anywhere — look globally */
     var target  = document.querySelector("[data-view-target]");
-    var cards   = document.querySelectorAll("[data-view-card]");
-
     if (!target || !btns.length) return;
+
+    // Re-queried on every apply (not cached) so cards swapped in later —
+    // e.g. by pagination.js replacing a list's innerHTML via AJAX — are
+    // picked up instead of operating on a stale, now-detached NodeList.
+    function cards() { return document.querySelectorAll("[data-view-card]"); }
 
     /* Determine initial view: persisted → data-view-default → "grid" */
     var stored  = persistKey ? (localStorage.getItem("sv_" + persistKey) || "") : "";
     var defAttr = wrapper.getAttribute("data-view-default") || "grid";
-    var initial = (stored === "grid" || stored === "list") ? stored : defAttr;
+    var currentView = (stored === "grid" || stored === "list") ? stored : defAttr;
 
-    applyView(initial, target, cards, btns, false);
+    applyView(currentView, target, cards(), btns, false);
 
     Array.prototype.forEach.call(btns, function (btn) {
       btn.addEventListener("click", function () {
         var view = btn.getAttribute("data-view-btn");
         if (view !== "grid" && view !== "list") return;
-        applyView(view, target, cards, btns, true);
+        currentView = view;
+        applyView(view, target, cards(), btns, true);
         if (persistKey) {
           try { localStorage.setItem("sv_" + persistKey, view); } catch (_) {}
         }
       });
+    });
+
+    // Re-stamp the current view onto freshly-swapped-in cards — fired by
+    // pagination.js (or anything else that replaces list content) after a
+    // content swap, since new markup arrives with no is-grid/is-list class.
+    document.addEventListener("sestek:list-updated", function () {
+      applyView(currentView, target, cards(), btns, false);
     });
   }
 

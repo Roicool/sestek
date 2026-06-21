@@ -1,5 +1,5 @@
 /*!
- * dropdown.css v1.2.0
+ * dropdown.css v1.3.0
  * Simple disclosure dropdown (e.g. "Explore categories"): a pill/button
  * trigger that reveals a floating card panel of links below it.
  *
@@ -127,6 +127,12 @@
   background: var(--brand-primary--100, #fde6f3);
   color: var(--color-text--accent, #EC008C);
   outline: 0;
+}
+
+/* Currently-chosen item — mirrored onto the trigger via [data-dropdown-label]. */
+.dropdown__item.is-selected {
+  color: var(--color-text--accent, #EC008C);
+  font-weight: var(--font-weight--semibold, 600);
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */

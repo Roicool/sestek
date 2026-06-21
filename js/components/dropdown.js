@@ -1,5 +1,5 @@
 /*!
- * dropdown.js v1.2.0
+ * dropdown.js v1.3.0
  * Simple disclosure dropdown (e.g. "Explore categories"): clicking the
  * trigger reveals a floating panel of links below it.
  *
@@ -16,6 +16,10 @@
  *     no per-item listeners to rebind.
  *   • Responsive: if the panel would overflow the right edge of the
  *     viewport, it flips to align to the trigger's right edge instead.
+ *   • If the trigger has a [data-dropdown-label] element, its text is kept
+ *     in sync with the selected item: updated on click, and pre-filled on
+ *     load from whichever item is the current page (Webflow's ".w--current"
+ *     class, or an explicit [aria-current]).
  *
  * API:
  *   Sestek.initDropdown()   — wire every [data-dropdown] block on the page
@@ -24,7 +28,7 @@
  *
  *   <div data-dropdown>
  *     <button data-dropdown-trigger aria-haspopup="true" aria-expanded="false">
- *       Explore categories
+ *       <span data-dropdown-label>Explore categories</span>
  *       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
  *         <path d="m6 9 6 6 6-6"></path>
  *       </svg>
@@ -76,8 +80,30 @@
         return;
       }
 
+      var label = trigger.querySelector("[data-dropdown-label]");
+
       var items = [];
       var activeIndex = -1;
+
+      // Mirror the selected item's text onto the trigger label, and flag it
+      // (.is-selected) inside the panel so it can be styled as the current
+      // choice next time the panel opens.
+      function selectItem(item) {
+        if (!label || !item) return;
+        items.forEach(function (it) { it.classList.remove("is-selected"); });
+        item.classList.add("is-selected");
+        label.textContent = item.textContent.trim();
+      }
+
+      // Pre-fill the label from whichever item represents the current page,
+      // so a category page loads with that category already shown.
+      function selectCurrent() {
+        if (!label) return;
+        var current = panel.querySelector(
+          ".dropdown__item.w--current, .dropdown__item[aria-current]"
+        );
+        if (current) selectItem(current);
+      }
 
       trigger.setAttribute("aria-haspopup", "true");
       trigger.setAttribute("aria-expanded", "false");
@@ -192,7 +218,11 @@
 
       // Delegated — covers items rendered/added after init too.
       panel.addEventListener("click", function (e) {
-        if (e.target.closest(".dropdown__item")) close();
+        var picked = e.target.closest(".dropdown__item");
+        if (picked) {
+          selectItem(picked);
+          close();
+        }
       });
 
       document.addEventListener("click", function (e) {
@@ -207,6 +237,8 @@
       });
 
       matchWidth();
+      refreshItems();
+      selectCurrent();
 
       var instance = { isOpen: isOpen, close: close };
       instances.push(instance);
