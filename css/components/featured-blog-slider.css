@@ -1,0 +1,125 @@
+/*!
+ * featured-blog-slider.css v1.0.0
+ * Centered-card carousel for featured blog posts. Owns structure/behaviour
+ * only — colours, radii, card internals → design in Webflow Designer / RC
+ * Structure. Card width via --fbslider-card-w (responsive, clamp()-based).
+ *
+ * Drives: js/components/featured-blog-slider.js
+ * https://github.com/roicool/sestek
+ */
+
+[data-fbslider] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing--6, 1.5rem);
+  --fbslider-card-w: clamp(18rem, 60vw, 34rem);
+  --fbslider-gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  --fbslider-inactive-opacity: 0.35;
+}
+
+/* ── Viewport / track ─────────────────────────────────────────────── */
+[data-fbslider-viewport] {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Full-bleed: break out of a max-width container so cards can peek past
+   both edges. Add data-fbslider-bleed to the root; optional
+   --fbslider-edge inset matches your page gutter (default 0). */
+[data-fbslider][data-fbslider-bleed] [data-fbslider-viewport] {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+[data-fbslider][data-fbslider-bleed] [data-fbslider-track] {
+  padding-left: var(--fbslider-edge, 0px);
+  padding-right: var(--fbslider-edge, 0px);
+}
+
+[data-fbslider-track] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: var(--fbslider-gap);
+  will-change: transform;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-fbslider].is-dragging [data-fbslider-track] { cursor: grabbing; }
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+[data-fbslider-card] {
+  flex: 0 0 var(--fbslider-card-w);
+  width: var(--fbslider-card-w);
+  opacity: var(--fbslider-inactive-opacity);
+  transition: opacity 0.4s ease;
+  -webkit-user-drag: none;
+}
+
+[data-fbslider-card].is-active {
+  opacity: 1;
+}
+
+[data-fbslider-card] img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* ── Progress bars (Stories-style auto-fill, JS-populated) ──────────── */
+[data-fbslider-bars] {
+  display: flex;
+  gap: var(--spacing--2, 0.5rem);
+}
+
+.fbslider-bar {
+  flex: 1 1 0;
+  height: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius--full, 9999px);
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+.fbslider-bar__fill {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: inherit;
+  background: var(--color-text--accent, #EC008C);
+}
+
+/* Inactive bars sit dim/empty; only the active one fills + reads full. */
+.fbslider-bar:not(.is-active) .fbslider-bar__fill {
+  width: 0% !important;
+}
+.fbslider-bar.is-active {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+/* ── Optional prev/next controls (author-supplied) ───────────────── */
+[data-fbslider-prev],
+[data-fbslider-next] {
+  cursor: pointer;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-fbslider-track] { will-change: auto; }
+  [data-fbslider-card] { transition: none; }
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  [data-fbslider] {
+    --fbslider-card-w: 82vw;
+    --fbslider-gap: 0.75rem;
+  }
+}
