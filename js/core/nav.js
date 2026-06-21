@@ -1,11 +1,15 @@
 /*!
- * nav.js v2.7.1
+ * nav.js v2.7.2
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.2 — mobile menu also gets `inert` while closed, not just aria-hidden:
+ *           aria-hidden alone doesn't remove descendants from the tab order,
+ *           so its links/buttons stayed keyboard-focusable while hidden
+ *           (axe: "ARIA hidden element must not be focusable").
  * v2.7.1 — closing the mobile menu now moves focus back to the hamburger before
  *           the menu becomes aria-hidden, fixing the "Blocked aria-hidden on an
  *           element because its descendant retained focus" console warning.
@@ -524,6 +528,7 @@
         global.Sestek.stopScroll();
       }
       mobileMenu.removeAttribute("aria-hidden");
+      mobileMenu.inert = false;
       if (hamburger) hamburger.setAttribute("data-state", "open");
 
       gsap.fromTo(mobileMenu,
@@ -562,6 +567,7 @@
         ease      : "power2.in",
         onComplete: function () {
           mobileMenu.setAttribute("aria-hidden", "true");
+          mobileMenu.inert = true;
         },
       });
     }
@@ -651,6 +657,7 @@
 
     if (mobileMenu) {
       mobileMenu.setAttribute("aria-hidden", "true");
+      mobileMenu.inert = true; // belt-and-suspenders: aria-hidden alone doesn't block Tab focus
       gsap.set(mobileMenu, { opacity: 0, y: 12 });
     }
 
