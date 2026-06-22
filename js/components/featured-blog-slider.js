@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.js v2.0.0
+ * featured-blog-slider.js v2.0.1
  * Centered-card carousel for a Webflow CMS Collection List of featured blog
  * posts, built on Swiper (slidesPerView:"auto") — the reliable engine — with
  * a Sestek-flavoured layer on top:
@@ -97,6 +97,35 @@
       return null;
     }
     var barsEl = root.querySelector("[data-fbslider-bars]");
+
+    // ── Structure validation ──────────────────────────────────────────
+    // Swiper REQUIRES .swiper-wrapper to be a direct child of .swiper, and
+    // every .swiper-slide to be a direct child of .swiper-wrapper. In Webflow
+    // terms: [data-fbslider-viewport] = Collection List Wrapper, [data-fbslider-
+    // -track] = Collection List, [data-fbslider-card] = Collection Item — three
+    // DISTINCT elements (check the Navigator: "List Wrapper" > "List" > "Item").
+    // Get this wrong (e.g. viewport/track on the same element, or -card stamped
+    // on something nested inside the Item rather than the Item itself) and
+    // Swiper silently fails to lay anything out — the page falls back to
+    // whatever raw Designer layout (often a grid) the Collection List had.
+    if (viewport === track) {
+      warn(
+        "[data-fbslider-viewport] and [data-fbslider-track] are the SAME element. " +
+        "They must be two different ancestors — viewport = Collection List Wrapper, " +
+        "track = Collection List (its child). Slider not initialized.", root
+      );
+      return null;
+    }
+    var notDirectChildren = cards.filter(function (c) { return c.parentElement !== track; });
+    if (notDirectChildren.length) {
+      warn(
+        notDirectChildren.length + "/" + cards.length + " [data-fbslider-card] element(s) " +
+        "are NOT a direct child of [data-fbslider-track] — move the attribute onto the " +
+        "Collection Item itself (the element that repeats once per CMS item), not a div " +
+        "nested inside it. Slider not initialized.", root
+      );
+      return null;
+    }
 
     // Tag our clean data-API elements with the classes Swiper requires.
     viewport.classList.add("swiper");
