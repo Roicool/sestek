@@ -1,12 +1,9 @@
 /*!
- * featured-blog-slider.css v4.0.0
- * Featured-blog carousel layered on Swiper, with a GSAP-driven depth-focus
- * motion layer. GSAP owns each card's transform + opacity and the image
- * parallax (set inline, live, from Swiper progress) — so this file does NOT
- * transition those; it owns the things GSAP doesn't touch: blur/desaturation,
- * the active shadow, radius, clipping, and the controls strip.
- *
- * Swiper's own CSS (swiper-bundle.min.css) handles track layout and
+ * featured-blog-slider.css v3.4.0
+ * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
+ * next one in from the edge, dimmed-inactive / active-opacity, and a controls
+ * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
+ * only — Swiper's own CSS (swiper-bundle.min.css) handles track layout and
  * slidesPerView:"auto" sizing, so load it BEFORE this file.
  *
  * Colours, radii, card internals → design in Webflow Designer / RC Structure.
@@ -50,38 +47,52 @@
   margin-right: calc(50% - 50vw);
 }
 
+/* Swiper sets the transition DURATION inline (from `speed`) but leaves the
+   timing function to CSS — give the track an expo-out curve so each advance
+   glides out fast and eases long into the snap (the "snappy yet soft" feel). */
+[data-fbslider] .swiper-wrapper {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* ── Cards (depth focus) ──────────────────────────────────────────── */
 /* slidesPerView:"auto" reads each slide's width, so set it explicitly.
-   GSAP sets transform (scale) + opacity inline, live from Swiper progress —
-   so they're intentionally NOT transitioned here (a CSS transition would fight
-   GSAP's per-frame writes). This file transitions only blur/desaturation and
-   the shadow, which GSAP leaves alone — giving the "layered timing" feel as
-   the crisp/colour resolve trails the scale. */
+   Inactive cards recede — scaled down, dimmed, softly blurred + desaturated —
+   so the active card reads as the in-focus subject. Transform/filter are GPU
+   composited, so only the 2–3 on-screen neighbours pay any cost. */
 [data-fbslider] [data-fbslider-card] {
   width: var(--fbslider-card-w);
   height: auto;
+  opacity: var(--fbslider-inactive-opacity);
+  transform: scale(var(--fbslider-inactive-scale));
   filter: blur(var(--fbslider-inactive-blur)) saturate(var(--fbslider-inactive-saturate, 1));
   transform-origin: center center;
-  transition: filter 0.5s ease, box-shadow 0.7s ease 0.05s;
+  /* Layered timing: opacity/colour resolve first, the soft shadow trails a
+     beat behind (delay) so the active card "develops" rather than snaps. */
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease,
+    box-shadow 0.7s ease 0.05s;
   border-radius: var(--fbslider-radius, 1rem);
-  overflow: hidden;            /* clip the image's parallax drift */
-  will-change: transform;
   -webkit-user-drag: none;
 }
 
 [data-fbslider] [data-fbslider-card].swiper-slide-active {
+  opacity: 1;
   filter: none;
   box-shadow: var(--fbslider-active-shadow);
+  /* Settle: scale in with a hair of overshoot, like an image easing into
+     place. Plays each time a card becomes active — transform is driven by the
+     animation here; opacity/filter/shadow by the transition above. */
+  animation: fbslider-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Fallback when GSAP isn't present (or reduced motion): no live scaling, so
-   give a static depth via opacity alone so neighbours still read as behind. */
-[data-fbslider].fbslider--no-gsap [data-fbslider-card] {
-  opacity: var(--fbslider-inactive-opacity);
-  transition: filter 0.5s ease, box-shadow 0.7s ease 0.05s, opacity 0.45s ease;
-}
-[data-fbslider].fbslider--no-gsap [data-fbslider-card].swiper-slide-active {
-  opacity: 1;
+/* Keyframe starts at the default inactive scale (0.9) for a seamless handoff
+   from the resting state, overshoots a touch, then settles to 1. */
+@keyframes fbslider-settle {
+  0%   { transform: scale(0.9); }
+  58%  { transform: scale(1.015); }
+  100% { transform: scale(1); }
 }
 
 [data-fbslider-card] img {
@@ -89,11 +100,17 @@
 }
 
 /* ── Parallax image ───────────────────────────────────────────────── */
-/* GSAP drifts the image (xPercent) as the slide moves. Oversize it (≈40%
-   wider, centered) and clip at the card so the drift never reveals an edge. */
-.fbslider-pimg {
-  width: 140% !important;
-  max-width: none !important;
+/* Swiper's Parallax module drifts the tagged image as the slide moves. Clip
+   it at the card and oversize it (≈40% wider, centered) so the drift — up to
+   ±data-fbslider-parallax% of card width, default 15% — never reveals an edge. */
+[data-fbslider] [data-fbslider-card] {
+  overflow: hidden;
+}
+
+[data-fbslider-card] [data-swiper-parallax],
+[data-fbslider-card] [data-fbslider-img] {
+  width: 140%;
+  max-width: none;
   height: 100%;
   object-fit: cover;
   position: relative;
@@ -214,15 +231,12 @@
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
-/* JS already skips the GSAP engine here (animate = false), so cards keep their
-   natural size; just neutralise CSS motion + give a static opacity depth. */
 @media (prefers-reduced-motion: reduce) {
-  [data-fbslider] [data-fbslider-card] {
-    transition: none;
-    opacity: var(--fbslider-inactive-opacity);
+  [data-fbslider] [data-fbslider-card] { transition: none; }
+  [data-fbslider] [data-fbslider-card].swiper-slide-active {
+    animation: none;
+    transform: scale(1);
   }
-  [data-fbslider] [data-fbslider-card].swiper-slide-active { opacity: 1; }
-  .fbslider-pimg { left: -20%; }
   .fbslider-dot.is-active::after { animation: none; transform: scaleX(1); }
 }
 
