@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.css v3.0.0
+ * featured-blog-slider.css v3.2.0
  * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
  * next one in from the edge, dimmed-inactive / active-opacity, and a controls
  * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
@@ -17,8 +17,14 @@
   flex-direction: column;
   gap: var(--spacing--6, 1.5rem);
   --fbslider-card-w: 100%;
-  --fbslider-inactive-opacity: 0.5;
-  --fbslider-accent: var(--color-text--accent, #15adaa);
+  /* Brand fill — RC Structure token, falls back to the brand pink. */
+  --fbslider-accent: var(--brand-primary--500, #EC008C);
+  --fbslider-track-bg: var(--brand-primary--100, rgba(0, 0, 0, 0.08));
+  /* Depth-focus tuning — active card pops, neighbours recede. */
+  --fbslider-inactive-opacity: 0.45;
+  --fbslider-inactive-scale: 0.9;
+  --fbslider-inactive-blur: 3px;
+  --fbslider-active-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Viewport / track ─────────────────────────────────────────────── */
@@ -36,18 +42,29 @@
   margin-right: calc(50% - 50vw);
 }
 
-/* ── Cards ────────────────────────────────────────────────────────── */
-/* slidesPerView:"auto" reads each slide's width, so set it explicitly. */
+/* ── Cards (depth focus) ──────────────────────────────────────────── */
+/* slidesPerView:"auto" reads each slide's width, so set it explicitly.
+   Inactive cards recede — scaled down, dimmed, softly blurred — so the
+   active card reads as the in-focus subject. Transform/filter are GPU
+   composited, so only the 2–3 on-screen neighbours pay any cost. */
 [data-fbslider] [data-fbslider-card] {
   width: var(--fbslider-card-w);
   height: auto;
   opacity: var(--fbslider-inactive-opacity);
-  transition: opacity 0.5s ease;
+  transform: scale(var(--fbslider-inactive-scale));
+  filter: blur(var(--fbslider-inactive-blur));
+  transform-origin: center center;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.55s ease, box-shadow 0.55s ease;
+  border-radius: var(--fbslider-radius, 1rem);
   -webkit-user-drag: none;
 }
 
 [data-fbslider] [data-fbslider-card].swiper-slide-active {
   opacity: 1;
+  transform: scale(1);
+  filter: none;
+  box-shadow: var(--fbslider-active-shadow);
 }
 
 [data-fbslider-card] img {
@@ -74,7 +91,7 @@
   padding: 0;
   border: 0;
   border-radius: var(--radius--full, 9999px);
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--fbslider-track-bg);
   overflow: hidden;
   cursor: pointer;
   position: relative;
@@ -94,6 +111,12 @@
 
 .fbslider-dot.is-active::after {
   animation: fbslider-fill var(--fbslider-autoplay, 5000ms) linear forwards;
+}
+
+/* Already-passed slides stay fully filled (no animation). */
+.fbslider-dot.is-filled::after {
+  animation: none;
+  transform: scaleX(1);
 }
 
 @keyframes fbslider-fill {
@@ -120,23 +143,34 @@
   flex-shrink: 0;
 }
 
+/* Ghost arrows — no border/fill at rest; a soft tint blooms on hover and the
+   icon nudges in its travel direction. Modern, weightless. */
 .fbslider-arrow {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--radius--full, 9999px);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: var(--surface--base, #fff);
+  border: 0;
+  background: transparent;
   color: var(--color-text--base, #0a0a0a);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.fbslider-arrow svg {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fbslider-arrow:hover {
-  background: var(--surface--muted, #f5f5f5);
-  border-color: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.06);
+}
+.fbslider-arrow--prev:hover svg { transform: translateX(-2px); }
+.fbslider-arrow--next:hover svg { transform: translateX(2px); }
+
+.fbslider-arrow:active {
+  transform: scale(0.92);
 }
 
 .fbslider-arrow:focus-visible {
@@ -145,7 +179,7 @@
 }
 
 .fbslider-arrow:disabled {
-  opacity: 0.3;
+  opacity: 0.2;
   cursor: default;
   pointer-events: none;
 }

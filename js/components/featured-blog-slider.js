@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.js v3.0.0
+ * featured-blog-slider.js v3.1.0
  * Featured-blog carousel for a Webflow CMS Collection List, built on Swiper
  * (slidesPerView:"auto"). Full-width cards that bleed the next one in from the
  * edge (overflow:visible), with a controls strip below: thin "Stories" segment
@@ -214,6 +214,8 @@
             void d.offsetWidth;
           }
           d.classList.toggle("is-active", on);
+          // Slides already passed read as fully filled; upcoming ones empty.
+          d.classList.toggle("is-filled", n < s.activeIndex);
         });
         if (prevBtn) prevBtn.disabled = s.isBeginning;
         if (nextBtn) nextBtn.disabled = s.isEnd;
