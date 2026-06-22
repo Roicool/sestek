@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.js v3.1.0
+ * featured-blog-slider.js v3.2.0
  * Featured-blog carousel for a Webflow CMS Collection List, built on Swiper
  * (slidesPerView:"auto"). Full-width cards that bleed the next one in from the
  * edge (overflow:visible), with a controls strip below: thin "Stories" segment
@@ -29,10 +29,15 @@
  *
  * Root attributes:
  *   data-fbslider-interval  ms each bar fills / autoplay tick   (default 5000)
- *   data-fbslider-speed     ms per slide transition             (default 700)
+ *   data-fbslider-speed     ms per slide transition             (default 900)
  *   data-fbslider-gap       px space between cards              (default 24)
  *   data-fbslider-autoplay  "false" to disable auto-advance     (default true)
  *   data-fbslider-centered  "true" → center the active card     (default false)
+ *   data-fbslider-parallax  image drift % on slide (0 = off)    (default 15)
+ *
+ * Parallax: each card's image (tag it [data-fbslider-img], else the first
+ * <img> is used) drifts as the slide moves, via Swiper's Parallax module. The
+ * CSS oversizes + clips the image so the drift never reveals an edge.
  *
  * https://github.com/roicool/sestek
  */
@@ -139,17 +144,32 @@
       return null;
     }
 
+    var parallaxAmt = attrNum(root, "data-fbslider-parallax", 15);
+
     // Tag our clean data-API elements with the classes Swiper requires.
     root.classList.add("fbslider");
     viewport.classList.add("swiper");
     track.classList.add("swiper-wrapper");
-    cards.forEach(function (c) { c.classList.add("swiper-slide"); });
+    cards.forEach(function (c) {
+      c.classList.add("swiper-slide");
+      // Wire each card's image for Swiper's parallax module: it drifts as the
+      // slide transitions. Prefer an explicitly tagged [data-fbslider-img];
+      // otherwise fall back to the card's first <img> (blog cards = one hero).
+      // 0 disables it. The CSS oversizes + clips the image so the drift never
+      // reveals an edge.
+      if (parallaxAmt) {
+        var img = c.querySelector("[data-fbslider-img]") || c.querySelector("img");
+        if (img && !img.hasAttribute("data-swiper-parallax")) {
+          img.setAttribute("data-swiper-parallax", "-" + parallaxAmt + "%");
+        }
+      }
+    });
 
     var reduce = global.matchMedia &&
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     var interval = attrNum(root, "data-fbslider-interval", 5000);
-    var speed    = attrNum(root, "data-fbslider-speed", 700);
+    var speed    = attrNum(root, "data-fbslider-speed", 900);
     var gap      = attrNum(root, "data-fbslider-gap", 24);
     var autoplay = root.getAttribute("data-fbslider-autoplay") !== "false" && !reduce;
     var centered = root.getAttribute("data-fbslider-centered") === "true";
@@ -231,6 +251,7 @@
         speed: speed,
         loop: false,
         grabCursor: true,
+        parallax: true,
         watchSlidesProgress: true,
         keyboard: { enabled: true, onlyInViewport: true },
         autoplay: autoplay
