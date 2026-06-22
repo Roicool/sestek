@@ -1,10 +1,15 @@
 /*!
- * featured-blog-slider.js v3.2.0
+ * featured-blog-slider.js v3.3.0
  * Featured-blog carousel for a Webflow CMS Collection List, built on Swiper
  * (slidesPerView:"auto"). Full-width cards that bleed the next one in from the
  * edge (overflow:visible), with a controls strip below: thin "Stories" segment
  * bars that fill over the autoplay delay — driven by a pure CSS keyframe, so
  * they're cheap and frame-perfect — plus round prev/next arrows.
+ *
+ * Card depth-focus (scale / opacity / settle) is pure CSS. The IMAGE parallax
+ * is driven by GSAP off Swiper's progress — NOT Swiper's own parallax module,
+ * which also transforms the slides and was fighting the layout. GSAP optional:
+ * without it the images simply don't drift (everything else works).
  *
  *   • Active card full opacity (.swiper-slide-active); the rest dimmed via CSS.
  *   • One bar per slide; the active bar fills over the autoplay interval and
@@ -15,9 +20,11 @@
  *   • prefers-reduced-motion: no autoplay; bars are plain clickable dots, the
  *     active one shown filled.
  *
- * Requires : Swiper 11 (global `Swiper`) + its CSS. Load BEFORE this script:
+ * Requires : Swiper 11 (global `Swiper`) + its CSS, and GSAP (global `gsap`,
+ *            optional — only the image parallax needs it). Load BEFORE this:
  *   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
  *   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+ *   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
  * CSS      : css/components/featured-blog-slider.css
  *
  * DOM (Webflow CMS — three DISTINCT elements; check the Navigator):
@@ -36,8 +43,8 @@
  *   data-fbslider-parallax  image drift % on slide (0 = off)    (default 15)
  *
  * Parallax: each card's image (tag it [data-fbslider-img], else the first
- * <img> is used) drifts as the slide moves, via Swiper's Parallax module. The
- * CSS oversizes + clips the image so the drift never reveals an edge.
+ * <img> is used) drifts as the slide moves, driven by GSAP. The CSS oversizes
+ * + clips the image so the drift never reveals an edge.
  *
  * https://github.com/roicool/sestek
  */
@@ -145,22 +152,24 @@
     }
 
     var parallaxAmt = attrNum(root, "data-fbslider-parallax", 15);
+    var gsap = global.gsap;
+    var hasGsap = typeof gsap !== "undefined";
 
-    // Tag our clean data-API elements with the classes Swiper requires.
+    // Tag our clean data-API elements with the classes Swiper requires, and
+    // pick each card's parallax image. The image drift is driven by GSAP off
+    // Swiper progress (NOT Swiper's own parallax module, which also transforms
+    // the slides and was fighting the CSS depth layout). Only oversize/clip
+    // the image when GSAP is actually present to move it.
     root.classList.add("fbslider");
     viewport.classList.add("swiper");
     track.classList.add("swiper-wrapper");
     cards.forEach(function (c) {
       c.classList.add("swiper-slide");
-      // Wire each card's image for Swiper's parallax module: it drifts as the
-      // slide transitions. Prefer an explicitly tagged [data-fbslider-img];
-      // otherwise fall back to the card's first <img> (blog cards = one hero).
-      // 0 disables it. The CSS oversizes + clips the image so the drift never
-      // reveals an edge.
-      if (parallaxAmt) {
+      if (parallaxAmt && hasGsap) {
         var img = c.querySelector("[data-fbslider-img]") || c.querySelector("img");
-        if (img && !img.hasAttribute("data-swiper-parallax")) {
-          img.setAttribute("data-swiper-parallax", "-" + parallaxAmt + "%");
+        if (img) {
+          img.classList.add("fbslider-pimg");
+          c._fbsImg = img;
         }
       }
     });
@@ -243,6 +252,28 @@
 
       buildControls();
 
+      // ── Image parallax (GSAP, off Swiper progress) ────────────────────
+      // Each card image drifts opposite the travel direction, mapped to the
+      // slide's progress (0 = centered, ±1 = neighbour). Live while dragging
+      // (setTranslate), eased over programmatic advances (setTransition). The
+      // lastDur guard stops setTranslate snapping to the end before the eased
+      // tween runs. Card scale/opacity/settle stay pure CSS — untouched.
+      var lastDur = 0;
+      function renderParallax(durationMs) {
+        if (!hasGsap || !parallaxAmt) return;
+        cards.forEach(function (slide) {
+          var img = slide._fbsImg;
+          if (!img) return;
+          var cp = Math.max(-1, Math.min(1, slide.progress || 0));
+          var ix = cp * parallaxAmt;   // % of image width
+          if (durationMs > 0) {
+            gsap.to(img, { xPercent: ix, duration: durationMs / 1000, ease: "power3.out", overwrite: "auto" });
+          } else {
+            gsap.set(img, { xPercent: ix });
+          }
+        });
+      }
+
       var sw = new global.Swiper(viewport, {
         slidesPerView: "auto",
         centeredSlides: centered,
@@ -251,14 +282,16 @@
         speed: speed,
         loop: false,
         grabCursor: true,
-        parallax: true,
         watchSlidesProgress: true,
         keyboard: { enabled: true, onlyInViewport: true },
         autoplay: autoplay
           ? { delay: interval, disableOnInteraction: false, pauseOnMouseEnter: true }
           : false,
         on: {
-          init: syncControls,
+          init: function (s) { syncControls(s); renderParallax(0); },
+          setTranslate: function () { if (lastDur <= 0) renderParallax(0); },
+          setTransition: function (s, dur) { lastDur = dur; renderParallax(dur); },
+          transitionEnd: function () { lastDur = 0; },
           // Update at transition START so the bar + dim react instantly.
           slideChangeTransitionStart: syncControls,
           autoplayPause: function () { root.classList.add("is-paused"); },

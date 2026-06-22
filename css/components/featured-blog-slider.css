@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.css v3.4.0
+ * featured-blog-slider.css v3.5.0
  * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
  * next one in from the edge, dimmed-inactive / active-opacity, and a controls
  * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
@@ -100,17 +100,16 @@
 }
 
 /* ── Parallax image ───────────────────────────────────────────────── */
-/* Swiper's Parallax module drifts the tagged image as the slide moves. Clip
-   it at the card and oversize it (≈40% wider, centered) so the drift — up to
-   ±data-fbslider-parallax% of card width, default 15% — never reveals an edge. */
+/* GSAP drifts the image (xPercent) as the slide moves — the .fbslider-pimg
+   class is added by JS only when GSAP is present. Clip it at the card and
+   oversize it (≈40% wider, centered) so the drift never reveals an edge. */
 [data-fbslider] [data-fbslider-card] {
   overflow: hidden;
 }
 
-[data-fbslider-card] [data-swiper-parallax],
-[data-fbslider-card] [data-fbslider-img] {
-  width: 140%;
-  max-width: none;
+.fbslider-pimg {
+  width: 140% !important;
+  max-width: none !important;
   height: 100%;
   object-fit: cover;
   position: relative;
