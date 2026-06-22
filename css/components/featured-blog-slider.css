@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.css v3.2.0
+ * featured-blog-slider.css v3.3.0
  * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
  * next one in from the edge, dimmed-inactive / active-opacity, and a controls
  * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
@@ -23,8 +23,13 @@
   /* Depth-focus tuning — active card pops, neighbours recede. */
   --fbslider-inactive-opacity: 0.45;
   --fbslider-inactive-scale: 0.9;
-  --fbslider-inactive-blur: 3px;
-  --fbslider-active-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.35);
+  --fbslider-inactive-blur: 2.5px;
+  --fbslider-inactive-saturate: 0.85;
+  /* Soft, two-layer shadow — a close contact shadow + a wide ambient one,
+     both low-opacity, so the active card lifts subtly instead of dramatically. */
+  --fbslider-active-shadow:
+    0 2px 8px -4px rgba(0, 0, 0, 0.08),
+    0 18px 40px -20px rgba(0, 0, 0, 0.18);
 }
 
 /* ── Viewport / track ─────────────────────────────────────────────── */
@@ -42,29 +47,52 @@
   margin-right: calc(50% - 50vw);
 }
 
+/* Swiper sets the transition DURATION inline (from `speed`) but leaves the
+   timing function to CSS — give the track an expo-out curve so each advance
+   glides out fast and eases long into the snap (the "snappy yet soft" feel). */
+[data-fbslider] .swiper-wrapper {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* ── Cards (depth focus) ──────────────────────────────────────────── */
 /* slidesPerView:"auto" reads each slide's width, so set it explicitly.
-   Inactive cards recede — scaled down, dimmed, softly blurred — so the
-   active card reads as the in-focus subject. Transform/filter are GPU
+   Inactive cards recede — scaled down, dimmed, softly blurred + desaturated —
+   so the active card reads as the in-focus subject. Transform/filter are GPU
    composited, so only the 2–3 on-screen neighbours pay any cost. */
 [data-fbslider] [data-fbslider-card] {
   width: var(--fbslider-card-w);
   height: auto;
   opacity: var(--fbslider-inactive-opacity);
   transform: scale(var(--fbslider-inactive-scale));
-  filter: blur(var(--fbslider-inactive-blur));
+  filter: blur(var(--fbslider-inactive-blur)) saturate(var(--fbslider-inactive-saturate, 1));
   transform-origin: center center;
-  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-              filter 0.55s ease, box-shadow 0.55s ease;
+  /* Layered timing: opacity/colour resolve first, the soft shadow trails a
+     beat behind (delay) so the active card "develops" rather than snaps. */
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease,
+    box-shadow 0.7s ease 0.05s;
   border-radius: var(--fbslider-radius, 1rem);
   -webkit-user-drag: none;
 }
 
 [data-fbslider] [data-fbslider-card].swiper-slide-active {
   opacity: 1;
-  transform: scale(1);
   filter: none;
   box-shadow: var(--fbslider-active-shadow);
+  /* Settle: scale in with a hair of overshoot, like an image easing into
+     place. Plays each time a card becomes active — transform is driven by the
+     animation here; opacity/filter/shadow by the transition above. */
+  animation: fbslider-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Keyframe starts at the default inactive scale (0.9) for a seamless handoff
+   from the resting state, overshoots a touch, then settles to 1. */
+@keyframes fbslider-settle {
+  0%   { transform: scale(0.9); }
+  58%  { transform: scale(1.015); }
+  100% { transform: scale(1); }
 }
 
 [data-fbslider-card] img {
@@ -187,6 +215,10 @@
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   [data-fbslider] [data-fbslider-card] { transition: none; }
+  [data-fbslider] [data-fbslider-card].swiper-slide-active {
+    animation: none;
+    transform: scale(1);
+  }
   .fbslider-dot.is-active::after { animation: none; transform: scaleX(1); }
 }
 
