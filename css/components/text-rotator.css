@@ -1,9 +1,10 @@
 /*!
- * text-rotator.css v1.0.0
+ * text-rotator.css v1.1.0
  * Auto-rotating line (the "Dribbble ships landing pages 10x faster" strip),
  * built from plain hand-authored divs (no CMS). Items are stacked in one spot
- * and crossfaded by text-rotator.js; this file only owns the stacking context
- * + a no-JS fallback. Type, colour, spacing, logo sizing → Webflow Designer.
+ * and rotated by text-rotator.js — a 3D vertical "cube" roll by default, or a
+ * plain crossfade. This file only owns the stacking context + a no-JS fallback.
+ * Type, colour, spacing, logo sizing → Webflow Designer.
  *
  * Drives: js/components/text-rotator.js
  *
@@ -15,10 +16,15 @@
   display: block;
 }
 
-/* Items get absolutely stacked + faded by JS. The base rule here keeps the
-   layout sane if the script hasn't run yet (all items flow, first visible). */
+/* Items get absolutely stacked + rotated/faded by JS. The base rule here keeps
+   the layout sane if the script hasn't run yet (all items flow, first visible).
+   transform-origin + backface-visibility make the 3D cube roll read cleanly;
+   the perspective itself is set on the wrapper by JS (data-rotator-perspective). */
 [data-rotator-item] {
   will-change: opacity, transform;
+  transform-origin: center center;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* No-JS / pre-init fallback: before JS positions the items, show only the

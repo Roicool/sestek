@@ -1,5 +1,5 @@
 /*!
- * text-rotator.js v1.0.1
+ * text-rotator.js v1.1.0
  * Auto-rotating line of hand-authored items — the "Dribbble ships landing pages
  * 10x faster" strip that cycles through phrases/brands on its own. Each item
  * fades (and lifts) out while the next fades in, on a timer. Independent of
@@ -22,7 +22,11 @@
  *   data-rotator-interval  ms each item is shown        (default 2800)
  *   data-rotator-duration  crossfade seconds            (default 0.5)
  *   data-rotator-ease      GSAP ease (if gsap present)  (default "power2.out")
- *   data-rotator-shift     px the outgoing item lifts   (default 14)
+ *   data-rotator-effect    "cube" 3D vertical roll | "fade" crossfade
+ *                          (default "cube")
+ *   data-rotator-perspective  px depth for the cube     (default 800)
+ *   data-rotator-shift     px the outgoing item lifts (fade effect only)
+ *                          (default 14)
  *   data-rotator-autosize  "false" to NOT lock height to the tallest item
  *                          (default true — prevents layout jump between items)
  *
@@ -72,11 +76,16 @@
     var ease     = root.getAttribute("data-rotator-ease") || "power2.out";
     var shift    = attrNum(root, "data-rotator-shift", 14);
     var autosize = root.getAttribute("data-rotator-autosize") !== "false";
+    var effect   = (root.getAttribute("data-rotator-effect") || "cube").toLowerCase();
+    var perspect = attrNum(root, "data-rotator-perspective", 800);
 
     // Stack all items in the same spot; lock the root's height to the tallest so
     // the line never jumps between a short and a long phrase.
     root.classList.add("is-ready");   // CSS hands stacking control over to JS
     root.style.position = root.style.position || "relative";
+    // The cube effect rotates each item in 3D — give the wrapper a perspective so
+    // the roll has real depth (a face tipping back over the top, not a flat skew).
+    if (effect === "cube") root.style.perspective = perspect + "px";
     var active = 0;
     items.forEach(function (el, i) { if (el.classList.contains("is-active")) active = i; });
 
@@ -101,6 +110,7 @@
       el.style.left = "0";
       el.style.right = "0";
       el.style.top = "0";
+      el.style.transformOrigin = "center center";
       el.style.opacity = i === active ? "1" : "0";
       el.style.transform = "translateY(0)";
       el.classList.toggle("is-active", i === active);
@@ -113,6 +123,8 @@
       return { root: root, next: function () {}, play: function () {}, pause: function () {}, destroy: function () {} };
     }
 
+    var cube = effect === "cube";
+
     function show(idx) {
       if (idx === active) return;
       var out = items[active], inn = items[idx];
@@ -121,10 +133,33 @@
       out.setAttribute("aria-hidden", "true");
 
       if (hasGsap) {
-        gsap.to(out, { opacity: 0, y: -shift, duration: duration, ease: ease,
-          onComplete: function () { out.classList.remove("is-active"); } });
-        gsap.fromTo(inn, { opacity: 0, y: shift },
-          { opacity: 1, y: 0, duration: duration, ease: ease });
+        if (cube) {
+          // Vertical roll: the old line tips back over the top (rotateX 0→90)
+          // while the new one rises edge-on from below (rotateX -90→0). At ±90°
+          // each face is edge-on (zero projected height) for a clean handoff.
+          gsap.to(out, { rotationX: 90, opacity: 0, duration: duration, ease: ease,
+            onComplete: function () { out.classList.remove("is-active"); } });
+          gsap.fromTo(inn, { rotationX: -90, opacity: 0 },
+            { rotationX: 0, opacity: 1, duration: duration, ease: ease });
+        } else {
+          gsap.to(out, { opacity: 0, y: -shift, duration: duration, ease: ease,
+            onComplete: function () { out.classList.remove("is-active"); } });
+          gsap.fromTo(inn, { opacity: 0, y: shift },
+            { opacity: 1, y: 0, duration: duration, ease: ease });
+        }
+      } else if (cube) {
+        // Same roll in pure CSS: snap the incoming face to its -90° start with no
+        // transition, force a reflow so the browser registers it, then transition
+        // both faces to their end state.
+        inn.style.transition = "none";
+        inn.style.opacity = "0";
+        inn.style.transform = "rotateX(-90deg)";
+        void inn.offsetWidth;   // reflow — otherwise the start value is coalesced away
+        inn.style.transition = "opacity " + duration + "s, transform " + duration + "s";
+        out.style.transition = "opacity " + duration + "s, transform " + duration + "s";
+        inn.style.opacity = "1"; inn.style.transform = "rotateX(0deg)";
+        out.style.opacity = "0"; out.style.transform = "rotateX(90deg)";
+        setTimeout(function () { out.classList.remove("is-active"); }, duration * 1000);
       } else {
         out.style.transition = "opacity " + duration + "s, transform " + duration + "s";
         inn.style.transition = "opacity " + duration + "s, transform " + duration + "s";
