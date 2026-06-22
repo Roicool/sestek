@@ -1,16 +1,18 @@
 /*!
- * featured-blog-slider.js v3.1.0
+ * featured-blog-slider.js v3.2.0
  * Featured-blog carousel for a Webflow CMS Collection List, built on Swiper
  * (slidesPerView:"auto"). Full-width cards that bleed the next one in from the
  * edge (overflow:visible), with a controls strip below: thin "Stories" segment
- * bars that fill over the autoplay delay — driven by a pure CSS keyframe, so
- * they're cheap and frame-perfect — plus round prev/next arrows.
+ * bars that fill over the autoplay delay — driven by Swiper's real autoplay
+ * clock (autoplayTimeLeft), so they animate correctly however the slide
+ * changed and on every device — plus round prev/next arrows.
  *
  *   • Active card full opacity (.swiper-slide-active); the rest dimmed via CSS.
- *   • One bar per slide; the active bar fills over the autoplay interval and
- *     clicking any bar jumps to that slide. Fill PAUSES (without resetting) when
- *     autoplay pauses on hover, then resumes — kept in sync via Swiper's
- *     autoplayPause / autoplayResume events toggling .is-paused on the root.
+ *   • One bar per slide; the active bar's fill is driven each frame from
+ *     Swiper's autoplayTimeLeft (1−progress), so it freezes without resetting
+ *     when autoplay pauses on hover/drag and resumes — and animates correctly
+ *     however the slide changed (click / arrow / keyboard / drag) on any device.
+ *     Clicking any bar jumps to that slide.
  *   • Arrows disable at the first / last slide. Keyboard + drag supported.
  *   • prefers-reduced-motion: no autoplay; bars are plain clickable dots, the
  *     active one shown filled.
@@ -29,7 +31,7 @@
  *
  * Root attributes:
  *   data-fbslider-interval  ms each bar fills / autoplay tick   (default 5000)
- *   data-fbslider-speed     ms per slide transition             (default 700)
+ *   data-fbslider-speed     ms per slide transition             (default 1000)
  *   data-fbslider-gap       px space between cards              (default 24)
  *   data-fbslider-autoplay  "false" to disable auto-advance     (default true)
  *   data-fbslider-centered  "true" → center the active card     (default false)
@@ -149,21 +151,22 @@
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     var interval = attrNum(root, "data-fbslider-interval", 5000);
-    var speed    = attrNum(root, "data-fbslider-speed", 700);
+    var speed    = attrNum(root, "data-fbslider-speed", 1000);
     var gap      = attrNum(root, "data-fbslider-gap", 24);
     var autoplay = root.getAttribute("data-fbslider-autoplay") !== "false" && !reduce;
     var centered = root.getAttribute("data-fbslider-centered") === "true";
-
-    // Drives the CSS keyframe fill duration (one bar fills per interval).
-    root.style.setProperty("--fbslider-autoplay", interval + "ms");
-    if (!autoplay) root.classList.add("is-static");
 
     var api = { root: root };
 
     whenSwiper(function () {
       // ── Controls strip: thin segment bars + round arrows ──────────────
       var dots = [];
+      var fills = [];   // inner fill spans, scaleX-driven
       var prevBtn = null, nextBtn = null;
+
+      function setFill(n, v) {
+        if (fills[n]) fills[n].style.transform = "scaleX(" + v + ")";
+      }
 
       function buildControls() {
         if (!barsEl) return;
@@ -177,9 +180,13 @@
           dot.type = "button";
           dot.className = "fbslider-dot";
           dot.setAttribute("aria-label", "Slide " + (n + 1));
+          var fill = document.createElement("span");
+          fill.className = "fbslider-dot__fill";
+          dot.appendChild(fill);
           dot.addEventListener("click", function () { if (sw) sw.slideTo(n); });
           dotsWrap.appendChild(dot);
           dots.push(dot);
+          fills.push(fill);
         });
 
         var arrowsWrap = document.createElement("div");
@@ -204,18 +211,17 @@
         nextBtn.addEventListener("click", function () { if (sw) sw.slideNext(); });
       }
 
+      // Reset the bar fills to match the current slide: passed = full, upcoming
+      // = empty, and the active one starts empty when autoplay will fill it
+      // live (or full when autoplay is off). Works the same however the slide
+      // changed — click, arrow, keyboard or drag — so a grabbed advance no
+      // longer snaps the bar to full instantly.
       function syncControls(s) {
         dots.forEach(function (d, n) {
-          var on = n === s.activeIndex;
-          if (on && d.classList.contains("is-active")) {
-            // Re-activating the same dot: force a reflow so the CSS fill
-            // animation restarts from 0 instead of staying full.
-            d.classList.remove("is-active");
-            void d.offsetWidth;
-          }
-          d.classList.toggle("is-active", on);
-          // Slides already passed read as fully filled; upcoming ones empty.
-          d.classList.toggle("is-filled", n < s.activeIndex);
+          d.classList.toggle("is-active", n === s.activeIndex);
+          if (n < s.activeIndex)       setFill(n, 1);
+          else if (n > s.activeIndex)  setFill(n, 0);
+          else                         setFill(n, autoplay ? 0 : 1);
         });
         if (prevBtn) prevBtn.disabled = s.isBeginning;
         if (nextBtn) nextBtn.disabled = s.isEnd;
@@ -240,8 +246,13 @@
           init: syncControls,
           // Update at transition START so the bar + dim react instantly.
           slideChangeTransitionStart: syncControls,
-          autoplayPause: function () { root.classList.add("is-paused"); },
-          autoplayResume: function () { root.classList.remove("is-paused"); },
+          // Drive the active bar's fill from Swiper's real autoplay clock:
+          // progress runs 1 → 0 over the delay, freezes when autoplay pauses
+          // (hover/drag) and resumes — frame-perfect and device-independent,
+          // so it animates correctly on tablet/mobile too.
+          autoplayTimeLeft: function (s, time, progress) {
+            setFill(s.activeIndex, 1 - progress);
+          },
         },
       });
 

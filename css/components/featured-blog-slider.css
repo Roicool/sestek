@@ -1,5 +1,5 @@
 /*!
- * featured-blog-slider.css v3.3.0
+ * featured-blog-slider.css v3.6.0
  * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
  * next one in from the edge, dimmed-inactive / active-opacity, and a controls
  * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
@@ -66,13 +66,15 @@
   transform: scale(var(--fbslider-inactive-scale));
   filter: blur(var(--fbslider-inactive-blur)) saturate(var(--fbslider-inactive-saturate, 1));
   transform-origin: center center;
-  /* Layered timing: opacity/colour resolve first, the soft shadow trails a
-     beat behind (delay) so the active card "develops" rather than snaps. */
+  /* Layered timing: opacity resolves first, colour/crispness next, and the
+     soft shadow trails well behind (delay) so the active card visibly
+     "develops" into focus rather than snapping. Tuned to span the ~1s slide
+     transition so the stagger is actually felt. */
   transition:
-    opacity 0.45s ease,
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.5s ease,
-    box-shadow 0.7s ease 0.05s;
+    opacity 0.55s ease,
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s ease 0.08s,
+    box-shadow 1s ease 0.15s;
   border-radius: var(--fbslider-radius, 1rem);
   -webkit-user-drag: none;
 }
@@ -84,7 +86,7 @@
   /* Settle: scale in with a hair of overshoot, like an image easing into
      place. Plays each time a card becomes active — transform is driven by the
      animation here; opacity/filter/shadow by the transition above. */
-  animation: fbslider-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fbslider-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Keyframe starts at the default inactive scale (0.9) for a seamless handoff
@@ -125,42 +127,18 @@
   position: relative;
 }
 
-/* The fill — a pure CSS keyframe driven by --fbslider-autoplay (set by JS to
-   the autoplay interval). Restart is forced via a JS reflow on slide change. */
-.fbslider-dot::after {
-  content: "";
+/* The fill — its scaleX is set by JS each frame from Swiper's autoplay clock
+   (1−progress) and reset on slide change. A short transition smooths the
+   per-frame steps and the reset, so it reads as a clean sweep on every device
+   regardless of how the slide changed (click / arrow / drag / auto). */
+.fbslider-dot__fill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: var(--fbslider-accent);
   transform: scaleX(0);
   transform-origin: left center;
-}
-
-.fbslider-dot.is-active::after {
-  animation: fbslider-fill var(--fbslider-autoplay, 5000ms) linear forwards;
-}
-
-/* Already-passed slides stay fully filled (no animation). */
-.fbslider-dot.is-filled::after {
-  animation: none;
-  transform: scaleX(1);
-}
-
-@keyframes fbslider-fill {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-/* Hover pauses autoplay (Swiper) → keep the fill frozen, not reset. */
-[data-fbslider].is-paused .fbslider-dot.is-active::after {
-  animation-play-state: paused;
-}
-
-/* Autoplay off (data attr / reduced motion): no fill animation, active shown full. */
-[data-fbslider].is-static .fbslider-dot.is-active::after {
-  animation: none;
-  transform: scaleX(1);
+  transition: transform 0.12s linear;
 }
 
 /* ── Arrows ───────────────────────────────────────────────────────── */
@@ -219,7 +197,7 @@
     animation: none;
     transform: scale(1);
   }
-  .fbslider-dot.is-active::after { animation: none; transform: scaleX(1); }
+  .fbslider-dot__fill { transition: none; }
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────── */
