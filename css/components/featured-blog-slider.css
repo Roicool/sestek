@@ -1,9 +1,10 @@
 /*!
- * featured-blog-slider.css v2.0.1
- * Centered-card carousel for featured blog posts, layered on Swiper. Owns the
- * Sestek look only (card width, dimmed-inactive / active opacity, progress
- * bars) — Swiper's own CSS (swiper-bundle.min.css) handles the track layout,
- * slidesPerView:"auto" sizing and transitions, so load it BEFORE this file.
+ * featured-blog-slider.css v3.0.0
+ * Featured-blog carousel layered on Swiper. Full-width cards that bleed the
+ * next one in from the edge, dimmed-inactive / active-opacity, and a controls
+ * strip of thin CSS-keyframe fill bars + round arrows. Owns the Sestek look
+ * only — Swiper's own CSS (swiper-bundle.min.css) handles track layout and
+ * slidesPerView:"auto" sizing, so load it BEFORE this file.
  *
  * Colours, radii, card internals → design in Webflow Designer / RC Structure.
  *
@@ -15,13 +16,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing--6, 1.5rem);
-  --fbslider-card-w: clamp(18rem, 60vw, 34rem);
+  --fbslider-card-w: 100%;
   --fbslider-inactive-opacity: 0.5;
+  --fbslider-accent: var(--color-text--accent, #15adaa);
 }
 
 /* ── Viewport / track ─────────────────────────────────────────────── */
-/* [data-fbslider-viewport] also carries Swiper's .swiper class (added by JS);
-   Swiper handles overflow + flex track. We only need full-bleed escape here. */
+/* Override Swiper's overflow:hidden so the next card bleeds in from the edge.
+   Higher specificity than .swiper, so no !important needed. */
+[data-fbslider] [data-fbslider-viewport] {
+  overflow: visible;
+  width: 100%;
+}
+
+/* Full-bleed: break out of a max-width container so cards can peek past it. */
 [data-fbslider][data-fbslider-bleed] [data-fbslider-viewport] {
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -30,15 +38,15 @@
 
 /* ── Cards ────────────────────────────────────────────────────────── */
 /* slidesPerView:"auto" reads each slide's width, so set it explicitly. */
-[data-fbslider-card] {
+[data-fbslider] [data-fbslider-card] {
   width: var(--fbslider-card-w);
-  height: auto;            /* let card content (or aspect-ratio) drive height */
+  height: auto;
   opacity: var(--fbslider-inactive-opacity);
-  transition: opacity 0.45s ease;
+  transition: opacity 0.5s ease;
   -webkit-user-drag: none;
 }
 
-[data-fbslider-card].swiper-slide-active {
+[data-fbslider] [data-fbslider-card].swiper-slide-active {
   opacity: 1;
 }
 
@@ -46,54 +54,112 @@
   -webkit-user-drag: none;
 }
 
-/* ── Progress bars (Stories-style auto-fill, JS-populated) ──────────── */
-[data-fbslider-bars] {
+/* ── Controls strip (JS-populated: dots + arrows) ─────────────────── */
+.fbslider-controls {
   display: flex;
-  gap: var(--spacing--2, 0.5rem);
+  align-items: center;
+  gap: var(--spacing--4, 1rem);
 }
 
-.fbslider-bar {
+.fbslider-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--2, 0.5rem);
+  flex: 1;
+}
+
+.fbslider-dot {
   flex: 1 1 0;
-  height: 3px;
+  height: 2px;
   padding: 0;
   border: 0;
   border-radius: var(--radius--full, 9999px);
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   overflow: hidden;
   cursor: pointer;
   position: relative;
 }
 
-.fbslider-bar.is-active {
-  background: rgba(0, 0, 0, 0.16);
-}
-
-.fbslider-bar__fill {
-  display: block;
+/* The fill — a pure CSS keyframe driven by --fbslider-autoplay (set by JS to
+   the autoplay interval). Restart is forced via a JS reflow on slide change. */
+.fbslider-dot::after {
+  content: "";
   position: absolute;
   inset: 0;
-  width: 0%;
   border-radius: inherit;
-  background: var(--color-text--accent, #EC008C);
-  /* Smooth the per-frame width updates Swiper drives via autoplayTimeLeft. */
-  transition: width 0.12s linear;
+  background: var(--fbslider-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
 }
 
-/* ── Optional prev/next controls (author-supplied) ───────────────── */
-[data-fbslider-prev],
-[data-fbslider-next] {
+.fbslider-dot.is-active::after {
+  animation: fbslider-fill var(--fbslider-autoplay, 5000ms) linear forwards;
+}
+
+@keyframes fbslider-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Hover pauses autoplay (Swiper) → keep the fill frozen, not reset. */
+[data-fbslider].is-paused .fbslider-dot.is-active::after {
+  animation-play-state: paused;
+}
+
+/* Autoplay off (data attr / reduced motion): no fill animation, active shown full. */
+[data-fbslider].is-static .fbslider-dot.is-active::after {
+  animation: none;
+  transform: scaleX(1);
+}
+
+/* ── Arrows ───────────────────────────────────────────────────────── */
+.fbslider-arrows {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--2, 0.5rem);
+  flex-shrink: 0;
+}
+
+.fbslider-arrow {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius--full, 9999px);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: var(--surface--base, #fff);
+  color: var(--color-text--base, #0a0a0a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.fbslider-arrow:hover {
+  background: var(--surface--muted, #f5f5f5);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.fbslider-arrow:focus-visible {
+  outline: 2px solid var(--fbslider-accent);
+  outline-offset: 2px;
+}
+
+.fbslider-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  [data-fbslider-card] { transition: none; }
-  .fbslider-bar__fill { transition: none; }
+  [data-fbslider] [data-fbslider-card] { transition: none; }
+  .fbslider-dot.is-active::after { animation: none; transform: scaleX(1); }
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  [data-fbslider] {
-    --fbslider-card-w: 82vw;
+  .fbslider-arrow {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }

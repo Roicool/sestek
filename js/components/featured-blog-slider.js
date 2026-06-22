@@ -1,45 +1,46 @@
 /*!
- * featured-blog-slider.js v2.0.1
- * Centered-card carousel for a Webflow CMS Collection List of featured blog
- * posts, built on Swiper (slidesPerView:"auto") — the reliable engine — with
- * a Sestek-flavoured layer on top:
+ * featured-blog-slider.js v3.0.0
+ * Featured-blog carousel for a Webflow CMS Collection List, built on Swiper
+ * (slidesPerView:"auto"). Full-width cards that bleed the next one in from the
+ * edge (overflow:visible), with a controls strip below: thin "Stories" segment
+ * bars that fill over the autoplay delay — driven by a pure CSS keyframe, so
+ * they're cheap and frame-perfect — plus round prev/next arrows.
  *
- *   • Active card centered + full opacity (.swiper-slide-active); the rest are
- *     dimmed via CSS (--fbslider-inactive-opacity). No JS opacity tweening.
- *   • centeredSlidesBounds clamps the track at the ends, so there's no blank
- *     gutter before the first card or after the last — only cards ever peek.
- *   • Stories-style progress bars (one per slide): the active bar fills over
- *     the autoplay delay, driven by Swiper's own autoplayTimeLeft so it pauses
- *     (without resetting) exactly when autoplay pauses on hover. Clicking any
- *     bar jumps to that slide.
- *   • Autoplay pauses on hover (fine pointers) and during drag, resumes after.
- *   • prefers-reduced-motion: no autoplay; bars act as plain clickable dots.
+ *   • Active card full opacity (.swiper-slide-active); the rest dimmed via CSS.
+ *   • One bar per slide; the active bar fills over the autoplay interval and
+ *     clicking any bar jumps to that slide. Fill PAUSES (without resetting) when
+ *     autoplay pauses on hover, then resumes — kept in sync via Swiper's
+ *     autoplayPause / autoplayResume events toggling .is-paused on the root.
+ *   • Arrows disable at the first / last slide. Keyboard + drag supported.
+ *   • prefers-reduced-motion: no autoplay; bars are plain clickable dots, the
+ *     active one shown filled.
  *
  * Requires : Swiper 11 (global `Swiper`) + its CSS. Load BEFORE this script:
  *   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
  *   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
  * CSS      : css/components/featured-blog-slider.css
  *
- * DOM (Webflow CMS — Collection List Wrapper > Collection List > Item):
+ * DOM (Webflow CMS — three DISTINCT elements; check the Navigator):
  *   [data-fbslider]                      root (.fbslider)
  *     [data-fbslider-viewport]           Collection List Wrapper  → .swiper
  *       [data-fbslider-track]            Collection List          → .swiper-wrapper
  *         [data-fbslider-card]           Collection Item          → .swiper-slide
- *     [data-fbslider-bars]               JS-populated progress bar strip
- *   (the Swiper classes above are added by JS — keep your clean Webflow names)
+ *     [data-fbslider-bars]               controls strip (JS-populated: dots + arrows)
  *
  * Root attributes:
  *   data-fbslider-interval  ms each bar fills / autoplay tick   (default 5000)
  *   data-fbslider-speed     ms per slide transition             (default 700)
  *   data-fbslider-gap       px space between cards              (default 24)
  *   data-fbslider-autoplay  "false" to disable auto-advance     (default true)
- *   data-fbslider-centered  "false" → left-aligned (first flush left, no center) (default true)
+ *   data-fbslider-centered  "true" → center the active card     (default false)
  *
  * https://github.com/roicool/sestek
  */
 
 (function (global) {
   "use strict";
+
+  var NS = "http://www.w3.org/2000/svg";
 
   function attrNum(el, attr, fallback) {
     var raw = el.getAttribute(attr);
@@ -66,6 +67,22 @@
       }
       setTimeout(poll, 50);
     })();
+  }
+
+  function arrowSvg(dir) {
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("fill", "none");
+    var path = document.createElementNS(NS, "path");
+    path.setAttribute("d", dir === "prev" ? "M10 12L6 8L10 4" : "M6 4L10 8L6 12");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "1.5");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    return svg;
   }
 
   /** Initialise every [data-fbslider] on the page. */
@@ -99,35 +116,31 @@
     var barsEl = root.querySelector("[data-fbslider-bars]");
 
     // ── Structure validation ──────────────────────────────────────────
-    // Swiper REQUIRES .swiper-wrapper to be a direct child of .swiper, and
-    // every .swiper-slide to be a direct child of .swiper-wrapper. In Webflow
-    // terms: [data-fbslider-viewport] = Collection List Wrapper, [data-fbslider-
-    // -track] = Collection List, [data-fbslider-card] = Collection Item — three
-    // DISTINCT elements (check the Navigator: "List Wrapper" > "List" > "Item").
-    // Get this wrong (e.g. viewport/track on the same element, or -card stamped
-    // on something nested inside the Item rather than the Item itself) and
-    // Swiper silently fails to lay anything out — the page falls back to
-    // whatever raw Designer layout (often a grid) the Collection List had.
+    // Swiper REQUIRES .swiper-wrapper to be a direct child of .swiper, and every
+    // .swiper-slide a direct child of .swiper-wrapper. In Webflow: viewport =
+    // Collection List Wrapper, track = Collection List, card = Collection Item —
+    // three DISTINCT elements. Mis-map them and Swiper silently fails to lay out,
+    // leaving the raw Designer grid showing.
     if (viewport === track) {
       warn(
         "[data-fbslider-viewport] and [data-fbslider-track] are the SAME element. " +
-        "They must be two different ancestors — viewport = Collection List Wrapper, " +
-        "track = Collection List (its child). Slider not initialized.", root
+        "viewport = Collection List Wrapper, track = Collection List (its child). " +
+        "Slider not initialized.", root
       );
       return null;
     }
-    var notDirectChildren = cards.filter(function (c) { return c.parentElement !== track; });
-    if (notDirectChildren.length) {
+    var stray = cards.filter(function (c) { return c.parentElement !== track; });
+    if (stray.length) {
       warn(
-        notDirectChildren.length + "/" + cards.length + " [data-fbslider-card] element(s) " +
-        "are NOT a direct child of [data-fbslider-track] — move the attribute onto the " +
-        "Collection Item itself (the element that repeats once per CMS item), not a div " +
-        "nested inside it. Slider not initialized.", root
+        stray.length + "/" + cards.length + " [data-fbslider-card] element(s) are NOT a " +
+        "direct child of [data-fbslider-track] — put the attribute on the Collection Item " +
+        "itself, not a div nested inside it. Slider not initialized.", root
       );
       return null;
     }
 
     // Tag our clean data-API elements with the classes Swiper requires.
+    root.classList.add("fbslider");
     viewport.classList.add("swiper");
     track.classList.add("swiper-wrapper");
     cards.forEach(function (c) { c.classList.add("swiper-slide"); });
@@ -139,50 +152,78 @@
     var speed    = attrNum(root, "data-fbslider-speed", 700);
     var gap      = attrNum(root, "data-fbslider-gap", 24);
     var autoplay = root.getAttribute("data-fbslider-autoplay") !== "false" && !reduce;
-    var centered = root.getAttribute("data-fbslider-centered") !== "false";
+    var centered = root.getAttribute("data-fbslider-centered") === "true";
+
+    // Drives the CSS keyframe fill duration (one bar fills per interval).
+    root.style.setProperty("--fbslider-autoplay", interval + "ms");
+    if (!autoplay) root.classList.add("is-static");
 
     var api = { root: root };
 
     whenSwiper(function () {
-      // ── Progress bars (built before init so init can stamp the first) ──
-      var bars = [];
-      var fills = [];
+      // ── Controls strip: thin segment bars + round arrows ──────────────
+      var dots = [];
+      var prevBtn = null, nextBtn = null;
 
-      function buildBars() {
+      function buildControls() {
         if (!barsEl) return;
         barsEl.innerHTML = "";
+        barsEl.classList.add("fbslider-controls");
+
+        var dotsWrap = document.createElement("div");
+        dotsWrap.className = "fbslider-dots";
         cards.forEach(function (_, n) {
-          var bar = document.createElement("button");
-          bar.type = "button";
-          bar.className = "fbslider-bar";
-          bar.setAttribute("aria-label", "Slide " + (n + 1));
-          var fill = document.createElement("span");
-          fill.className = "fbslider-bar__fill";
-          bar.appendChild(fill);
-          bar.addEventListener("click", function () { if (sw) sw.slideTo(n); });
-          barsEl.appendChild(bar);
-          bars.push(bar);
-          fills.push(fill);
+          var dot = document.createElement("button");
+          dot.type = "button";
+          dot.className = "fbslider-dot";
+          dot.setAttribute("aria-label", "Slide " + (n + 1));
+          dot.addEventListener("click", function () { if (sw) sw.slideTo(n); });
+          dotsWrap.appendChild(dot);
+          dots.push(dot);
         });
+
+        var arrowsWrap = document.createElement("div");
+        arrowsWrap.className = "fbslider-arrows";
+        prevBtn = document.createElement("button");
+        prevBtn.type = "button";
+        prevBtn.className = "fbslider-arrow fbslider-arrow--prev";
+        prevBtn.setAttribute("aria-label", "Previous slide");
+        prevBtn.appendChild(arrowSvg("prev"));
+        nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.className = "fbslider-arrow fbslider-arrow--next";
+        nextBtn.setAttribute("aria-label", "Next slide");
+        nextBtn.appendChild(arrowSvg("next"));
+        arrowsWrap.appendChild(prevBtn);
+        arrowsWrap.appendChild(nextBtn);
+
+        barsEl.appendChild(dotsWrap);
+        barsEl.appendChild(arrowsWrap);
+
+        prevBtn.addEventListener("click", function () { if (sw) sw.slidePrev(); });
+        nextBtn.addEventListener("click", function () { if (sw) sw.slideNext(); });
       }
 
-      function setActiveBar(i) {
-        bars.forEach(function (b, n) { b.classList.toggle("is-active", n === i); });
-      }
-      function clearFills() {
-        fills.forEach(function (f) { f.style.width = "0%"; });
-      }
-      function setFill(i, pct) {
-        if (fills[i]) fills[i].style.width = pct + "%";
+      function syncControls(s) {
+        dots.forEach(function (d, n) {
+          var on = n === s.activeIndex;
+          if (on && d.classList.contains("is-active")) {
+            // Re-activating the same dot: force a reflow so the CSS fill
+            // animation restarts from 0 instead of staying full.
+            d.classList.remove("is-active");
+            void d.offsetWidth;
+          }
+          d.classList.toggle("is-active", on);
+        });
+        if (prevBtn) prevBtn.disabled = s.isBeginning;
+        if (nextBtn) nextBtn.disabled = s.isEnd;
       }
 
-      buildBars();
+      buildControls();
 
       var sw = new global.Swiper(viewport, {
         slidesPerView: "auto",
         centeredSlides: centered,
-        // Clamp centering at the ends → no empty gutter before first / after
-        // last slide; only real cards ever peek into view.
         centeredSlidesBounds: centered,
         spaceBetween: gap,
         speed: speed,
@@ -194,20 +235,11 @@
           ? { delay: interval, disableOnInteraction: false, pauseOnMouseEnter: true }
           : false,
         on: {
-          init: function (s) {
-            setActiveBar(s.activeIndex);
-            clearFills();
-          },
-          slideChange: function (s) {
-            setActiveBar(s.activeIndex);
-            clearFills();
-          },
-          // Fires every frame while autoplay runs; progress goes 1 → 0 as the
-          // delay elapses. Freezes (stops firing) when autoplay pauses on
-          // hover, so the fill holds without resetting — then resumes.
-          autoplayTimeLeft: function (s, time, progress) {
-            setFill(s.activeIndex, (1 - progress) * 100);
-          },
+          init: syncControls,
+          // Update at transition START so the bar + dim react instantly.
+          slideChangeTransitionStart: syncControls,
+          autoplayPause: function () { root.classList.add("is-paused"); },
+          autoplayResume: function () { root.classList.remove("is-paused"); },
         },
       });
 
@@ -217,12 +249,6 @@
       api.swiper = sw;
       api.destroy = function () { sw.destroy(true, true); };
       root._fbsliderApi = api;
-
-      // Optional author controls: [data-fbslider-prev] / [data-fbslider-next]
-      var prevBtn = root.querySelector("[data-fbslider-prev]");
-      var nextBtn = root.querySelector("[data-fbslider-next]");
-      if (prevBtn) prevBtn.addEventListener("click", function () { sw.slidePrev(); });
-      if (nextBtn) nextBtn.addEventListener("click", function () { sw.slideNext(); });
     });
 
     return api;
