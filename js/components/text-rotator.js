@@ -1,5 +1,5 @@
 /*!
- * text-rotator.js v1.0.0
+ * text-rotator.js v1.0.1
  * Auto-rotating line of hand-authored items — the "Dribbble ships landing pages
  * 10x faster" strip that cycles through phrases/brands on its own. Each item
  * fades (and lifts) out while the next fades in, on a timer. Independent of
@@ -138,17 +138,23 @@
     function next() { show((active + 1) % items.length); }
 
     // ── Timer + pause conditions ──────────────────────────────────
-    var timer = null, paused = false;
-    function start() { if (!timer) timer = setInterval(function () { if (!paused) next(); }, interval); }
+    // Two INDEPENDENT pause sources — cursor hover and off-screen. Each gets its
+    // own flag (never one shared boolean): otherwise an IntersectionObserver tick
+    // while the cursor is still inside would clear the hover pause (and a
+    // mouseleave while off-screen would clear the off-screen pause). Rotation
+    // runs only when BOTH are clear.
+    var timer = null, hovering = false, offscreen = false;
+    function isPaused() { return hovering || offscreen; }
+    function start() { if (!timer) timer = setInterval(function () { if (!isPaused()) next(); }, interval); }
     function stop() { if (timer) { clearInterval(timer); timer = null; } }
 
     if (canHover) {
-      root.addEventListener("mouseenter", function () { paused = true; });
-      root.addEventListener("mouseleave", function () { paused = false; });
+      root.addEventListener("mouseenter", function () { hovering = true; });
+      root.addEventListener("mouseleave", function () { hovering = false; });
     }
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
-        paused = !entries[0].isIntersecting;
+        offscreen = !entries[0].isIntersecting;
       }, { threshold: 0.1 }).observe(root);
     }
 
