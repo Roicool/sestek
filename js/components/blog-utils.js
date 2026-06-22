@@ -1,17 +1,19 @@
 /*!
- * blog-utils.js v1.1.0
- * Three independent blog utilities — data-attribute driven, zero dependencies
+ * blog-utils.js v1.2.0
+ * Four independent blog utilities — data-attribute driven, zero dependencies
  * beyond the declared Sestek stack.
  *
- *  1. AI Summarize  [data-ai-summarize]  — open page in an AI with a prompt
- *  2. Social Share  [data-share]         — share to social / copy link
- *  3. Table of Contents [data-toc]       — auto-build TOC from headings
+ *  1. AI Summarize  [data-ai-summarize]   — open page in an AI with a prompt
+ *  2. Social Share  [data-share]          — share to social / copy link
+ *  3. Table of Contents [data-toc]        — auto-build TOC from headings
+ *  4. Reading Time  [data-read-time]      — word-count estimate from rich text
  *
  * Each utility is exposed individually AND through a single convenience init:
  *   Sestek.initAiSummarize()   — wire [data-ai-summarize] elements
  *   Sestek.initSocialShare()   — wire [data-share] elements
  *   Sestek.initToc()           — wire [data-toc] containers
- *   Sestek.initBlogUtils()     — run all three
+ *   Sestek.initReadTime()      — fill [data-read-time] elements
+ *   Sestek.initBlogUtils()     — run all four
  *
  * TOC smooth scroll: uses Sestek.scrollTo (Lenis) when available, falls back
  * to native window.scrollTo({ behavior:"smooth" }) so it works with or without
@@ -58,6 +60,17 @@
  *     </a>
  *     <div data-toc-list></div>              where items are inserted
  *   </nav>
+ *
+ * Reading Time:
+ *   <div data-read-time-source>              the rich text to measure (word count)
+ *     <p>…article body…</p>
+ *   </div>
+ *   <span data-read-time></span>             filled with JUST the number (e.g. "4")
+ *
+ *   data-read-time-wpm  words/minute used for the estimate, on the source OR
+ *                       any individual target (target wins)   (default 200)
+ *   Multiple [data-read-time] targets are all filled from the one
+ *   [data-read-time-source] on the page. Result is rounded, minimum 1.
  *
  * https://github.com/roicool/sestek
  */
@@ -454,13 +467,41 @@
   }
 
   // ────────────────────────────────────────────────────────────────
-  // Convenience init — runs all three
+  // 4. Reading Time
+  // ────────────────────────────────────────────────────────────────
+
+  /**
+   * Fill all [data-read-time] targets with the estimated reading time (just
+   * the number, e.g. "4") computed from [data-read-time-source]'s word count.
+   */
+  function initReadTime() {
+    var targets = document.querySelectorAll("[data-read-time]");
+    if (!targets.length) return;
+
+    var source = document.querySelector("[data-read-time-source]");
+    if (!source) {
+      console.warn("[Sestek BlogUtils] [data-read-time-source] not found.");
+      return;
+    }
+
+    var words = (source.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+    var sourceWpm = parseInt(source.getAttribute("data-read-time-wpm") || "200", 10);
+
+    Array.prototype.forEach.call(targets, function (el) {
+      var wpm = parseInt(el.getAttribute("data-read-time-wpm"), 10) || sourceWpm;
+      el.textContent = String(Math.max(1, Math.round(words / wpm)));
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Convenience init — runs all four
   // ────────────────────────────────────────────────────────────────
 
   function initBlogUtils() {
     initAiSummarize();
     initSocialShare();
     initToc();
+    initReadTime();
   }
 
   // ── Public API ───────────────────────────────────────────────────
@@ -468,6 +509,7 @@
   global.Sestek.initAiSummarize = initAiSummarize;
   global.Sestek.initSocialShare = initSocialShare;
   global.Sestek.initToc         = initToc;
+  global.Sestek.initReadTime    = initReadTime;
   global.Sestek.initBlogUtils   = initBlogUtils;
 
 })(typeof window !== "undefined" ? window : this);
