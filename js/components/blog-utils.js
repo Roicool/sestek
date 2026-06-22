@@ -1,19 +1,21 @@
 /*!
- * blog-utils.js v1.2.0
- * Four independent blog utilities — data-attribute driven, zero dependencies
+ * blog-utils.js v1.3.0
+ * Five independent blog utilities — data-attribute driven, zero dependencies
  * beyond the declared Sestek stack.
  *
  *  1. AI Summarize  [data-ai-summarize]   — open page in an AI with a prompt
  *  2. Social Share  [data-share]          — share to social / copy link
  *  3. Table of Contents [data-toc]        — auto-build TOC from headings
  *  4. Reading Time  [data-read-time]      — word-count estimate from rich text
+ *  5. Reading Progress [data-read-progress] — bar that fills as the article scrolls
  *
  * Each utility is exposed individually AND through a single convenience init:
  *   Sestek.initAiSummarize()   — wire [data-ai-summarize] elements
  *   Sestek.initSocialShare()   — wire [data-share] elements
  *   Sestek.initToc()           — wire [data-toc] containers
  *   Sestek.initReadTime()      — fill [data-read-time] elements
- *   Sestek.initBlogUtils()     — run all four
+ *   Sestek.initReadProgress()  — drive [data-read-progress] bars on scroll
+ *   Sestek.initBlogUtils()     — run all five
  *
  * TOC smooth scroll: uses Sestek.scrollTo (Lenis) when available, falls back
  * to native window.scrollTo({ behavior:"smooth" }) so it works with or without
@@ -71,6 +73,17 @@
  *                       any individual target (target wins)   (default 200)
  *   Multiple [data-read-time] targets are all filled from the one
  *   [data-read-time-source] on the page. Result is rounded, minimum 1.
+ *
+ * Reading Progress:
+ *   <div data-read-progress></div>           the FILL element — JS scales it 0→1
+ *   <div data-read-progress-source>          the rich text whose scroll is tracked
+ *     <p>…article body…</p>                  (falls back to [data-read-time-source])
+ *   </div>
+ *
+ *   Style the fill full-width (e.g. a fixed bar pinned to the top); JS drives it
+ *   with transform: scaleX() from the left edge — empty at the article's top,
+ *   full when its bottom reaches the bottom of the viewport. Multiple bars are
+ *   all driven from the one source.
  *
  * https://github.com/roicool/sestek
  */
@@ -494,7 +507,65 @@
   }
 
   // ────────────────────────────────────────────────────────────────
-  // Convenience init — runs all four
+  // 5. Reading Progress
+  // ────────────────────────────────────────────────────────────────
+
+  /**
+   * Drive every [data-read-progress] fill bar from the article's scroll
+   * position: empty at the top of [data-read-progress-source] (falls back to
+   * [data-read-time-source]), full when its bottom reaches the viewport bottom.
+   */
+  function initReadProgress() {
+    var bars = document.querySelectorAll("[data-read-progress]");
+    if (!bars.length) return;
+
+    var source = document.querySelector("[data-read-progress-source]") ||
+                 document.querySelector("[data-read-time-source]");
+    if (!source) {
+      console.warn("[Sestek BlogUtils] [data-read-progress-source] (or " +
+        "[data-read-time-source]) not found.");
+      return;
+    }
+
+    // The bar element IS the fill — scale it from the left so it works even with
+    // no author CSS. (Inline so it can't be forgotten.)
+    Array.prototype.forEach.call(bars, function (el) {
+      el.style.transformOrigin = "left center";
+      el.style.transform = "scaleX(0)";
+      el.style.willChange = "transform";
+    });
+
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var rect      = source.getBoundingClientRect();
+      var vh        = window.innerHeight || document.documentElement.clientHeight;
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var startY    = scrollTop + rect.top;       // doc Y where the article begins
+      var distance  = source.offsetHeight - vh;   // scroll span inside the article
+      var p;
+      if (distance <= 0) {
+        // Article shorter than the viewport — full once its top passes the top.
+        p = scrollTop >= startY ? 1 : 0;
+      } else {
+        p = (scrollTop - startY) / distance;
+      }
+      if (p < 0) p = 0; else if (p > 1) p = 1;
+      Array.prototype.forEach.call(bars, function (el) {
+        el.style.transform = "scaleX(" + p + ")";
+      });
+    }
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();   // set the initial fill for the load scroll position
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Convenience init — runs all five
   // ────────────────────────────────────────────────────────────────
 
   function initBlogUtils() {
@@ -502,6 +573,7 @@
     initSocialShare();
     initToc();
     initReadTime();
+    initReadProgress();
   }
 
   // ── Public API ───────────────────────────────────────────────────
@@ -510,6 +582,7 @@
   global.Sestek.initSocialShare = initSocialShare;
   global.Sestek.initToc         = initToc;
   global.Sestek.initReadTime    = initReadTime;
+  global.Sestek.initReadProgress = initReadProgress;
   global.Sestek.initBlogUtils   = initBlogUtils;
 
 })(typeof window !== "undefined" ? window : this);
