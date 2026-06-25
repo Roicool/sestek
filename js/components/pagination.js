@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.5.0
+ * pagination.js v1.6.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -8,12 +8,17 @@
  *   • Reads the page count from Webflow's [data-page-count] (".w-page-count")
  *     text and the "?xxx_page=" param from the native pagination links, so
  *     it works with any Collection List name out of the box.
- *   • Renders Prev / 1 2 3 … / Next next to the (now hidden) native
+ *   • Renders Prev / 1 … 5 6 7 … 27 / Next next to the (now hidden) native
  *     pagination — see pagination.css, which keeps the native links in the
- *     DOM but visually hidden, as a no-JS-fallback / crawlable trail.
+ *     DOM but visually hidden, as a no-JS-fallback / crawlable trail. Long
+ *     ranges collapse to first + last + a window around the current page,
+ *     with "…" markers; window width is data-pagination-siblings (default 1).
  *   • Clicking a page swaps just the Collection List's items via fetch +
  *     DOMParser (no full navigation), updates the URL with pushState, and
  *     re-renders the numbers for the new current/total page state.
+ *   • By default the swap happens IN PLACE — no scroll jump. Opt into
+ *     scrolling with data-pagination-scroll: "top" (always to the list top)
+ *     or "auto" (only when the list top is already above the viewport).
  *   • Hovering a page link (or idle time, throttled via requestIdleCallback)
  *     prefetches that page's HTML so the click feels instant. Skipped on
  *     Save-Data / 2G connections.
@@ -107,14 +112,26 @@
 
       container.appendChild(makeArrow("prev", currentPage > 1 ? buildUrl(pageParam, currentPage - 1) : "#", currentPage === 1));
 
-      for (var i = 1; i <= totalPages; i++) {
+      var siblings = parseInt(configAttr(wrapper, "data-pagination-siblings"), 10);
+      if (isNaN(siblings) || siblings < 0) siblings = 1;
+
+      pageItems(currentPage, totalPages, siblings).forEach(function (item) {
+        if (item === "…") {
+          var gap = global.document.createElement("span");
+          gap.className = "pagination-ellipsis";
+          gap.setAttribute("aria-hidden", "true");
+          gap.textContent = "…";
+          container.appendChild(gap);
+          return;
+        }
         var a = global.document.createElement("a");
-        a.href = buildUrl(pageParam, i);
-        a.textContent = String(i);
-        a.className = "pagination-number" + (i === currentPage ? " is-active" : "");
-        if (i === currentPage) a.setAttribute("aria-current", "page");
+        a.href = buildUrl(pageParam, item);
+        a.textContent = String(item);
+        a.className = "pagination-number" + (item === currentPage ? " is-active" : "");
+        a.setAttribute("aria-label", "Page " + item);
+        if (item === currentPage) a.setAttribute("aria-current", "page");
         container.appendChild(a);
-      }
+      });
 
       container.appendChild(makeArrow("next", currentPage < totalPages ? buildUrl(pageParam, currentPage + 1) : "#", currentPage === totalPages));
 
@@ -134,10 +151,7 @@
         e.preventDefault();
         loadPage(href, listEl, countEl, pageParam, function (newCountEl) {
           render(wrapper, listEl, newCountEl, pageParam, getTotalPages(newCountEl), getCurrentPage(pageParam));
-          var section = wrapper.closest("[data-pagination-scope]") || listEl;
-          if (section && section.scrollIntoView) {
-            section.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
+          maybeScroll(wrapper, listEl);
         });
         history.pushState(null, "", href);
       });
@@ -180,6 +194,55 @@
         node = node.parentNode;
       }
       return null;
+    }
+
+    // ── Windowing + scroll ─────────────────────────────────────────
+    // Build the page list with first/last always shown, a window of
+    // `siblings` pages on each side of the current page, and "…" markers
+    // for any gap wider than a single page (a lone hidden page is shown,
+    // never replaced by a dot — "1 … 3" would waste a slot, so it's "1 2 3").
+    //   27 pages, on page 6, siblings 1  →  1 … 5 6 7 … 27
+    //   27 pages, on page 1, siblings 1  →  1 2 … 27
+    function pageItems(current, total, siblings) {
+      if (total <= 1) return total === 1 ? [1] : [];
+
+      var left  = Math.max(2, current - siblings);
+      var right = Math.min(total - 1, current + siblings);
+      var items = [1];
+
+      if (left > 2) items.push(left === 3 ? 2 : "…");
+      for (var i = left; i <= right; i++) items.push(i);
+      if (right < total - 1) items.push(right === total - 2 ? total - 1 : "…");
+
+      items.push(total);
+      return items;
+    }
+
+    // Read a config attribute from the wrapper or its enclosing
+    // [data-pagination-scope] — whichever sets it (scope wins).
+    function configAttr(wrapper, name) {
+      var scopeEl = wrapper.closest("[data-pagination-scope]");
+      if (scopeEl && scopeEl.hasAttribute(name)) return scopeEl.getAttribute(name);
+      if (wrapper.hasAttribute(name)) return wrapper.getAttribute(name);
+      return null;
+    }
+
+    // Scroll behaviour after a page swap. Default: stay put (swap in place) —
+    // the old behaviour always yanked you to the list top, which read as a
+    // jump when the pager you clicked was already on screen. Opt in via
+    // data-pagination-scroll on the wrapper or its [data-pagination-scope]:
+    //   "none" (default) — don't move
+    //   "top"            — always smooth-scroll to the list top
+    //   "auto"           — scroll to the top only if it's above the viewport
+    function maybeScroll(wrapper, listEl) {
+      var mode = (configAttr(wrapper, "data-pagination-scroll") || "none").toLowerCase();
+      if (mode === "none") return;
+
+      var section = wrapper.closest("[data-pagination-scope]") || listEl;
+      if (!section || !section.scrollIntoView) return;
+
+      if (mode === "auto" && section.getBoundingClientRect().top >= 0) return;
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     // ── Data loading ───────────────────────────────────────────────

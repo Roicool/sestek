@@ -1,5 +1,5 @@
 /*!
- * pagination.css v1.2.0
+ * pagination.css v1.3.0
  * Custom numbered pagination for a Webflow Collection List: replaces the
  * native Prev/Next-only pagination with clickable page numbers + arrows,
  * driven entirely by js/components/pagination.js.
@@ -112,6 +112,20 @@
   color: var(--surface--base, #fff);
 }
 
+/* Gap marker for collapsed page ranges (1 … 5 6 7 … 27) — same footprint as
+   a number cell so the row stays evenly spaced, but inert (no hover/click). */
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  color: var(--color-text--muted, rgba(26, 26, 26, 0.5));
+  user-select: none;
+  pointer-events: none;
+}
+
 .pagination-arrow--prev::before {
   content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='12' viewBox='0 0 7 12' fill='none'%3E%3Cpath d='M6 1L1 6L6 11' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   display: flex;
@@ -153,7 +167,8 @@
   }
 
   .pagination-number,
-  .pagination-arrow {
+  .pagination-arrow,
+  .pagination-ellipsis {
     width: 1.75rem;
     height: 1.75rem;
     font-size: var(--text--xs, 0.8125rem);
