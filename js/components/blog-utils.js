@@ -1,5 +1,5 @@
 /*!
- * blog-utils.js v1.4.0
+ * blog-utils.js v1.5.0
  * Five independent blog utilities — data-attribute driven, zero dependencies
  * beyond the declared Sestek stack.
  *
@@ -64,6 +64,13 @@
  *   </nav>
  *   Output is always a proper <ul><li><a>…</a></li></ul> — a real list element
  *   (not bare anchors), regardless of whether a template is used.
+ *
+ *   Scroll-spy: as the page scrolls, the link for whichever heading is
+ *   currently in view gets .is-active (style that yourself, e.g. color +
+ *   border-left). The [data-toc] container itself gets .is-scrolled once
+ *   the page has scrolled past the first heading (hook sticky/compact
+ *   styling off that). Both need IntersectionObserver support — silently
+ *   skipped (no .is-active ever set) on browsers without it.
  *
  * Reading Time:
  *   <div data-read-time-source>              the rich text to measure (word count)
@@ -438,6 +445,54 @@
         history.pushState(null, "", "#" + id);
       });
     });
+
+    watchTocScroll(container, ul, headings, offset);
+  }
+
+  /**
+   * Scroll-spy: toggles .is-active on the TOC link matching whichever
+   * heading is currently in view, and .is-scrolled on the container once
+   * the page has scrolled past the first heading. Without this, nothing
+   * ever sets .is-active — it just sits unused in the CSS.
+   * @param {HTMLElement} container
+   * @param {HTMLElement} ul
+   * @param {NodeList}    headings
+   * @param {number}      offset
+   */
+  function watchTocScroll(container, ul, headings, offset) {
+    var linkById = {};
+    ul.querySelectorAll("a[href^='#']").forEach(function (link) {
+      linkById[link.getAttribute("href").slice(1)] = link;
+    });
+
+    function setActive(id) {
+      ul.querySelectorAll("a.is-active").forEach(function (a) {
+        a.classList.remove("is-active");
+      });
+      var link = id && linkById[id];
+      if (link) link.classList.add("is-active");
+    }
+
+    if (!("IntersectionObserver" in global)) return;
+
+    var current = null;
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) current = entry.target.id;
+      });
+      if (current) setActive(current);
+      container.classList.toggle("is-scrolled", window.pageYOffset > headings[0].offsetTop - offset);
+    }, {
+      // Treat a heading as "current" once it crosses just below the offset
+      // line (e.g. sticky header height), not only when fully on-screen.
+      rootMargin: "-" + offset + "px 0px -70% 0px",
+      threshold: 0,
+    });
+
+    Array.prototype.forEach.call(headings, function (h) { observer.observe(h); });
+
+    // Fallback for the very first paint, before any intersection fires.
+    setActive(headings[0].id);
   }
 
   /**
