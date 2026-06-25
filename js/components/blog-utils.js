@@ -1,5 +1,5 @@
 /*!
- * blog-utils.js v1.3.0
+ * blog-utils.js v1.4.0
  * Five independent blog utilities — data-attribute driven, zero dependencies
  * beyond the declared Sestek stack.
  *
@@ -60,8 +60,10 @@
  *     <a data-toc-template href="#">         optional: cloned per heading
  *       <span data-toc-text></span>
  *     </a>
- *     <div data-toc-list></div>              where items are inserted
+ *     <div data-toc-list></div>              JS builds a real <ul><li> here
  *   </nav>
+ *   Output is always a proper <ul><li><a>…</a></li></ul> — a real list element
+ *   (not bare anchors), regardless of whether a template is used.
  *
  * Reading Time:
  *   <div data-read-time-source>              the rich text to measure (word count)
@@ -383,12 +385,18 @@
    */
   function buildToc(container, headings) {
     var template = container.querySelector("[data-toc-template]");
-    var list     = container.querySelector("[data-toc-list]") || container;
+    var listHost = container.querySelector("[data-toc-list]") || container;
     var offset   = parseInt(container.getAttribute("data-toc-offset") || "80", 10);
 
     // Remove the template node from the live DOM (it's only a blueprint)
     if (template) template.remove();
-    list.innerHTML = "";
+    listHost.innerHTML = "";
+
+    // Real <ul><li> structure — a proper list semantically (SEO/screen-reader
+    // signal as "list, N items", not a loose run of links) rather than bare
+    // anchors. Built fresh each time so [data-toc-list] can be any element.
+    var ul = document.createElement("ul");
+    ul.setAttribute("data-toc-ul", "");
 
     Array.prototype.forEach.call(headings, function (h) {
       var item;
@@ -412,11 +420,15 @@
         item.textContent = h.textContent;
       }
 
-      list.appendChild(item);
+      var li = document.createElement("li");
+      li.appendChild(item);
+      ul.appendChild(li);
     });
 
+    listHost.appendChild(ul);
+
     // Smooth scroll on TOC link click
-    list.querySelectorAll("a[href^='#']").forEach(function (link) {
+    ul.querySelectorAll("a[href^='#']").forEach(function (link) {
       link.addEventListener("click", function (e) {
         var id     = link.getAttribute("href").slice(1);
         var target = document.getElementById(id);
