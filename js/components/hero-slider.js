@@ -1,5 +1,5 @@
 /*!
- * hero-slider.js v1.1.1
+ * hero-slider.js v1.2.0
  * Framer-style hero card slider for Webflow CMS — a premium, GPU-driven track of
  * cards that auto-advances by a configurable STEP (1, 2, 3… cards at a time, the
  * "jumps two/three" feel), supports flick/drag with momentum, and snaps cleanly
@@ -28,6 +28,10 @@
  *   data-hslider-duration  seconds per advance/snap        (default 0.9)
  *   data-hslider-autoplay  "false" to disable auto-advance (default true)
  *   data-hslider-gap       fallback gap px if CSS gap unreadable (default 0)
+ *   data-hslider-center    centered slide with a sliver of the prev/next card
+ *                          bleeding on BOTH edges. "mobile" (or bare) centers
+ *                          only ≤600px; "always" centers at every breakpoint.
+ *                          (default off — track is flush-left)
  *
  * Behaviour:
  *   • Auto-advances STEP cards every INTERVAL; pauses on hover (fine pointers)
@@ -88,6 +92,23 @@
     var autoplay  = root.getAttribute("data-hslider-autoplay") !== "false" && !reduce;
     var gapAttr   = attrNum(root, "data-hslider-gap", 0);
 
+    // ── Center mode ───────────────────────────────────────────────
+    // data-hslider-center makes the active card sit CENTERED with a sliver of
+    // the previous AND next card bleeding on both edges (Framer "center" feel),
+    // instead of the default flush-left track. "mobile" (or bare) centers only
+    // ≤600px; "always" centers at every breakpoint. The centering inset lives
+    // in CSS; here we just keep ONE buffer card parked to the left so there's
+    // always a left-hand peek (without it the centered card is the first child
+    // and nothing can bleed in from the left).
+    var mqMobile     = window.matchMedia("(max-width: 600px)");
+    var centerAttr   = (root.getAttribute("data-hslider-center") || "").toLowerCase();
+    var centerOn     = root.hasAttribute("data-hslider-center") && centerAttr !== "false";
+    function centerMode() {
+      if (!centerOn) return false;
+      return centerAttr === "always" ? true : mqMobile.matches;
+    }
+    function leftBuffer() { return centerMode() ? 1 : 0; }
+
     // Current translateX of the track (negative = moved left). We keep our own
     // value rather than reading the DOM so tweens and drags share one source.
     var x = 0;
@@ -104,6 +125,8 @@
     gsap.set(track, { x: 0, force3D: true });
 
     // ── Clone-free infinite recycling ─────────────────────────────
+    // (recycle() is called once after it's defined to seed the center-mode
+    //  left buffer so the first paint is already centered with a left peek.)
     // As the track moves left, once the leading card is fully past the left
     // edge we move it to the end and add its stride back to x — nothing jumps.
     // Dragging right does the mirror (trailing → front).
@@ -111,17 +134,20 @@
     // reference point (e.g. startTrackX during a drag) can stay in sync.
     function recycle() {
       var stride = cardStride();
+      var buffer = leftBuffer();   // cards to keep parked left of the resting frame
       var safety = 0;
       var applied = 0;
-      // Moved left far enough that the first card is off-screen → send to back.
-      while (-x >= stride && track.children.length > 1) {
+      // Moved left far enough that the first card is past the left buffer → send
+      // it to the back. With buffer=0 this is the default "first card off-screen".
+      while (-x >= stride * (buffer + 1) && track.children.length > 1) {
         track.appendChild(track.children[0]);
         x += stride;
         applied += stride;
         if (++safety > 64) break;
       }
-      // Moved right past 0 → pull the last card to the front.
-      while (x > 0 && track.children.length > 1) {
+      // Moved right past the buffer → pull the last card to the front so the
+      // left peek is always populated (buffer=0 → the default "past 0").
+      while (x > -stride * buffer && track.children.length > 1) {
         track.insertBefore(track.children[track.children.length - 1], track.children[0]);
         x -= stride;
         applied -= stride;
@@ -130,6 +156,9 @@
       gsap.set(track, { x: x });
       return applied;
     }
+
+    // Seed the resting frame (no-op unless center mode wants a left buffer).
+    recycle();
 
     // ── Programmatic advance / snap ───────────────────────────────
     var moveTween = null;

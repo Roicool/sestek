@@ -1,5 +1,5 @@
 /*!
- * hero-slider.css v1.2.0
+ * hero-slider.css v1.3.0
  * Framer-style hero card slider. A horizontal flex track of equal-width cards
  * driven by translateX in hero-slider.js (auto-advance N cards at a time, drag +
  * momentum, clone-free infinite loop, snap to card edge).
@@ -136,11 +136,30 @@
 [data-hslider-prev],
 [data-hslider-next] { cursor: pointer; }
 
+/* ── Center mode (data-hslider-center) ─────────────────────────────────────
+   The active card sits CENTERED with a sliver of the previous AND next card
+   bleeding on both edges. This inset does the centering; hero-slider.js keeps
+   one buffer card parked to the left so the left-hand peek is always populated
+   (an inset alone would leave the first card flush-left with empty padding).
+   "always" centers at every breakpoint; the default/"mobile" form is scoped to
+   phones in the mobile block below. */
+[data-hslider][data-hslider-center="always"] [data-hslider-track] {
+  padding-left: calc((100% - var(--hslider-card-w)) / 2);
+  padding-right: calc((100% - var(--hslider-card-w)) / 2);
+}
+
 /* ── Mobile: show ~1.15 cards so the next one peeks (Framer feel) ──── */
 @media (max-width: 600px) {
   [data-hslider] {
     --hslider-card-w: 70vw;
     --hslider-gap: 0.75rem;
+  }
+  /* Center mode on phones: inset the track so the active card is centered with
+     equal bleed on both sides. card-w 70vw → ~15vw of the prev/next card peeks
+     on each edge. */
+  [data-hslider][data-hslider-center] [data-hslider-track] {
+    padding-left: calc((100% - var(--hslider-card-w)) / 2);
+    padding-right: calc((100% - var(--hslider-card-w)) / 2);
   }
   /* On phones the Framer underline-on-hover never triggers (no hover) —
      keep the "Visit site" link underlined so it still reads as a link. */
