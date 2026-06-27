@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.6.0
+ * pagination.js v1.7.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -16,9 +16,13 @@
  *   • Clicking a page swaps just the Collection List's items via fetch +
  *     DOMParser (no full navigation), updates the URL with pushState, and
  *     re-renders the numbers for the new current/total page state.
- *   • By default the swap happens IN PLACE — no scroll jump. Opt into
- *     scrolling with data-pagination-scroll: "top" (always to the list top)
- *     or "auto" (only when the list top is already above the viewport).
+ *   • After the swap, smooth-scrolls to the top of the list so you land at
+ *     the start of the new page — routed through Lenis (Sestek.scrollTo) when
+ *     present so it doesn't fight the smooth-scroll engine (that tug-of-war
+ *     was the old "jump"); native smooth scroll otherwise. Override with
+ *     data-pagination-scroll: "auto" (only when the list top is above the
+ *     viewport) or "none" (swap in place); data-pagination-scroll-offset
+ *     trims px off the top for a sticky navbar.
  *   • Hovering a page link (or idle time, throttled via requestIdleCallback)
  *     prefetches that page's HTML so the click feels instant. Skipped on
  *     Save-Data / 2G connections.
@@ -227,22 +231,42 @@
       return null;
     }
 
-    // Scroll behaviour after a page swap. Default: stay put (swap in place) —
-    // the old behaviour always yanked you to the list top, which read as a
-    // jump when the pager you clicked was already on screen. Opt in via
-    // data-pagination-scroll on the wrapper or its [data-pagination-scope]:
-    //   "none" (default) — don't move
-    //   "top"            — always smooth-scroll to the list top
-    //   "auto"           — scroll to the top only if it's above the viewport
+    // Scroll behaviour after a page swap. Default: smooth-scroll to the top of
+    // the list so you land at the start of the freshly loaded page. Routed
+    // through Lenis (Sestek.scrollTo) when present — a native scrollIntoView
+    // fights Lenis's own smooth-scroll loop, and that tug-of-war was the janky
+    // "jump". Falls back to native smooth scroll when Lenis isn't on the page.
+    // Configure via data-pagination-scroll on the wrapper or [data-pagination-scope]:
+    //   "top" (default) — always scroll to the list top
+    //   "auto"          — only when the list top is above the viewport
+    //   "none"          — stay put, swap in place
+    // data-pagination-scroll-offset trims px off the top (e.g. a sticky navbar).
     function maybeScroll(wrapper, listEl) {
-      var mode = (configAttr(wrapper, "data-pagination-scroll") || "none").toLowerCase();
+      var mode = (configAttr(wrapper, "data-pagination-scroll") || "top").toLowerCase();
       if (mode === "none") return;
 
       var section = wrapper.closest("[data-pagination-scope]") || listEl;
-      if (!section || !section.scrollIntoView) return;
+      if (!section || !section.getBoundingClientRect) return;
 
-      if (mode === "auto" && section.getBoundingClientRect().top >= 0) return;
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      var offset = parseInt(configAttr(wrapper, "data-pagination-scroll-offset"), 10);
+      if (isNaN(offset)) offset = 0;
+
+      var rectTop = section.getBoundingClientRect().top;
+      if (mode === "auto" && rectTop >= offset) return; // already comfortably in view
+
+      var top = rectTop + (global.pageYOffset || 0) - offset;
+
+      // Prefer Lenis for a frame-perfect, engine-consistent scroll.
+      if (typeof global.Sestek !== "undefined" &&
+          typeof global.Sestek.scrollTo === "function" &&
+          global.lenisInstance) {
+        global.Sestek.scrollTo(top, {
+          duration: 0.9,
+          easing: function (t) { return 1 - Math.pow(1 - t, 3); },
+        });
+      } else {
+        global.scrollTo({ top: top, behavior: "smooth" });
+      }
     }
 
     // ── Data loading ───────────────────────────────────────────────
