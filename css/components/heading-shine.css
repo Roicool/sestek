@@ -1,52 +1,61 @@
 /*!
- * heading-shine.css v1.0.0
- * Animated gradient "shine" that sweeps across a heading — a soft light glint
- * travelling through the text in Sestek's brand magenta, fading back into the
- * element's own colour. Pure CSS, no JS.
+ * heading-shine.css v1.1.0
+ * Animated multi-colour "shine" that sweeps across a heading — a band of
+ * Sestek's brand colours (turquoise → lilac → magenta) travelling through the
+ * text and fading back into the element's own colour. Pure CSS, no JS.
  *
- * The glint is masked onto the text (background-clip: text); everywhere the
- * gradient isn't bright it falls back to currentColor, so the heading keeps
- * whatever colour you set in Webflow Designer.
+ * The band is masked onto the text (background-clip: text); everywhere the
+ * gradient is currentColor the heading keeps whatever colour you set in
+ * Designer, so only the moving band is tinted.
  *
- * Usage: add data-heading-mask="left" (or "right") to any text element.
- *   left  — glint originates from the top-left corner
- *   right — glint pulses from a centre-ish point
+ * Two tone options, chosen by the attribute value:
+ *   data-heading-mask="brand"  vivid brand colours (turquoise/lilac/magenta)
+ *   data-heading-mask="deep"   the same hues, deeper / less neon
+ *
+ * Add the attribute to any text element (h1, h2, a span inside a heading…).
  *
  * https://github.com/roicool/sestek
  */
 
-[data-heading-mask="left"],
-[data-heading-mask="right"] {
+[data-heading-mask="brand"],
+[data-heading-mask="deep"] {
   padding-block: 0.1em;
   margin-block: -0.1em;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: sestek-heading-shine 5s infinite linear;
+  background-size: 200% auto;
+  background-position: 0% center;
+  animation: sestek-heading-shine 5s linear infinite;
 }
 
-[data-heading-mask="left"] {
-  background-image: radial-gradient(circle farthest-side at 0% 0%,
-    var(--brand-primary--100, #fde6f3) 5%,
-    var(--brand-primary--500, #EC008C) 10%,
-    currentColor 20%);
+[data-heading-mask="brand"] {
+  background-image: linear-gradient(110deg,
+    currentColor 0%,
+    currentColor 24%,
+    #00ffeb 38%,
+    #7f81ae 50%,
+    #ec008c 62%,
+    currentColor 76%,
+    currentColor 100%);
 }
 
-[data-heading-mask="right"] {
-  background-image: radial-gradient(circle farthest-side at 50% 40%,
-    var(--brand-primary--100, #fde6f3) 2%,
-    var(--brand-primary--500, #EC008C) 21%,
-    currentColor 42%);
+[data-heading-mask="deep"] {
+  background-image: linear-gradient(110deg,
+    currentColor 0%,
+    currentColor 24%,
+    #0e9488 38%,
+    #565978 50%,
+    #b0006a 62%,
+    currentColor 76%,
+    currentColor 100%);
 }
 
 @keyframes sestek-heading-shine {
-  0%   { background-position: 0% 20%; }
-  50%  { background-position: 15% 0%; }
-  100% { background-position: 0% 20%; }
+  to { background-position: -200% center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-heading-mask="left"],
-  [data-heading-mask="right"] { animation: none; }
+  [data-heading-mask="brand"],
+  [data-heading-mask="deep"] { animation: none; }
 }
