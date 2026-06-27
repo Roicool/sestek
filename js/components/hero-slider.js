@@ -1,5 +1,5 @@
 /*!
- * hero-slider.js v1.2.0
+ * hero-slider.js v1.3.0
  * Framer-style hero card slider for Webflow CMS — a premium, GPU-driven track of
  * cards that auto-advances by a configurable STEP (1, 2, 3… cards at a time, the
  * "jumps two/three" feel), supports flick/drag with momentum, and snaps cleanly
@@ -23,6 +23,8 @@
  *
  * Root attributes:
  *   data-hslider-step      cards advanced per auto-tick   (default 2)
+ *   data-hslider-step-mobile  cards per auto-tick ≤600px   (default: 1 in
+ *                          center mode, else data-hslider-step)
  *   data-hslider-interval  ms between auto-ticks           (default 3800)
  *   data-hslider-ease      GSAP ease for each advance/snap (default "power3.inOut")
  *   data-hslider-duration  seconds per advance/snap        (default 0.9)
@@ -109,6 +111,13 @@
     }
     function leftBuffer() { return centerMode() ? 1 : 0; }
 
+    // Auto-advance step is breakpoint-aware. On phones a multi-card jump skips
+    // past the (often only) visible card, so the mobile step defaults to 1 in
+    // center mode; override either with data-hslider-step-mobile. Non-center
+    // sliders keep their configured step at every width.
+    var stepMobile = Math.max(1, attrNum(root, "data-hslider-step-mobile", centerOn ? 1 : step));
+    function stepNow() { return mqMobile.matches ? stepMobile : step; }
+
     // Current translateX of the track (negative = moved left). We keep our own
     // value rather than reading the DOM so tweens and drags share one source.
     var x = 0;
@@ -194,8 +203,8 @@
       var snapped = Math.round(x / stride) * stride;
       animateTo(snapped - n * stride);
     }
-    function next() { advance(step); }
-    function prev() { advance(-step); }
+    function next() { advance(stepNow()); }
+    function prev() { advance(-stepNow()); }
 
     // ── Autoplay ──────────────────────────────────────────────────
     // Three INDEPENDENT pause conditions; autoplay only runs when none hold.
