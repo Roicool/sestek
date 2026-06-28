@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v3.1.0
+ * testimonial-slider.js v3.2.0
  * Case-study / testimonial slider for Webflow CMS. Everything is authored
  * inside the Collection List — JS never copies content into a separate
  * "stage". Each Collection Item carries BOTH its own small thumbnail trigger
@@ -78,9 +78,10 @@
 
   var attrNum = Sestek.util.attrNum;
 
+  // Same bbox-centred triangle the webinar player uses (so it sits dead-centre).
   var PLAY_ICON =
-    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="28" height="28">' +
-    '<path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M6.5 5v14l11-7z"/></svg>';
 
   /** True when a bound element carries no content for this CMS item. */
   function isEmpty(node) {
@@ -130,23 +131,12 @@
       playBtn.setAttribute("data-ts-play", "");
     }
     if (playBtn.parentElement !== player) player.appendChild(playBtn);
+    // Only drop in a default icon if YOU left the button empty — your own SVG
+    // is never touched.
     if (!playBtn.innerHTML.trim()) playBtn.innerHTML = PLAY_ICON;
     if (!playBtn.getAttribute("aria-label")) playBtn.setAttribute("aria-label", "Play");
-
-    // Centre the button on the video box with INLINE styles so it can't lose to
-    // a Webflow class that loads later (same specificity, source order wins).
-    // transform-centring works at any button size (fixed or content-sized).
-    playBtn.style.position = "absolute";
-    playBtn.style.top = "50%";
-    playBtn.style.left = "50%";
-    playBtn.style.transform = "translate(-50%, -50%)";
-    playBtn.style.zIndex = "2";
-    // The button needs a positioned offset parent; only force it if the
-    // player is otherwise static (so an intentional absolute/fixed is kept).
-    if (typeof getComputedStyle === "function" &&
-        getComputedStyle(player).position === "static") {
-      player.style.position = "relative";
-    }
+    // No inline styling here: the button's look + position is fully yours to set
+    // in the Designer. CSS only provides zero-specificity (:where) fallbacks.
 
     return { player: player, mount: mount, playBtn: playBtn };
   }
