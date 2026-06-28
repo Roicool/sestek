@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v6.1.0
+ * testimonial-slider.css v6.2.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
@@ -26,7 +26,7 @@
   --ts-card-pad: clamp(1.25rem, 3vw, 2.75rem);
   --ts-media-radius: 16px;
   --ts-thumb-radius: 12px;
-  --ts-col-gap: clamp(1.5rem, 4vw, 3.5rem);
+  --ts-col-gap: clamp(1.25rem, 2.5vw, 2.25rem);
   --ts-accent: currentColor;
 
   display: block;
@@ -160,11 +160,15 @@
 /* ── Responsive (Webflow breakpoints: 991 / 767 / 479) ────────────────
    Panels always stay stacked in one cell, so height never jumps at any size. */
 
-/* Tablet (≤991px): video + content stack, each takes the full 12 columns. */
+/* Tablet (≤991px): switch the panel to a single full-width column so the
+   video and content each take the FULL width and stack — flex (not grid-column
+   tricks) so it's bulletproof regardless of any Designer styling. */
 @media (max-width: 991px) {
-  [data-ts-panel] { gap: 1.5rem; }
-  [data-ts-player],
-  [data-ts-content] { grid-column: 1 / -1; }
+  [data-ts-panel] {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
   /* Thumbs keep their size and SCROLL instead of shrinking (~3 visible). */
   [data-ts-thumb-trigger] { width: 30%; }
 }
