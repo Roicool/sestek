@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v6.0.0
+ * testimonial-slider.css v6.1.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
@@ -157,16 +157,29 @@
 [data-ts-item].is-novideo [data-ts-poster-img] { cursor: default; }
 [data-ts-hide-empty].is-ts-empty { display: none !important; }
 
-/* ── Responsive ───────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  /* Stack: video + content each take the full 12 columns. Panels still share
-     one cell, so height stays stable (no jump) on mobile too. */
-  [data-ts-panel] { gap: 1.25rem; }
+/* ── Responsive (Webflow breakpoints: 991 / 767 / 479) ────────────────
+   Panels always stay stacked in one cell, so height never jumps at any size. */
+
+/* Tablet (≤991px): video + content stack, each takes the full 12 columns. */
+@media (max-width: 991px) {
+  [data-ts-panel] { gap: 1.5rem; }
   [data-ts-player],
   [data-ts-content] { grid-column: 1 / -1; }
+  /* Thumbs keep their size and SCROLL instead of shrinking (~3 visible). */
+  [data-ts-thumb-trigger] { width: 30%; }
+}
+
+/* Mobile landscape (≤767px) */
+@media (max-width: 767px) {
+  [data-ts-panel] { gap: 1.25rem; }
   [data-ts-play] { width: 56px; height: 56px; }
-  /* Thumbs keep their size and SCROLL horizontally instead of shrinking. */
-  [data-ts-thumb-trigger] { width: 42%; }
+  [data-ts-thumb-trigger] { width: 42%; }  /* ~2 visible, scroll for more */
+}
+
+/* Mobile portrait (≤479px) */
+@media (max-width: 479px) {
+  [data-ts-strip] { gap: 0.6rem; }
+  [data-ts-thumb-trigger] { width: 60%; }  /* ~1.5 visible, scroll for more */
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
