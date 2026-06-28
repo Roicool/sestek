@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v5.0.0
+ * testimonial-slider.css v5.1.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * The CONTENT column (logo, quote, author, role, divider, stats, CTA — all the
@@ -10,6 +10,8 @@
  * Theming variables (override on [data-testimonial] to match your tokens):
  *   --ts-card-bg, --ts-card-radius, --ts-card-pad
  *   --ts-media-radius, --ts-thumb-radius, --ts-col-gap, --ts-accent
+ *   --ts-media-col  (width of the fixed left/video column; default
+ *                    clamp(320px, 42%, 560px))
  *
  * https://github.com/roicool/sestek
  */
@@ -35,9 +37,12 @@
 [data-ts-panel] { display: none; }
 [data-ts-item].is-active [data-ts-panel] {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  /* Left (video) column has a FIXED, clamped width so the right (content)
+     column can never squeeze it — the right gets minmax(0,1fr) and yields.
+     Override --ts-media-col to taste. */
+  grid-template-columns: var(--ts-media-col, clamp(320px, 42%, 560px)) minmax(0, 1fr);
   gap: var(--ts-col-gap);
-  align-items: center;
+  align-items: start;
 }
 
 /* ── Player (16:9 video box) ──────────────────────────────────────── */
