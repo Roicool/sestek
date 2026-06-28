@@ -1,5 +1,5 @@
 /*!
- * demo-builder.js v0.1.0
+ * demo-builder.js v0.2.0
  * Two-state "request a voice-AI demo" widget. State 1 (selecting): an intro on
  * the left + a list of industry sectors on the right. Pick a sector and it
  * FLIP-animates into State 2 (form): the chosen sector card slides to the LEFT
@@ -119,39 +119,58 @@
     showDetailBlock(root, key);
     setLabel(root, card);
 
-    function commit() {
-      var state = (animate && hasFlip()) ? global.Flip.getState(card) : null;
+    // The OTHER cards + the intro are what leave the selecting view; the chosen
+    // card travels to the detail slot. Capturing them all in ONE Flip state and
+    // committing the layout once gives a single smooth timeline (no two-phase
+    // fade-then-flip stutter). absolute:true pins the leaving cards out of flow
+    // as they fade + shrink in place, so the remaining items never jump to
+    // backfill the gap — they make room instead of repositioning.
+    var others = slice(sectors ? sectors.querySelectorAll("[data-demo-sector]") : [])
+      .filter(function (c) { return c !== card; });
+    var leaving = others.concat(intro ? [intro] : []);
+
+    if (!animate || !hasGsap() || !hasFlip()) {
       if (host) host.appendChild(card);
       root.classList.add("is-form");
       root.setAttribute("data-demo-active", key);
-
-      if (state) {
-        global.Flip.from(state, { duration: 0.6, ease: "power3.inOut", absolute: true });
-      }
-      if (animate && hasGsap()) {
-        var enter = panel ? slice(panel.children) : [];
-        var block = root.querySelector('[data-demo-detail-block="' + cssEsc(key) + '"]');
-        if (block) enter.push(block);
-        if (enter.length) {
-          global.gsap.fromTo(enter, { opacity: 0, y: 18 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, delay: 0.08, clearProps: "opacity,transform" });
-        }
-      }
       focusFirstField(root);
+      return;
     }
 
-    // Fade the leaving content out first, then flip the card + reveal the form.
-    var leaving = [];
-    if (intro) leaving.push(intro);
-    slice(sectors ? sectors.querySelectorAll("[data-demo-sector]") : []).forEach(function (c) {
-      if (c !== card) leaving.push(c);
+    var state = global.Flip.getState([card].concat(leaving), { props: "opacity" });
+
+    if (host) host.appendChild(card);
+    root.classList.add("is-form");
+    root.setAttribute("data-demo-active", key);
+
+    global.Flip.from(state, {
+      duration: 0.7,
+      ease: "power2.inOut",
+      absolute: true,
+      nested: true,
+      onLeave: function (els) {
+        return global.gsap.to(els, {
+          opacity: 0, scale: 0.9, duration: 0.4,
+          stagger: { each: 0.05, from: "end" }, ease: "power2.in",
+        });
+      },
     });
 
-    if (animate && hasGsap() && leaving.length) {
-      global.gsap.to(leaving, { opacity: 0, y: 8, duration: 0.22, onComplete: commit });
-    } else {
-      commit();
+    // Entering content (description + form) is animated OUTSIDE Flip and with a
+    // small delay, so the travelling card — now inside the detail column — is
+    // never wrapped in a fading parent, and the form blooms in just after the
+    // card lands. Reads as a staged, premium timeline rather than one pop.
+    var enter = [];
+    var block = root.querySelector('[data-demo-detail-block="' + cssEsc(key) + '"]');
+    if (block) enter.push(block);
+    if (panel) enter = enter.concat(slice(panel.children));
+    if (enter.length) {
+      global.gsap.fromTo(enter, { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.55, stagger: 0.06, delay: 0.18,
+          ease: "power3.out", clearProps: "opacity,transform" });
     }
+
+    focusFirstField(root);
   }
 
   // ── State 2 → 1 ─────────────────────────────────────────────────
@@ -164,31 +183,42 @@
     var card    = key && root.querySelector('[data-demo-sector="' + cssEsc(key) + '"]');
     var intro   = root.querySelector("[data-demo-intro]");
     var sectors = root.querySelector("[data-demo-sectors]");
+    var panel   = root.querySelector("[data-demo-panel]");
 
-    var state = (animate && hasFlip() && card) ? global.Flip.getState(card) : null;
+    var others = slice(sectors ? sectors.querySelectorAll("[data-demo-sector]") : [])
+      .filter(function (c) { return c !== card; });
+    var entering = others.concat(intro ? [intro] : []);
 
-    if (card && card._demoHome) {
-      card._demoHome.parent.insertBefore(card, card._demoHome.next);
+    if (!animate || !hasGsap() || !hasFlip() || !card) {
+      if (card && card._demoHome) card._demoHome.parent.insertBefore(card, card._demoHome.next);
+      root.classList.remove("is-form");
+      root.removeAttribute("data-demo-active");
+      entering.forEach(function (el) { el.style.opacity = ""; el.style.transform = ""; });
+      if (card && card.focus) card.focus();
+      return;
     }
+
+    // Quietly drop the form side first so it doesn't pop, then flip the card
+    // home while the other cards + intro bloom back in (the mirror of select).
+    if (panel) global.gsap.to(slice(panel.children), { opacity: 0, duration: 0.2, ease: "power1.in" });
+
+    var state = global.Flip.getState([card].concat(entering), { props: "opacity" });
+
+    card._demoHome.parent.insertBefore(card, card._demoHome.next);
     root.classList.remove("is-form");
     root.removeAttribute("data-demo-active");
 
-    if (state) {
-      global.Flip.from(state, { duration: 0.55, ease: "power3.inOut", absolute: true });
-    }
-
-    var restored = [];
-    if (intro) restored.push(intro);
-    slice(sectors ? sectors.querySelectorAll("[data-demo-sector]") : []).forEach(function (c) {
-      if (c !== card) restored.push(c);
+    global.Flip.from(state, {
+      duration: 0.6,
+      ease: "power2.inOut",
+      absolute: true,
+      nested: true,
+      onEnter: function (els) {
+        return global.gsap.fromTo(els, { opacity: 0, scale: 0.92 },
+          { opacity: 1, scale: 1, duration: 0.45, stagger: { each: 0.05 },
+            ease: "power2.out", clearProps: "opacity,transform" });
+      },
     });
-
-    if (animate && hasGsap() && restored.length) {
-      global.gsap.fromTo(restored, { opacity: 0, y: 8 },
-        { opacity: 1, y: 0, duration: 0.4, stagger: 0.04, delay: 0.05, clearProps: "opacity,transform" });
-    } else {
-      restored.forEach(function (el) { el.style.opacity = ""; el.style.transform = ""; });
-    }
 
     if (card && card.focus) card.focus();
   }
