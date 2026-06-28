@@ -1,6 +1,11 @@
 /*!
- * testimonial-slider.css v5.1.0
+ * testimonial-slider.css v6.0.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
+ *
+ * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
+ * Every item's panel is stacked in ONE grid cell, so the card height is always
+ * the tallest panel's height — switching items never makes the layout jump
+ * (desktop or mobile). Inactive panels just fade out via opacity.
  *
  * The CONTENT column (logo, quote, author, role, divider, stats, CTA — all the
  * text and typography) is intentionally NOT styled here: you style it yourself
@@ -10,8 +15,7 @@
  * Theming variables (override on [data-testimonial] to match your tokens):
  *   --ts-card-bg, --ts-card-radius, --ts-card-pad
  *   --ts-media-radius, --ts-thumb-radius, --ts-col-gap, --ts-accent
- *   --ts-media-col  (width of the fixed left/video column; default
- *                    clamp(320px, 42%, 560px))
+ * (To rebalance the 5|7 split, edit the grid-column span values below.)
  *
  * https://github.com/roicool/sestek
  */
@@ -31,19 +35,42 @@
   padding: var(--ts-card-pad);
 }
 
-/* ── List holds the panels (thumbs get moved out into the strip) ───── */
+/* ── List stacks every panel in ONE cell ──────────────────────────────
+   All panels share grid-area 1/1, so the list's height is always the tallest
+   panel's height — switching items can NEVER make the card jump. Only the
+   active panel is visible (opacity); the rest stay in place, hidden. */
 [data-ts-item] { display: contents; }
 
-[data-ts-panel] { display: none; }
-[data-ts-item].is-active [data-ts-panel] {
+[data-testimonial] [role="list"],
+[data-ts-list] {
   display: grid;
-  /* Left (video) column has a FIXED, clamped width so the right (content)
-     column can never squeeze it — the right gets minmax(0,1fr) and yields.
-     Override --ts-media-col to taste. */
-  grid-template-columns: var(--ts-media-col, clamp(320px, 42%, 560px)) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[data-ts-panel] {
+  grid-area: 1 / 1;
+  /* 12-column responsive grid for video + content */
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--ts-col-gap);
   align-items: start;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
 }
+[data-ts-item].is-active [data-ts-panel] {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Pre-JS fallback: before JS marks the component ready, show the first panel so
+   the card isn't blank. Gated on :not(.is-ready) so it can't leave two panels
+   visible once JS takes over the active state. */
+[data-testimonial]:not(.is-ready) [data-ts-item]:first-child [data-ts-panel] { opacity: 1; }
+
+/* Column spans on the 12-col grid. Default 5 | 7 (video | content); to
+   rebalance, change these two numbers so they add up to 12. */
+[data-ts-player]  { grid-column: span 5; }
+[data-ts-content] { grid-column: span 7; }
 
 /* ── Player (16:9 video box) ──────────────────────────────────────── */
 [data-ts-player] {
@@ -132,10 +159,11 @@
 
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  [data-ts-item].is-active [data-ts-panel] {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
+  /* Stack: video + content each take the full 12 columns. Panels still share
+     one cell, so height stays stable (no jump) on mobile too. */
+  [data-ts-panel] { gap: 1.25rem; }
+  [data-ts-player],
+  [data-ts-content] { grid-column: 1 / -1; }
   [data-ts-play] { width: 56px; height: 56px; }
   /* Thumbs keep their size and SCROLL horizontally instead of shrinking. */
   [data-ts-thumb-trigger] { width: 42%; }

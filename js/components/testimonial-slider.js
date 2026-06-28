@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v3.0.0
+ * testimonial-slider.js v3.1.0
  * Case-study / testimonial slider for Webflow CMS. Everything is authored
  * inside the Collection List — JS never copies content into a separate
  * "stage". Each Collection Item carries BOTH its own small thumbnail trigger
@@ -252,32 +252,17 @@
       });
     }
 
-    function to(i, animate) {
+    function to(i) {
       i = (i + items.length) % items.length;
       if (i === active) return;
-      var nextItem = items[i];
       // Bulletproof: tear every item back to its poster state, so a play button
       // can never stay stranded on any item after a series of switches.
       items.forEach(teardownVideo);
-
-      var nextPanel = panelOf(nextItem);
-      if (animate && hasGsap && !reduce && nextPanel) {
-        setActiveClass(i);
-        active = i;
-        var fadeTargets = Array.prototype.slice.call(nextPanel.children);
-        gsap.killTweensOf(fadeTargets);
-        gsap.fromTo(fadeTargets,
-          { autoAlpha: 0, y: 10 },
-          { autoAlpha: 1, y: 0, duration: duration, ease: ease, stagger: 0.05,
-            // Clear the inline opacity/visibility autoAlpha leaves behind, so an
-            // interrupted tween on rapid switches can't strand the panel hidden.
-            clearProps: "transform,opacity,visibility" });
-        if (autoplay) play(nextItem);
-      } else {
-        setActiveClass(i);
-        active = i;
-        if (autoplay) play(nextItem);
-      }
+      // Panels are stacked in one cell and cross-fade via CSS opacity — height
+      // never changes, so there are no layout jumps on switch.
+      setActiveClass(i);
+      active = i;
+      if (autoplay) play(items[i]);
     }
 
     // ── Wire each item: thumb trigger (switch) + player (play) ─────
@@ -323,8 +308,10 @@
       }
     });
 
-    // Initial state (no animation)
+    // Initial state (no animation). is-ready retires the pre-JS CSS fallback so
+    // the active state is fully JS-driven from here on.
     setActiveClass(active);
+    root.classList.add("is-ready");
     if (autoplay) play(items[active]);
 
     return {
