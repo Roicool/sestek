@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.3.0
+ * testimonial-slider.js v2.4.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -53,6 +53,14 @@
  *   data-ts-ease       GSAP ease                      (default "power2.out")
  *   data-ts-autoplay   "true" → play video on select  (default false: show poster)
  *
+ * CMS-friendly helpers (every item shares one template, so use these instead
+ * of hand-editing individual items):
+ *   • Photo-only item — leave that item's CMS video field empty; data-ts-video
+ *     resolves to "" and the item shows just its poster (no play button).
+ *   • data-ts-hide-empty — add to ANY element (logo, quote, a stat, the CTA…).
+ *     If that element's CMS field is blank for an item, JS hides it for that
+ *     item only (empty <img>, empty text, or href="#"/empty link all count).
+ *
  * API:
  *   Sestek.initTestimonials()   — wire every [data-testimonial] on the page
  *   returns an array of controllers: { el, to(i), play(), active() }
@@ -68,6 +76,31 @@
   var PLAY_ICON =
     '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="28" height="28">' +
     '<path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+
+  /** True when a bound element carries no content for this CMS item. */
+  function isEmpty(node) {
+    if (node.tagName === "IMG") {
+      var src = node.getAttribute("src") || "";
+      return !src.trim();
+    }
+    if (node.tagName === "A") {
+      var href = node.getAttribute("href") || "";
+      return !href.trim() || href === "#";
+    }
+    // Text/containers: empty unless they hold text or a real media child.
+    return !node.textContent.trim() && !node.querySelector("img, svg, video, iframe");
+  }
+
+  /** Hide every [data-ts-hide-empty] inside an item whose CMS field is empty.
+   *  Runs once at init — content doesn't change, so a class is enough.
+   *  Add data-ts-hide-empty in the Designer to ANY element (logo, quote, a
+   *  single stat, the CTA…) you want to vanish when its field is blank. */
+  function hideEmpties(scope) {
+    var nodes = scope.querySelectorAll("[data-ts-hide-empty]");
+    Array.prototype.forEach.call(nodes, function (node) {
+      node.classList.toggle("is-ts-empty", isEmpty(node));
+    });
+  }
 
   /** Make sure an item's player has a [data-ts-play] button and a
    *  [data-ts-video-mount]; create them if the Designer didn't. */
@@ -216,9 +249,15 @@
         else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); to(active - 1, true); }
       });
 
+      // Hide any [data-ts-hide-empty] whose CMS field came through blank.
+      hideEmpties(it);
+
       // Items with no video are photo-only: skip the player chrome entirely
       // (.is-novideo also lets CSS hide any play button left in the Designer).
-      var hasVideo = it.getAttribute("data-ts-video") || it.getAttribute("data-ts-iframe");
+      // In a CMS list every item gets data-ts-video bound; an item whose video
+      // field is empty just yields data-ts-video="" → treated as photo-only.
+      var hasVideo = (it.getAttribute("data-ts-video") || "").trim() ||
+                     (it.getAttribute("data-ts-iframe") || "").trim();
       if (!hasVideo) {
         it.classList.add("is-novideo");
         return;
