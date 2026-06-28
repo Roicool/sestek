@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v2.0.0
+ * testimonial-slider.css v2.1.0
  * Behavioural CSS for testimonial-slider.js. Everything lives inside the
  * Collection List — there is no separate "stage" outside it. Each Collection
  * Item carries its own thumbnail trigger AND its own full panel (player +
@@ -103,6 +103,11 @@
 }
 [data-ts-play]:hover { transform: translate(-50%, -50%) scale(1.06); }
 [data-ts-play]:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+/* While a video is playing, hide the poster + play button (class-driven, so
+   the button always comes back when you switch — no stuck inline styles). */
+[data-ts-item].is-playing [data-ts-poster-img],
+[data-ts-item].is-playing [data-ts-play] { display: none; }
 
 /* ── Content column ───────────────────────────────────────────────── */
 [data-ts-content] [data-ts-logo] { max-height: 28px; width: auto; object-fit: contain; }

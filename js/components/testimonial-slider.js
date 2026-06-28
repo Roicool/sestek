@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.1.0
+ * testimonial-slider.js v2.2.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -121,10 +121,9 @@
     function teardownVideo(item) {
       var mount = mountOf(item);
       if (mount) mount.innerHTML = "";
-      var poster = item.querySelector("[data-ts-poster-img]");
-      var playBtn = item.querySelector("[data-ts-play]");
-      if (poster) poster.style.display = "";
-      if (playBtn) playBtn.style.display = "";   // back to centred state
+      // Poster + play button visibility is driven entirely by the .is-playing
+      // class via CSS — never by inline styles — so it can't get stuck after a
+      // few switches. Removing the class always restores them.
       item.classList.remove("is-playing");
     }
 
@@ -157,8 +156,7 @@
       }
       refs.mount.innerHTML = "";
       refs.mount.appendChild(node);
-      if (posterImg) posterImg.style.display = "none";
-      refs.playBtn.style.display = "none";
+      // CSS hides the poster + play button while .is-playing is set.
       item.classList.add("is-playing");
       // The click that called play() is a user gesture, so a <video> may start
       // WITH sound. play() can still reject (e.g. format) — fall back to controls.
@@ -189,7 +187,10 @@
         gsap.killTweensOf(fadeTargets);
         gsap.fromTo(fadeTargets,
           { autoAlpha: 0, y: 10 },
-          { autoAlpha: 1, y: 0, duration: duration, ease: ease, stagger: 0.05, clearProps: "transform" });
+          { autoAlpha: 1, y: 0, duration: duration, ease: ease, stagger: 0.05,
+            // Clear the inline opacity/visibility autoAlpha leaves behind, so an
+            // interrupted tween on rapid switches can't strand the panel hidden.
+            clearProps: "transform,opacity,visibility" });
         if (autoplay) play(nextItem);
       } else {
         setActiveClass(i);
