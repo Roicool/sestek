@@ -33,6 +33,9 @@
    *  Single-instance setup
    * ───────────────────────────────────────────────────────────── */
   function setupInstance(root) {
+    if (root._marqueeInit) return;                        // idempotent — no duplicate ticker loops
+    root._marqueeInit = true;
+
     var track = root.querySelector(".marquee__track");
     if (!track) {
       console.warn("[Sestek Marquee] .marquee__track not found.", root);

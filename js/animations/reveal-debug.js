@@ -34,7 +34,7 @@
       "body scrollHeight": document.body ? document.body.scrollHeight : "n/a",
       "ScrollTrigger maxScroll": (typeof ScrollTrigger !== "undefined")
         ? fmt(ScrollTrigger.maxScroll(global)) : "n/a",
-      "Lenis present": typeof global.Sestek !== "undefined" && !!global.Sestek.lenis,
+      "Lenis present": !!global.lenisInstance,
       "current scrollY": fmt(global.scrollY),
     });
     // The tell-tale: if innerHeight !== clientHeight, mobile URL bars / scrollbars

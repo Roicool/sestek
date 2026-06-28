@@ -78,13 +78,8 @@
     fs:    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
   };
 
-  /** Parse a numeric data-attribute with a fallback. */
-  function attrNum(el, attr, fallback) {
-    var raw = el.getAttribute(attr);
-    if (raw == null || raw === "") return fallback;
-    var v = parseFloat(raw);
-    return isNaN(v) ? fallback : v;
-  }
+  // Numeric data-attribute reader — shared helper from js/core/utils.js (core layer).
+  var attrNum = Sestek.util.attrNum;
 
   /** mm:ss formatter. */
   function fmtTime(s) {

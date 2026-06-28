@@ -48,12 +48,8 @@
 (function (global) {
   "use strict";
 
-  function attrNum(el, attr, fallback) {
-    var raw = el.getAttribute(attr);
-    if (raw == null || raw === "") return fallback;
-    var v = parseFloat(raw);
-    return isNaN(v) ? fallback : v;
-  }
+  // Numeric data-attribute reader — shared helper from js/core/utils.js (core layer).
+  var attrNum = Sestek.util.attrNum;
 
   /** Initialise every [data-hslider] on the page. */
   function initHeroSlider(selector) {

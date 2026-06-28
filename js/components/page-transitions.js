@@ -1,6 +1,10 @@
 /*!
- * page-transitions.js v1.0.0
- * Companion to css/components/page-transitions.css. Native cross-document
+ * page-transitions.js v1.1.0
+ * Companion to css/components/page-transitions.css.
+ *
+ * Changelog
+ * v1.1.0 — honours prefers-reduced-motion: forces the minimal fade and disables
+ *          the directional slide + shared-element image morph. Native cross-document
  * View Transitions need no JS for the basic fade — this file adds the two
  * things CSS alone can't do:
  *
@@ -54,6 +58,16 @@
 
   var doc = global.document;
   var root = doc.documentElement;
+
+  /* Honour prefers-reduced-motion. The actual transition is browser-driven
+     (CSS View Transitions), but JS can strip the motion-heavy parts: force the
+     lightest mode and disable the directional slide + image morph, leaving only
+     the minimal default cross-fade. Inlined (not Sestek.util) so this file stays
+     fully standalone — it has no other dependency, not even GSAP. */
+  function prefersReducedMotion() {
+    return typeof global.matchMedia === "function" &&
+      global.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
 
   function readStored() {
     try {
@@ -157,6 +171,14 @@
                options.mode ||
                root.getAttribute("data-pt") ||
                "fade";
+
+    // Reduced motion: drop to the lightest fade and turn off morph so the
+    // onPageSwap/onPageReveal handlers skip the slide types and image morph.
+    if (prefersReducedMotion()) {
+      mode = "fade";
+      config.morph = false;
+    }
+
     applyMode(mode);
     if (config.remember) writeStored(config.mode);
 

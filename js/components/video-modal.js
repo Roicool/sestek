@@ -1,6 +1,9 @@
 /*!
- * video-modal.js v1.1.0
- * Drop-in lightbox video modal. Add data-video-modal="<url>" to ANY element
+ * video-modal.js v1.2.0
+ * Drop-in lightbox video modal.
+ *
+ * Changelog
+ * v1.2.0 — honours prefers-reduced-motion: open/close snap instead of scale+fade. Add data-video-modal="<url>" to ANY element
  * (button, link, image…) — click opens a centred 16:9 player; the modal DOM
  * and a single overlay are created once and reused.
  *
@@ -30,6 +33,12 @@
 
   var DUR    = 0.28;            // open/close animation seconds
   var built  = null;           // singleton modal refs, built lazily
+
+  // Honour prefers-reduced-motion: snap open/close (duration 0) instead of the
+  // scale+fade. Inlined (no dependency) so this file stays standalone.
+  var reduceMotion = typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /** Resolve a URL into an embeddable iframe src, or null for a <video> file. */
   function getEmbedUrl(url) {
@@ -141,9 +150,10 @@
       overlay.classList.add("is-open");
 
       if (global.gsap) {
+        var openDur = reduceMotion ? 0 : DUR;
         global.gsap.set(container, { scale: 0.96 });
-        global.gsap.to(overlay,   { opacity: 1, duration: DUR, ease: "power2.out" });
-        global.gsap.to(container, { scale: 1, duration: DUR, ease: "power2.out" });
+        global.gsap.to(overlay,   { opacity: 1, duration: openDur, ease: "power2.out" });
+        global.gsap.to(container, { scale: 1, duration: openDur, ease: "power2.out" });
       } else {
         overlay.style.opacity = "1";
       }
@@ -166,8 +176,9 @@
       }
 
       if (global.gsap) {
-        global.gsap.to(container, { scale: 0.96, duration: DUR, ease: "power2.in" });
-        global.gsap.to(overlay,   { opacity: 0, duration: DUR, ease: "power2.in", onComplete: cleanup });
+        var closeDur = reduceMotion ? 0 : DUR;
+        global.gsap.to(container, { scale: 0.96, duration: closeDur, ease: "power2.in" });
+        global.gsap.to(overlay,   { opacity: 0, duration: closeDur, ease: "power2.in", onComplete: cleanup });
       } else {
         overlay.style.opacity = "0";
         cleanup();

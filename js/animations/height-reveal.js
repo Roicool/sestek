@@ -95,13 +95,8 @@
     return h;
   }
 
-  /** Parse a numeric data-attribute with a fallback. */
-  function attrNum(el, attr, fallback) {
-    var raw = el.getAttribute(attr);
-    if (raw == null || raw === "") return fallback;
-    var v = parseFloat(raw);
-    return isNaN(v) ? fallback : v;
-  }
+  // Numeric data-attribute reader — shared helper from js/core/utils.js (core layer).
+  var attrNum = Sestek.util.attrNum;
 
   /**
    * Declarative, data-attribute driven height-reveal groups — no JS needed.
@@ -132,6 +127,9 @@
     var instances = [];
 
     groups.forEach(function (group) {
+      if (group._heightRevealInit) return;                // idempotent — no duplicate timers/listeners
+      group._heightRevealInit = true;
+
       var items = Array.from(group.querySelectorAll("[data-hr-item]"));
       if (items.length < 2) return; // nothing to swap
 
