@@ -1,28 +1,43 @@
 /*!
- * testimonial-slider.css v3.0.0
- * Behavioural CSS for testimonial-slider.js. Everything lives inside the
- * Collection List — there is no separate "stage" outside it. Each Collection
- * Item carries its own thumbnail trigger AND its own full panel (player +
- * content); only the active item's panel is shown, laid out full-width via
- * CSS Grid placement.
+ * testimonial-slider.css v4.0.0
+ * Full styled design for testimonial-slider.js — the Greenly/Foodles-style
+ * case-study card: rounded card, video on the left with a thumbnail strip
+ * below, brand logo + bold quote + author/role + divider + stats + CTA on the
+ * right. Everything lives inside the CMS Collection List (display:contents).
  *
- * Specificity contract:
- *   • Structural rules (display/grid/position/fill/state) use normal selectors
- *     so they always hold — the component won't work without them.
- *   • Look-and-feel defaults (radius, background, button skin, thumb opacity)
- *     are wrapped in :where() → ZERO specificity, so ANY Webflow Designer
- *     class you add beats them. Style freely in the Designer; nothing here
- *     fights you. The play button is also centred with inline JS styles, so
- *     its position can't lose to a late-loading class either.
+ * THEMING — map these few variables to your own design tokens (override them
+ * on [data-testimonial] or :root). Typography & text colour inherit from the
+ * page, so your Webflow font/colour tokens already apply.
+ *
+ *   --ts-card-bg, --ts-card-radius, --ts-card-pad
+ *   --ts-media-radius, --ts-thumb-radius
+ *   --ts-col-gap, --ts-muted, --ts-divider, --ts-accent
  *
  * https://github.com/roicool/sestek
  */
 
+[data-testimonial] {
+  --ts-card-bg: #f4f5f3;
+  --ts-card-radius: 28px;
+  --ts-card-pad: clamp(1.25rem, 3vw, 2.75rem);
+  --ts-media-radius: 16px;
+  --ts-thumb-radius: 12px;
+  --ts-col-gap: clamp(1.5rem, 4vw, 3.5rem);
+  --ts-muted: #7a8a85;
+  --ts-divider: rgba(0, 0, 0, 0.1);
+  --ts-accent: currentColor;
+
+  display: block;
+  background: var(--ts-card-bg);
+  border-radius: var(--ts-card-radius);
+  padding: var(--ts-card-pad);
+  font-family: inherit;
+  color: inherit;
+}
+
 /* ── List: grid with a "panel row" (1) + a "thumb row" (2) ───────────
-   [data-ts-item] uses display:contents so its two children (thumb + panel)
-   become direct grid children of the list. auto-fill (not auto-fit) keeps the
-   thumb tracks a uniform width — auto-fit collapses empty tracks and, combined
-   with the full-width panel, made the thumbnails come out uneven. */
+   display:contents on the item makes its two children (thumb + panel) direct
+   grid children of the list. auto-fill keeps the thumb tracks uniform. */
 [data-testimonial] [role="list"],
 [data-ts-list] {
   display: grid;
@@ -32,49 +47,25 @@
 }
 [data-ts-item] { display: contents; }
 
-/* ── Thumb trigger (always visible, row 2) ────────────────────────── */
-[data-ts-thumb-trigger] {
-  grid-row: 2;
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  cursor: pointer;
-}
-[data-ts-thumb-trigger] [data-ts-thumb] {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-/* Look-and-feel — overridable (zero specificity). */
-:where([data-ts-thumb-trigger]) {
-  border-radius: 12px;
-  opacity: 0.6;
-  transition: opacity 0.25s ease, box-shadow 0.25s ease;
-}
-:where([data-ts-thumb-trigger]:hover) { opacity: 0.85; }
-:where([data-ts-item].is-active [data-ts-thumb-trigger]) {
-  opacity: 1;
-  box-shadow: 0 0 0 2px currentColor;
-}
-[data-ts-thumb-trigger]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-
-/* ── Panel (player + content) — hidden unless its item is active ───── */
+/* ── Panel: video left, content right ─────────────────────────────── */
 [data-ts-panel] { display: none; }
 [data-ts-item].is-active [data-ts-panel] {
   display: grid;
   grid-row: 1;
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: var(--ts-col-gap);
   align-items: center;
+  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
 }
 
-/* ── Player (16:9 video box) — structural ─────────────────────────── */
+/* ── Player (16:9 video box) ──────────────────────────────────────── */
 [data-ts-player] {
   position: relative;
   aspect-ratio: 16 / 9;
-  overflow: hidden;   /* needed so a Designer border-radius clips the video */
+  overflow: hidden;
+  border-radius: var(--ts-media-radius);
+  background: #000;
 }
 [data-ts-player] [data-ts-poster-img],
 [data-ts-player] [data-ts-video-mount] > video,
@@ -89,13 +80,9 @@
 }
 [data-ts-video-mount] { position: absolute; inset: 0; }
 [data-ts-video-mount]:empty { pointer-events: none; }
-/* Background + radius are YOURS — give them in the Designer. (No defaults here
-   so nothing turns the player black or overrides your rounded corners.) */
 
-/* ── Play button — position is set inline by JS; only a skinnable, fully
-   overridable default look lives here. ────────────────────────────── */
-[data-ts-play] { cursor: pointer; }
-:where([data-ts-play]) {
+/* Play button — JS sets its position inline; this is the skin. */
+[data-ts-play] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,43 +91,127 @@
   border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
-  color: #111;
+  color: #15201d;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
-[data-ts-play]:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+[data-ts-play] svg { width: 26px; height: 26px; margin-left: 2px; }
+[data-ts-play]:hover { background: #fff; }
+[data-ts-play]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 3px; }
+
+/* ── Content column ───────────────────────────────────────────────── */
+[data-ts-content] {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+[data-ts-content] [data-ts-logo] {
+  max-height: 30px;
+  width: auto;
+  object-fit: contain;
+  align-self: flex-start;
+}
+[data-ts-content] [data-ts-quote] {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* author + role on one line */
+[data-ts-author] { font-weight: 600; }
+[data-ts-role] { color: var(--ts-muted); }
+[data-ts-author] + [data-ts-role]::before { content: " "; }
+
+/* divider (you placed one in the HTML — add data-ts-divider to it, or it
+   styles a plain <hr> too) */
+[data-ts-divider],
+[data-ts-content] hr {
+  height: 1px;
+  border: 0;
+  width: 100%;
+  background: var(--ts-divider);
+  margin: clamp(0.5rem, 1.5vw, 1rem) 0;
+}
+
+/* stats: two columns of big number + muted label */
+[data-ts-stats] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 2rem;
+}
+[data-ts-stats] [data-ts-stat] { display: flex; flex-direction: column; gap: 0.35rem; }
+[data-ts-stat-value] {
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+[data-ts-stat-label] { color: var(--ts-muted); font-size: 0.95rem; line-height: 1.4; }
+
+/* CTA link */
+[data-ts-cta] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--ts-accent);
+  text-decoration: none;
+  width: fit-content;
+}
+[data-ts-cta]:hover { text-decoration: underline; }
+
+/* ── Thumbnail strip (row 2, inside the card) ─────────────────────── */
+[data-ts-thumb-trigger] {
+  grid-row: 2;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--ts-thumb-radius);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+[data-ts-thumb-trigger] [data-ts-thumb] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-ts-thumb-trigger]:hover { opacity: 0.8; }
+[data-ts-item].is-active [data-ts-thumb-trigger] {
+  opacity: 1;
+  box-shadow: 0 0 0 3px var(--ts-card-bg), 0 0 0 5px var(--ts-accent);
+}
+[data-ts-thumb-trigger]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 2px; }
 
 /* ── Playback / CMS state (behavioural — must hold) ────────────────── */
 [data-ts-item].is-playing [data-ts-poster-img],
 [data-ts-item].is-playing [data-ts-play] { display: none; }
-
 [data-ts-item].is-novideo [data-ts-play] { display: none; }
 [data-ts-item].is-novideo [data-ts-poster-img] { cursor: default; }
-
 [data-ts-hide-empty].is-ts-empty { display: none !important; }
-
-/* ── Content column — overridable defaults ────────────────────────── */
-:where([data-ts-content] [data-ts-logo]) { max-height: 28px; width: auto; object-fit: contain; }
-:where([data-ts-content] [data-ts-quote]) { margin: 0; }
-:where([data-ts-stats]) { display: flex; flex-wrap: wrap; gap: 2rem; }
-:where([data-ts-stats] [data-ts-stat]) { display: flex; flex-direction: column; }
 
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Panel stacks: video on top, content below. */
   [data-ts-item].is-active [data-ts-panel] {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
-  /* Thumbnails: keep a comfortable, even size and WRAP to extra rows instead
-     of shrinking to fit one row. ~3 across on a phone, uniform. */
+  [data-ts-play] { width: 56px; height: 56px; }
+  /* thumbs wrap at a comfortable size instead of shrinking to one row */
   [data-testimonial] [role="list"],
   [data-ts-list] {
     grid-template-columns: repeat(auto-fill, minmax(28%, 1fr));
     gap: 0.6rem;
   }
+  [data-ts-stats] { gap: 1rem 1.25rem; }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  :where([data-ts-play], [data-ts-thumb-trigger]) { transition: none; }
+  [data-ts-play],
+  [data-ts-thumb-trigger] { transition: none; }
 }
