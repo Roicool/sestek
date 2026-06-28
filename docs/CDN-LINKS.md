@@ -1627,11 +1627,12 @@ Webflow `</body>` öncesi:
 Buton/link hover'ında label karakterleri yukarı kayıp solar, aynı anda alttan
 bir klon kayarak yerini alır (mouseleave'de tersi). CSS dosyası yok — pozisyon/
 tipografi tamamen Designer'da senin `.text-wrap` / `[stagger-btn-text]`
-stillerinden gelir.
+stillerinden gelir. **Sadece `gsap` gerekir** — karakterler GSAP'in SplitText
+plugin'i olmadan, JS'in kendi `splitChars()` helper'ıyla manuel span'lara
+bölünür (ekstra script/versiyon bağımlılığı yok).
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/SplitText.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js" defer></script>
 ```
 
