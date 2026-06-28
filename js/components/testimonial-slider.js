@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.4.0
+ * testimonial-slider.js v2.5.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -103,25 +103,28 @@
   }
 
   /** Make sure an item's player has a [data-ts-play] button and a
-   *  [data-ts-video-mount]; create them if the Designer didn't. */
+   *  [data-ts-video-mount]. We search the WHOLE item (not just the player) so
+   *  a button/mount the Designer placed elsewhere is reused — never duplicated
+   *  — and we move both INTO [data-ts-player] so the button centres on the
+   *  video and the mounted <video>/<iframe> fills it. */
   function ensurePlayer(item) {
     var player = item.querySelector("[data-ts-player]");
     if (!player) return null;
 
-    var mount = player.querySelector("[data-ts-video-mount]");
+    var mount = item.querySelector("[data-ts-video-mount]");
     if (!mount) {
       mount = document.createElement("div");
       mount.setAttribute("data-ts-video-mount", "");
-      player.appendChild(mount);
     }
+    if (mount.parentElement !== player) player.appendChild(mount);
 
-    var playBtn = player.querySelector("[data-ts-play]");
+    var playBtn = item.querySelector("[data-ts-play]");
     if (!playBtn) {
       playBtn = document.createElement("button");
       playBtn.type = "button";
       playBtn.setAttribute("data-ts-play", "");
-      player.appendChild(playBtn);
     }
+    if (playBtn.parentElement !== player) player.appendChild(playBtn);
     if (!playBtn.innerHTML.trim()) playBtn.innerHTML = PLAY_ICON;
     if (!playBtn.getAttribute("aria-label")) playBtn.setAttribute("aria-label", "Play");
 
