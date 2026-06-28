@@ -1566,6 +1566,8 @@ deneyebileceğin, kart → hero morph'lu çalışan örnek.
 | `css/effects/grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/grain.css` |
 | `js/effects/btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/btn-glow.js` |
 | `css/effects/btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css` |
+| `js/effects/stagger-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js` |
+| `js/effects/circle-reveal-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/circle-reveal-button.js` |
 
 ### Grain
 
@@ -1619,6 +1621,76 @@ Webflow `</body>` öncesi:
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css">
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/btn-glow.js" defer></script>
 ```
+
+### Stagger Button
+
+Buton/link hover'ında label karakterleri yukarı kayıp solar, aynı anda alttan
+bir klon kayarak yerini alır (mouseleave'de tersi). CSS dosyası yok — pozisyon/
+tipografi tamamen Designer'da senin `.text-wrap` / `[stagger-btn-text]`
+stillerinden gelir.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/SplitText.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initStaggerButton(); // tüm [stagger-up-animate] butonlarını başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<a stagger-up-animate href="#" class="btn">
+  <div class="text-wrap">
+    <span stagger-btn-text>Explore</span>
+  </div>
+</a>
+```
+
+- `.text-wrap` → `position: relative` olmalı (klon `position:absolute` ile üstüne biner) ve `overflow: hidden` önerilir, böylece kayan karakterler taşmaz.
+- `prefers-reduced-motion`: hover'da hiçbir animasyon çalışmaz, metin sabit kalır.
+
+### Circle Reveal Button
+
+Buton hover'ında etiket yukarı kayar, içindeki küçük bir daire büyüyerek
+butonu kaplar (mouseleave'de tersi). CSS dosyası yok — dairenin rengi/
+başlangıç boyutu, butonun radius'u tamamen senin `.circle-scale` / Designer
+stillerinden gelir.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/circle-reveal-button.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initCircleRevealButton(); // tüm .explore-btn butonlarını başlatır
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<a class="explore-btn" href="#">
+  <div class="circle-scale"></div>
+  <div class="btn-text-wrapper">Explore</div>
+</a>
+```
+
+- `.explore-btn` → `position: relative; overflow: hidden` olmalı, `.circle-scale` küçük başlangıç boyutuyla (örn. küçük yuvarlak) ortalı konumlandırılmalı — JS sadece `scale` tween'ler, konum/boyut/renk Designer'dan.
+- `prefers-reduced-motion`: hover'da hiçbir animasyon çalışmaz.
 
 ---
 
