@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v6.3.0
+ * testimonial-slider.css v6.4.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
@@ -26,7 +26,7 @@
   --ts-card-pad: clamp(1.25rem, 3vw, 2.75rem);
   --ts-media-radius: 16px;
   --ts-thumb-radius: 12px;
-  --ts-col-gap: clamp(1.25rem, 2.5vw, 2.25rem);
+  --ts-col-gap: 0rem;
   --ts-accent: currentColor;
 
   display: block;
