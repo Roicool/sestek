@@ -1,25 +1,32 @@
 /*!
- * testimonial-slider.css v2.3.0
+ * testimonial-slider.css v3.0.0
  * Behavioural CSS for testimonial-slider.js. Everything lives inside the
  * Collection List — there is no separate "stage" outside it. Each Collection
  * Item carries its own thumbnail trigger AND its own full panel (player +
  * content); only the active item's panel is shown, laid out full-width via
- * CSS Grid placement. Colours, spacing, radius, typography and the card look
- * still come from the Webflow Designer (or RC Structure utility classes).
- * Everything here is overridable.
+ * CSS Grid placement.
+ *
+ * Specificity contract:
+ *   • Structural rules (display/grid/position/fill/state) use normal selectors
+ *     so they always hold — the component won't work without them.
+ *   • Look-and-feel defaults (radius, background, button skin, thumb opacity)
+ *     are wrapped in :where() → ZERO specificity, so ANY Webflow Designer
+ *     class you add beats them. Style freely in the Designer; nothing here
+ *     fights you. The play button is also centred with inline JS styles, so
+ *     its position can't lose to a late-loading class either.
  *
  * https://github.com/roicool/sestek
  */
 
-/* ── List: grid with an implicit "panel row" + a "thumb row" ─────────
-   [data-ts-item] uses display:contents so its two children (the thumb
-   trigger and the panel) become direct grid children of the list — that's
-   what lets the active panel span full width on row 1 while every thumb
-   trigger (active or not) keeps flowing on row 2. */
+/* ── List: grid with a "panel row" (1) + a "thumb row" (2) ───────────
+   [data-ts-item] uses display:contents so its two children (thumb + panel)
+   become direct grid children of the list. auto-fill (not auto-fit) keeps the
+   thumb tracks a uniform width — auto-fit collapses empty tracks and, combined
+   with the full-width panel, made the thumbnails come out uneven. */
 [data-testimonial] [role="list"],
 [data-ts-list] {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   grid-auto-rows: min-content;
   gap: 1rem;
 }
@@ -31,10 +38,7 @@
   position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 12px;            /* override in Designer */
   cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.25s ease, box-shadow 0.25s ease;
 }
 [data-ts-thumb-trigger] [data-ts-thumb] {
   width: 100%;
@@ -42,10 +46,16 @@
   object-fit: cover;
   display: block;
 }
-[data-ts-thumb-trigger]:hover { opacity: 0.85; }
-[data-ts-item].is-active [data-ts-thumb-trigger] {
+/* Look-and-feel — overridable (zero specificity). */
+:where([data-ts-thumb-trigger]) {
+  border-radius: 12px;
+  opacity: 0.6;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
+}
+:where([data-ts-thumb-trigger]:hover) { opacity: 0.85; }
+:where([data-ts-item].is-active [data-ts-thumb-trigger]) {
   opacity: 1;
-  box-shadow: 0 0 0 2px currentColor;   /* ring; recolour in Designer */
+  box-shadow: 0 0 0 2px currentColor;
 }
 [data-ts-thumb-trigger]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
@@ -60,13 +70,11 @@
   align-items: center;
 }
 
-/* ── Player (16:9, inline video) ──────────────────────────────────── */
+/* ── Player (16:9 video box) — structural ─────────────────────────── */
 [data-ts-player] {
   position: relative;
   aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 16px;            /* override in Designer */
-  background: #000;
+  overflow: hidden;   /* needed so a Designer border-radius clips the video */
 }
 [data-ts-player] [data-ts-poster-img],
 [data-ts-player] [data-ts-video-mount] > video,
@@ -81,13 +89,13 @@
 }
 [data-ts-video-mount] { position: absolute; inset: 0; }
 [data-ts-video-mount]:empty { pointer-events: none; }
+/* Background + radius are YOURS — give them in the Designer. (No defaults here
+   so nothing turns the player black or overrides your rounded corners.) */
 
-/* Play button — centred; restyle freely in Designer */
-[data-ts-play] {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+/* ── Play button — position is set inline by JS; only a skinnable, fully
+   overridable default look lives here. ────────────────────────────── */
+[data-ts-play] { cursor: pointer; }
+:where([data-ts-play]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -97,45 +105,42 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   color: #111;
-  cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease;
-  z-index: 2;
 }
-[data-ts-play]:hover { transform: translate(-50%, -50%) scale(1.06); }
 [data-ts-play]:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
-/* While a video is playing, hide the poster + play button (class-driven, so
-   the button always comes back when you switch — no stuck inline styles). */
+/* ── Playback / CMS state (behavioural — must hold) ────────────────── */
 [data-ts-item].is-playing [data-ts-poster-img],
 [data-ts-item].is-playing [data-ts-play] { display: none; }
 
-/* Photo-only items (no data-ts-video / data-ts-iframe): never show a play
-   button — the poster image just stays on its own. */
 [data-ts-item].is-novideo [data-ts-play] { display: none; }
 [data-ts-item].is-novideo [data-ts-poster-img] { cursor: default; }
 
-/* Any [data-ts-hide-empty] element whose CMS field is blank (JS adds the
-   class). !important so it beats Webflow's display utility classes. */
 [data-ts-hide-empty].is-ts-empty { display: none !important; }
 
-/* ── Content column ───────────────────────────────────────────────── */
-[data-ts-content] [data-ts-logo] { max-height: 28px; width: auto; object-fit: contain; }
-[data-ts-content] [data-ts-quote] { margin: 0; }
-[data-ts-stats] { display: flex; flex-wrap: wrap; gap: 2rem; }
-[data-ts-stats] [data-ts-stat] { display: flex; flex-direction: column; }
+/* ── Content column — overridable defaults ────────────────────────── */
+:where([data-ts-content] [data-ts-logo]) { max-height: 28px; width: auto; object-fit: contain; }
+:where([data-ts-content] [data-ts-quote]) { margin: 0; }
+:where([data-ts-stats]) { display: flex; flex-wrap: wrap; gap: 2rem; }
+:where([data-ts-stats] [data-ts-stat]) { display: flex; flex-direction: column; }
 
-/* ── Responsive: stack on narrow screens ──────────────────────────── */
+/* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Panel stacks: video on top, content below. */
   [data-ts-item].is-active [data-ts-panel] {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
-  [data-ts-play] { width: 56px; height: 56px; }
-  [data-ts-thumb-trigger] { aspect-ratio: 16 / 9; }
+  /* Thumbnails: keep a comfortable, even size and WRAP to extra rows instead
+     of shrinking to fit one row. ~3 across on a phone, uniform. */
+  [data-testimonial] [role="list"],
+  [data-ts-list] {
+    grid-template-columns: repeat(auto-fill, minmax(28%, 1fr));
+    gap: 0.6rem;
+  }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  [data-ts-play],
-  [data-ts-thumb-trigger] { transition: none; }
+  :where([data-ts-play], [data-ts-thumb-trigger]) { transition: none; }
 }

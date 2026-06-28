@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.5.0
+ * testimonial-slider.js v2.6.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -127,6 +127,21 @@
     if (playBtn.parentElement !== player) player.appendChild(playBtn);
     if (!playBtn.innerHTML.trim()) playBtn.innerHTML = PLAY_ICON;
     if (!playBtn.getAttribute("aria-label")) playBtn.setAttribute("aria-label", "Play");
+
+    // Centre the button on the video box with INLINE styles so it can't lose to
+    // a Webflow class that loads later (same specificity, source order wins).
+    // transform-centring works at any button size (fixed or content-sized).
+    playBtn.style.position = "absolute";
+    playBtn.style.top = "50%";
+    playBtn.style.left = "50%";
+    playBtn.style.transform = "translate(-50%, -50%)";
+    playBtn.style.zIndex = "2";
+    // The button needs a positioned offset parent; only force it if the
+    // player is otherwise static (so an intentional absolute/fixed is kept).
+    if (typeof getComputedStyle === "function" &&
+        getComputedStyle(player).position === "static") {
+      player.style.position = "relative";
+    }
 
     return { player: player, mount: mount, playBtn: playBtn };
   }
