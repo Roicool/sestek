@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v2.1.0
+ * testimonial-slider.css v2.2.0
  * Behavioural CSS for testimonial-slider.js. Everything lives inside the
  * Collection List — there is no separate "stage" outside it. Each Collection
  * Item carries its own thumbnail trigger AND its own full panel (player +
@@ -108,6 +108,11 @@
    the button always comes back when you switch — no stuck inline styles). */
 [data-ts-item].is-playing [data-ts-poster-img],
 [data-ts-item].is-playing [data-ts-play] { display: none; }
+
+/* Photo-only items (no data-ts-video / data-ts-iframe): never show a play
+   button — the poster image just stays on its own. */
+[data-ts-item].is-novideo [data-ts-play] { display: none; }
+[data-ts-item].is-novideo [data-ts-poster-img] { cursor: default; }
 
 /* ── Content column ───────────────────────────────────────────────── */
 [data-ts-content] [data-ts-logo] { max-height: 28px; width: auto; object-fit: contain; }

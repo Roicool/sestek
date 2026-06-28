@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.2.0
+ * testimonial-slider.js v2.3.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -175,9 +175,10 @@
     function to(i, animate) {
       i = (i + items.length) % items.length;
       if (i === active) return;
-      var prevItem = items[active];
       var nextItem = items[i];
-      teardownVideo(prevItem);
+      // Bulletproof: tear every item back to its poster state, so a play button
+      // can never stay stranded on any item after a series of switches.
+      items.forEach(teardownVideo);
 
       var nextPanel = panelOf(nextItem);
       if (animate && hasGsap && !reduce && nextPanel) {
@@ -214,6 +215,14 @@
         else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); to(active + 1, true); }
         else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); to(active - 1, true); }
       });
+
+      // Items with no video are photo-only: skip the player chrome entirely
+      // (.is-novideo also lets CSS hide any play button left in the Designer).
+      var hasVideo = it.getAttribute("data-ts-video") || it.getAttribute("data-ts-iframe");
+      if (!hasVideo) {
+        it.classList.add("is-novideo");
+        return;
+      }
 
       // Guarantee the play button + mount exist, then wire play (button +
       // poster click both start the inline video). play() must run inside this
