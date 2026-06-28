@@ -1,0 +1,131 @@
+/*!
+ * testimonial-slider.css v1.0.0
+ * Behavioural CSS for testimonial-slider.js. Layout, aspect-ratios, active
+ * states and the hidden CMS data-carriers only — give colours, spacing, radius,
+ * typography and the card look from the Webflow Designer (or RC Structure
+ * utility classes). Everything here is overridable.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Hide the per-item data carriers ──────────────────────────────────
+   Inside a Collection Item only [data-ts-thumb] is shown; the rest are read
+   by JS and copied into the stage, so they must never render in the strip. */
+[data-ts-item] [data-ts-logo],
+[data-ts-item] [data-ts-quote],
+[data-ts-item] [data-ts-author],
+[data-ts-item] [data-ts-role],
+[data-ts-item] [data-ts-stat],
+[data-ts-item] [data-ts-cta] {
+  display: none !important;
+}
+
+/* ── Stage: left player + right content ───────────────────────────── */
+[data-ts-stage] {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+}
+
+/* ── Player (16:9, inline video) ──────────────────────────────────── */
+[data-ts-player] {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 16px;            /* override in Designer */
+  background: #000;
+}
+[data-ts-player] [data-ts-poster-img],
+[data-ts-player] [data-ts-video-mount] > video,
+[data-ts-player] [data-ts-video-mount] > iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+  display: block;
+}
+[data-ts-video-mount] { position: absolute; inset: 0; }
+[data-ts-video-mount]:empty { pointer-events: none; }
+
+/* Play button — centred; restyle freely in Designer */
+[data-ts-play] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  z-index: 2;
+}
+[data-ts-play]:hover { transform: translate(-50%, -50%) scale(1.06); }
+[data-ts-play]:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+/* ── Content column ───────────────────────────────────────────────── */
+[data-ts-content] [data-ts-logo] { max-height: 28px; width: auto; object-fit: contain; }
+[data-ts-content] [data-ts-quote] { margin: 0; }
+[data-ts-stats] { display: flex; flex-wrap: wrap; gap: 2rem; }
+[data-ts-stats] [data-ts-stat] { display: flex; flex-direction: column; }
+[data-ts-content] [hidden] { display: none !important; }
+
+/* ── Thumbnail strip (the Collection List) ────────────────────────── */
+[data-testimonial] [role="list"],
+[data-ts-list] {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;            /* room for focus ring */
+}
+[data-ts-item] {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(120px, 18vw, 180px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;            /* override in Designer */
+  cursor: pointer;
+  scroll-snap-align: start;
+  opacity: 0.6;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+[data-ts-item] [data-ts-thumb] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-ts-item]:hover { opacity: 0.85; }
+[data-ts-item].is-active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px currentColor;   /* ring; recolour in Designer */
+}
+[data-ts-item]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* ── Responsive: stack on narrow screens ──────────────────────────── */
+@media (max-width: 768px) {
+  [data-ts-stage] {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  [data-ts-play] { width: 56px; height: 56px; }
+  [data-ts-item] { width: clamp(132px, 42vw, 200px); }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-ts-play],
+  [data-ts-item] { transition: none; }
+}
