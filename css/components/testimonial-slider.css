@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v6.6.0
+ * testimonial-slider.css v6.7.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
@@ -94,31 +94,30 @@
 [data-ts-video-mount] { position: absolute; inset: 0; }
 [data-ts-video-mount]:empty { pointer-events: none; }
 
-/* Play button — STYLE IT YOURSELF in the Designer. Everything below is a
-   zero-specificity (:where) fallback only, so ANY class/style you add wins.
-   These defaults just give a working centred button if you style nothing. */
-:where([data-ts-play]) {
+/* Play button — minimal, centred on the video. Size via --ts-play-size. */
+[data-ts-play] {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  display: inline-flex;
+  width: var(--ts-play-size, 52px);
+  height: var(--ts-play-size, 52px);
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--ts-play-size, clamp(3.75rem, 5.5vw, 5.25rem));
-  aspect-ratio: 1;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  color: #15201d;
+  background: #fff;
+  color: #111;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
 }
-:where([data-ts-play] svg) { width: 42%; height: 42%; fill: currentColor; transform: translateX(3%); }
-:where([data-ts-play]:hover) { background: #fff; }
+[data-ts-play]:hover { transform: translate(-50%, -50%) scale(1.06); }
+[data-ts-play]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+[data-ts-play] svg { width: 18px; height: 18px; fill: currentColor; }
 
 /* ── Thumbnail strip — horizontal scroll (built by JS) ────────────── */
 [data-ts-strip] {
