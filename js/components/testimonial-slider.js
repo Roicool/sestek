@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v2.0.0
+ * testimonial-slider.js v2.1.0
  * Case-study / testimonial slider for Webflow CMS. Everything lives inside
  * the Collection List — JS never copies content into a separate "stage".
  * Each Collection Item carries BOTH its own small thumbnail trigger AND its
@@ -31,8 +31,14 @@
  *             <img data-ts-poster-img src="…" alt="">  ← real CMS Image field,
  *                                                          bound in the Designer; its
  *                                                          src is reused as <video poster>
- *             <button data-ts-play aria-label="Play"> … </button>
- *             [data-ts-video-mount]                ← JS mounts <video>/<iframe> here
+ *             <button data-ts-play aria-label="Play"> … </button>  ← OPTIONAL: JS
+ *                                                          auto-creates it (with an
+ *                                                          icon) if you omit it
+ *             [data-ts-video-mount]                ← OPTIONAL: JS auto-creates it too;
+ *                                                     the <video>/<iframe> mounts here.
+ *                                                     Do NOT paste a <video> embed in
+ *                                                     the player yourself — JS builds it
+ *                                                     from data-ts-video on click.
  *           [data-ts-content]                      right: text column (already CMS-bound)
  *             <img data-ts-logo alt="[brand]">
  *             <blockquote data-ts-quote>…</blockquote>
@@ -58,6 +64,36 @@
   "use strict";
 
   var attrNum = Sestek.util.attrNum;
+
+  var PLAY_ICON =
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="28" height="28">' +
+    '<path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+
+  /** Make sure an item's player has a [data-ts-play] button and a
+   *  [data-ts-video-mount]; create them if the Designer didn't. */
+  function ensurePlayer(item) {
+    var player = item.querySelector("[data-ts-player]");
+    if (!player) return null;
+
+    var mount = player.querySelector("[data-ts-video-mount]");
+    if (!mount) {
+      mount = document.createElement("div");
+      mount.setAttribute("data-ts-video-mount", "");
+      player.appendChild(mount);
+    }
+
+    var playBtn = player.querySelector("[data-ts-play]");
+    if (!playBtn) {
+      playBtn = document.createElement("button");
+      playBtn.type = "button";
+      playBtn.setAttribute("data-ts-play", "");
+      player.appendChild(playBtn);
+    }
+    if (!playBtn.innerHTML.trim()) playBtn.innerHTML = PLAY_ICON;
+    if (!playBtn.getAttribute("aria-label")) playBtn.setAttribute("aria-label", "Play");
+
+    return { player: player, mount: mount, playBtn: playBtn };
+  }
 
   function setupInstance(root) {
     if (root._testimonialInit) return null;
@@ -88,16 +124,19 @@
       var poster = item.querySelector("[data-ts-poster-img]");
       var playBtn = item.querySelector("[data-ts-play]");
       if (poster) poster.style.display = "";
-      if (playBtn) playBtn.style.display = "";
+      if (playBtn) playBtn.style.display = "";   // back to centred state
       item.classList.remove("is-playing");
     }
 
     function play(item) {
       item = item || items[active];
-      var mount = mountOf(item);
+      var refs = ensurePlayer(item);
       var video = item.getAttribute("data-ts-video") || "";
       var iframeSrc = item.getAttribute("data-ts-iframe") || "";
-      if (!mount || (!video && !iframeSrc)) return;
+      if (!refs || (!video && !iframeSrc)) {
+        console.warn("[Sestek Testimonials] item has no [data-ts-player] or no data-ts-video/iframe.", item);
+        return;
+      }
 
       var posterImg = item.querySelector("[data-ts-poster-img]");
       var node;
@@ -112,17 +151,17 @@
         node.src = video;
         node.controls = true;
         node.playsInline = true;
-        node.autoplay = true;
         node.preload = "metadata";
         // Poster comes straight from the CMS-bound <img>, not a data-attribute.
         if (posterImg && posterImg.src) node.poster = posterImg.src;
       }
-      mount.innerHTML = "";
-      mount.appendChild(node);
-      var playBtn = item.querySelector("[data-ts-play]");
+      refs.mount.innerHTML = "";
+      refs.mount.appendChild(node);
       if (posterImg) posterImg.style.display = "none";
-      if (playBtn) playBtn.style.display = "none";
+      refs.playBtn.style.display = "none";
       item.classList.add("is-playing");
+      // The click that called play() is a user gesture, so a <video> may start
+      // WITH sound. play() can still reject (e.g. format) — fall back to controls.
       if (node.play) { var p = node.play(); if (p && p.catch) p.catch(function () {}); }
     }
 
@@ -159,7 +198,7 @@
       }
     }
 
-    // ── Wire thumbnails ───────────────────────────────────────────
+    // ── Wire each item: thumb trigger (switch) + player (play) ─────
     items.forEach(function (it, idx) {
       var trigger = it.querySelector("[data-ts-thumb-trigger]") || it;
       if (!trigger.hasAttribute("tabindex")) trigger.setAttribute("tabindex", "0");
@@ -175,8 +214,17 @@
         else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); to(active - 1, true); }
       });
 
-      var playBtn = it.querySelector("[data-ts-play]");
-      if (playBtn) playBtn.addEventListener("click", function () { play(it); });
+      // Guarantee the play button + mount exist, then wire play (button +
+      // poster click both start the inline video). play() must run inside this
+      // click so the browser lets the <video> start with sound.
+      var refs = ensurePlayer(it);
+      if (refs) {
+        refs.playBtn.addEventListener("click", function (e) {
+          e.preventDefault(); e.stopPropagation(); play(it);
+        });
+        var posterImg = it.querySelector("[data-ts-poster-img]");
+        if (posterImg) posterImg.addEventListener("click", function () { play(it); });
+      }
     });
 
     // Initial state (no animation)
