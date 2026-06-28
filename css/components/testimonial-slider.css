@@ -1,28 +1,60 @@
 /*!
- * testimonial-slider.css v1.0.0
- * Behavioural CSS for testimonial-slider.js. Layout, aspect-ratios, active
- * states and the hidden CMS data-carriers only — give colours, spacing, radius,
- * typography and the card look from the Webflow Designer (or RC Structure
- * utility classes). Everything here is overridable.
+ * testimonial-slider.css v2.0.0
+ * Behavioural CSS for testimonial-slider.js. Everything lives inside the
+ * Collection List — there is no separate "stage" outside it. Each Collection
+ * Item carries its own thumbnail trigger AND its own full panel (player +
+ * content); only the active item's panel is shown, laid out full-width via
+ * CSS Grid placement. Colours, spacing, radius, typography and the card look
+ * still come from the Webflow Designer (or RC Structure utility classes).
+ * Everything here is overridable.
  *
  * https://github.com/roicool/sestek
  */
 
-/* ── Hide the per-item data carriers ──────────────────────────────────
-   Inside a Collection Item only [data-ts-thumb] is shown; the rest are read
-   by JS and copied into the stage, so they must never render in the strip. */
-[data-ts-item] [data-ts-logo],
-[data-ts-item] [data-ts-quote],
-[data-ts-item] [data-ts-author],
-[data-ts-item] [data-ts-role],
-[data-ts-item] [data-ts-stat],
-[data-ts-item] [data-ts-cta] {
-  display: none !important;
-}
-
-/* ── Stage: left player + right content ───────────────────────────── */
-[data-ts-stage] {
+/* ── List: grid with an implicit "panel row" + a "thumb row" ─────────
+   [data-ts-item] uses display:contents so its two children (the thumb
+   trigger and the panel) become direct grid children of the list — that's
+   what lets the active panel span full width on row 1 while every thumb
+   trigger (active or not) keeps flowing on row 2. */
+[data-testimonial] [role="list"],
+[data-ts-list] {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 1rem;
+}
+[data-ts-item] { display: contents; }
+
+/* ── Thumb trigger (always visible, row 2) ────────────────────────── */
+[data-ts-thumb-trigger] {
+  grid-row: 2;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;            /* override in Designer */
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
+}
+[data-ts-thumb-trigger] [data-ts-thumb] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-ts-thumb-trigger]:hover { opacity: 0.85; }
+[data-ts-item].is-active [data-ts-thumb-trigger] {
+  opacity: 1;
+  box-shadow: 0 0 0 2px currentColor;   /* ring; recolour in Designer */
+}
+[data-ts-thumb-trigger]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* ── Panel (player + content) — hidden unless its item is active ───── */
+[data-ts-panel] { display: none; }
+[data-ts-item].is-active [data-ts-panel] {
+  display: grid;
+  grid-row: 1;
+  grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 2rem;
   align-items: center;
@@ -77,55 +109,19 @@
 [data-ts-content] [data-ts-quote] { margin: 0; }
 [data-ts-stats] { display: flex; flex-wrap: wrap; gap: 2rem; }
 [data-ts-stats] [data-ts-stat] { display: flex; flex-direction: column; }
-[data-ts-content] [hidden] { display: none !important; }
-
-/* ── Thumbnail strip (the Collection List) ────────────────────────── */
-[data-testimonial] [role="list"],
-[data-ts-list] {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;            /* room for focus ring */
-}
-[data-ts-item] {
-  position: relative;
-  flex: 0 0 auto;
-  width: clamp(120px, 18vw, 180px);
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 12px;            /* override in Designer */
-  cursor: pointer;
-  scroll-snap-align: start;
-  opacity: 0.6;
-  transition: opacity 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
-}
-[data-ts-item] [data-ts-thumb] {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-[data-ts-item]:hover { opacity: 0.85; }
-[data-ts-item].is-active {
-  opacity: 1;
-  box-shadow: 0 0 0 2px currentColor;   /* ring; recolour in Designer */
-}
-[data-ts-item]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* ── Responsive: stack on narrow screens ──────────────────────────── */
 @media (max-width: 768px) {
-  [data-ts-stage] {
+  [data-ts-item].is-active [data-ts-panel] {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
   [data-ts-play] { width: 56px; height: 56px; }
-  [data-ts-item] { width: clamp(132px, 42vw, 200px); }
+  [data-ts-thumb-trigger] { aspect-ratio: 16 / 9; }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   [data-ts-play],
-  [data-ts-item] { transition: none; }
+  [data-ts-thumb-trigger] { transition: none; }
 }
