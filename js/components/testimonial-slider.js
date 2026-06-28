@@ -21,7 +21,6 @@
  *     [Collection List]  role="list"
  *       [data-ts-item]   role="listitem"        ← Collection Item = one case
  *         data-ts-video="[mp4 url]"             ← Cloudflare …/downloads/default.mp4
- *         data-ts-poster="[poster url]"         ← Cloudflare …/thumbnails/thumbnail.jpg
  *         data-ts-iframe="[stream iframe src]"  ← optional, overrides mp4
  *
  *         [data-ts-thumb-trigger]                ← always-visible small trigger
@@ -29,7 +28,9 @@
  *
  *         [data-ts-panel]                        ← full view, shown only when active
  *           [data-ts-player]                      left: 16:9 video area
- *             <img  data-ts-poster-img alt="">    ← poster, set by JS
+ *             <img data-ts-poster-img src="…" alt="">  ← real CMS Image field,
+ *                                                          bound in the Designer; its
+ *                                                          src is reused as <video poster>
  *             <button data-ts-play aria-label="Play"> … </button>
  *             [data-ts-video-mount]                ← JS mounts <video>/<iframe> here
  *           [data-ts-content]                      right: text column (already CMS-bound)
@@ -98,6 +99,7 @@
       var iframeSrc = item.getAttribute("data-ts-iframe") || "";
       if (!mount || (!video && !iframeSrc)) return;
 
+      var posterImg = item.querySelector("[data-ts-poster-img]");
       var node;
       if (iframeSrc) {
         node = document.createElement("iframe");
@@ -112,12 +114,11 @@
         node.playsInline = true;
         node.autoplay = true;
         node.preload = "metadata";
-        var poster = item.getAttribute("data-ts-poster") || "";
-        if (poster) node.poster = poster;
+        // Poster comes straight from the CMS-bound <img>, not a data-attribute.
+        if (posterImg && posterImg.src) node.poster = posterImg.src;
       }
       mount.innerHTML = "";
       mount.appendChild(node);
-      var posterImg = item.querySelector("[data-ts-poster-img]");
       var playBtn = item.querySelector("[data-ts-play]");
       if (posterImg) posterImg.style.display = "none";
       if (playBtn) playBtn.style.display = "none";
