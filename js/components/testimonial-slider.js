@@ -1,15 +1,20 @@
 /*!
- * testimonial-slider.js v2.6.0
- * Case-study / testimonial slider for Webflow CMS. Everything lives inside
- * the Collection List — JS never copies content into a separate "stage".
- * Each Collection Item carries BOTH its own small thumbnail trigger AND its
- * own full panel (video player + quote/author/stats, already CMS-bound by
- * Webflow); CSS shows only the active item's panel, laid out full-width.
- * JS just toggles which item is active and mounts/tears down that item's
- * inline video player — no modal.
+ * testimonial-slider.js v3.0.0
+ * Case-study / testimonial slider for Webflow CMS. Everything is authored
+ * inside the Collection List — JS never copies content into a separate
+ * "stage". Each Collection Item carries BOTH its own small thumbnail trigger
+ * AND its own full panel (video player + quote/author/stats, already CMS-bound
+ * by Webflow); CSS shows only the active item's panel. JS toggles which item
+ * is active and mounts/tears down that item's inline video player — no modal.
+ *
+ * At init JS gathers every item's [data-ts-thumb-trigger] into one
+ * [data-ts-strip] (created under the root) so the thumbnails form a single
+ * horizontally-scrollable row — something display:contents can't do while the
+ * thumbs stay inside their items. The strip still lives under the collection
+ * wrapper and its thumbs still come from the CMS items.
  *
  * Layout is responsive: on narrow screens the active panel stacks (video on
- * top, content below); thumbnails always sit in their own row.
+ * top, content below) and the thumbnail strip scrolls horizontally.
  *
  * Requires : gsap (global) for the cross-fade — degrades to an instant swap
  *            without it. js/core/utils.js (Sestek.util) loaded first.
@@ -168,6 +173,24 @@
     function panelOf(item) { return item.querySelector("[data-ts-panel]"); }
     function mountOf(item) { return item.querySelector("[data-ts-video-mount]"); }
 
+    // ── Thumbnail strip ───────────────────────────────────────────
+    // display:contents can't group the per-item thumbs into one scrollable
+    // row, so at runtime we collect every item's [data-ts-thumb-trigger] into
+    // a single [data-ts-strip] (created if absent) under the root. The strip
+    // is a horizontal flex row that scrolls — the source is still the CMS
+    // items, everything still lives under the collection wrapper.
+    var strip = root.querySelector("[data-ts-strip]");
+    if (!strip) {
+      strip = document.createElement("div");
+      strip.setAttribute("data-ts-strip", "");
+      root.appendChild(strip);
+    }
+    var thumbs = items.map(function (it) {
+      var t = it.querySelector("[data-ts-thumb-trigger]");
+      if (t && t.parentElement !== strip) strip.appendChild(t);
+      return t;
+    });
+
     // ── Player ────────────────────────────────────────────────────
     function teardownVideo(item) {
       var mount = mountOf(item);
@@ -216,10 +239,16 @@
 
     function setActiveClass(i) {
       items.forEach(function (it, idx) {
+        it.classList.toggle("is-active", idx === i);
+      });
+      // The thumbs now live in the strip (outside the items), so mark the
+      // active one directly for its highlight + a11y state.
+      thumbs.forEach(function (t, idx) {
+        if (!t) return;
         var on = idx === i;
-        it.classList.toggle("is-active", on);
-        if (on) it.setAttribute("aria-current", "true");
-        else it.removeAttribute("aria-current");
+        t.classList.toggle("is-active", on);
+        if (on) t.setAttribute("aria-current", "true");
+        else t.removeAttribute("aria-current");
       });
     }
 
@@ -253,7 +282,7 @@
 
     // ── Wire each item: thumb trigger (switch) + player (play) ─────
     items.forEach(function (it, idx) {
-      var trigger = it.querySelector("[data-ts-thumb-trigger]") || it;
+      var trigger = thumbs[idx] || it;
       if (!trigger.hasAttribute("tabindex")) trigger.setAttribute("tabindex", "0");
       if (!trigger.getAttribute("role")) trigger.setAttribute("role", "button");
       if (!trigger.getAttribute("aria-label")) {

@@ -1,17 +1,15 @@
 /*!
- * testimonial-slider.css v4.0.0
- * Full styled design for testimonial-slider.js — the Greenly/Foodles-style
- * case-study card: rounded card, video on the left with a thumbnail strip
- * below, brand logo + bold quote + author/role + divider + stats + CTA on the
- * right. Everything lives inside the CMS Collection List (display:contents).
+ * testimonial-slider.css v5.0.0
+ * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
- * THEMING — map these few variables to your own design tokens (override them
- * on [data-testimonial] or :root). Typography & text colour inherit from the
- * page, so your Webflow font/colour tokens already apply.
+ * The CONTENT column (logo, quote, author, role, divider, stats, CTA — all the
+ * text and typography) is intentionally NOT styled here: you style it yourself
+ * in the Webflow Designer. This file only owns the card shell, the video box,
+ * the play button skin, and the scrollable thumbnail strip.
  *
+ * Theming variables (override on [data-testimonial] to match your tokens):
  *   --ts-card-bg, --ts-card-radius, --ts-card-pad
- *   --ts-media-radius, --ts-thumb-radius
- *   --ts-col-gap, --ts-muted, --ts-divider, --ts-accent
+ *   --ts-media-radius, --ts-thumb-radius, --ts-col-gap, --ts-accent
  *
  * https://github.com/roicool/sestek
  */
@@ -23,40 +21,23 @@
   --ts-media-radius: 16px;
   --ts-thumb-radius: 12px;
   --ts-col-gap: clamp(1.5rem, 4vw, 3.5rem);
-  --ts-muted: #7a8a85;
-  --ts-divider: rgba(0, 0, 0, 0.1);
   --ts-accent: currentColor;
 
   display: block;
   background: var(--ts-card-bg);
   border-radius: var(--ts-card-radius);
   padding: var(--ts-card-pad);
-  font-family: inherit;
-  color: inherit;
 }
 
-/* ── List: grid with a "panel row" (1) + a "thumb row" (2) ───────────
-   display:contents on the item makes its two children (thumb + panel) direct
-   grid children of the list. auto-fill keeps the thumb tracks uniform. */
-[data-testimonial] [role="list"],
-[data-ts-list] {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  grid-auto-rows: min-content;
-  gap: 1rem;
-}
+/* ── List holds the panels (thumbs get moved out into the strip) ───── */
 [data-ts-item] { display: contents; }
 
-/* ── Panel: video left, content right ─────────────────────────────── */
 [data-ts-panel] { display: none; }
 [data-ts-item].is-active [data-ts-panel] {
   display: grid;
-  grid-row: 1;
-  grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: var(--ts-col-gap);
   align-items: center;
-  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
 }
 
 /* ── Player (16:9 video box) ──────────────────────────────────────── */
@@ -81,7 +62,7 @@
 [data-ts-video-mount] { position: absolute; inset: 0; }
 [data-ts-video-mount]:empty { pointer-events: none; }
 
-/* Play button — JS sets its position inline; this is the skin. */
+/* Play button — JS sets its position inline; this is just the skin. */
 [data-ts-play] {
   display: inline-flex;
   align-items: center;
@@ -100,79 +81,29 @@
 [data-ts-play]:hover { background: #fff; }
 [data-ts-play]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 3px; }
 
-/* ── Content column ───────────────────────────────────────────────── */
-[data-ts-content] {
+/* ── Thumbnail strip — horizontal scroll (built by JS) ────────────── */
+[data-ts-strip] {
   display: flex;
-  flex-direction: column;
-  gap: clamp(1rem, 2vw, 1.5rem);
+  gap: 1rem;
+  margin-top: clamp(1rem, 2.5vw, 1.5rem);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox: hide bar */
 }
-[data-ts-content] [data-ts-logo] {
-  max-height: 30px;
-  width: auto;
-  object-fit: contain;
-  align-self: flex-start;
-}
-[data-ts-content] [data-ts-quote] {
-  margin: 0;
-  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
-  line-height: 1.35;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
+[data-ts-strip]::-webkit-scrollbar { display: none; }  /* WebKit: hide bar */
 
-/* author + role on one line */
-[data-ts-author] { font-weight: 600; }
-[data-ts-role] { color: var(--ts-muted); }
-[data-ts-author] + [data-ts-role]::before { content: " "; }
-
-/* divider (you placed one in the HTML — add data-ts-divider to it, or it
-   styles a plain <hr> too) */
-[data-ts-divider],
-[data-ts-content] hr {
-  height: 1px;
-  border: 0;
-  width: 100%;
-  background: var(--ts-divider);
-  margin: clamp(0.5rem, 1.5vw, 1rem) 0;
-}
-
-/* stats: two columns of big number + muted label */
-[data-ts-stats] {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 2rem;
-}
-[data-ts-stats] [data-ts-stat] { display: flex; flex-direction: column; gap: 0.35rem; }
-[data-ts-stat-value] {
-  font-size: clamp(1.7rem, 3vw, 2.3rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-[data-ts-stat-label] { color: var(--ts-muted); font-size: 0.95rem; line-height: 1.4; }
-
-/* CTA link */
-[data-ts-cta] {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 700;
-  color: var(--ts-accent);
-  text-decoration: none;
-  width: fit-content;
-}
-[data-ts-cta]:hover { text-decoration: underline; }
-
-/* ── Thumbnail strip (row 2, inside the card) ─────────────────────── */
 [data-ts-thumb-trigger] {
-  grid-row: 2;
-  position: relative;
+  flex: 0 0 auto;
+  width: clamp(120px, 16vw, 180px);
   aspect-ratio: 16 / 9;
+  position: relative;
   overflow: hidden;
   border-radius: var(--ts-thumb-radius);
   cursor: pointer;
+  scroll-snap-align: start;
   opacity: 0.55;
-  transition: opacity 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
 }
 [data-ts-thumb-trigger] [data-ts-thumb] {
   width: 100%;
@@ -181,7 +112,7 @@
   display: block;
 }
 [data-ts-thumb-trigger]:hover { opacity: 0.8; }
-[data-ts-item].is-active [data-ts-thumb-trigger] {
+[data-ts-thumb-trigger].is-active {
   opacity: 1;
   box-shadow: 0 0 0 3px var(--ts-card-bg), 0 0 0 5px var(--ts-accent);
 }
@@ -201,13 +132,8 @@
     gap: 1.25rem;
   }
   [data-ts-play] { width: 56px; height: 56px; }
-  /* thumbs wrap at a comfortable size instead of shrinking to one row */
-  [data-testimonial] [role="list"],
-  [data-ts-list] {
-    grid-template-columns: repeat(auto-fill, minmax(28%, 1fr));
-    gap: 0.6rem;
-  }
-  [data-ts-stats] { gap: 1rem 1.25rem; }
+  /* Thumbs keep their size and SCROLL horizontally instead of shrinking. */
+  [data-ts-thumb-trigger] { width: 42%; }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
