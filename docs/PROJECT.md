@@ -20,7 +20,7 @@
 ```
 sestek/
 ├── js/
-│   ├── core/        # Foundation — lenis-init.js, nav.js
+│   ├── core/        # Foundation — utils.js, lenis-init.js, nav.js
 │   ├── components/  # UI — hero.js, hero-slider.js, marquee.js, scroll-tabs.js,
 │   │                #      video-modal.js, video-inline.js, webinar-player.js,
 │   │                #      card-marquee.js, section-title.js, text-rotator.js,

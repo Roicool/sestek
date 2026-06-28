@@ -84,16 +84,8 @@
         || document.querySelector('[data-webinar-picture="' + id + '"]');
   }
 
-  function resolveColor(value, contextEl) {
-    if (!value) return value;
-    var v = value.trim();
-    var match = v.match(/^var\(\s*(--[^,)]+)/) || (v.indexOf("--") === 0 ? [null, v] : null);
-    if (match) {
-      var resolved = getComputedStyle(contextEl).getPropertyValue(match[1]).trim();
-      if (resolved) return resolved;
-    }
-    return v;
-  }
+  // CSS-var token → computed colour — shared helper from js/core/utils.js (core layer).
+  var resolveColor = Sestek.util.resolveColor;
 
   function formatTime(sec) {
     if (!isFinite(sec) || sec < 0) sec = 0;

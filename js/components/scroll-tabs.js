@@ -52,6 +52,8 @@
   function initScrollTabs(selector) {
     var root = document.querySelector(selector || "[data-scroll-tabs]");
     if (!root) { console.warn("[Sestek ScrollTabs] No [data-scroll-tabs] found."); return; }
+    if (root._scrollTabsInit) return;                     // idempotent — no duplicate triggers
+    root._scrollTabsInit = true;
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
       console.error("[Sestek ScrollTabs] GSAP + ScrollTrigger required."); return;
     }

@@ -41,7 +41,7 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 
 ```
 js/
-  core/        lenis-init.js, nav.js
+  core/        utils.js, lenis-init.js, nav.js
   components/  hero.js, hero-slider.js, marquee.js, scroll-tabs.js, video-modal.js,
                video-inline.js, webinar-player.js, card-marquee.js, section-title.js,
                text-rotator.js, story.js, accordion.js, blog-utils.js, site-utils.js,
@@ -63,10 +63,24 @@ css/
 
 | File | CDN (`@main`) |
 |---|---|
+| `js/core/utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js` |
 | `js/core/lenis-init.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/lenis-init.js` |
 | `js/core/nav.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/nav.js` |
 | `css/core/nav.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav.css` |
 | `css/core/nav-full.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav-full.css` |
+
+### Utils (shared core)
+
+`js/core/utils.js` exposes tiny shared helpers under `Sestek.util`
+(`attrNum`, `flag`, `resolveColor`, `prefersReducedMotion`). Some components and
+animations (e.g. `reveal.js`, `height-reveal.js`, `orbit.js`, `hero-slider.js`,
+`text-rotator.js`, `story.js`, `featured-blog-slider.js`, `webinar-player.js`)
+read these helpers, so **load `utils.js` before them** — same place you load
+`lenis-init.js`. It has no dependencies and is safe to load on every page.
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+```
 
 ### Lenis only — Webflow `<head>`
 

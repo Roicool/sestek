@@ -44,12 +44,8 @@
 
   var NS = "http://www.w3.org/2000/svg";
 
-  function attrNum(el, attr, fallback) {
-    var raw = el.getAttribute(attr);
-    if (raw == null || raw === "") return fallback;
-    var v = parseFloat(raw);
-    return isNaN(v) ? fallback : v;
-  }
+  // Numeric data-attribute reader — shared helper from js/core/utils.js (core layer).
+  var attrNum = Sestek.util.attrNum;
 
   function warn(msg, el) {
     if (global.console && typeof global.console.warn === "function") {

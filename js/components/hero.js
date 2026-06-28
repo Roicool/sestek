@@ -15,6 +15,8 @@
   function initHero(selector) {
     var hero = document.querySelector(selector || "[data-hero]");
     if (!hero) { console.warn("[Sestek Hero] No hero element found."); return; }
+    if (hero._heroInit) return;                           // idempotent — no duplicate triggers
+    hero._heroInit = true;
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
       console.error("[Sestek Hero] GSAP + ScrollTrigger required."); return;
     }

@@ -129,6 +129,8 @@
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
       console.error("[Sestek ColorShift] GSAP + ScrollTrigger required."); return;
     }
+    if (section._colorShiftInit) return;                  // idempotent — no duplicate triggers
+    section._colorShiftInit = true;
 
     var d = section.dataset;
 

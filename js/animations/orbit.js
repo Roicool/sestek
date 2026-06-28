@@ -1,6 +1,11 @@
 /*!
- * orbit.js v1.0.0
+ * orbit.js v1.1.0
  * Decorative orbital-ring animation for line-art SVGs.
+ *
+ * Changelog
+ * v1.1.0 — respects prefers-reduced-motion (skips draw-in + comet); pauses the
+ *          endless comet/pulse loops while off-screen; shared helpers moved to
+ *          js/core/utils.js (Sestek.util).
  *
  *   1. Entrance — each <ellipse>/<path> stroke is drawn in with a stagger
  *      when the SVG scrolls into view (DrawSVGPlugin).
@@ -9,7 +14,8 @@
  *      SVG is `slice`-clipped) so it reads like a comet sweeping the arc.
  *
  * Dependencies: gsap, ScrollTrigger, DrawSVGPlugin, MotionPathPlugin
- * (all free via the Webflow–GSAP sponsorship — see docs/gsap-svg.md).
+ * (all free via the Webflow–GSAP sponsorship — see docs/gsap-svg.md),
+ * plus js/core/utils.js (Sestek.util) loaded first.
  *
  * API:
  *   Sestek.initOrbit()   — wire every [data-orbit] SVG on the page
@@ -41,25 +47,11 @@
 
   var SVGNS = "http://www.w3.org/2000/svg";
 
-  /* Resolve a CSS-variable token (--x or var(--x)) to a computed colour.
-   * Raw colours pass straight through. */
-  function resolveColor(value, contextEl) {
-    if (!value) return value;
-    var v = value.trim();
-    var match = v.match(/^var\(\s*(--[^,)]+)/) || (v.indexOf("--") === 0 ? [null, v] : null);
-    if (match) {
-      var resolved = getComputedStyle(contextEl).getPropertyValue(match[1]).trim();
-      if (resolved) return resolved;
-    }
-    return v;
-  }
-
-  function flag(v) {
-    /* present-but-empty attribute counts as true; "false"/"0"/"off" = false */
-    if (v === null) return false;
-    if (v === "") return true;
-    return v !== "false" && v !== "0" && v !== "off";
-  }
+  /* Shared helpers from js/core/utils.js (core layer):
+   *   resolveColor — CSS-var token (--x / var(--x)) → computed colour
+   *   flag         — present/"true"-ish attribute test */
+  var resolveColor = Sestek.util.resolveColor;
+  var flag = Sestek.util.flag;
 
   function num(v, fallback) {
     var n = parseFloat(v);
@@ -67,6 +59,9 @@
   }
 
   function wireOrbit(svg) {
+    if (svg._orbitInit) return;                           // idempotent — no duplicate comet/loops
+    svg._orbitInit = true;
+
     /* Collect the rings BEFORE we inject anything else */
     var rings = svg.querySelectorAll("ellipse, path");
     if (!rings.length) return;
@@ -78,9 +73,12 @@
 
     var hasDraw = typeof DrawSVGPlugin !== "undefined";
     var hasPath = typeof MotionPathPlugin !== "undefined";
+    /* Honour prefers-reduced-motion: skip the draw-in and the endless comet
+     * entirely. The rings stay statically visible (decorative motion removed). */
+    var reduce  = Sestek.util.prefersReducedMotion();
 
     /* ── Entrance: draw the rings in ────────────────────────────── */
-    if (hasDraw) {
+    if (hasDraw && !reduce) {
       gsap.set(rings, { transformOrigin: "50% 50%" });
       gsap.from(rings, {
         drawSVG: "0%",
@@ -94,7 +92,7 @@
     /* ── Comet dot ──────────────────────────────────────────────── */
     var dotAttr = svg.getAttribute("data-orbit-dot");
     var wantDot = dotAttr === null ? true : flag(dotAttr); /* default ON */
-    if (!wantDot || !hasPath) return;
+    if (!wantDot || !hasPath || reduce) return;
 
     var color = resolveColor(
       svg.getAttribute("data-orbit-dot-color") || "--interactive--color-primary-base",
@@ -135,10 +133,17 @@
     dot.appendChild(core);
     svg.appendChild(dot);
 
-    /* Endless travel along the track */
+    /* Endless travel along the track. The two infinite loops are paused while
+     * the SVG is off-screen (perf: no compositor/main-thread work when not
+     * visible) and resumed when it scrolls back into view — visible behaviour
+     * is unchanged. Pause-by-default only when ScrollTrigger is present to
+     * drive the resume; otherwise they run as before. */
+    var hasST = typeof ScrollTrigger !== "undefined";
+
     gsap.set(dot, { opacity: 0 });
     gsap.to(dot, { opacity: 1, duration: 0.6, delay: drawDur * 0.5 });
-    gsap.to(dot, {
+
+    var cometTween = gsap.to(dot, {
       motionPath: {
         path: trackPath,
         align: trackPath,
@@ -147,17 +152,31 @@
       duration: speed,
       ease: "none",
       repeat: -1,
+      paused: hasST,
     });
 
     /* Subtle pulse on the core */
-    gsap.to(core, {
+    var pulseTween = gsap.to(core, {
       scale: 1.4,
       transformOrigin: "50% 50%",
       duration: 1.1,
       ease: "sine.inOut",
       repeat: -1,
       yoyo: true,
+      paused: hasST,
     });
+
+    if (hasST) {
+      ScrollTrigger.create({
+        trigger: svg,
+        start: "top bottom",
+        end: "bottom top",
+        onToggle: function (self) {
+          if (self.isActive) { cometTween.play();  pulseTween.play(); }
+          else               { cometTween.pause(); pulseTween.pause(); }
+        },
+      });
+    }
   }
 
   function initOrbit() {

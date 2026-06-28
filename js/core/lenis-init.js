@@ -1,9 +1,11 @@
 /*!
- * lenis-init.js v1.2.0
+ * lenis-init.js v1.2.1
  * Lenis smooth scroll — optional GSAP ScrollTrigger sync
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.2.1 — destroyLenis() now removes the real ticker wrapper (was a no-op),
+ *          cancels the no-GSAP rAF fallback, and initLenis() is idempotent.
  * v1.2.0 — lighter, more perceptible default feel: duration 1.2→1.05,
  *          easing expo-out→cubic-out (longer glide tail, not heavy)
  * v1.1.0 — initial smooth-scroll + ScrollTrigger sync
@@ -30,10 +32,23 @@
    *   touchMultiplier  – touch speed multiplier (default: 2)
    *   infinite         – infinite scroll (default: false)
    */
+  // Module-scoped handles so destroyLenis() can tear down exactly what
+  // initLenis() created — the ticker callback is an anonymous wrapper (not
+  // lenis.raf), and the no-GSAP fallback runs its own requestAnimationFrame
+  // loop; both need a reference to be cancellable.
+  var tickerCallback = null;
+  var rafId = null;
+
   function initLenis(options) {
     if (typeof Lenis === "undefined") {
       console.error("[Sestek] Lenis is not loaded.");
       return null;
+    }
+
+    // Idempotent — a second call would otherwise add a second ticker handler
+    // and a second Lenis instance, doubling every scroll delta.
+    if (global.lenisInstance) {
+      return global.lenisInstance;
     }
 
     var defaults = {
@@ -55,17 +70,20 @@
     var hasScrollTrigger = hasGsap && typeof ScrollTrigger !== "undefined";
 
     if (hasGsap) {
-      // Drive Lenis via GSAP ticker for frame-perfect sync
-      gsap.ticker.add(function (time) {
+      // Drive Lenis via GSAP ticker for frame-perfect sync. Keep the wrapper
+      // reference so destroyLenis() can remove this exact callback.
+      tickerCallback = function (time) {
         lenis.raf(time * 1000);
-      });
+      };
+      gsap.ticker.add(tickerCallback);
       // Prevent GSAP from adding its own lag smoothing on top of Lenis
       gsap.ticker.lagSmoothing(0);
     } else {
-      // Fallback: drive Lenis with requestAnimationFrame
+      // Fallback: drive Lenis with requestAnimationFrame. Track the frame id
+      // so destroyLenis() can cancel the loop.
       (function raf(time) {
         lenis.raf(time);
-        requestAnimationFrame(raf);
+        rafId = requestAnimationFrame(raf);
       })(performance.now());
     }
 
@@ -109,8 +127,16 @@
    */
   function destroyLenis() {
     if (!global.lenisInstance) return;
-    if (typeof gsap !== "undefined") {
-      gsap.ticker.remove(global.lenisInstance.raf);
+    // Remove the actual wrapper we added to the ticker (not lenis.raf, which
+    // was never the registered callback).
+    if (typeof gsap !== "undefined" && tickerCallback) {
+      gsap.ticker.remove(tickerCallback);
+    }
+    tickerCallback = null;
+    // Cancel the no-GSAP fallback loop if it was the active driver.
+    if (rafId != null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
     }
     global.lenisInstance.destroy();
     global.lenisInstance = null;
