@@ -1,0 +1,176 @@
+/*!
+ * testimonial-slider.css v6.0.0
+ * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
+ *
+ * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
+ * Every item's panel is stacked in ONE grid cell, so the card height is always
+ * the tallest panel's height — switching items never makes the layout jump
+ * (desktop or mobile). Inactive panels just fade out via opacity.
+ *
+ * The CONTENT column (logo, quote, author, role, divider, stats, CTA — all the
+ * text and typography) is intentionally NOT styled here: you style it yourself
+ * in the Webflow Designer. This file only owns the card shell, the video box,
+ * the play button skin, and the scrollable thumbnail strip.
+ *
+ * Theming variables (override on [data-testimonial] to match your tokens):
+ *   --ts-card-bg, --ts-card-radius, --ts-card-pad
+ *   --ts-media-radius, --ts-thumb-radius, --ts-col-gap, --ts-accent
+ * (To rebalance the 5|7 split, edit the grid-column span values below.)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-testimonial] {
+  --ts-card-bg: #f4f5f3;
+  --ts-card-radius: 28px;
+  --ts-card-pad: clamp(1.25rem, 3vw, 2.75rem);
+  --ts-media-radius: 16px;
+  --ts-thumb-radius: 12px;
+  --ts-col-gap: clamp(1.5rem, 4vw, 3.5rem);
+  --ts-accent: currentColor;
+
+  display: block;
+  background: var(--ts-card-bg);
+  border-radius: var(--ts-card-radius);
+  padding: var(--ts-card-pad);
+}
+
+/* ── List stacks every panel in ONE cell ──────────────────────────────
+   All panels share grid-area 1/1, so the list's height is always the tallest
+   panel's height — switching items can NEVER make the card jump. Only the
+   active panel is visible (opacity); the rest stay in place, hidden. */
+[data-ts-item] { display: contents; }
+
+[data-testimonial] [role="list"],
+[data-ts-list] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[data-ts-panel] {
+  grid-area: 1 / 1;
+  /* 12-column responsive grid for video + content */
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--ts-col-gap);
+  align-items: start;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+[data-ts-item].is-active [data-ts-panel] {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Pre-JS fallback: before JS marks the component ready, show the first panel so
+   the card isn't blank. Gated on :not(.is-ready) so it can't leave two panels
+   visible once JS takes over the active state. */
+[data-testimonial]:not(.is-ready) [data-ts-item]:first-child [data-ts-panel] { opacity: 1; }
+
+/* Column spans on the 12-col grid. Default 5 | 7 (video | content); to
+   rebalance, change these two numbers so they add up to 12. */
+[data-ts-player]  { grid-column: span 5; }
+[data-ts-content] { grid-column: span 7; }
+
+/* ── Player (16:9 video box) ──────────────────────────────────────── */
+[data-ts-player] {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--ts-media-radius);
+  background: #000;
+}
+[data-ts-player] [data-ts-poster-img],
+[data-ts-player] [data-ts-video-mount] > video,
+[data-ts-player] [data-ts-video-mount] > iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+  display: block;
+}
+[data-ts-video-mount] { position: absolute; inset: 0; }
+[data-ts-video-mount]:empty { pointer-events: none; }
+
+/* Play button — JS sets its position inline; this is just the skin. */
+[data-ts-play] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #15201d;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+[data-ts-play] svg { width: 26px; height: 26px; margin-left: 2px; }
+[data-ts-play]:hover { background: #fff; }
+[data-ts-play]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 3px; }
+
+/* ── Thumbnail strip — horizontal scroll (built by JS) ────────────── */
+[data-ts-strip] {
+  display: flex;
+  gap: 1rem;
+  margin-top: clamp(1rem, 2.5vw, 1.5rem);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox: hide bar */
+}
+[data-ts-strip]::-webkit-scrollbar { display: none; }  /* WebKit: hide bar */
+
+[data-ts-thumb-trigger] {
+  flex: 0 0 auto;
+  width: clamp(120px, 16vw, 180px);
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ts-thumb-radius);
+  cursor: pointer;
+  scroll-snap-align: start;
+  opacity: 0.55;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
+}
+[data-ts-thumb-trigger] [data-ts-thumb] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-ts-thumb-trigger]:hover { opacity: 0.8; }
+[data-ts-thumb-trigger].is-active {
+  opacity: 1;
+  box-shadow: 0 0 0 3px var(--ts-card-bg), 0 0 0 5px var(--ts-accent);
+}
+[data-ts-thumb-trigger]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 2px; }
+
+/* ── Playback / CMS state (behavioural — must hold) ────────────────── */
+[data-ts-item].is-playing [data-ts-poster-img],
+[data-ts-item].is-playing [data-ts-play] { display: none; }
+[data-ts-item].is-novideo [data-ts-play] { display: none; }
+[data-ts-item].is-novideo [data-ts-poster-img] { cursor: default; }
+[data-ts-hide-empty].is-ts-empty { display: none !important; }
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Stack: video + content each take the full 12 columns. Panels still share
+     one cell, so height stays stable (no jump) on mobile too. */
+  [data-ts-panel] { gap: 1.25rem; }
+  [data-ts-player],
+  [data-ts-content] { grid-column: 1 / -1; }
+  [data-ts-play] { width: 56px; height: 56px; }
+  /* Thumbs keep their size and SCROLL horizontally instead of shrinking. */
+  [data-ts-thumb-trigger] { width: 42%; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-ts-play],
+  [data-ts-thumb-trigger] { transition: none; }
+}
