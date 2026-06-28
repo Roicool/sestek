@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.css v6.4.0
+ * testimonial-slider.css v6.5.0
  * Structure + card + player + thumbnail-strip styling for testimonial-slider.js.
  *
  * Layout: the panel is a 12-column responsive grid (video 5 cols | content 7).
@@ -111,7 +111,7 @@
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
-[data-ts-play] svg { width: 40%; height: 40%; margin-left: 6%; }
+[data-ts-play] svg { width: 42%; height: 42%; fill: currentColor; transform: translateX(3%); }
 [data-ts-play]:hover { background: #fff; }
 [data-ts-play]:focus-visible { outline: 2px solid var(--ts-accent); outline-offset: 3px; }
 

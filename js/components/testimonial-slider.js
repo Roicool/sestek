@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v3.1.1
+ * testimonial-slider.js v3.1.2
  * Case-study / testimonial slider for Webflow CMS. Everything is authored
  * inside the Collection List — JS never copies content into a separate
  * "stage". Each Collection Item carries BOTH its own small thumbnail trigger
@@ -78,9 +78,10 @@
 
   var attrNum = Sestek.util.attrNum;
 
+  // Same bbox-centred triangle the webinar player uses (so it sits dead-centre).
   var PLAY_ICON =
-    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="28" height="28">' +
-    '<path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M6.5 5v14l11-7z"/></svg>';
 
   /** True when a bound element carries no content for this CMS item. */
   function isEmpty(node) {
@@ -145,6 +146,12 @@
     playBtn.style.margin = "0";
     playBtn.style.transform = "translate(-50%, -50%)";
     playBtn.style.zIndex = "2";
+    // Lock the SIZE inline too (webinar-player approach), so a Webflow class
+    // can't blow the button up. Override via --ts-play-size if you want.
+    playBtn.style.width = "var(--ts-play-size, clamp(3.75rem, 5.5vw, 5.25rem))";
+    playBtn.style.height = "auto";
+    playBtn.style.aspectRatio = "1";
+    playBtn.style.padding = "0";
     // The button needs a positioned offset parent; only force it if the
     // player is otherwise static (so an intentional absolute/fixed is kept).
     if (typeof getComputedStyle === "function" &&
