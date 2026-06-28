@@ -1,5 +1,5 @@
 /*!
- * testimonial-slider.js v3.1.0
+ * testimonial-slider.js v3.1.1
  * Case-study / testimonial slider for Webflow CMS. Everything is authored
  * inside the Collection List — JS never copies content into a separate
  * "stage". Each Collection Item carries BOTH its own small thumbnail trigger
@@ -135,10 +135,14 @@
 
     // Centre the button on the video box with INLINE styles so it can't lose to
     // a Webflow class that loads later (same specificity, source order wins).
-    // transform-centring works at any button size (fixed or content-sized).
+    // right/bottom/margin are forced to auto/0 too, so a class margin or inset
+    // can't push the absolutely-positioned button off-centre.
     playBtn.style.position = "absolute";
     playBtn.style.top = "50%";
     playBtn.style.left = "50%";
+    playBtn.style.right = "auto";
+    playBtn.style.bottom = "auto";
+    playBtn.style.margin = "0";
     playBtn.style.transform = "translate(-50%, -50%)";
     playBtn.style.zIndex = "2";
     // The button needs a positioned offset parent; only force it if the
