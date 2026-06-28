@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sestek — Demo Builder (test)</title>
+
+  <!-- The real component CSS from the repo -->
+  <link rel="stylesheet" href="../../css/components/demo-builder.css">
+
+  <!-- Demo-only visuals. In production Webflow owns all of this; here we add
+       just enough to actually SEE the widget work. -->
+  <style>
+    :root {
+      --brand-primary--100: #fde6f3;
+      --brand-primary--500: #EC008C;
+      --brand-primary--600: #C2006F;
+      --ink: #0e0e16;
+      --muted: rgba(255, 255, 255, 0.62);
+      --surface: #16161f;
+      --surface-2: #1e1e2b;
+      --line: rgba(255, 255, 255, 0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(120% 120% at 80% 0%, #241036 0%, var(--ink) 55%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 4vw, 4rem);
+    }
+
+    .wrap { width: min(1100px, 100%); }
+
+    /* The widget shell */
+    [data-demo] {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: clamp(1.25rem, 3vw, 2.5rem);
+      box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.7);
+    }
+
+    /* ── Left: intro ───────────────────────────────────────── */
+    [data-demo-intro] h2 {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      line-height: 1.1;
+      margin: 0 0 1rem;
+    }
+    [data-demo-intro] p { color: var(--muted); line-height: 1.6; margin: 0; max-width: 34ch; }
+
+    /* ── Right: sector cards ───────────────────────────────── */
+    [data-demo-sectors] { display: flex; flex-direction: column; gap: 0.75rem; }
+    [data-demo-sector] {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      color: #fff;
+      text-align: left;
+      font: inherit;
+      transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    }
+    [data-demo-sector]:hover {
+      border-color: var(--brand-primary--500);
+      transform: translateY(-2px);
+      background: #23232f;
+    }
+    .sector__icon {
+      flex: 0 0 auto;
+      width: 44px; height: 44px;
+      display: grid; place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--brand-primary--500), var(--brand-primary--600));
+      font-size: 1.25rem;
+    }
+    .sector__title { font-weight: 600; display: block; }
+    .sector__sub { color: var(--muted); font-size: 0.85rem; }
+    .sector__arrow { margin-left: auto; color: var(--muted); }
+
+    /* ── Form state: detail (left) ─────────────────────────── */
+    [data-demo-back] {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: none; border: 0; color: var(--muted);
+      font: inherit; cursor: pointer; padding: 0; margin-bottom: 1.25rem;
+    }
+    [data-demo-back]:hover { color: #fff; }
+    [data-demo-detail-host] { margin-bottom: 1.25rem; }
+    /* The flown-in card sits a bit calmer in the detail slot */
+    [data-demo].is-form [data-demo-detail-host] [data-demo-sector] {
+      pointer-events: none;
+      border-color: var(--brand-primary--500);
+    }
+    [data-demo-detail-block] { color: var(--muted); line-height: 1.6; }
+    [data-demo-detail-block] h3 { color: #fff; font-size: 1.15rem; margin: 0 0 0.5rem; }
+
+    /* ── Form state: form (right) ──────────────────────────── */
+    [data-demo-panel] {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: clamp(1.25rem, 2.5vw, 2rem);
+    }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .field input[type="text"],
+    .field input[type="tel"] {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      background: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: #fff;
+      font: inherit;
+    }
+    .field input:focus { outline: 2px solid var(--brand-primary--500); outline-offset: 1px; }
+    [data-demo-kvkk] { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.85rem; color: var(--muted); margin: 0.25rem 0 1.25rem; }
+    .submit {
+      width: 100%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--brand-primary--500), var(--brand-primary--600));
+      border: 0; border-radius: 12px;
+      color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .submit:hover { transform: translateY(-1px); box-shadow: 0 12px 30px -10px rgba(236, 0, 140, 0.6); }
+
+    /* "AI is calling you" state */
+    [data-demo-calling] { text-align: center; padding: 2rem 1rem; }
+    .pulse {
+      width: 84px; height: 84px; margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--brand-primary--500) 0%, transparent 70%);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(0.85); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } }
+    [data-demo-calling] h3 { margin: 0 0 0.4rem; }
+    [data-demo-calling] p { color: var(--muted); margin: 0; }
+
+    .hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 1.5rem; }
+    @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div data-demo>
+      <div data-demo-stage>
+
+        <!-- LEFT column -->
+        <div>
+          <!-- selecting -->
+          <div data-demo-intro>
+            <h2>Şirketinize özel<br>yapay zeka sesli asistan</h2>
+            <p>Sektörünüzü seçin, bilgilerinizi girin; sesli asistanımız sizi
+               arasın ve deneyimi anında test edin.</p>
+          </div>
+
+          <!-- form state -->
+          <div data-demo-detail>
+            <button type="button" data-demo-back>← Geri</button>
+            <div data-demo-detail-host><!-- chosen card flies in here --></div>
+
+            <div data-demo-detail-block="banking">
+              <h3>Bankacılık &amp; Finans</h3>
+              <p>Bakiye sorgusu, kart işlemleri ve dolandırıcılık uyarılarını
+                 7/24 doğal bir sesle karşılayan asistan. KVKK uyumlu, güvenli.</p>
+            </div>
+            <div data-demo-detail-block="retail">
+              <h3>Perakende</h3>
+              <p>Sipariş takibi, iade ve kampanya sorularını anında yanıtlayan,
+                 satışa dönüştüren neşeli bir sesli asistan.</p>
+            </div>
+            <div data-demo-detail-block="health">
+              <h3>Sağlık</h3>
+              <p>Randevu oluşturma, hatırlatma ve sonuç bilgilendirmesini güven
+                 veren, net bir tonla yöneten asistan.</p>
+            </div>
+            <div data-demo-detail-block="telecom">
+              <h3>Telekom</h3>
+              <p>Paket yükseltme, arıza kaydı ve fatura sorularını profesyonel,
+                 akıcı bir tonda çözen asistan.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT column -->
+        <div>
+          <!-- selecting -->
+          <div data-demo-sectors>
+            <button type="button" data-demo-sector="banking" data-demo-sector-name="Bankacılık &amp; Finans">
+              <span class="sector__icon">🏦</span>
+              <span><span class="sector__title" data-demo-sector-title>Bankacılık &amp; Finans</span>
+                <span class="sector__sub">Güvenli, KVKK uyumlu</span></span>
+              <span class="sector__arrow">→</span>
+            </button>
+            <button type="button" data-demo-sector="retail" data-demo-sector-name="Perakende">
+              <span class="sector__icon">🛍️</span>
+              <span><span class="sector__title" data-demo-sector-title>Perakende</span>
+                <span class="sector__sub">Neşeli, enerjik ses tonu</span></span>
+              <span class="sector__arrow">→</span>
+            </button>
+            <button type="button" data-demo-sector="health" data-demo-sector-name="Sağlık">
+              <span class="sector__icon">🩺</span>
+              <span><span class="sector__title" data-demo-sector-title>Sağlık</span>
+                <span class="sector__sub">Güven veren, net ton</span></span>
+              <span class="sector__arrow">→</span>
+            </button>
+            <button type="button" data-demo-sector="telecom" data-demo-sector-name="Telekom">
+              <span class="sector__icon">📡</span>
+              <span><span class="sector__title" data-demo-sector-title>Telekom</span>
+                <span class="sector__sub">Profesyonel, akıcı ton</span></span>
+              <span class="sector__arrow">→</span>
+            </button>
+          </div>
+
+          <!-- form state -->
+          <div data-demo-panel>
+            <form data-demo-form>
+              <div class="field">
+                <label>İsim</label>
+                <input type="text" name="name" placeholder="Adınız">
+              </div>
+              <div class="field">
+                <label>Telefon — <span data-demo-active-label></span></label>
+                <input type="tel" data-demo-phone name="phone" placeholder="+90 5XX XXX XX XX">
+              </div>
+              <label data-demo-kvkk>
+                <input type="checkbox" name="kvkk">
+                <span>KVKK kapsamında kişisel verilerimin işlenmesine izin veriyorum.</span>
+              </label>
+              <button type="submit" class="submit">📞 Sesli Asistan Beni Arasın</button>
+            </form>
+
+            <div data-demo-calling>
+              <div class="pulse"></div>
+              <h3>Sizi arıyoruz…</h3>
+              <p>Sesli asistanımız birkaç saniye içinde telefonunuzu çalacak.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="hint">Test sayfası · bir sektör seç → FLIP ile forma geçer · “Geri” ile dön ·
+       formu gönder → “arıyoruz” durumu. Deep-link: <code>?demo-sector=retail</code></p>
+  </div>
+
+  <!-- GSAP + Flip + the real component -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/Flip.min.js"></script>
+  <script src="../../js/components/demo-builder.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      Sestek.initDemoBuilder();
+    });
+  </script>
+</body>
+</html>
