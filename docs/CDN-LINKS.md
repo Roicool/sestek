@@ -818,6 +818,10 @@ DOM:
 - Item attribute'ları: `data-demo-form-title` (sağ başlık), `data-demo-form-text`
   (sağ açıklama), `data-demo-form-active` (seçili başlasın). Açılan item'a
   `is-active` class'ı eklenir — Designer'dan aktif stil verebilirsin.
+- **Dil (TR/EN):** `data-demo-form-title-<lang>` / `data-demo-form-text-<lang>`
+  ile `<html lang>`'e göre metin. Örn. `data-demo-form-title-tr` Türkçe sayfada
+  kazanır; yoksa baz `data-demo-form-title`'a düşer. (blog-utils / ask-ai ile
+  aynı pattern.)
 - KVKK kontrolü **checkbox veya tek radio** olabilir; ikisi de `required` ile
   doğrulanır. (İki seçenekli "evet/hayır" radio grubu native validation ile
   "evet"e zorlanamaz — tekil onay input'u kullan.) Designer'da **required

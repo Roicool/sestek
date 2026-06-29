@@ -76,7 +76,12 @@
  * Item attributes ([data-demo-form-item]):
  *   data-demo-form-title          right-panel heading text for this industry
  *   data-demo-form-text           right-panel body text for this industry
+ *   data-demo-form-title-<lang>   per-language override, matched to <html lang>
+ *   data-demo-form-text-<lang>    e.g. -tr on a Turkish page; falls back to base
  *   data-demo-form-active         start selected (else first item / open one)
+ *
+ * Whichever item is open/selected gets the `is-active` class (others lose it) —
+ * style the active marker (e.g. the pink dot) off that.
  *
  * The KVKK control may be a checkbox or a single radio — both validate via
  * `required`. (A two-option "yes/no" radio group can't be forced to "yes" by
@@ -147,13 +152,24 @@
       }, 180);
     }
 
+    /**
+     * Language-matched attribute: data-…-<lang> for the page's <html lang>,
+     * falling back to the base attribute. e.g. on a "tr" page,
+     * data-demo-form-title-tr wins over data-demo-form-title.
+     */
+    function attrLang(el, base) {
+      var lang = pageLang();
+      var v = lang && el.getAttribute(base + "-" + lang);
+      return v != null ? v : el.getAttribute(base);
+    }
+
     /** Make `item` the selected industry — updates right copy + active marker. */
     function activate(item) {
       if (!item || item === active) return;
       active = item;
       items.forEach(function (it) { it.classList.toggle("is-active", it === item); });
-      swap(heading, item.getAttribute("data-demo-form-title"));
-      swap(body, item.getAttribute("data-demo-form-text"));
+      swap(heading, attrLang(item, "data-demo-form-title"));
+      swap(body, attrLang(item, "data-demo-form-text"));
     }
 
     if (items.length) {
@@ -177,8 +193,8 @@
       // Set initial copy without the fade (active starts null so swap would fade).
       active = initial;
       initial.classList.add("is-active");
-      if (heading) heading.textContent = initial.getAttribute("data-demo-form-title") || heading.textContent;
-      if (body) body.textContent = initial.getAttribute("data-demo-form-text") || body.textContent;
+      if (heading) heading.textContent = attrLang(initial, "data-demo-form-title") || heading.textContent;
+      if (body) body.textContent = attrLang(initial, "data-demo-form-text") || body.textContent;
     }
 
     // ── 2. KVKK consent by geolocation ───────────────────────────
