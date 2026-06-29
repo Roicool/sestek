@@ -18,12 +18,14 @@
  *   3. Submit reveal — the form stays a NATIVE Webflow form (Webflow owns the
  *      submit + success message). We watch the success message for becoming
  *      visible and then FLIP-move the header Lottie into a placeholder inside
- *      the thank-you message, and smooth-scroll the message into view.
+ *      the thank-you message — arcing across and GROWING to the placeholder's
+ *      size — and smooth-scroll the message into view.
  *
- * Requires: nothing hard. GSAP is used for the Lottie FLIP when present (it
- * already is, since the left column accordion needs it); without GSAP the
- * Lottie is moved instantly. Smooth scroll prefers Sestek.scrollTo (Lenis),
- * falling back to native window.scrollTo.
+ * Requires: nothing hard. GSAP (already loaded for the left accordion) powers
+ * the Lottie arc; without it the Lottie just arrives instantly. The Flip plugin
+ * is NOT needed — the travel is a manual FLIP so it can arc and grow to the
+ * size you give. Smooth scroll prefers Sestek.scrollTo (Lenis), falling back
+ * to native window.scrollTo.
  * CSS: css/components/demo-form.css
  *
  * DOM (Webflow):
@@ -52,7 +54,9 @@
  *         </label>
  *       </form>
  *       <div class="w-form-done" data-demo-form-done>
- *         Teşekkürler! <div data-demo-form-lottie-target></div>
+ *         Teşekkürler!
+ *         <!-- size THIS placeholder in Designer → the Lottie grows to it -->
+ *         <div data-demo-form-lottie-target style="width:180px;height:180px"></div>
  *       </div>
  *     </div>
  *   </section>
@@ -62,7 +66,12 @@
  *                                 code (default https://ipapi.co/country/)
  *   data-demo-form-country        country code that shows KVKK   (default "TR")
  *   data-demo-form-scroll-offset  px subtracted from the scroll target (default 80)
- *   data-demo-form-duration       Lottie FLIP seconds            (default 0.8)
+ *   data-demo-form-duration       Lottie arc seconds             (default 0.9)
+ *
+ * Lottie sizing (the size it reaches on arrival):
+ *   By default the Lottie grows to the [data-demo-form-lottie-target] box — so
+ *   just size that placeholder in Designer. To override, put on the Lottie:
+ *   data-demo-form-lottie-w  / data-demo-form-lottie-h   target width/height px
  *
  * Item attributes ([data-demo-form-item]):
  *   data-demo-form-title          right-panel heading text for this industry
@@ -217,41 +226,43 @@
       }
 
       /**
-       * Move `el` into `target`, animating from its old box. Prefers the GSAP
-       * Flip plugin (scale-to-fit, no stretch; absolute so siblings don't jump);
-       * falls back to a manual FLIP, then to an instant move.
+       * Move `el` into `target` with an arcing FLIP that GROWS the Lottie to the
+       * destination size. The Lottie arrives at the box you sized the target
+       * placeholder to (or data-demo-form-lottie-w / -h overrides) — that's the
+       * "size it should reach". The travel curves (x and y settle on different
+       * eases) and the scale pops in slightly, instead of a flat diagonal slide.
        */
       function flipMove(el, target) {
-        var dur = parseFloat(root.getAttribute("data-demo-form-duration")) || 0.8;
+        var dur = parseFloat(root.getAttribute("data-demo-form-duration")) || 0.9;
 
-        if (reduce || typeof global.gsap === "undefined") {   // instant move
-          target.appendChild(el);
-          return;
+        var first   = el.getBoundingClientRect();          // FIRST: old box
+        var destBox = target.getBoundingClientRect();      // size you set in Webflow
+
+        target.appendChild(el);                            // move in DOM
+
+        // Arrive at the size you gave: explicit attrs win, else the placeholder's
+        // own box. Without this the Lottie keeps its old size and never grows.
+        var w = parseFloat(el.getAttribute("data-demo-form-lottie-w")) || destBox.width;
+        var h = parseFloat(el.getAttribute("data-demo-form-lottie-h")) || destBox.height;
+        if (w && h) {
+          el.style.width  = w + "px";
+          el.style.height = h + "px";
         }
 
-        if (global.Flip) {                                    // GSAP Flip plugin
-          var state = global.Flip.getState(el);
-          target.appendChild(el);
-          global.Flip.from(state, {
-            duration: dur, ease: "power3.inOut", scale: true, absolute: true,
-          });
-          return;
-        }
+        if (reduce || typeof global.gsap === "undefined") return;   // instant arrive
 
-        // Fallback: manual FLIP (no plugin) — measure old box, invert, play.
-        var first = el.getBoundingClientRect();
-        target.appendChild(el);
-        var last = el.getBoundingClientRect();
+        var last = el.getBoundingClientRect();             // LAST: new (grown) box
         if (!last.width || !first.width) return;
-        global.gsap.fromTo(el, {
-          x: first.left - last.left,
-          y: first.top - last.top,
-          scaleX: first.width / last.width,
-          scaleY: first.height / last.height,
-          transformOrigin: "top left",
-        }, {
-          x: 0, y: 0, scaleX: 1, scaleY: 1, duration: dur, ease: "power3.inOut",
-        });
+
+        global.gsap.set(el, { transformOrigin: "top left", zIndex: 9999 });
+        // Invert + Play. Splitting x/y onto different eases bends the path into a
+        // gentle arc; back.out on the scale gives a soft grow-in pop.
+        global.gsap.timeline()
+          .fromTo(el, { x: first.left - last.left }, { x: 0, duration: dur, ease: "power1.inOut" }, 0)
+          .fromTo(el, { y: first.top - last.top },   { y: 0, duration: dur, ease: "power2.in" }, 0)
+          .fromTo(el,
+            { scaleX: first.width / last.width, scaleY: first.height / last.height },
+            { scaleX: 1, scaleY: 1, duration: dur, ease: "back.out(1.3)" }, 0);
       }
 
       function onSuccess() {
