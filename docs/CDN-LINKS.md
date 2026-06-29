@@ -818,8 +818,10 @@ DOM:
 - Item attribute'ları: `data-demo-form-title` (sağ başlık), `data-demo-form-text`
   (sağ açıklama), `data-demo-form-active` (seçili başlasın). Açılan item'a
   `is-active` class'ı eklenir — Designer'dan aktif stil verebilirsin.
-- KVKK checkbox'ı Designer'da **required işaretleme**; script TR'de ekler,
-  diğer ülkelerde kaldırır (İngilizce/diğer ziyaretçiler engellenmez).
+- KVKK kontrolü **checkbox veya tek radio** olabilir; ikisi de `required` ile
+  doğrulanır. (İki seçenekli "evet/hayır" radio grubu native validation ile
+  "evet"e zorlanamaz — tekil onay input'u kullan.) Designer'da **required
+  işaretleme**; script TR'de ekler, diğer ülkelerde kaldırır.
 - Geo varsayılanı `ipapi.co` — kendi endpoint'ini `data-demo-form-geo` ile
   verebilirsin (plain-text ülke kodu döndürmeli, örn. `TR`).
 - Submit'i **hijack etmez** — form native Webflow submit'iyle çalışır; script

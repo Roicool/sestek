@@ -69,7 +69,11 @@
  *   data-demo-form-text           right-panel body text for this industry
  *   data-demo-form-active         start selected (else first item / open one)
  *
- * IMPORTANT: do NOT set the KVKK checkbox `required` in Designer — this script
+ * The KVKK control may be a checkbox or a single radio — both validate via
+ * `required`. (A two-option "yes/no" radio group can't be forced to "yes" by
+ * native validation, so prefer a single consent input.)
+ *
+ * IMPORTANT: do NOT set the KVKK input `required` in Designer — this script
  * manages it so English/other-country visitors are never blocked.
  *
  * https://github.com/roicool/sestek
@@ -171,19 +175,28 @@
     // ── 2. KVKK consent by geolocation ───────────────────────────
     var kvkk = root.querySelector("[data-demo-form-kvkk]");
     if (kvkk) {
-      var checkbox = kvkk.querySelector('input[type="checkbox"]');
+      // Consent control may be a checkbox OR a (single) radio — both validate
+      // with `required`. A two-option radio group ("yes/no") can't be enforced
+      // to "yes" by native validation, so use a single consent radio/checkbox.
+      var inputs   = kvkk.querySelectorAll('input[type="checkbox"], input[type="radio"]');
       var trigger  = (root.getAttribute("data-demo-form-country") || "TR").toUpperCase();
       var geoUrl   = root.getAttribute("data-demo-form-geo") || "https://ipapi.co/country/";
 
+      function setRequired(on) {
+        Array.prototype.forEach.call(inputs, function (inp) {
+          inp.required = on;
+          if (on) inp.setAttribute("required", "required");
+          else inp.removeAttribute("required");
+        });
+      }
+
       // Default state: hidden + not required, so non-TR visitors are never blocked.
       kvkk.classList.remove("is-visible");
-      if (checkbox) { checkbox.required = false; checkbox.removeAttribute("required"); }
+      setRequired(false);
 
       function applyKvkk(show) {
         kvkk.classList.toggle("is-visible", show);
-        if (!checkbox) return;
-        if (show) { checkbox.required = true; checkbox.setAttribute("required", "required"); }
-        else { checkbox.required = false; checkbox.removeAttribute("required"); }
+        setRequired(show);
       }
 
       // Client-side IP geo lookup; fall back to <html lang> if it fails.
