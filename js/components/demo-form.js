@@ -216,11 +216,31 @@
                global.getComputedStyle(el).display !== "none";
       }
 
-      /** Manual FLIP: move `el` into `target`, animating from its old box. */
+      /**
+       * Move `el` into `target`, animating from its old box. Prefers the GSAP
+       * Flip plugin (scale-to-fit, no stretch; absolute so siblings don't jump);
+       * falls back to a manual FLIP, then to an instant move.
+       */
       function flipMove(el, target) {
+        var dur = parseFloat(root.getAttribute("data-demo-form-duration")) || 0.8;
+
+        if (reduce || typeof global.gsap === "undefined") {   // instant move
+          target.appendChild(el);
+          return;
+        }
+
+        if (global.Flip) {                                    // GSAP Flip plugin
+          var state = global.Flip.getState(el);
+          target.appendChild(el);
+          global.Flip.from(state, {
+            duration: dur, ease: "power3.inOut", scale: true, absolute: true,
+          });
+          return;
+        }
+
+        // Fallback: manual FLIP (no plugin) — measure old box, invert, play.
         var first = el.getBoundingClientRect();
         target.appendChild(el);
-        if (reduce || typeof global.gsap === "undefined") return;   // instant move
         var last = el.getBoundingClientRect();
         if (!last.width || !first.width) return;
         global.gsap.fromTo(el, {
@@ -230,9 +250,7 @@
           scaleY: first.height / last.height,
           transformOrigin: "top left",
         }, {
-          x: 0, y: 0, scaleX: 1, scaleY: 1,
-          duration: parseFloat(root.getAttribute("data-demo-form-duration")) || 0.8,
-          ease: "power3.inOut",
+          x: 0, y: 0, scaleX: 1, scaleY: 1, duration: dur, ease: "power3.inOut",
         });
       }
 
