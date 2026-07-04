@@ -4,7 +4,9 @@
  *   • LEFT  — a short list of items. GSAP pins this column in place while the
  *     right side scrolls past it. The item whose matching panel is currently
  *     in the centre of the viewport gets .is-active (Designer styles active vs
- *     inactive — highlight, show/hide description, whatever).
+ *     inactive). Titles stay visible; each item's [data-slist-body] opens/closes
+ *     like an accordion (only the active one is open). Items are clickable —
+ *     click smooth-scrolls to that panel and opens its body.
  *   • RIGHT — panels in NORMAL DOCUMENT FLOW, one per item, scrolling normally.
  *     As each panel's centre crosses the viewport centre, its index becomes the
  *     active one. That's the whole trick — no track translation, no clipping,
@@ -21,7 +23,8 @@
  *   [data-scroll-list]                  root / section (its height = the right
  *                                       column's; that's the scroll length)
  *     [data-slist-left]                 LEFT column — GSAP pins THIS
- *       [data-slist-item="0"]           one row (title + desc + CTA…)
+ *       [data-slist-item="0"]           one row — clickable; title always shown
+ *         [data-slist-body]             the accordion part (opens when active)
  *       [data-slist-item="1"]           …
  *     [data-slist-right]                RIGHT column — scrolls normally
  *       [data-slist-panel="0"]          content block; index must match its item
@@ -33,6 +36,7 @@
  *                        position keyword/percent (default "center")
  *   data-slist-min       min viewport width (px) to enable the pin; below it
  *                        the layout just stacks and scrolls (default 768)
+ *   data-slist-open      accordion open/close duration in seconds (default 0.45)
  *
  * https://github.com/roicool/sestek
  */
@@ -68,10 +72,24 @@
 
     var triggerPos = root.getAttribute("data-slist-trigger") || "center";
     var minWidth   = num(root, "data-slist-min", 768);
+    var openDur    = num(root, "data-slist-open", 0.45); // accordion open/close, s
     var reduce     = Sestek.util.prefersReducedMotion();
 
-    // Optional per-panel video — at most one plays at a time (the active one).
+    // Per-item accordion body (optional per item) and per-panel video.
+    var bodies = items.map(function (it) { return it.querySelector("[data-slist-body]"); });
     var videos = panels.map(function (p) { return p.querySelector("[data-slist-video]"); });
+
+    /** Open/close one accordion body. Instant under reduced motion. */
+    function setBody(el, open) {
+      if (!el) return;
+      if (reduce) { gsap.set(el, { height: open ? "auto" : 0, autoAlpha: open ? 1 : 0 }); return; }
+      gsap.to(el, { height: open ? "auto" : 0, autoAlpha: open ? 1 : 0, duration: openDur, ease: "power2.inOut" });
+    }
+
+    // A click smooth-scrolls to a panel; while that scroll plays, panels passing
+    // through the centre would otherwise steal "active". Lock it briefly so the
+    // clicked item stays active until the scroll settles on it.
+    var clickLockUntil = 0;
 
     var cur = -1;
     function setActive(i) {
@@ -80,6 +98,7 @@
       for (var j = 0; j < items.length; j++) {
         items[j].classList.toggle("is-active", j === i);
         panels[j].classList.toggle("is-active", j === i);
+        setBody(bodies[j], j === i);
       }
       videos.forEach(function (v, j) {
         if (!v) return;
@@ -88,7 +107,25 @@
       });
     }
 
-    setActive(0);
+    // Initial state — item 0 active/open, the rest collapsed — set WITHOUT a
+    // tween so nothing animates on load; runtime changes go through setActive.
+    cur = 0;
+    items.forEach(function (it, j) {
+      it.classList.toggle("is-active", j === 0);
+      panels[j].classList.toggle("is-active", j === 0);
+      if (bodies[j]) gsap.set(bodies[j], { height: j === 0 ? "auto" : 0, autoAlpha: j === 0 ? 1 : 0 });
+    });
+    if (videos[0] && !reduce) videos[0].play().catch(function () {});
+
+    // Click an item → activate + open it, and smooth-scroll its panel to centre.
+    items.forEach(function (item, i) {
+      item.style.cursor = "pointer";
+      item.addEventListener("click", function () {
+        clickLockUntil = Date.now() + 700;
+        setActive(i);
+        panels[i].scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      });
+    });
 
     // Active detection — always on (mobile + desktop, reduced-motion or not).
     // A panel is "active" while its box straddles the trigger line; because the
@@ -99,7 +136,11 @@
         trigger: panel,
         start: "top " + triggerPos,
         end: "bottom " + triggerPos,
-        onToggle: function (self) { if (self.isActive) setActive(i); },
+        onToggle: function (self) {
+          if (!self.isActive) return;
+          if (Date.now() < clickLockUntil) return; // don't fight a click scroll
+          setActive(i);
+        },
       });
     });
 

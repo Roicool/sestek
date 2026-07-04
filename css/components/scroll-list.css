@@ -27,6 +27,18 @@
   justify-content: center;
 }
 
+/* Each row is clickable; the title stays visible and the body is the part that
+   accordions open/closed. overflow:hidden is required for the height animation
+   (0 → auto) to clip cleanly. */
+.slist__item {
+  cursor: pointer;
+}
+
+.slist__body {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
 /* Right column — normal flow, this is what scrolls. */
 .slist__right {
   position: relative;
