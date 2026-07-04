@@ -1,15 +1,19 @@
 /*!
- * scroll-stack.js v1.0.0
+ * scroll-stack.js v1.2.0
  * Pinned, scroll-driven "card deck" section:
  *   • LEFT  — a persistent list of items; the active one expands (its body
  *     grows height 0→auto via Sestek.heightReveal) while the rest stay
  *     collapsed and dimmed (.is-active toggled for Designer to style).
  *   • RIGHT — a stack of cards, one per item, stacked in the same spot.
- *     The active card sits in front (scale 1, no offset). Cards behind it
- *     peek, offset down and slightly scaled down — a real card-deck depth,
- *     not a crossfade. Advancing the active index does TWO things at once:
- *       1. the current front card exits to the RIGHT while fading out
- *       2. every card behind it rises one depth level to take its place
+ *     The active card sits in front (scale 1, no tilt, no offset). Cards
+ *     behind it peek from below — offset down, scaled down, and tipped back
+ *     (rotateX) via a real 3D perspective on the stage — a proper receding
+ *     deck, not a flat crossfade. Advancing the active index does TWO things
+ *     at once:
+ *       1. the current front card lifts UP and tips further back (rotateX)
+ *          while fading out — like the top card being lifted off a deck
+ *       2. every card behind it rises one depth level (and untilts a step)
+ *          to take its place
  *     Scrolling back reverses the exact same tween, so the deck rebuilds
  *     itself scroll-direction-agnostically — no manual reverse logic.
  *
@@ -31,9 +35,23 @@
  *     [data-sstack-stage]               RIGHT column — give it an explicit
  *                                       size (aspect-ratio / min-height);
  *                                       children are position:absolute (CSS)
- *       [data-sstack-card="0"]          one stacked card/image — index must
- *                                       match its [data-sstack-item]
+ *       [data-sstack-card="0"]          one stacked card — index must match
+ *                                       its [data-sstack-item]. Content is
+ *                                       yours (image, or a <video> — see below)
  *       [data-sstack-card="1"]          …
+ *
+ * Video cards (optional, per card):
+ *   [data-sstack-video]               a <video muted loop playsinline> — only
+ *                                     the ACTIVE card's video plays; every
+ *                                     other card's video is paused, so at most
+ *                                     one plays at a time (perf + no stacked
+ *                                     background audio).
+ *   [data-sstack-controls]            wrapper for the hover controls below —
+ *                                     CSS shows it on card hover, JS wires it
+ *   [data-sstack-toggle-play]         button — play/pause the card's video
+ *   [data-sstack-restart]             button — restart the card's video (t=0)
+ *   [data-sstack-toggle-mute]         button — mute/unmute the card's video
+ *   Card gets .is-paused / .is-muted classes so Designer can swap icon state.
  *
  * Root attributes (all optional):
  *   data-sstack-end         pin scroll distance             (default "400%")
@@ -44,8 +62,11 @@
  *   data-sstack-ease        ease for every swap              (default "power2.inOut")
  *   data-sstack-peek        yPercent offset per stacked depth level (default 6)
  *   data-sstack-peek-scale  scale falloff per depth level    (default 0.05)
+ *   data-sstack-peek-tilt   rotateX degrees per depth level, receding tilt (default 6)
  *   data-sstack-max-depth   depth beyond which a card is hidden (opacity 0) (default 3)
- *   data-sstack-exit        xPercent the leaving card travels, rightward (default 130)
+ *   data-sstack-exit        yPercent the leaving card travels, upward (default 140)
+ *   data-sstack-exit-tilt   rotateX degrees the leaving card tips back to (default 25)
+ *   data-sstack-perspective px depth of the 3D perspective on the stage (default 1200)
  *
  * https://github.com/roicool/sestek
  */
@@ -89,33 +110,101 @@
     var transition = num(root, "data-sstack-transition", 1);
     var snapOn     = root.getAttribute("data-sstack-snap") !== "false";
     var ease       = root.getAttribute("data-sstack-ease") || "power2.inOut";
-    var peek       = num(root, "data-sstack-peek", 6);
-    var peekScale  = num(root, "data-sstack-peek-scale", 0.05);
-    var maxDepth   = num(root, "data-sstack-max-depth", 3);
-    var exitX      = num(root, "data-sstack-exit", 130);
+    var peek        = num(root, "data-sstack-peek", 6);
+    var peekScale   = num(root, "data-sstack-peek-scale", 0.05);
+    var peekTilt    = num(root, "data-sstack-peek-tilt", 6);
+    var maxDepth    = num(root, "data-sstack-max-depth", 3);
+    var exitY       = num(root, "data-sstack-exit", 140);
+    var exitTilt    = num(root, "data-sstack-exit-tilt", 25);
+    var perspective = num(root, "data-sstack-perspective", 1200);
 
     var reduce = Sestek.util.prefersReducedMotion();
 
+    var stage = root.querySelector("[data-sstack-stage]");
+    if (stage) stage.style.perspective = perspective + "px";
+
     /**
      * Resting style for a card at a given depth.
-     * depth 0        → front, fully visible, no offset.
-     * depth > 0       → stacked behind, peeking (offset down + scaled down).
-     * depth < 0       → already dismissed — parked off-screen to the right.
+     * depth 0        → front, fully visible, no tilt, no offset.
+     * depth > 0       → stacked behind, peeking below — offset down, scaled
+     *                   down, tipped back a little further per depth level
+     *                   (rotateX) so the deck actually recedes in 3D space
+     *                   instead of just looking like flat, offset copies.
+     * depth < 0       → already dismissed — lifted up, tipped further back,
+     *                   faded out. Continues the SAME tilt direction the
+     *                   card was already easing into as it neared the front,
+     *                   so the departure reads as one continuous motion
+     *                   rather than a bolted-on exit.
      * depth > maxDepth is visually identical to maxDepth but invisible, so a
      * long list doesn't pile up an ever-growing, ever-shrinking peek stack.
      */
     function depthVars(depth) {
       if (depth < 0) {
-        return { xPercent: exitX, yPercent: 0, scale: 1, opacity: 0, zIndex: 0 };
+        return {
+          yPercent: -exitY,
+          rotateX: -exitTilt,
+          scale: 1,
+          opacity: 0,
+          zIndex: 0,
+          force3D: true,
+        };
       }
       return {
-        xPercent: 0,
         yPercent: peek * depth,
+        rotateX: -peekTilt * depth,
         scale: 1 - peekScale * depth,
         opacity: depth > maxDepth ? 0 : 1,
         zIndex: n - depth,
+        force3D: true,
       };
     }
+
+    // ── Per-card video (optional) ──────────────────────────────────
+    // At most one video ever plays — whichever card is active. Hover
+    // controls (play/pause, restart, mute) are scoped to their own card via
+    // closest(), so this works regardless of how many cards have a video.
+    var videos = cards.map(function (card) { return card.querySelector("[data-sstack-video]"); });
+
+    function setVideoActive(idx) {
+      videos.forEach(function (v, i) {
+        if (!v) return;
+        if (i === idx) v.play().catch(function () {});
+        else v.pause();
+      });
+    }
+
+    function wireVideoControls(card, video) {
+      if (!video) return;
+      var playBtn    = card.querySelector("[data-sstack-toggle-play]");
+      var restartBtn = card.querySelector("[data-sstack-restart]");
+      var muteBtn    = card.querySelector("[data-sstack-toggle-mute]");
+
+      function syncPlaying() { card.classList.toggle("is-paused", video.paused); }
+      function syncMuted()   { card.classList.toggle("is-muted", video.muted); }
+
+      video.addEventListener("play", syncPlaying);
+      video.addEventListener("pause", syncPlaying);
+      syncPlaying();
+      syncMuted();
+
+      if (playBtn) playBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (video.paused) video.play().catch(function () {});
+        else video.pause();
+      });
+      if (restartBtn) restartBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        video.currentTime = 0;
+        video.play().catch(function () {});
+      });
+      if (muteBtn) muteBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        video.muted = !video.muted;
+        syncMuted();
+      });
+    }
+
+    cards.forEach(function (card, i) { wireVideoControls(card, videos[i]); });
 
     if (reduce) { buildStatic(); return; }
 
@@ -146,6 +235,7 @@
         items[i].classList.toggle("is-active", i === idx);
         cards[i].classList.toggle("is-active", i === idx);
       }
+      setVideoActive(idx);
     }
 
     function activeFromTime(t) {
@@ -284,6 +374,10 @@
       var active = 0;
       items.forEach(function (item, i) { item.classList.toggle("is-active", i === 0); });
       cards.forEach(function (card, i) { card.classList.toggle("is-active", i === 0); });
+      // Reduced motion: no auto-playing video, ever — mirrors video-inline.js's
+      // convention. Videos stay paused on their poster until the visitor
+      // presses the (still fully functional) manual play button themselves.
+      videos.forEach(function (v) { if (v) v.pause(); });
 
       items.forEach(function (item, i) {
         item.addEventListener("click", function () {

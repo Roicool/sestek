@@ -1,5 +1,5 @@
 /*!
- * scroll-stack.css v1.0.0
+ * scroll-stack.css v1.2.0
  * Pinned scroll-driven "card deck" section — structure/behaviour only.
  * Colours, fonts, card internals and exact spacing come from the Webflow
  * Designer + RC tokens.
@@ -32,21 +32,28 @@
   will-change: height, opacity;
 }
 
-/* ── Right column — the card deck ────────────────────────────── */
+/*
+ * Right column — the card deck. perspective is what makes the cards' rotateX
+ * tilt (set by JS per depth level) actually recede in 3D instead of just
+ * squashing flat; JS also sets this inline from data-sstack-perspective, this
+ * is only the pre-JS/fallback value.
+ */
 .sstack__stage {
   position: relative;
+  perspective: 1200px;
 }
 
 /*
- * Every card lives in the SAME spot (inset:0) — depth is expressed entirely
- * through transform (yPercent/scale/xPercent) and opacity, driven by JS.
- * Percentage-based transforms scale with the card's own box, so nothing
- * needs re-measuring on resize.
+ * Every card lives in the SAME spot (inset:0) — depth is expressed through
+ * transform (yPercent/scale/rotateX) and opacity, driven by JS. Percentage
+ * transforms scale with the card's own box, so nothing needs re-measuring on
+ * resize. transform-origin at the bottom edge is what makes the rotateX tilt
+ * read as "tipping back/away" rather than pivoting through the card's centre.
  */
 .sstack__card {
   position: absolute;
   inset: 0;
-  transform-origin: center center;
+  transform-origin: center bottom;
   backface-visibility: hidden;
   will-change: transform, opacity;
   /* Only the active (front) card should ever be clickable — the ones
@@ -58,10 +65,38 @@
   pointer-events: auto;
 }
 
+/* A video card's own <video> fills the card box; object-fit is the only
+   thing this file needs to own — everything else (poster, controls look)
+   is yours. */
+.sstack__card video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * Hover controls (play/pause, restart, mute) — hidden until the active card
+ * is hovered. pointer-events:none while hidden so the invisible buttons
+ * don't block clicks to whatever's under them; auto again on hover.
+ */
+.sstack__controls {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.sstack__card.is-active:hover .sstack__controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ── Reduced motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .sstack__body,
-  .sstack__card {
+  .sstack__card,
+  .sstack__controls {
     will-change: auto !important;
     transition: none !important;
   }
