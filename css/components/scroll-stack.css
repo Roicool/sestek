@@ -4,9 +4,10 @@
  * Colours, fonts, card internals and exact spacing come from the Webflow
  * Designer + RC tokens.
  *
- * [data-sstack-stage] MUST have an explicit size (aspect-ratio or min-height)
- * — it's the clipped viewport window; [data-sstack-track] holds the cards in
- * NORMAL DOCUMENT FLOW (no position:absolute) and is what JS translates.
+ * [data-sstack-stage] is the clipped viewport window — JS sizes it to a SQUARE
+ * (its own width) plus a `peek` band and sizes each card to that square; the
+ * aspect-ratio here is just a pre-JS fallback. [data-sstack-track] holds the
+ * cards in NORMAL DOCUMENT FLOW (no position:absolute) and is what JS translates.
  *
  * Drives: js/components/scroll-stack.js
  * https://github.com/roicool/sestek
@@ -33,15 +34,18 @@
 }
 
 /*
- * Right column — the clipped viewport. perspective is what makes the leaving
- * card's rotateX tilt (set by JS) actually recede in 3D instead of just
- * squashing flat. overflow:hidden is critical — the track is TALLER than the
- * stage (one card-height per item) and this is what shows only one at a time.
+ * Right column — the clipped viewport. JS sizes it to a SQUARE (its own width)
+ * plus a `peek` band, and sizes each card to that square; the aspect-ratio here
+ * is only a pre-JS fallback to avoid a layout flash. perspective is what makes
+ * the leaving card's rotateX tilt (set by JS) actually recede in 3D instead of
+ * squashing flat. overflow:hidden clips the track (which is taller than the
+ * stage) so only the active square + the next card's peeking top edge show.
  */
 .sstack__stage {
   position: relative;
   overflow: hidden;
   perspective: 1200px;
+  aspect-ratio: 1 / 1;
 }
 
 /*
@@ -65,9 +69,11 @@
  */
 .sstack__card {
   position: relative;
-  flex: 0 0 100%;
+  /* JS sets each card's height (in px) to the stage's square side — shorter
+     than the stage window, so the peek band below shows the next card. flex
+     stays 0 0 auto so that inline height is what defines the card's size. */
+  flex: 0 0 auto;
   width: 100%;
-  height: 100%;
   transform-origin: center bottom;
   backface-visibility: hidden;
   will-change: transform;

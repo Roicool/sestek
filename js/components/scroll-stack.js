@@ -5,15 +5,15 @@
  *     grows height 0→auto via Sestek.heightReveal) while the rest stay
  *     collapsed and dimmed (.is-active toggled for Designer to style).
  *   • RIGHT — cards sit in NORMAL DOCUMENT FLOW, stacked one below another
- *     inside [data-sstack-track], clipped by [data-sstack-stage]'s
- *     overflow:hidden so only one is ever visible — no position:absolute,
- *     no overlapping boxes. Advancing the active index shifts the WHOLE
- *     track up by one card's height (a real vertical list scroll), while
- *     the card that's leaving ALSO tips backward in 3D (rotateX, via a
- *     perspective on the stage) as it slides out through the top — so it
- *     reads as receding into the distance, not just sliding away flat.
- *     Scrolling back reverses the exact same tween — no manual reverse
- *     logic needed.
+ *     inside [data-sstack-track]. The stage is a SQUARE (its own width) but
+ *     its clipped window is a little TALLER (data-sstack-peek) so the top edge
+ *     of the next card peeks in below the active one — you see it coming up
+ *     from the bottom, not a boxed-in single card. Advancing the active index
+ *     shifts the WHOLE track up by one square (a real vertical list scroll)
+ *     while the leaving card tips back in 3D + shrinks (EXIT) and the incoming
+ *     card eases up from a shrunk pose to flat+full (ENTER) — minimal in/out
+ *     motion, no position:absolute, no overlapping boxes. Scrolling back
+ *     reverses the exact same tween — no manual reverse logic needed.
  *
  * Items are clickable (smooth-scroll to their dwell-centre) and the
  * timeline snaps, same UX as scroll-tabs.js.
@@ -31,9 +31,9 @@
  *         [data-sstack-body]            the part that expands/collapses
  *       [data-sstack-item="1"]          …
  *     [data-sstack-stage]               RIGHT column — the clipped viewport.
- *                                       Give it an explicit size (aspect-ratio
- *                                       / min-height); CSS sets overflow:hidden
- *                                       + perspective on it.
+ *                                       JS sizes it to a square (its own width)
+ *                                       + peek; CSS just needs overflow:hidden
+ *                                       + position:relative on it.
  *       [data-sstack-track]             wraps the cards — normal flow, this
  *                                       is what physically translates
  *         [data-sstack-card="0"]        one card, normal-flow — index must
@@ -66,6 +66,13 @@
  *   data-sstack-exit-tilt    rotateX degrees the leaving card tips back to,
  *                            as it slides out through the top (default 22)
  *   data-sstack-perspective  px depth of the 3D perspective on the stage (default 1200)
+ *   data-sstack-peek         px of the NEXT card's top edge left visible below
+ *                            the active square card, inside the stage window —
+ *                            so you see it coming from the bottom, not a boxed-
+ *                            in single card (default 88; "0" = fully clipped)
+ *   data-sstack-scale        size a card rests at before it enters / after it
+ *                            leaves; it eases to 1 as it becomes active (the
+ *                            minimal enter/exit depth cue — default 0.92)
  *
  * https://github.com/roicool/sestek
  */
@@ -117,14 +124,26 @@
     var ease         = root.getAttribute("data-sstack-ease") || "power2.inOut";
     var exitTilt     = num(root, "data-sstack-exit-tilt", 22);
     var perspective  = num(root, "data-sstack-perspective", 1200);
+    var peek         = num(root, "data-sstack-peek", 88);
+    var enterScale   = num(root, "data-sstack-scale", 0.92);
 
     var reduce = Sestek.util.prefersReducedMotion();
 
     stage.style.perspective = perspective + "px";
 
-    /** Height of one card (== the stage's clipped viewport height). */
-    function cardHeight() {
-      return stage.offsetHeight;
+    /**
+     * The stage is a SQUARE sized to its own width, but its clipped window is
+     * `peek` px TALLER than that square — so below the active card you can see
+     * the top edge of the next card rising into place, inside the same section
+     * (not a boxed-in single card). One card == one square; the track shifts by
+     * exactly one square per step. Called on build + resize; returns the square
+     * side, which is also the per-step shift distance.
+     */
+    function layoutSquare() {
+      var size = Math.round(stage.getBoundingClientRect().width) || stage.offsetWidth || 0;
+      stage.style.height = (size + peek) + "px";
+      cards.forEach(function (c) { c.style.height = size + "px"; });
+      return size;
     }
 
     // ── Per-card video (optional) ──────────────────────────────────
@@ -231,12 +250,18 @@
         else         gsap.set(b, { height: 0, autoAlpha: 0 });
       });
 
+      var cardH = layoutSquare();
+
+      // Card rest states. The active (front) card sits flat + full size; every
+      // OTHER card starts in the "pre-enter" pose — slightly shrunk — so the
+      // one peeking below the active square already reads as sitting a touch
+      // further back, and it eases up to full size AS it becomes active.
       gsap.set(track, { y: 0, force3D: true });
-      gsap.set(cards, { rotateX: 0, force3D: true });
+      cards.forEach(function (c, i) {
+        gsap.set(c, { rotateX: 0, scale: i === 0 ? 1 : enterScale, force3D: true });
+      });
 
       setActive(0);
-
-      var cardH = cardHeight();
 
       var tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -265,17 +290,21 @@
 
       // Build every transition: the WHOLE track shifts up by one card height
       // (a real vertical list scroll — the next card rises into the clipped
-      // viewport from below) while the card that's leaving ALSO tips back in
-      // 3D as it slides out through the top. Both + the left body swap are
-      // scheduled at the same timeline cursor so they read as one coordinated
-      // move, not separate steps.
+      // viewport from below). Scheduled at the SAME timeline cursor so they read
+      // as one coordinated move:
+      //   • EXIT  — the leaving card tips back in 3D (rotateX) and shrinks a
+      //             touch as it slides out through the top (recedes away).
+      //   • ENTER — the incoming card eases from its shrunk pre-enter pose up
+      //             to flat + full size as it lands in the square.
+      //   • left body swap (old row closes, new row opens).
       transitionMids = [];
       snapPts = [ (dwell / 2) ]; // item 0's dwell centre (in units, converted to progress after total is known)
 
       var cursor = dwell;
       for (var a = 1; a < n; a++) {
         tl.to(track, { y: -a * cardH, duration: transition, ease: ease, force3D: true }, cursor);
-        tl.to(cards[a - 1], { rotateX: -exitTilt, duration: transition, ease: ease, force3D: true }, cursor);
+        tl.to(cards[a - 1], { rotateX: -exitTilt, scale: enterScale, duration: transition, ease: ease, force3D: true }, cursor);
+        tl.to(cards[a], { rotateX: 0, scale: 1, duration: transition, ease: ease, force3D: true }, cursor);
         tl.add(
           Sestek.heightReveal(bodies[a - 1], bodies[a], {
             duration: textDuration,
@@ -331,11 +360,12 @@
     // ── prefers-reduced-motion fallback: no pin, click-to-swap instantly ──
     function buildStatic() {
       root.classList.add("is-static");
+      var cardH = layoutSquare();
       bodies.forEach(function (b, i) {
         gsap.set(b, { height: i === 0 ? "auto" : 0, autoAlpha: i === 0 ? 1 : 0 });
       });
       gsap.set(track, { y: 0 });
-      gsap.set(cards, { rotateX: 0 });
+      gsap.set(cards, { rotateX: 0, scale: 1 });
 
       var active = 0;
       items.forEach(function (item, i) { item.classList.toggle("is-active", i === 0); });
@@ -352,7 +382,7 @@
           bodies.forEach(function (b, j) {
             gsap.set(b, { height: j === i ? "auto" : 0, autoAlpha: j === i ? 1 : 0 });
           });
-          gsap.set(track, { y: -i * cardHeight() });
+          gsap.set(track, { y: -i * cardH });
           items.forEach(function (it, j) { it.classList.toggle("is-active", j === i); });
           cards.forEach(function (card, j) { card.classList.toggle("is-active", j === i); });
         });
