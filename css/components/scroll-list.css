@@ -59,6 +59,19 @@
   object-fit: cover;
 }
 
+/*
+ * Control icons — JS toggles .is-paused / .is-muted on the panel; show the icon
+ * that matches the CURRENT state. Default (no class) = playing + sound on.
+ * The buttons hold two <svg data-icon> each; only one shows at a time.
+ */
+.slist__panel [data-icon="play"]  { display: none; }
+.slist__panel.is-paused [data-icon="play"]  { display: inline; }
+.slist__panel.is-paused [data-icon="pause"] { display: none; }
+
+.slist__panel [data-icon="muted"] { display: none; }
+.slist__panel.is-muted [data-icon="muted"]  { display: inline; }
+.slist__panel.is-muted [data-icon="volume"] { display: none; }
+
 /* Reduced motion / below the pin breakpoint: no GSAP pin, fall back to a plain
    CSS sticky so the left column still stays put while the right scrolls. */
 .slist.is-static .slist__left {

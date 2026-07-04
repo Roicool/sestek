@@ -13,8 +13,9 @@
  *     no 3D. Just pin + swap the active class.
  *
  * Optional: the active panel's <video> plays; every other panel's video is
- * paused (at most one plays at a time). Plain <video> here; if you prefer the
- * inline-video library, drop this and use its data-video-scroll-in-play.
+ * paused (at most one plays at a time). Each panel may also carry hover/manual
+ * controls — play/pause, restart, mute — wired below; the panel gets
+ * .is-paused / .is-muted classes so Designer can swap the button icons.
  *
  * Requires : gsap + ScrollTrigger registered, Sestek.util (js/core/utils.js).
  * CSS      : css/components/scroll-list.css
@@ -29,6 +30,10 @@
  *     [data-slist-right]                RIGHT column — scrolls normally
  *       [data-slist-panel="0"]          content block; index must match its item
  *         [data-slist-video]            optional <video muted playsinline>
+ *         [data-slist-controls]           optional controls wrapper
+ *           [data-slist-toggle-play]      button — play/pause
+ *           [data-slist-restart]          button — restart (t=0)
+ *           [data-slist-toggle-mute]      button — mute/unmute
  *       [data-slist-panel="1"]          …
  *
  * Root attributes (all optional):
@@ -126,6 +131,41 @@
         panels[i].scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
       });
     });
+
+    // Per-panel manual controls (optional). The panel gets .is-paused / .is-muted
+    // so CSS can swap which icon shows. stopPropagation keeps a control click
+    // from bubbling to anything that might sit around the panel.
+    function syncVideoState(panel, video) {
+      panel.classList.toggle("is-paused", video.paused);
+      panel.classList.toggle("is-muted", video.muted);
+    }
+    function wireControls(panel, video) {
+      if (!video) return;
+      var playBtn    = panel.querySelector("[data-slist-toggle-play]");
+      var restartBtn = panel.querySelector("[data-slist-restart]");
+      var muteBtn    = panel.querySelector("[data-slist-toggle-mute]");
+
+      video.addEventListener("play",  function () { syncVideoState(panel, video); });
+      video.addEventListener("pause", function () { syncVideoState(panel, video); });
+      syncVideoState(panel, video);
+
+      if (playBtn) playBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (video.paused) video.play().catch(function () {});
+        else video.pause();
+      });
+      if (restartBtn) restartBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        video.currentTime = 0;
+        video.play().catch(function () {});
+      });
+      if (muteBtn) muteBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        video.muted = !video.muted;
+        syncVideoState(panel, video);
+      });
+    }
+    panels.forEach(function (panel, i) { wireControls(panel, videos[i]); });
 
     // Active detection — always on (mobile + desktop, reduced-motion or not).
     // A panel is "active" while its box straddles the trigger line; because the
