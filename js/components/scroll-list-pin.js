@@ -149,12 +149,15 @@
     var endDist = root.getAttribute("data-slist-end") || "300%";
     var scrub   = attrNum(root, "data-slist-scrub", 0.6);
     var snapOn  = root.getAttribute("data-slist-snap") !== "false";
-    var ease    = root.getAttribute("data-slist-ease") || "power2.out";
+    var ease    = root.getAttribute("data-slist-ease") || "power2.inOut";
     var n       = items.length;
 
-    // Panels are absolutely stacked (CSS). Start with panel 0 shown.
-    gsap.set(panels, { autoAlpha: 0, yPercent: 6 });
-    gsap.set(panels[0], { autoAlpha: 1, yPercent: 0 });
+    // Panels are absolutely stacked and bottom-anchored (CSS). The transition is
+    // a HEIGHT reveal: the outgoing panel collapses to height 0 while the
+    // incoming one grows from 0 back up to full — a vertical wipe, not a fade.
+    // Start with panel 0 at full height, the rest collapsed.
+    gsap.set(panels, { height: "0%", autoAlpha: 1 });
+    gsap.set(panels[0], { height: "100%" });
     setActive(0, true);
 
     var tl = gsap.timeline({
@@ -172,11 +175,12 @@
       defaults: { ease: ease },
     });
 
-    // One unit per transition: the incoming panel fades/slides up over the
-    // outgoing one. Scrubbed both ways, so reverse is automatic.
+    // One unit per transition: the incoming panel grows from height 0 → 100%
+    // while the outgoing collapses 100% → 0. Scrubbed both ways → reverse is
+    // automatic. Bottom-anchored in CSS, so it reads as rising up from nothing.
     for (var i = 1; i < n; i++) {
-      tl.fromTo(panels[i], { autoAlpha: 0, yPercent: 6 }, { autoAlpha: 1, yPercent: 0, duration: 1 }, i - 1);
-      tl.to(panels[i - 1], { autoAlpha: 0, yPercent: -6, duration: 1 }, i - 1);
+      tl.fromTo(panels[i], { height: "0%" }, { height: "100%", duration: 1 }, i - 1);
+      tl.to(panels[i - 1], { height: "0%", duration: 1 }, i - 1);
     }
 
     // Clicking an item scrolls to that item's slice of the pinned range.

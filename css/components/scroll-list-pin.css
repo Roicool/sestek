@@ -32,35 +32,46 @@
   will-change: height, opacity;
 }
 
-/* Right column — the stage the stacked panels cross-fade within. */
+/* Right column — the stage the panels reveal within. overflow:hidden so a
+   panel clipped to height 0 is fully hidden. */
 .slist__right {
   position: relative;
   height: 100vh;
+  overflow: hidden;
 }
 
-/* Panels are stacked on top of each other; JS cross-fades between them. */
+/*
+ * Panels are stacked, each anchored to the BOTTOM of the stage. JS animates
+ * their height 0 → 100% (and back), so the active one wipes upward from nothing
+ * while the previous collapses down to nothing. overflow:hidden clips the video
+ * during the reveal instead of squashing it.
+ */
 .slist__panel {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  will-change: opacity, transform;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;               /* JS drives this (0% ↔ 100%) */
+  overflow: hidden;
 }
 
+/* Video keeps its full viewport height so the height reveal reads as a clean
+   bottom-up wipe, not a vertical squash. */
 .slist__panel video {
+  position: absolute;
+  left: 0;
+  bottom: 0;
   width: 100%;
-  height: auto;
+  height: 100vh;
   object-fit: cover;
 }
 
-/* Controls — hidden until the panel is hovered. */
+/* Controls — always visible and stacked above the (absolute) video. Their
+   exact placement (the bottom bar in your design) is your own Designer styling;
+   this just guarantees they render on top and stay interactive. */
 .slist__panel [data-slist-controls] {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-.slist__panel:hover [data-slist-controls] {
+  position: relative;
+  z-index: 2;
   opacity: 1;
   pointer-events: auto;
 }
