@@ -1,21 +1,19 @@
 /*!
- * scroll-stack.js v1.2.0
- * Pinned, scroll-driven "card deck" section:
+ * scroll-stack.js v2.0.0
+ * Pinned, scroll-driven vertical card list:
  *   • LEFT  — a persistent list of items; the active one expands (its body
  *     grows height 0→auto via Sestek.heightReveal) while the rest stay
  *     collapsed and dimmed (.is-active toggled for Designer to style).
- *   • RIGHT — a stack of cards, one per item, stacked in the same spot.
- *     The active card sits in front (scale 1, no tilt, no offset). Cards
- *     behind it peek from below — offset down, scaled down, and tipped back
- *     (rotateX) via a real 3D perspective on the stage — a proper receding
- *     deck, not a flat crossfade. Advancing the active index does TWO things
- *     at once:
- *       1. the current front card lifts UP and tips further back (rotateX)
- *          while fading out — like the top card being lifted off a deck
- *       2. every card behind it rises one depth level (and untilts a step)
- *          to take its place
- *     Scrolling back reverses the exact same tween, so the deck rebuilds
- *     itself scroll-direction-agnostically — no manual reverse logic.
+ *   • RIGHT — cards sit in NORMAL DOCUMENT FLOW, stacked one below another
+ *     inside [data-sstack-track], clipped by [data-sstack-stage]'s
+ *     overflow:hidden so only one is ever visible — no position:absolute,
+ *     no overlapping boxes. Advancing the active index shifts the WHOLE
+ *     track up by one card's height (a real vertical list scroll), while
+ *     the card that's leaving ALSO tips backward in 3D (rotateX, via a
+ *     perspective on the stage) as it slides out through the top — so it
+ *     reads as receding into the distance, not just sliding away flat.
+ *     Scrolling back reverses the exact same tween — no manual reverse
+ *     logic needed.
  *
  * Items are clickable (smooth-scroll to their dwell-centre) and the
  * timeline snaps, same UX as scroll-tabs.js.
@@ -32,13 +30,16 @@
  *       [data-sstack-item="0"]          one row — ALWAYS visible (title etc.)
  *         [data-sstack-body]            the part that expands/collapses
  *       [data-sstack-item="1"]          …
- *     [data-sstack-stage]               RIGHT column — give it an explicit
- *                                       size (aspect-ratio / min-height);
- *                                       children are position:absolute (CSS)
- *       [data-sstack-card="0"]          one stacked card — index must match
- *                                       its [data-sstack-item]. Content is
- *                                       yours (image, or a <video> — see below)
- *       [data-sstack-card="1"]          …
+ *     [data-sstack-stage]               RIGHT column — the clipped viewport.
+ *                                       Give it an explicit size (aspect-ratio
+ *                                       / min-height); CSS sets overflow:hidden
+ *                                       + perspective on it.
+ *       [data-sstack-track]             wraps the cards — normal flow, this
+ *                                       is what physically translates
+ *         [data-sstack-card="0"]        one card, normal-flow — index must
+ *                                       match its [data-sstack-item]. Content
+ *                                       is yours (image, or a <video> below)
+ *         [data-sstack-card="1"]        …
  *
  * Video cards (optional, per card):
  *   [data-sstack-video]               a <video muted loop playsinline> — only
@@ -54,19 +55,17 @@
  *   Card gets .is-paused / .is-muted classes so Designer can swap icon state.
  *
  * Root attributes (all optional):
- *   data-sstack-end         pin scroll distance             (default "400%")
- *   data-sstack-scrub       scrub lag in seconds             (default 0.5)
- *   data-sstack-dwell       per-item hold length, in "units" (default 1.5)
- *   data-sstack-transition  per-swap length, in "units"      (default 1)
- *   data-sstack-snap        "false" to disable snap-to-item  (default true)
- *   data-sstack-ease        ease for every swap              (default "power2.inOut")
- *   data-sstack-peek        yPercent offset per stacked depth level (default 6)
- *   data-sstack-peek-scale  scale falloff per depth level    (default 0.05)
- *   data-sstack-peek-tilt   rotateX degrees per depth level, receding tilt (default 6)
- *   data-sstack-max-depth   depth beyond which a card is hidden (opacity 0) (default 3)
- *   data-sstack-exit        yPercent the leaving card travels, upward (default 140)
- *   data-sstack-exit-tilt   rotateX degrees the leaving card tips back to (default 25)
- *   data-sstack-perspective px depth of the 3D perspective on the stage (default 1200)
+ *   data-sstack-end          pin scroll distance             (default "400%")
+ *   data-sstack-scrub        scrub lag in seconds             (default 0.5)
+ *   data-sstack-dwell        per-item hold length, in "units" (default 1.5)
+ *   data-sstack-transition   per-swap length, in "units"      (default 1)
+ *   data-sstack-text-duration  left-side open/close length, in "units",
+ *                            independent of the card swap speed above (default 1.6)
+ *   data-sstack-snap         "false" to disable snap-to-item  (default true)
+ *   data-sstack-ease         ease for every swap              (default "power2.inOut")
+ *   data-sstack-exit-tilt    rotateX degrees the leaving card tips back to,
+ *                            as it slides out through the top (default 22)
+ *   data-sstack-perspective  px depth of the 3D perspective on the stage (default 1200)
  *
  * https://github.com/roicool/sestek
  */
@@ -95,6 +94,8 @@
 
     var items  = Array.from(root.querySelectorAll("[data-sstack-item]"));
     var bodies = Array.from(root.querySelectorAll("[data-sstack-body]"));
+    var stage  = root.querySelector("[data-sstack-stage]");
+    var track  = root.querySelector("[data-sstack-track]");
     var cards  = Array.from(root.querySelectorAll("[data-sstack-card]"));
 
     var n = items.length;
@@ -102,61 +103,28 @@
       console.warn("[Sestek ScrollStack] Need >=2 matching [data-sstack-item]/[data-sstack-body]/[data-sstack-card].");
       return;
     }
+    if (!stage || !track) {
+      console.warn("[Sestek ScrollStack] [data-sstack-stage] and [data-sstack-track] are both required."); return;
+    }
 
     // ── Config from data-attributes ───────────────────────────────
-    var endDist    = root.getAttribute("data-sstack-end") || "400%";
-    var scrub      = num(root, "data-sstack-scrub", 0.5);
-    var dwell      = num(root, "data-sstack-dwell", 1.5);
-    var transition = num(root, "data-sstack-transition", 1);
-    var snapOn     = root.getAttribute("data-sstack-snap") !== "false";
-    var ease       = root.getAttribute("data-sstack-ease") || "power2.inOut";
-    var peek        = num(root, "data-sstack-peek", 6);
-    var peekScale   = num(root, "data-sstack-peek-scale", 0.05);
-    var peekTilt    = num(root, "data-sstack-peek-tilt", 6);
-    var maxDepth    = num(root, "data-sstack-max-depth", 3);
-    var exitY       = num(root, "data-sstack-exit", 140);
-    var exitTilt    = num(root, "data-sstack-exit-tilt", 25);
-    var perspective = num(root, "data-sstack-perspective", 1200);
+    var endDist      = root.getAttribute("data-sstack-end") || "400%";
+    var scrub        = num(root, "data-sstack-scrub", 0.5);
+    var dwell        = num(root, "data-sstack-dwell", 1.5);
+    var transition   = num(root, "data-sstack-transition", 1);
+    var textDuration = num(root, "data-sstack-text-duration", 1.6);
+    var snapOn       = root.getAttribute("data-sstack-snap") !== "false";
+    var ease         = root.getAttribute("data-sstack-ease") || "power2.inOut";
+    var exitTilt     = num(root, "data-sstack-exit-tilt", 22);
+    var perspective  = num(root, "data-sstack-perspective", 1200);
 
     var reduce = Sestek.util.prefersReducedMotion();
 
-    var stage = root.querySelector("[data-sstack-stage]");
-    if (stage) stage.style.perspective = perspective + "px";
+    stage.style.perspective = perspective + "px";
 
-    /**
-     * Resting style for a card at a given depth.
-     * depth 0        → front, fully visible, no tilt, no offset.
-     * depth > 0       → stacked behind, peeking below — offset down, scaled
-     *                   down, tipped back a little further per depth level
-     *                   (rotateX) so the deck actually recedes in 3D space
-     *                   instead of just looking like flat, offset copies.
-     * depth < 0       → already dismissed — lifted up, tipped further back,
-     *                   faded out. Continues the SAME tilt direction the
-     *                   card was already easing into as it neared the front,
-     *                   so the departure reads as one continuous motion
-     *                   rather than a bolted-on exit.
-     * depth > maxDepth is visually identical to maxDepth but invisible, so a
-     * long list doesn't pile up an ever-growing, ever-shrinking peek stack.
-     */
-    function depthVars(depth) {
-      if (depth < 0) {
-        return {
-          yPercent: -exitY,
-          rotateX: -exitTilt,
-          scale: 1,
-          opacity: 0,
-          zIndex: 0,
-          force3D: true,
-        };
-      }
-      return {
-        yPercent: peek * depth,
-        rotateX: -peekTilt * depth,
-        scale: 1 - peekScale * depth,
-        opacity: depth > maxDepth ? 0 : 1,
-        zIndex: n - depth,
-        force3D: true,
-      };
+    /** Height of one card (== the stage's clipped viewport height). */
+    function cardHeight() {
+      return stage.offsetHeight;
     }
 
     // ── Per-card video (optional) ──────────────────────────────────
@@ -209,13 +177,13 @@
     if (reduce) { buildStatic(); return; }
 
     // ── Shared state ──────────────────────────────────────────────
-    var activeST      = null;
-    var snapPts        = [];  // each item's dwell-centre, as progress 0..1
-    var transitionMids = [];  // each transition's centre, in timeline units
-    var totalUnits      = 0;
-    var clickTarget      = null;
-    var clickTimer       = null;
-    var curActive         = -1;
+    var activeST       = null;
+    var snapPts         = [];  // each item's dwell-centre, as progress 0..1
+    var transitionMids  = [];  // each transition's centre, in timeline units
+    var totalUnits       = 0;
+    var clickTarget       = null;
+    var clickTimer        = null;
+    var curActive          = -1;
 
     function snapResolver(value) {
       if (clickTarget != null) return clickTarget;
@@ -251,6 +219,7 @@
 
       gsap.set(bodies, { clearProps: "all" });
       gsap.set(cards, { clearProps: "all" });
+      gsap.set(track, { clearProps: "all" });
       curActive = -1;
 
       var heights = bodies.map(function (b) {
@@ -262,11 +231,12 @@
         else         gsap.set(b, { height: 0, autoAlpha: 0 });
       });
 
-      cards.forEach(function (card, i) {
-        gsap.set(card, depthVars(i));
-      });
+      gsap.set(track, { y: 0, force3D: true });
+      gsap.set(cards, { rotateX: 0, force3D: true });
 
       setActive(0);
+
+      var cardH = cardHeight();
 
       var tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -293,21 +263,22 @@
         },
       });
 
-      // Build every transition: outgoing card exits, the rest rise one depth,
-      // the left body swaps — all scheduled at the same timeline cursor so
-      // they read as ONE coordinated move rather than separate steps.
+      // Build every transition: the WHOLE track shifts up by one card height
+      // (a real vertical list scroll — the next card rises into the clipped
+      // viewport from below) while the card that's leaving ALSO tips back in
+      // 3D as it slides out through the top. Both + the left body swap are
+      // scheduled at the same timeline cursor so they read as one coordinated
+      // move, not separate steps.
       transitionMids = [];
       snapPts = [ (dwell / 2) ]; // item 0's dwell centre (in units, converted to progress after total is known)
 
       var cursor = dwell;
       for (var a = 1; a < n; a++) {
-        tl.to(cards[a - 1], mergeVars(depthVars(-1)), cursor);
-        for (var k = a; k < n; k++) {
-          tl.to(cards[k], mergeVars(depthVars(k - a)), cursor);
-        }
+        tl.to(track, { y: -a * cardH, duration: transition, ease: ease, force3D: true }, cursor);
+        tl.to(cards[a - 1], { rotateX: -exitTilt, duration: transition, ease: ease, force3D: true }, cursor);
         tl.add(
           Sestek.heightReveal(bodies[a - 1], bodies[a], {
-            duration: transition,
+            duration: textDuration,
             ease: ease,
             inHeight: heights[a],
           }),
@@ -328,12 +299,6 @@
       }
 
       activeST = tl.scrollTrigger;
-    }
-
-    function mergeVars(vars) {
-      vars.duration = transition;
-      vars.ease = ease;
-      return vars;
     }
 
     /** Click an item → smooth-scroll to its dwell-centre (= exact snap point). */
@@ -369,7 +334,8 @@
       bodies.forEach(function (b, i) {
         gsap.set(b, { height: i === 0 ? "auto" : 0, autoAlpha: i === 0 ? 1 : 0 });
       });
-      cards.forEach(function (card, i) { gsap.set(card, depthVars(i)); });
+      gsap.set(track, { y: 0 });
+      gsap.set(cards, { rotateX: 0 });
 
       var active = 0;
       items.forEach(function (item, i) { item.classList.toggle("is-active", i === 0); });
@@ -386,18 +352,16 @@
           bodies.forEach(function (b, j) {
             gsap.set(b, { height: j === i ? "auto" : 0, autoAlpha: j === i ? 1 : 0 });
           });
-          cards.forEach(function (card, j) {
-            gsap.set(card, depthVars(j - i));
-            card.classList.toggle("is-active", j === i);
-          });
+          gsap.set(track, { y: -i * cardHeight() });
           items.forEach(function (it, j) { it.classList.toggle("is-active", j === i); });
+          cards.forEach(function (card, j) { card.classList.toggle("is-active", j === i); });
         });
       });
     }
 
     build();
 
-    // Rebuild on resize — body heights and card depths both depend on layout.
+    // Rebuild on resize — body heights and the card height both depend on layout.
     var resizeTimer;
     window.addEventListener("resize", function () {
       clearTimeout(resizeTimer);

@@ -1,12 +1,12 @@
 /*!
- * scroll-stack.css v1.2.0
- * Pinned scroll-driven "card deck" section — structure/behaviour only.
+ * scroll-stack.css v2.0.0
+ * Pinned scroll-driven vertical card list — structure/behaviour only.
  * Colours, fonts, card internals and exact spacing come from the Webflow
  * Designer + RC tokens.
  *
  * [data-sstack-stage] MUST have an explicit size (aspect-ratio or min-height)
- * — its card children are position:absolute and stacked exactly on top of
- * each other, so the stage itself doesn't grow to fit them.
+ * — it's the clipped viewport window; [data-sstack-track] holds the cards in
+ * NORMAL DOCUMENT FLOW (no position:absolute) and is what JS translates.
  *
  * Drives: js/components/scroll-stack.js
  * https://github.com/roicool/sestek
@@ -33,31 +33,45 @@
 }
 
 /*
- * Right column — the card deck. perspective is what makes the cards' rotateX
- * tilt (set by JS per depth level) actually recede in 3D instead of just
- * squashing flat; JS also sets this inline from data-sstack-perspective, this
- * is only the pre-JS/fallback value.
+ * Right column — the clipped viewport. perspective is what makes the leaving
+ * card's rotateX tilt (set by JS) actually recede in 3D instead of just
+ * squashing flat. overflow:hidden is critical — the track is TALLER than the
+ * stage (one card-height per item) and this is what shows only one at a time.
  */
 .sstack__stage {
   position: relative;
+  overflow: hidden;
   perspective: 1200px;
 }
 
 /*
- * Every card lives in the SAME spot (inset:0) — depth is expressed through
- * transform (yPercent/scale/rotateX) and opacity, driven by JS. Percentage
- * transforms scale with the card's own box, so nothing needs re-measuring on
- * resize. transform-origin at the bottom edge is what makes the rotateX tilt
- * read as "tipping back/away" rather than pivoting through the card's centre.
+ * The card list itself — normal flow, one card per item, JS translates this
+ * up by one card-height per step (a real vertical list scroll, not an
+ * absolute-position morph).
+ */
+.sstack__track {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+/*
+ * Each card is a normal-flow sibling sized to fill the stage exactly (so the
+ * track's shift-by-one-card-height math lines up). position:relative so its
+ * own absolutely-positioned children (video, hover controls) anchor to IT,
+ * not some further ancestor. transform-origin at the bottom edge is what
+ * makes the exit rotateX read as "tipping back/away" as it slides out
+ * through the top, rather than pivoting through the card's centre.
  */
 .sstack__card {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
   transform-origin: center bottom;
   backface-visibility: hidden;
-  will-change: transform, opacity;
-  /* Only the active (front) card should ever be clickable — the ones
-     peeking behind it are a depth preview, not yet interactive. */
+  will-change: transform;
+  /* Only the active (front) card should ever be clickable. */
   pointer-events: none;
 }
 
@@ -96,6 +110,7 @@
 @media (prefers-reduced-motion: reduce) {
   .sstack__body,
   .sstack__card,
+  .sstack__track,
   .sstack__controls {
     will-change: auto !important;
     transition: none !important;
