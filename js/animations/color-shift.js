@@ -1,5 +1,5 @@
 /*!
- * color-shift.js v1.2.0
+ * color-shift.js v1.3.0
  * Scroll-driven background + text colour transitions — data-attribute driven.
  *
  * Colour values accept either a literal (#hex, rgb()) or a CSS variable token
@@ -48,9 +48,16 @@
  *   data-color-shift           marks the scroll trigger — required
  *   data-cs-bg-from   color    background start colour  (default: current bg)
  *   data-cs-bg-to     color    background end colour    (default: current bg)
- *   data-cs-target    selector CSS selector for the element whose background
- *                              changes. e.g. "body" for a full-page shift.
+ *   data-cs-target    selector CSS selector, or one of the keywords below, for
+ *                              the element whose background changes.
  *                              (default: the [data-color-shift] section itself)
+ *                                "self"     the section itself (default)
+ *                                "parent"   the section's parentElement
+ *                                "prev"     the section's previous sibling —
+ *                                           e.g. fade the component ABOVE as
+ *                                           this section scrolls into view
+ *                                "next"     the section's next sibling
+ *                                "body"     (or any selector) full-page shift
  *   data-cs-start     string   ScrollTrigger start      (default "top 75%")
  *   data-cs-end       string   ScrollTrigger end        (default "bottom 25%")
  *                              (ignored in once mode)
@@ -83,6 +90,26 @@
    */
   function flag(v) {
     return v !== undefined && v !== "false" && v !== "0" && v !== "no";
+  }
+
+  /**
+   * Resolve a data-cs-target value to the element whose background should
+   * shift. Accepts the positional keywords documented above or falls back to
+   * a plain CSS selector (querySelector, first match wins).
+   * @param {string|undefined} value
+   * @param {HTMLElement} section
+   * @returns {Element|null}
+   */
+  function resolveTarget(value, section) {
+    if (!value) return section;
+    switch (value) {
+      case "self":     return section;
+      case "parent":   return section.parentElement;
+      case "prev":
+      case "previous": return section.previousElementSibling;
+      case "next":     return section.nextElementSibling;
+      default:         return document.querySelector(value);
+    }
   }
 
   /**
@@ -148,10 +175,9 @@
     // disableMobile: below 768px skip the animation and snap to the end colour.
     var disableMobile = flag(d.csDisableMobile);
 
-    // Background target — defaults to the section, can point anywhere (e.g. "body")
-    var bgTarget = d.csTarget
-      ? document.querySelector(d.csTarget)
-      : section;
+    // Background target — defaults to the section itself. Accepts the "prev"/
+    // "next"/"parent"/"self" keywords or any CSS selector (e.g. "body").
+    var bgTarget = resolveTarget(d.csTarget, section);
 
     if (!bgTarget) {
       console.warn("[Sestek ColorShift] data-cs-target not found:", d.csTarget); return;
