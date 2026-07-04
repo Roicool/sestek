@@ -1,12 +1,12 @@
 /*!
- * heading-shine.css v1.1.0
- * Animated multi-colour "shine" that sweeps across a heading — a band of
- * Sestek's brand colours (turquoise → lilac → magenta) travelling through the
- * text and fading back into the element's own colour. Pure CSS, no JS.
+ * heading-shine.css v1.2.0
+ * Animated multi-colour "shine" on a heading — a radial glow of Sestek's
+ * brand colours (turquoise → lilac → magenta) drifting across the text and
+ * fading back into the element's own colour. Pure CSS, no JS.
  *
- * The band is masked onto the text (background-clip: text); everywhere the
+ * The glow is masked onto the text (background-clip: text); everywhere the
  * gradient is currentColor the heading keeps whatever colour you set in
- * Designer, so only the moving band is tinted.
+ * Designer, so only the moving glow is tinted.
  *
  * Two tone options, chosen by the attribute value:
  *   data-heading-mask="brand"  vivid brand colours (turquoise/lilac/magenta)
@@ -24,35 +24,28 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-size: 200% auto;
-  background-position: 0% center;
-  animation: sestek-heading-shine 5s linear infinite;
+  background-size: 200% 200%;
+  animation: sestek-heading-shine 5s infinite linear;
 }
 
 [data-heading-mask="brand"] {
-  background-image: linear-gradient(110deg,
-    currentColor 0%,
-    currentColor 24%,
-    #00ffeb 38%,
-    #7f81ae 50%,
-    #ec008c 62%,
-    currentColor 76%,
-    currentColor 100%);
+  background-image: radial-gradient(circle farthest-side at 0% 0%,
+    #00ffeb 5%,
+    #7f81ae 10%,
+    currentColor 20%);
 }
 
 [data-heading-mask="deep"] {
-  background-image: linear-gradient(110deg,
-    currentColor 0%,
-    currentColor 24%,
-    #0e9488 38%,
-    #565978 50%,
-    #b0006a 62%,
-    currentColor 76%,
-    currentColor 100%);
+  background-image: radial-gradient(circle farthest-side at 0% 0%,
+    #0e9488 5%,
+    #565978 10%,
+    currentColor 20%);
 }
 
 @keyframes sestek-heading-shine {
-  to { background-position: -200% center; }
+  0%   { background-position: 0% 20%; }
+  50%  { background-position: 15% 0%; }
+  100% { background-position: 0% 20%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
