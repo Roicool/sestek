@@ -39,6 +39,9 @@
  *     data-color-shift
  *     data-cs-bg-from="#ffffff"
  *     data-cs-bg-to="#0a0a0f"
+ *     data-cs-target-2="prev"
+ *     data-cs-bg-from-2="#ffffff"
+ *     data-cs-bg-to-2="#0a0a0f"
  *   >
  *     <h2 data-cs-text data-cs-from="#111111" data-cs-to="#ffffff">…</h2>
  *     <p  data-cs-text data-cs-from="#444444" data-cs-to="#aaaaaa">…</p>
@@ -58,6 +61,14 @@
  *                                           this section scrolls into view
  *                                "next"     the section's next sibling
  *                                "body"     (or any selector) full-page shift
+ *
+ *   A SECOND background target can shift in lockstep with the first — e.g.
+ *   the section fades its own background AND the section above it at once:
+ *   data-cs-target-2    selector/keyword  same rules as data-cs-target,
+ *                                         but no default — omit to disable
+ *   data-cs-bg-from-2   color             start colour for the 2nd target
+ *   data-cs-bg-to-2     color             end colour for the 2nd target
+ *
  *   data-cs-start     string   ScrollTrigger start      (default "top 75%")
  *   data-cs-end       string   ScrollTrigger end        (default "bottom 25%")
  *                              (ignored in once mode)
@@ -189,16 +200,26 @@
     var bgFrom = d.csBgFrom ? resolveColor(d.csBgFrom, bgTarget) : null;
     var bgTo   = d.csBgTo   ? resolveColor(d.csBgTo,   bgTarget) : null;
 
+    // Optional second background target — e.g. shift the section's own
+    // background AND the component above it (data-cs-target-2="prev") at once.
+    var bgTarget2 = d.csTarget2 ? resolveTarget(d.csTarget2, section) : null;
+    if (d.csTarget2 && !bgTarget2) {
+      console.warn("[Sestek ColorShift] data-cs-target-2 not found:", d.csTarget2);
+    }
+    var bgFrom2 = bgTarget2 && d.csBgFrom2 ? resolveColor(d.csBgFrom2, bgTarget2) : null;
+    var bgTo2   = bgTarget2 && d.csBgTo2   ? resolveColor(d.csBgTo2,   bgTarget2) : null;
+
     // Text children
     var textEls = Array.prototype.slice.call(section.querySelectorAll("[data-cs-text]"));
 
     // Nothing to animate → bail silently
-    if (!bgFrom && !bgTo && !textEls.length) return;
+    if (!bgFrom && !bgTo && !bgFrom2 && !bgTo2 && !textEls.length) return;
 
     // Jump straight to the end colours (no animation) — shared by the
     // reduced-motion and disable-mobile escape hatches.
     function snapToEnd() {
       if (bgTo) gsap.set(bgTarget, { backgroundColor: bgTo });
+      if (bgTo2) gsap.set(bgTarget2, { backgroundColor: bgTo2 });
       textEls.forEach(function (el) {
         if (el.dataset.csTo) gsap.set(el, { color: resolveColor(el.dataset.csTo, el) });
       });
@@ -217,6 +238,7 @@
     // ── Set initial states ──────────────────────────────────────────
     // Only if an explicit from-colour was given — don't override CSS otherwise.
     if (bgFrom) gsap.set(bgTarget, { backgroundColor: bgFrom });
+    if (bgFrom2) gsap.set(bgTarget2, { backgroundColor: bgFrom2 });
     textEls.forEach(function (el) {
       if (el.dataset.csFrom) gsap.set(el, { color: resolveColor(el.dataset.csFrom, el) });
     });
@@ -253,6 +275,16 @@
         bgTarget,
         { backgroundColor: bgFrom },
         { backgroundColor: bgTo, ease: tweenEase, duration: tweenDur },
+        0
+      );
+    }
+
+    // Second background target — same timeline position, stays in lockstep
+    if (bgFrom2 && bgTo2) {
+      tl.fromTo(
+        bgTarget2,
+        { backgroundColor: bgFrom2 },
+        { backgroundColor: bgTo2, ease: tweenEase, duration: tweenDur },
         0
       );
     }
