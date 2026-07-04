@@ -1,11 +1,13 @@
 /*!
- * scroll-list.css v1.0.0
- * Simple pinned "sticky list" — structure/behaviour only. Colours, fonts and
- * the active/inactive look come from the Webflow Designer + RC tokens.
+ * scroll-list.css v2.0.0
+ * Simple sticky-list section — structure/behaviour only. Colours, fonts and the
+ * active/inactive look come from the Webflow Designer + RC tokens.
  *
- * Left column is pinned by GSAP; the right column's panels define the scroll
- * length. Each panel should be tall (≈100vh) so it gets a clear turn at the
- * centre of the viewport.
+ * THE PIN LIVES HERE, NOT IN JS: the left column is held with position:sticky.
+ * That's the reliable way to get "left fixed while the right scrolls" (GSAP
+ * pinning a grid child is fragile). For sticky to work, the grid must NOT
+ * stretch the columns (align-items:start) and the right column must be tall
+ * (its panels are ≈100vh each) so there is something to scroll past.
  *
  * Drives: js/components/scroll-list.js
  * https://github.com/roicool/sestek
@@ -15,24 +17,25 @@
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: start;
+  align-items: start;          /* REQUIRED — lets the left column be shorter than
+                                  the grid so it actually has room to stick */
 }
 
-/* Left column — GSAP pins this. Give it (roughly) viewport height and centre
-   its content so the pinned list sits nicely mid-screen. */
+/* Left column — the pin. Sticky at the top of the viewport, one screen tall,
+   content centred. */
 .slist__left {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-/* Each row is clickable; the title stays visible and the body is the part that
-   accordions open/closed. overflow:hidden is required for the height animation
-   (0 → auto) to clip cleanly. */
-.slist__item {
-  cursor: pointer;
-}
+/* Each row is clickable; the title stays visible and the body accordions
+   open/closed. overflow:hidden is required for the height (0 → auto) clip. */
+.slist__item { cursor: pointer; }
 
 .slist__body {
   overflow: hidden;
@@ -40,12 +43,10 @@
 }
 
 /* Right column — normal flow, this is what scrolls. */
-.slist__right {
-  position: relative;
-}
+.slist__right { position: relative; }
 
 /* Each panel gets its own turn at centre-screen. Full-height keeps exactly one
-   panel over the trigger line at a time. */
+   panel over the centre band at a time. */
 .slist__panel {
   min-height: 100vh;
   display: flex;
@@ -59,50 +60,26 @@
   object-fit: cover;
 }
 
-/*
- * Control icons — JS toggles .is-paused / .is-muted on the panel; show the icon
- * that matches the CURRENT state. Default (no class) = playing + sound on.
- * The buttons hold two <svg data-icon> each; only one shows at a time.
- */
+/* Control icons — JS toggles .is-paused / .is-muted on the panel; show the icon
+   that matches the current state. Default (no class) = playing + sound on. */
 .slist__panel [data-icon="play"]  { display: none; }
 .slist__panel.is-paused [data-icon="play"]  { display: inline; }
 .slist__panel.is-paused [data-icon="pause"] { display: none; }
-
 .slist__panel [data-icon="muted"] { display: none; }
 .slist__panel.is-muted [data-icon="muted"]  { display: inline; }
 .slist__panel.is-muted [data-icon="volume"] { display: none; }
 
-/* Below the pin breakpoint (JS adds .is-static): no GSAP pin, fall back to a
-   plain CSS sticky so the left column still stays put while the right scrolls. */
-.slist.is-static .slist__left {
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-}
-
-/*
- * Reduced motion — defence-in-depth in CSS itself, so the section degrades
- * gracefully even if JS is slow or never runs: no pinning is possible without
- * JS anyway, so keep the left column sticky, kill the accordion animation hints,
- * and never hint transforms.
- */
+/* Reduced motion: the accordion is set instantly by JS; drop the hint. Sticky
+   still applies (it isn't motion). */
 @media (prefers-reduced-motion: reduce) {
-  .slist__left {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-  }
-  .slist__body {
-    will-change: auto;
-  }
+  .slist__body { will-change: auto; }
 }
 
-/* Single column on narrow screens — nothing is pinned there. */
+/* Narrow screens — single column, nothing sticky (it would just cover content). */
 @media (max-width: 767.98px) {
-  .slist {
-    grid-template-columns: 1fr;
-  }
+  .slist { grid-template-columns: 1fr; }
   .slist__left {
+    position: static;
     height: auto;
   }
 }
