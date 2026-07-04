@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.0.2
+ * hero.js v1.0.3
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  * https://github.com/roicool/sestek
@@ -47,6 +47,8 @@
       gsap.set(el.scene2, { opacity: 1 });
       gsap.set(el.words, { opacity: 1, y: 0 });
       if (el.desc) gsap.set(el.desc, { opacity: 1, y: 0 });
+      el.s1Content.style.pointerEvents = "none";
+      el.scene2.style.pointerEvents = "auto";
       return;
     }
 
@@ -90,7 +92,11 @@
       gsap.set(el.overlay,   { opacity: 1 });
       gsap.set(el.s1Content, { opacity: 1, y: 0 });
       gsap.set(el.scene2,    { opacity: 0 });
+      // Only one scene should ever be clickable/focusable at a time — the
+      // invisible one must not intercept clicks or steal tab focus from
+      // whichever scene is actually on screen.
       el.s1Content.style.pointerEvents = "auto";
+      el.scene2.style.pointerEvents = "none";
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
@@ -116,13 +122,17 @@
             var inScene2 = self.progress >= 0.34;
             // Nav theme
             if (navEl) navEl.classList.toggle("nav--on-light", inScene2);
-            // Scene 1 loses interactivity once scene 2 is visible
+            // Exactly one scene is interactive at a time — the other gets
+            // pointer-events:none so its (invisible) buttons/links can't be
+            // clicked or tabbed into while off-screen.
             el.s1Content.style.pointerEvents = inScene2 ? "none" : "auto";
+            el.scene2.style.pointerEvents    = inScene2 ? "auto" : "none";
           },
           onLeaveBack: function () {
             // Scrolled back above hero entirely — restore dark nav + scene 1 clicks
             if (navEl) navEl.classList.remove("nav--on-light");
             el.s1Content.style.pointerEvents = "auto";
+            el.scene2.style.pointerEvents    = "none";
           },
         },
       });
