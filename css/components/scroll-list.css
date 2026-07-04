@@ -60,6 +60,18 @@
   object-fit: cover;
 }
 
+/* Controls are hidden until the panel is hovered (pointer-events off while
+   hidden so they don't block anything). */
+.slist__panel [data-slist-controls] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.slist__panel:hover [data-slist-controls] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Control icons — JS toggles .is-paused / .is-muted on the panel; show the icon
    that matches the current state. Default (no class) = playing + sound on. */
 .slist__panel [data-icon="play"]  { display: none; }

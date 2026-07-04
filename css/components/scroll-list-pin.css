@@ -1,0 +1,99 @@
+/*!
+ * scroll-list-pin.css v1.0.0
+ * CSS for the PINNED variant (js/components/scroll-list-pin.js). Use this OR
+ * scroll-list.css — not both. Here the section is exactly one screen tall and
+ * gets pinned by GSAP; the right panels are stacked on top of each other and
+ * cross-fade, so the whole thing feels like a captured, cinematic scroll rather
+ * than a document that scrolls past a sticky sidebar.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+.slist {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  height: 100vh;          /* one screen — GSAP pins this and adds the scroll length */
+  overflow: hidden;
+}
+
+/* Left column — no sticky here; it simply lives inside the pinned section. */
+.slist__left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slist__item { cursor: pointer; }
+
+.slist__body {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+/* Right column — the stage the stacked panels cross-fade within. */
+.slist__right {
+  position: relative;
+  height: 100vh;
+}
+
+/* Panels are stacked on top of each other; JS cross-fades between them. */
+.slist__panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: opacity, transform;
+}
+
+.slist__panel video {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Controls — hidden until the panel is hovered. */
+.slist__panel [data-slist-controls] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.slist__panel:hover [data-slist-controls] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Icon swap — JS toggles .is-paused / .is-muted on the panel. */
+.slist__panel [data-icon="play"]  { display: none; }
+.slist__panel.is-paused [data-icon="play"]  { display: inline; }
+.slist__panel.is-paused [data-icon="pause"] { display: none; }
+.slist__panel [data-icon="muted"] { display: none; }
+.slist__panel.is-muted [data-icon="muted"]  { display: inline; }
+.slist__panel.is-muted [data-icon="volume"] { display: none; }
+
+/*
+ * Fallback (no GSAP / reduced motion): JS adds .is-static. Drop the pin layout —
+ * the section is no longer one fixed screen; panels flow normally and stack.
+ */
+.slist.is-static {
+  height: auto;
+  overflow: visible;
+}
+.slist.is-static .slist__right { height: auto; }
+.slist.is-static .slist__panel {
+  position: relative;
+  inset: auto;
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slist__body { will-change: auto; }
+}
+
+/* Narrow screens — single column, no pin (JS still pins unless you gate it;
+   for a stacked mobile layout, load the sticky variant instead). */
+@media (max-width: 767.98px) {
+  .slist { grid-template-columns: 1fr; }
+}
