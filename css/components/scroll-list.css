@@ -1,0 +1,66 @@
+/*!
+ * scroll-list.css v1.0.0
+ * Simple pinned "sticky list" — structure/behaviour only. Colours, fonts and
+ * the active/inactive look come from the Webflow Designer + RC tokens.
+ *
+ * Left column is pinned by GSAP; the right column's panels define the scroll
+ * length. Each panel should be tall (≈100vh) so it gets a clear turn at the
+ * centre of the viewport.
+ *
+ * Drives: js/components/scroll-list.js
+ * https://github.com/roicool/sestek
+ */
+
+.slist {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+/* Left column — GSAP pins this. Give it (roughly) viewport height and centre
+   its content so the pinned list sits nicely mid-screen. */
+.slist__left {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Right column — normal flow, this is what scrolls. */
+.slist__right {
+  position: relative;
+}
+
+/* Each panel gets its own turn at centre-screen. Full-height keeps exactly one
+   panel over the trigger line at a time. */
+.slist__panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slist__panel video {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Reduced motion / below the pin breakpoint: no GSAP pin, fall back to a plain
+   CSS sticky so the left column still stays put while the right scrolls. */
+.slist.is-static .slist__left {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+}
+
+/* Single column on narrow screens — nothing is pinned there. */
+@media (max-width: 767.98px) {
+  .slist {
+    grid-template-columns: 1fr;
+  }
+  .slist__left {
+    height: auto;
+  }
+}
