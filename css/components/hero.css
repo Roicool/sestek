@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.0.0
+ * hero.css v1.0.1
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -120,7 +120,7 @@
 .hero__video-slot {
   display: inline-block;
   width: 7rem;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   border-radius: var(--radius--md);
   overflow: hidden;
   vertical-align: middle;
