@@ -1,0 +1,68 @@
+/*!
+ * scroll-stack.css v1.0.0
+ * Pinned scroll-driven "card deck" section — structure/behaviour only.
+ * Colours, fonts, card internals and exact spacing come from the Webflow
+ * Designer + RC tokens.
+ *
+ * [data-sstack-stage] MUST have an explicit size (aspect-ratio or min-height)
+ * — its card children are position:absolute and stacked exactly on top of
+ * each other, so the stage itself doesn't grow to fit them.
+ *
+ * Drives: js/components/scroll-stack.js
+ * https://github.com/roicool/sestek
+ */
+
+.sstack {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Left column — persistent list ───────────────────────────── */
+.sstack__item {
+  cursor: pointer;
+}
+
+/*
+ * The expandable part of a row (description/CTA). height:0 removes it from
+ * layout entirely; JS grows the active one (0 → auto) and shrinks the rest —
+ * the "one drops, the other rises" reveal, same mechanic as scroll-tabs.
+ */
+.sstack__body {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+/* ── Right column — the card deck ────────────────────────────── */
+.sstack__stage {
+  position: relative;
+}
+
+/*
+ * Every card lives in the SAME spot (inset:0) — depth is expressed entirely
+ * through transform (yPercent/scale/xPercent) and opacity, driven by JS.
+ * Percentage-based transforms scale with the card's own box, so nothing
+ * needs re-measuring on resize.
+ */
+.sstack__card {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  /* Only the active (front) card should ever be clickable — the ones
+     peeking behind it are a depth preview, not yet interactive. */
+  pointer-events: none;
+}
+
+.sstack__card.is-active {
+  pointer-events: auto;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sstack__body,
+  .sstack__card {
+    will-change: auto !important;
+    transition: none !important;
+  }
+}
