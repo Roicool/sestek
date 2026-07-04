@@ -4,10 +4,10 @@
  * Colours, fonts, card internals and exact spacing come from the Webflow
  * Designer + RC tokens.
  *
- * [data-sstack-stage] is the clipped viewport window — JS sizes it to a SQUARE
- * (its own width) plus a `peek` band and sizes each card to that square; the
- * aspect-ratio here is just a pre-JS fallback. [data-sstack-track] holds the
- * cards in NORMAL DOCUMENT FLOW (no position:absolute) and is what JS translates.
+ * [data-sstack-stage] fills the whole section height (100% of a ~100vh section)
+ * and clips at its edges. JS sizes each CARD to a square (a fraction of the
+ * stage height) and centres them; [data-sstack-track] holds the cards in NORMAL
+ * DOCUMENT FLOW (no position:absolute) and is what JS translates.
  *
  * Drives: js/components/scroll-stack.js
  * https://github.com/roicool/sestek
@@ -38,42 +38,42 @@
  * plus a `peek` band, and sizes each card to that square; the aspect-ratio here
  * is only a pre-JS fallback to avoid a layout flash. perspective is what makes
  * the leaving card's rotateX tilt (set by JS) actually recede in 3D instead of
- * squashing flat. overflow:hidden clips the track (which is taller than the
- * stage) so only the active square + the next card's peeking top edge show.
+ * squashing flat. overflow:hidden clips at the SECTION edges, so a card that
+ * has fully left is hidden once it passes the top. The stage fills the whole
+ * section height (100% of a ~100vh section) — cards are centred within it, not
+ * crammed into a small box.
  */
 .sstack__stage {
   position: relative;
   overflow: hidden;
   perspective: 1200px;
-  aspect-ratio: 1 / 1;
+  height: 100%;
+  min-height: 100vh;
 }
 
 /*
- * The card list itself — normal flow, one card per item, JS translates this
- * up by one card-height per step (a real vertical list scroll, not an
- * absolute-position morph).
+ * The card list itself — normal flow, one square card per item. JS gives it
+ * top/bottom padding (to centre the active card) and a gap (how much of the
+ * neighbours peeks), then translates it up by one card+gap per step.
+ * align-items:center keeps the square cards centred horizontally in the column.
  */
 .sstack__track {
   display: flex;
   flex-direction: column;
+  align-items: center;
   will-change: transform;
 }
 
 /*
- * Each card is a normal-flow sibling sized to fill the stage exactly (so the
- * track's shift-by-one-card-height math lines up). position:relative so its
- * own absolutely-positioned children (video, hover controls) anchor to IT,
- * not some further ancestor. transform-origin at the bottom edge is what
- * makes the exit rotateX read as "tipping back/away" as it slides out
- * through the top, rather than pivoting through the card's centre.
+ * Each card is a normal-flow square — JS sets its width & height (in px) to the
+ * card-size fraction of the stage. position:relative so its own absolutely-
+ * positioned children (video, hover controls) anchor to IT. transform-origin at
+ * the bottom edge makes the exit rotateX read as "tipping back/away" as it
+ * slides up and out, rather than pivoting through the card's centre.
  */
 .sstack__card {
   position: relative;
-  /* JS sets each card's height (in px) to the stage's square side — shorter
-     than the stage window, so the peek band below shows the next card. flex
-     stays 0 0 auto so that inline height is what defines the card's size. */
   flex: 0 0 auto;
-  width: 100%;
   transform-origin: center bottom;
   backface-visibility: hidden;
   will-change: transform;

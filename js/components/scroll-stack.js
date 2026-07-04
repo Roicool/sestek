@@ -5,15 +5,16 @@
  *     grows height 0→auto via Sestek.heightReveal) while the rest stay
  *     collapsed and dimmed (.is-active toggled for Designer to style).
  *   • RIGHT — cards sit in NORMAL DOCUMENT FLOW, stacked one below another
- *     inside [data-sstack-track]. The stage is a SQUARE (its own width) but
- *     its clipped window is a little TALLER (data-sstack-peek) so the top edge
- *     of the next card peeks in below the active one — you see it coming up
- *     from the bottom, not a boxed-in single card. Advancing the active index
- *     shifts the WHOLE track up by one square (a real vertical list scroll)
- *     while the leaving card tips back in 3D + shrinks (EXIT) and the incoming
- *     card eases up from a shrunk pose to flat+full (ENTER) — minimal in/out
- *     motion, no position:absolute, no overlapping boxes. Scrolling back
- *     reverses the exact same tween — no manual reverse logic needed.
+ *     inside [data-sstack-track]. The stage fills the WHOLE section height —
+ *     the cards are NOT crammed into a little window. Each CARD is a square
+ *     (data-sstack-card-size × the stage height) centred vertically, with a gap
+ *     between cards, so the active card sits centred while the previous card is
+ *     leaving out the top and the next is rising from the bottom — both visible
+ *     across the section. Advancing the active index shifts the WHOLE track up
+ *     by one card+gap (a real vertical list scroll) while the leaving card tips
+ *     back in 3D + shrinks (EXIT) and the incoming card eases up from a shrunk
+ *     pose to flat+full (ENTER) — minimal in/out motion, no position:absolute,
+ *     no overlapping boxes. Scrolling back reverses the exact same tween.
  *
  * Items are clickable (smooth-scroll to their dwell-centre) and the
  * timeline snaps, same UX as scroll-tabs.js.
@@ -30,10 +31,10 @@
  *       [data-sstack-item="0"]          one row — ALWAYS visible (title etc.)
  *         [data-sstack-body]            the part that expands/collapses
  *       [data-sstack-item="1"]          …
- *     [data-sstack-stage]               RIGHT column — the clipped viewport.
- *                                       JS sizes it to a square (its own width)
- *                                       + peek; CSS just needs overflow:hidden
- *                                       + position:relative on it.
+ *     [data-sstack-stage]               RIGHT column — fills the section height.
+ *                                       CSS needs height:100% (of a ~100vh
+ *                                       section), overflow:hidden + position:
+ *                                       relative; JS sizes/centres the cards.
  *       [data-sstack-track]             wraps the cards — normal flow, this
  *                                       is what physically translates
  *         [data-sstack-card="0"]        one card, normal-flow — index must
@@ -66,10 +67,13 @@
  *   data-sstack-exit-tilt    rotateX degrees the leaving card tips back to,
  *                            as it slides out through the top (default 22)
  *   data-sstack-perspective  px depth of the 3D perspective on the stage (default 1200)
- *   data-sstack-peek         px of the NEXT card's top edge left visible below
- *                            the active square card, inside the stage window —
- *                            so you see it coming from the bottom, not a boxed-
- *                            in single card (default 88; "0" = fully clipped)
+ *   data-sstack-card-size    square card side as a fraction of the stage
+ *                            (section) height, capped to the stage width — the
+ *                            smaller this is, the more of the neighbouring cards
+ *                            show above/below (default 0.72)
+ *   data-sstack-gap          px gap between cards; controls how much of the
+ *                            prev/next card peeks in. Omit to auto-derive it
+ *                            from the free space around the centred card.
  *   data-sstack-scale        size a card rests at before it enters / after it
  *                            leaves; it eases to 1 as it becomes active (the
  *                            minimal enter/exit depth cue — default 0.92)
@@ -124,7 +128,8 @@
     var ease         = root.getAttribute("data-sstack-ease") || "power2.inOut";
     var exitTilt     = num(root, "data-sstack-exit-tilt", 22);
     var perspective  = num(root, "data-sstack-perspective", 1200);
-    var peek         = num(root, "data-sstack-peek", 88);
+    var cardRatio    = num(root, "data-sstack-card-size", 0.72);
+    var gapAttr      = root.hasAttribute("data-sstack-gap") ? num(root, "data-sstack-gap", 0) : null;
     var enterScale   = num(root, "data-sstack-scale", 0.92);
 
     var reduce = Sestek.util.prefersReducedMotion();
@@ -132,18 +137,32 @@
     stage.style.perspective = perspective + "px";
 
     /**
-     * The stage is a SQUARE sized to its own width, but its clipped window is
-     * `peek` px TALLER than that square — so below the active card you can see
-     * the top edge of the next card rising into place, inside the same section
-     * (not a boxed-in single card). One card == one square; the track shifts by
-     * exactly one square per step. Called on build + resize; returns the square
-     * side, which is also the per-step shift distance.
+     * The stage fills the WHOLE section (its own column height) — the cards are
+     * NOT crammed into a little window. Each CARD is a square (sized to
+     * data-sstack-card-size × the stage height, capped to the stage width),
+     * centred vertically in the stage with equal top/bottom padding, and a gap
+     * between cards. So the active card sits centred while the previous card is
+     * leaving out the top and the next is rising from the bottom, both visible
+     * across the section — like the reference. Returns the per-step shift
+     * distance (one card + one gap). Called on build + resize.
      */
-    function layoutSquare() {
-      var size = Math.round(stage.getBoundingClientRect().width) || stage.offsetWidth || 0;
-      stage.style.height = (size + peek) + "px";
-      cards.forEach(function (c) { c.style.height = size + "px"; });
-      return size;
+    function layout() {
+      var rect   = stage.getBoundingClientRect();
+      var stageW = Math.round(rect.width)  || stage.offsetWidth  || 0;
+      var stageH = Math.round(rect.height) || stage.offsetHeight || 0;
+      var size   = Math.min(stageW, Math.round(stageH * cardRatio));
+      var freeHalf = Math.max(0, Math.round((stageH - size) / 2));
+      var gap = gapAttr != null ? gapAttr : Math.round(freeHalf * 0.6);
+
+      cards.forEach(function (c) {
+        c.style.width  = size + "px";
+        c.style.height = size + "px";
+      });
+      track.style.paddingTop    = freeHalf + "px";
+      track.style.paddingBottom = freeHalf + "px";
+      track.style.gap           = gap + "px";
+
+      return size + gap;
     }
 
     // ── Per-card video (optional) ──────────────────────────────────
@@ -250,7 +269,7 @@
         else         gsap.set(b, { height: 0, autoAlpha: 0 });
       });
 
-      var cardH = layoutSquare();
+      var cardH = layout();
 
       // Card rest states. The active (front) card sits flat + full size; every
       // OTHER card starts in the "pre-enter" pose — slightly shrunk — so the
@@ -360,7 +379,7 @@
     // ── prefers-reduced-motion fallback: no pin, click-to-swap instantly ──
     function buildStatic() {
       root.classList.add("is-static");
-      var cardH = layoutSquare();
+      var cardH = layout();
       bodies.forEach(function (b, i) {
         gsap.set(b, { height: i === 0 ? "auto" : 0, autoAlpha: i === 0 ? 1 : 0 });
       });
