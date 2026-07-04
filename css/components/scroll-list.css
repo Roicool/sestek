@@ -72,12 +72,29 @@
 .slist__panel.is-muted [data-icon="muted"]  { display: inline; }
 .slist__panel.is-muted [data-icon="volume"] { display: none; }
 
-/* Reduced motion / below the pin breakpoint: no GSAP pin, fall back to a plain
-   CSS sticky so the left column still stays put while the right scrolls. */
+/* Below the pin breakpoint (JS adds .is-static): no GSAP pin, fall back to a
+   plain CSS sticky so the left column still stays put while the right scrolls. */
 .slist.is-static .slist__left {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
+}
+
+/*
+ * Reduced motion — defence-in-depth in CSS itself, so the section degrades
+ * gracefully even if JS is slow or never runs: no pinning is possible without
+ * JS anyway, so keep the left column sticky, kill the accordion animation hints,
+ * and never hint transforms.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .slist__left {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+  }
+  .slist__body {
+    will-change: auto;
+  }
 }
 
 /* Single column on narrow screens — nothing is pinned there. */
