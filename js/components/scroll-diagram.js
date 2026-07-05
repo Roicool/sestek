@@ -65,12 +65,20 @@
 
   function n(v) { return v.toFixed(1); }
 
-  /** Bir port elementinin (varsa) stage-relative merkezi; yoksa null. */
+  /** Bir port elementinin (varsa) stage-relative merkezi + bulunduğu kenarın
+   *  DIŞA normali (hangi kenardaysa: sol=-x, sağ=+x, üst=-y, alt=+y). Bu normal,
+   *  okun o port'tan hangi yönde çıkacağını/gireceğini belirler (elbow için). */
   function portCenter(node, sel, sr) {
     var port = node.querySelector(sel);
     if (!port) return null;
     var r = port.getBoundingClientRect();
-    return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2, nx: 0, ny: 0 };
+    var x = r.left - sr.left + r.width / 2, y = r.top - sr.top + r.height / 2;
+    var nb = node.getBoundingClientRect();
+    var L = nb.left - sr.left, T = nb.top - sr.top, W = nb.width, H = nb.height;
+    var dl = Math.abs(x - L), dr = Math.abs(L + W - x), dt = Math.abs(y - T), db = Math.abs(T + H - y);
+    var m = Math.min(dl, dr, dt, db), nx = 0, ny = 0;
+    if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === dt) ny = -1; else ny = 1;
+    return { x: x, y: y, nx: nx, ny: ny };
   }
 
   /** Elementin stage-relative kutusu (merkez + yarı-boyutlar). */
@@ -131,21 +139,43 @@
            arrowHead(x2, y2, tx / tl, ty / tl, head);
   }
 
-  /** Köşesi yumuşatılmış L (elbow) ok — dik segmentler + radius'lu köşe. */
+  /** Köşeleri yumuşatılmış çok-köşeli path + uçta ok başı. */
+  function polyArrow(pts, radius, head) {
+    var d = "M" + n(pts[0].x) + "," + n(pts[0].y);
+    for (var i = 1; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+      var d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y), d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      if (d1 < 1 || d2 < 1) { d += "L" + n(p1.x) + "," + n(p1.y); continue; }
+      var r = Math.min(radius, d1 / 2, d2 / 2);
+      d += "L" + n(p1.x + (p0.x - p1.x) / d1 * r) + "," + n(p1.y + (p0.y - p1.y) / d1 * r) +
+           "Q" + n(p1.x) + "," + n(p1.y) + " " +
+           n(p1.x + (p2.x - p1.x) / d2 * r) + "," + n(p1.y + (p2.y - p1.y) / d2 * r);
+    }
+    var last = pts[pts.length - 1], prev = pts[pts.length - 2];
+    var ex = last.x - prev.x, ey = last.y - prev.y, el = Math.hypot(ex, ey) || 1;
+    return d + "L" + n(last.x) + "," + n(last.y) + arrowHead(last.x, last.y, ex / el, ey / el, head);
+  }
+
+  /** Yön-farkında elbow: ok, ÇIKIŞ port'unun kenarına dik çıkar, GİRİŞ port'unun
+   *  kenarına dik girer. a.nx/ny = çıkış normali, b.nx/ny = giriş (dışa) normali. */
   function elbowPath(a, b, radius, head) {
-    var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
-    var horizFirst = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
-    var cx = horizFirst ? x2 : x1, cy = horizFirst ? y1 : y2; // köşe noktası
-    var r = Math.min(radius, Math.hypot(cx - x1, cy - y1), Math.hypot(x2 - cx, y2 - cy));
-    var s1x = Math.sign(cx - x1), s1y = Math.sign(cy - y1); // seg1 ekseni
-    var s2x = Math.sign(x2 - cx), s2y = Math.sign(y2 - cy); // seg2 ekseni
-    var ax = cx - s1x * r, ay = cy - s1y * r;               // köşeden r önce
-    var bx = cx + s2x * r, by = cy + s2y * r;               // köşeden r sonra
-    return "M" + n(x1) + "," + n(y1) +
-           "L" + n(ax) + "," + n(ay) +
-           "Q" + n(cx) + "," + n(cy) + " " + n(bx) + "," + n(by) +
-           "L" + n(x2) + "," + n(y2) +
-           arrowHead(x2, y2, s2x, s2y, head);
+    var exitH = a.nx !== 0, exitV = a.ny !== 0;
+    var entryH = b.nx !== 0, entryV = b.ny !== 0;
+    var pts = [{ x: a.x, y: a.y }];
+    if (exitH && entryV) {
+      pts.push({ x: b.x, y: a.y });                       // yatay çık → dikey gir
+    } else if (exitV && entryH) {
+      pts.push({ x: a.x, y: b.y });                       // dikey çık → yatay gir
+    } else if (exitH && entryH) {
+      var mx = (a.x + b.x) / 2; pts.push({ x: mx, y: a.y }, { x: mx, y: b.y }); // yatay-yatay → Z
+    } else if (exitV && entryV) {
+      var my = (a.y + b.y) / 2; pts.push({ x: a.x, y: my }, { x: b.x, y: my }); // dikey-dikey → Z
+    } else {
+      var hf = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y); // yön yoksa baskın eksen
+      pts.push(hf ? { x: b.x, y: a.y } : { x: a.x, y: b.y });
+    }
+    pts.push({ x: b.x, y: b.y });
+    return polyArrow(pts, radius, head);
   }
 
   function setupInstance(root) {
