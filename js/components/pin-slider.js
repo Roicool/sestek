@@ -40,9 +40,15 @@
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)
  *   data-ps-hold         pin-hold before the slide, ×viewport h (default 0.5)
+ *   data-ps-settle       last-card-framed beat before outro, ×h (default 0.35)
  *   data-ps-outro        outro length as a fraction of viewport (default 0.9)
  *   data-ps-scrub        ScrollTrigger scrub smoothing seconds  (default 1)
  *   data-ps-end-scale    track scale at the end of the outro    (default 0.82)
+ *   data-ps-end-trigger  selector whose bottom releases the pin (e.g.
+ *                        ".section__resources") — overrides the viewport-based
+ *                        pin length so the pin follows the content
+ *   data-ps-end          end string when data-ps-end-trigger is set
+ *                        (default "bottom bottom")
  *
  * https://github.com/roicool/sestek
  */
@@ -94,6 +100,7 @@
     var d          = root.dataset;
     var breakpoint = attrNum(root, "data-ps-breakpoint", 768);
     var holdFrac   = attrNum(root, "data-ps-hold",       0.5);
+    var settleFrac = attrNum(root, "data-ps-settle",     0.35);
     var outroFrac  = attrNum(root, "data-ps-outro",      0.9);
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
@@ -124,25 +131,40 @@
       // Hold: a scroll stretch AT THE START where the section is pinned but the
       // track stays put — time to read the heading before anything moves.
       var holdPx   = viewport.clientHeight * holdFrac;
+      // Settle: after the slide, a short beat where the LAST card sits fully
+      // framed (nothing moving) before the outro dissolves it — so it never
+      // starts fading mid-cut.
+      var settlePx = viewport.clientHeight * settleFrac;
       var outroPx  = viewport.clientHeight * outroFrac;
-      var totalPx  = holdPx + maxX + outroPx;
+      var totalPx  = holdPx + maxX + settlePx + outroPx;
+
+      // Pin length: default is the px total above. If data-ps-end-trigger names
+      // an element (e.g. ".section__resources"), the pin instead RELEASES when
+      // that element's bottom reaches the viewport bottom — so the pinned range
+      // follows the content, not a viewport-height guess. The timeline's phase
+      // weights still proportion hold/slide/settle/outro across that range.
+      var stCfg = {
+        trigger: root,
+        start: "top top",
+        pin: viewport,
+        pinSpacing: true,
+        scrub: scrub,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,        // recompute distances on resize
+        refreshPriority: 1,               // pin resolves before reveal/color-shift
+      };
+      var endEl = d.psEndTrigger ? document.querySelector(d.psEndTrigger) : null;
+      if (d.psEndTrigger && !endEl) warn("data-ps-end-trigger not found: " + d.psEndTrigger, root);
+      if (endEl) {
+        stCfg.endTrigger = endEl;
+        stCfg.end = d.psEnd || "bottom bottom";
+      } else {
+        stCfg.end = "+=" + totalPx;
+      }
 
       // Timeline runs in px-proportional "seconds" so each phase maps to its
       // real scroll length; scrub stretches the whole thing over end - start.
-      var tl = gsap.timeline({
-        defaults: { ease: "none" },
-        scrollTrigger: {
-          trigger: root,
-          start: "top top",
-          end: "+=" + totalPx,
-          pin: viewport,
-          pinSpacing: true,
-          scrub: scrub,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,      // recompute distances on resize
-          refreshPriority: 1,             // pin resolves before reveal/color-shift
-        },
-      });
+      var tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: stCfg });
 
       // Phase 0 — hold: nothing moves for the first holdPx of scroll (the gap
       // before the slide tween below leaves the track at x:0 while pinned).
@@ -150,14 +172,20 @@
       if (maxX > 0) {
         tl.to(track, { x: function () { return -distance(); }, duration: maxX }, holdPx);
       }
-      // Phase 2 — recede into depth: scale down + fade the track away.
+      // Phase 2 — settle: intentional gap (holdPx+maxX → +settlePx) — the last
+      // card stays fully framed, nothing animates.
+      // Phase 3 — recede into depth: scale down + fade the track away. Origin is
+      // pinned to the CURRENT viewport centre (in the track's own coords), not
+      // the wide track's geometric centre — otherwise a track scrolled far right
+      // would scale toward an off-screen point and the last card would look cut.
       if (outroPx > 0) {
+        var viewCentreInTrack = maxX + viewport.clientWidth / 2;
         tl.to(track, {
           scale: endScale,
           autoAlpha: 0,
-          transformOrigin: "center center",
+          transformOrigin: viewCentreInTrack + "px center",
           duration: outroPx,
-        }, holdPx + maxX);
+        }, holdPx + maxX + settlePx);
       }
 
       // matchMedia cleanup: revert the timeline + its ScrollTrigger and clear
