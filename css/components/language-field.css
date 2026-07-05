@@ -1,0 +1,28 @@
+/*!
+ * language-field.css v1.0.0
+ * Structure only — you style the flags, the lit state, the wire and the dot in
+ * the Designer. Every selector is attribute-driven.
+ * https://github.com/roicool/sestek
+ */
+
+/* Root clips the scattered field; JS sets position:relative if it's static. */
+[data-language-field] { position: relative; overflow: hidden; }
+
+/* Flags are absolutely scattered by JS (left/top %, translate -50%). */
+[data-lf-item] { position: absolute; will-change: transform; }
+
+/* Wire layer fills the root, behind the flags; the centre headline sits on top. */
+[data-lf-wires] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none; overflow: visible;
+}
+[data-lf-center] { position: relative; z-index: 2; }
+
+/* Defaults you can override: wire + dot use --lf-color (fallback currentColor).
+   Kept at zero specificity so any Designer styling wins. */
+:where([data-lf-wire]) { stroke: var(--lf-color, currentColor); stroke-width: 1; fill: none; }
+:where([data-lf-dot])  { fill: var(--lf-color, currentColor); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lf-wire], [data-lf-dot] { display: none; }
+}
