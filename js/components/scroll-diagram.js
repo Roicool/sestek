@@ -43,8 +43,10 @@
  *
  * Node başına override edilebilenler (o okun kendisini etkiler):
  *   data-dg-from       kaynak: "logo" | step no
- *   data-dg-anchor     okun bu node'a girdiği kenar:
+ *   data-dg-anchor     okun bu node'a GİRDİĞİ kenar:
  *                      "auto" | "left" | "right" | "top" | "bottom"  (default auto)
+ *   data-dg-out        okun KAYNAKTAN ÇIKTIĞI kenar (aynı değerler)  (default auto)
+ *                      auto = baskın eksene göre kenar ortası (hizalı)
  *   data-dg-shape / data-dg-curve / data-dg-radius  → global değeri geçersiz kılar
  *
  * https://github.com/roicool/sestek
@@ -79,12 +81,15 @@
     if (anchor === "right")  return { x: box.cx + box.hw + gap, y: box.cy, nx: 1,  ny: 0 };
     if (anchor === "top")    return { x: box.cx, y: box.cy - box.hh - gap, nx: 0, ny: -1 };
     if (anchor === "bottom") return { x: box.cx, y: box.cy + box.hh + gap, nx: 0, ny: 1 };
-    // auto: merkezden hedefe giden ışının kutu sınırıyla kesişimi
+    // auto: baskın eksene göre KENARIN TAM ORTASINA bağlan (köşegen kesişime değil)
+    // → yatay ok sol/sağ kenar ortasından, dikey ok üst/alt kenar ortasından çıkar/girer.
     var dx = tx - box.cx, dy = ty - box.cy;
-    var t = 1 / Math.max(Math.abs(dx) / (box.hw || 1e-6), Math.abs(dy) / (box.hh || 1e-6), 1e-6);
-    var ex = box.cx + dx * t, ey = box.cy + dy * t;
-    var dl = Math.hypot(dx, dy) || 1;
-    return { x: ex + dx / dl * gap, y: ey + dy / dl * gap, nx: dx / dl, ny: dy / dl };
+    if (Math.abs(dx) * (box.hh || 1e-6) >= Math.abs(dy) * (box.hw || 1e-6)) {
+      var sx = dx >= 0 ? 1 : -1;
+      return { x: box.cx + sx * (box.hw + gap), y: box.cy, nx: sx, ny: 0 };
+    }
+    var sy = dy >= 0 ? 1 : -1;
+    return { x: box.cx, y: box.cy + sy * (box.hh + gap), nx: 0, ny: sy };
   }
 
   /** Ok başı: uca (x2,y2) gelen (idx,idy) yönüne göre iki kanat — path devamı. */
@@ -208,7 +213,8 @@
         curve:  attrNum(node, "data-dg-curve", curve0),
         radius: attrNum(node, "data-dg-radius", radius0),
         shape:  node.getAttribute("data-dg-shape") || shape0,
-        anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef kenarı
+        anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef (bu node) kenarı
+        out:    node.getAttribute("data-dg-out") || "auto",    // kaynak çıkış kenarı
         base: mkPath("dg-line dg-line--base"),
         fill: mkPath("dg-line dg-line--fill"),
       });
@@ -226,6 +232,7 @@
           radius: attrNum(firstNode, "data-dg-radius", radius0),
           shape:  firstNode.getAttribute("data-dg-shape") || shape0,
           anchor: firstNode.getAttribute("data-dg-anchor") || "auto",
+          out:    firstNode.getAttribute("data-dg-out") || "auto",
           base: mkPath("dg-line dg-line--base"),
           fill: mkPath("dg-line dg-line--fill"),
         });
@@ -244,8 +251,8 @@
       var origin = { x: lb.cx, y: lb.cy }; // kavisin "iç" tarafı = merkez
       conns.forEach(function (c) {
         var sb = rectOf(c.source, sr), db = rectOf(c.node, sr);
-        // Uçlar kutu KENARINA bağlanır (text'in içine girmez); anchor override edilebilir.
-        var a = edgePoint(sb, db.cx, db.cy, gap, "auto");
+        // Uçlar kutu KENARININ ORTASINA bağlanır (hizalı); out/anchor ile override.
+        var a = edgePoint(sb, db.cx, db.cy, gap, c.out);
         var b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
         var d = c.shape === "elbow"
           ? elbowPath(a, b, c.radius, head)
