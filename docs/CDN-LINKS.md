@@ -1531,8 +1531,10 @@ Webflow `</body>` öncesi:
   <button data-ls-prev aria-label="Önceki">←</button>
   <button data-ls-next aria-label="Sonraki">→</button>
 
-  <!-- Boş sekme barı — bu da bir normal Div Block; JS logoları buraya taşır.
-       (Koymazsan JS listenin hemen öncesine kendisi oluşturur.) -->
+  <!-- Boş sekme barı — normal Div Block; JS bunu STAGE'İN İÇİNE taşır ve
+       logoları burada toplar. Bar slide'ların ÜSTÜNE (bg üstüne) overlay olur.
+       (Koymazsan JS kendisi oluşturur.) Panel'e üstten padding ver ki içerik
+       logoların altında kalmasın. -->
   <div data-ls-tabs></div>
 
   <!-- Collection List Wrapper (nested CMS bloğu) -->
@@ -1583,6 +1585,10 @@ Kök attribute'ları (hepsi opsiyonel):
 - **`data-ls-loop`** — `"false"` → uçlarda durur, oklar disable olur (default döngü).
 
 **Notlar**
+- **Sekme barı slide'ların üstüne overlay olur:** JS `[data-ls-tabs]`'ı stage'in
+  içine (grid hücresine, bg'nin üstüne) yerleştirir; barın kendisini Designer'da
+  konumlandır (üstte hizalı) ve `[data-ls-panel]`'e üstten padding ver ki içerik
+  logoların altında kalmasın.
 - Sekmeler `role="tablist"`/`tab`, slide'lar `role="tabpanel"` olarak otomatik
   ARIA alır. Klavye: ok tuşları + Home/End sekmeler arasında gezer, Enter/Space seçer.
 - Logolar normalde grayscale + soluk; hover/focus ve **aktif** sekmede kendi

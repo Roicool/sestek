@@ -28,10 +28,10 @@
  *
  * Webflow only lets you author markup INSIDE Collection Items — never in the
  * Collection Wrapper or Collection List. So the root is NOT the Collection
- * Wrapper: it is a plain Div Block that WRAPS the whole thing. The header,
- * arrows and (empty) tab bar are its direct children, sitting NEXT TO the
- * Collection List Wrapper. Each item authors its own tab/background/panel; at
- * runtime JS relocates every item's logo tab into the shared tab bar.
+ * Wrapper: it is a plain Div Block that WRAPS the whole thing. Each item authors
+ * its own logo tab / background / panel; at runtime JS gathers every item's tab
+ * into one shared bar and OVERLAYS that bar on top of the slides (inside the
+ * stage, above the backgrounds).
  *
  *   [data-logo-slider]                        ← plain Div Block = root
  *
@@ -40,12 +40,15 @@
  *     [data-ls-prev]  <button>                ← optional arrows, anywhere in root
  *     [data-ls-next]  <button>                   (e.g. top-right)
  *
- *     [data-ls-tabs]                          ← empty Div Block; JS moves the
- *                                                logo tabs in here (auto-created
- *                                                next to the list if you omit it)
+ *     [data-ls-tabs]                          ← OPTIONAL empty Div Block to style;
+ *                                                JS moves it INTO the stage and
+ *                                                fills it with the logo tabs.
+ *                                                (Auto-created if you omit it.)
  *
  *     [Collection List Wrapper]               ← the Webflow CMS block
- *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage)
+ *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage);
+ *                                                the tab bar is placed in here, over
+ *                                                the slides, by JS
  *         [data-ls-item]   role="listitem"    ← Collection Item = one brand/slide
  *           [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
  *             <img data-ls-logo src="…" alt="Brand">  ← PNG; greyscale until active/hover
@@ -103,25 +106,19 @@
     var stage = items[0].parentElement;
     stage.setAttribute("data-ls-stage", "");
 
-    // The Collection List Wrapper — the top-level block under the root that holds
-    // the CMS list. In Webflow you can only author inside Collection Items, never
-    // in the Wrapper/List, so the tab bar and arrows live OUTSIDE it (as children
-    // of the root, which is a plain Div Block). We find it so an auto-created tab
-    // bar lands next to it in the root, never inside the CMS list.
-    var cmsBlock = stage;
-    while (cmsBlock.parentElement && cmsBlock.parentElement !== root) {
-      cmsBlock = cmsBlock.parentElement;
-    }
-
-    // ── Tab bar: move every item's [data-ls-tab] into one row. If the Designer
-    //    didn't author an empty [data-ls-tabs] box in the root, create one just
-    //    before the CMS block (inside the root — a normal, Webflow-legal spot).
+    // ── Tab bar: every item's [data-ls-tab] is gathered into one row so all the
+    //    logos are visible at once. The bar OVERLAYS the slides — it lives inside
+    //    the stage grid cell (on top of the backgrounds) rather than outside the
+    //    CMS block. The Designer may author an empty [data-ls-tabs] box anywhere
+    //    in the root (to style it); JS relocates it into the stage. If omitted,
+    //    JS creates one. (This is a runtime DOM move — not Webflow authoring —
+    //    so dropping a node into the CMS list here is fine.)
     var tabsBar = root.querySelector("[data-ls-tabs]");
     if (!tabsBar) {
       tabsBar = document.createElement("div");
       tabsBar.setAttribute("data-ls-tabs", "");
-      root.insertBefore(tabsBar, cmsBlock);
     }
+    if (tabsBar.parentElement !== stage) stage.appendChild(tabsBar);
     tabsBar.setAttribute("role", "tablist");
     if (!tabsBar.getAttribute("aria-label")) tabsBar.setAttribute("aria-label", "Customer stories");
 
