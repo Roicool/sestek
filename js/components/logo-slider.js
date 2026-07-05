@@ -142,11 +142,22 @@
       tabs.push(tab || null);
       fills.push(tab ? tab.querySelector("[data-ls-fill]") : null);
 
-      // Per-brand fill colour, bound from a CMS text field (hex/rgb/CSS colour)
-      // to data-ls-color on the tab (or the item). Exposed as the --ls-color
-      // custom property so the fill bar draws in that brand's own colour.
+      // Per-brand fill colour → exposed as the --ls-color custom property so the
+      // fill bar draws in that brand's own colour. Two ways to supply it:
+      //   1) data-ls-color="#hex" attribute on the tab/item (bind a CMS TEXT field)
+      //   2) an empty [data-ls-color] element inside the tab/item whose BACKGROUND
+      //      is bound to a CMS Colour field (Webflow can't bind a colour to an
+      //      attribute value, but it can to a background) — JS reads its computed
+      //      background-colour. Hide that element (display:none) in the Designer.
       if (tab) {
         var color = tab.getAttribute("data-ls-color") || item.getAttribute("data-ls-color");
+        if (!color) {
+          var srcEl = tab.querySelector("[data-ls-color]") || item.querySelector("[data-ls-color]");
+          if (srcEl) {
+            var bg = getComputedStyle(srcEl).backgroundColor;
+            if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") color = bg;
+          }
+        }
         if (color) tab.style.setProperty("--ls-color", color.trim());
       }
 
