@@ -126,18 +126,28 @@
       // Distance the track must travel so the LAST card sits fully in view with
       // a trailing gap equal to the track's side padding.
       //
-      // Not scrollWidth: when content overflows a padded flex container, browsers
-      // omit the trailing (right) padding from scrollWidth, so scrollWidth -
-      // clientWidth stops the slide ~one padding short and cuts the last card.
-      // Measure the real geometry instead — (last card's right edge − track's
-      // left edge) is transform-independent (both shift with the track's x), so
-      // it's safe to read at any point during a ScrollTrigger refresh.
+      // Measured with LAYOUT metrics (offsetLeft/offsetWidth), NOT
+      // getBoundingClientRect. Two traps this avoids:
+      //   • scrollWidth omits the trailing (right) padding when content overflows
+      //     a padded flex container, so scrollWidth - clientWidth stops the slide
+      //     one padding short and cuts the last card.
+      //   • getBoundingClientRect is TRANSFORM-dependent. ScrollTrigger.refresh()
+      //     samples the pin by jumping the timeline to its end — i.e. with the
+      //     outro's scale(endScale) applied to the track — and GSAP re-evaluates
+      //     this function-based value right then. A rect read under scale 0.82
+      //     returns ~0.82× the real distance, so the slide travels short and the
+      //     last card ends up cut. offsetLeft/offsetWidth ignore transforms, so
+      //     they report the true untransformed geometry no matter when sampled.
+      //
+      // offsetParent is the position:relative viewport (the display:contents CMS
+      // wrappers and the static track generate no positioned box), so
+      // last.offsetLeft is the last card's left measured from the viewport's
+      // left, already including the track's left padding + all prior cards/gaps.
       function distance() {
         var last = cards[cards.length - 1];
-        var trackLeft = track.getBoundingClientRect().left;
-        var lastRight = last.getBoundingClientRect().right;
+        var lastRight = last.offsetLeft + last.offsetWidth;
         var padR = parseFloat(getComputedStyle(track).paddingRight) || 0;
-        return Math.max(0, (lastRight - trackLeft) + padR - viewport.clientWidth);
+        return Math.max(0, lastRight + padR - viewport.clientWidth);
       }
       var maxX     = distance();
       // Hold: a scroll stretch AT THE START where the section is pinned but the
