@@ -26,28 +26,37 @@
  *
  * ── DOM (Webflow) ────────────────────────────────────────────────────
  *
- *   [data-logo-slider]                       ← Collection Wrapper (root)
+ * Webflow only lets you author markup INSIDE Collection Items — never in the
+ * Collection Wrapper or Collection List. So the root is NOT the Collection
+ * Wrapper: it is a plain Div Block that WRAPS the whole thing. The header,
+ * arrows and (empty) tab bar are its direct children, sitting NEXT TO the
+ * Collection List Wrapper. Each item authors its own tab/background/panel; at
+ * runtime JS relocates every item's logo tab into the shared tab bar.
+ *
+ *   [data-logo-slider]                        ← plain Div Block = root
  *
  *     (optional static header — title, subtitle, "See all" — authored freely)
  *
- *     [data-ls-prev]  <button>               ← optional arrows, placed anywhere
- *     [data-ls-next]  <button>                  in the root (e.g. top-right)
+ *     [data-ls-prev]  <button>                ← optional arrows, anywhere in root
+ *     [data-ls-next]  <button>                   (e.g. top-right)
  *
- *     [data-ls-tabs]                         ← OPTIONAL empty box; JS creates it
- *                                               if missing and fills it with tabs
+ *     [data-ls-tabs]                          ← empty Div Block; JS moves the
+ *                                                logo tabs in here (auto-created
+ *                                                next to the list if you omit it)
  *
- *     [Collection List]  role="list"         ← the stage (JS tags it data-ls-stage)
- *       [data-ls-item]   role="listitem"     ← one brand / slide
- *         [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
- *           <img data-ls-logo src="…" alt="Brand">   ← PNG; greyscale until active/hover
- *           [data-ls-fill]                    ← the auto-advance progress bar
- *         [data-ls-bg]                        ← background layer (stacked, cross-fade)
- *           <img src="…" alt="" loading="lazy">
- *           [data-ls-overlay]                 ← OPTIONAL tint for text contrast
- *           (add data-grain here + Sestek.initGrain() for film grain)
- *         [data-ls-panel]                     ← content (stacked, staggered in)
- *           [data-ls-anim] …                  ← OPTIONAL: mark which children
- *                                               animate; default = panel's children
+ *     [Collection List Wrapper]               ← the Webflow CMS block
+ *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage)
+ *         [data-ls-item]   role="listitem"    ← Collection Item = one brand/slide
+ *           [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
+ *             <img data-ls-logo src="…" alt="Brand">  ← PNG; greyscale until active/hover
+ *             [data-ls-fill]                    ← the auto-advance progress bar
+ *           [data-ls-bg]                        ← background layer (stacked, cross-fade)
+ *             <img src="…" alt="" loading="lazy">
+ *             [data-ls-overlay]                 ← OPTIONAL tint for text contrast
+ *             (add data-grain here + Sestek.initGrain() for film grain)
+ *           [data-ls-panel]                     ← content (stacked, staggered in)
+ *             [data-ls-anim] …                  ← OPTIONAL: mark which children
+ *                                                 animate; default = panel's children
  *
  * Root attributes (all optional):
  *   data-ls-autoplay  "false" → no auto-advance                (default true)
@@ -94,13 +103,24 @@
     var stage = items[0].parentElement;
     stage.setAttribute("data-ls-stage", "");
 
-    // ── Tab bar: move every item's [data-ls-tab] into one row. Created before
-    //    the stage if the Designer didn't place a [data-ls-tabs] box.
+    // The Collection List Wrapper — the top-level block under the root that holds
+    // the CMS list. In Webflow you can only author inside Collection Items, never
+    // in the Wrapper/List, so the tab bar and arrows live OUTSIDE it (as children
+    // of the root, which is a plain Div Block). We find it so an auto-created tab
+    // bar lands next to it in the root, never inside the CMS list.
+    var cmsBlock = stage;
+    while (cmsBlock.parentElement && cmsBlock.parentElement !== root) {
+      cmsBlock = cmsBlock.parentElement;
+    }
+
+    // ── Tab bar: move every item's [data-ls-tab] into one row. If the Designer
+    //    didn't author an empty [data-ls-tabs] box in the root, create one just
+    //    before the CMS block (inside the root — a normal, Webflow-legal spot).
     var tabsBar = root.querySelector("[data-ls-tabs]");
     if (!tabsBar) {
       tabsBar = document.createElement("div");
       tabsBar.setAttribute("data-ls-tabs", "");
-      stage.parentNode.insertBefore(tabsBar, stage);
+      root.insertBefore(tabsBar, cmsBlock);
     }
     tabsBar.setAttribute("role", "tablist");
     if (!tabsBar.getAttribute("aria-label")) tabsBar.setAttribute("aria-label", "Customer stories");

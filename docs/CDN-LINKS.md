@@ -1507,56 +1507,71 @@ Webflow `</body>` öncesi:
 </script>
 ```
 
-#### Webflow CMS yapısı
+#### Webflow yapısı
+
+> ⚠️ **Önemli:** Webflow'da yalnızca **Collection Item'ın içine** HTML
+> ekleyebilirsin — Collection Wrapper veya Collection List'in içine kardeş
+> element koyamazsın. Bu yüzden **kök (`data-logo-slider`) Collection Wrapper
+> DEĞİLDİR**: her şeyi saran **normal bir Div Block**'tur. Başlık, oklar ve boş
+> sekme barı bu dış div'in çocuklarıdır ve Collection List Wrapper'ın **yanında**
+> (dışında) durur. Sekmeler her Collection Item'ın içinde CMS'e bağlı yazılır;
+> JS bunları çalışma anında dıştaki sekme barına taşır.
 
 ```html
-<!-- Collection Wrapper — custom attribute: data-logo-slider -->
-<section data-logo-slider data-ls-dwell="6">
+<!-- KÖK = her şeyi saran normal Div Block (Collection Wrapper DEĞİL) -->
+<div data-logo-slider data-ls-dwell="6">
 
-  <!-- Statik başlık/açıklama (istersen) — component'in dışında, serbest -->
+  <!-- Statik başlık/açıklama (istersen) — serbest -->
+  <div>
+    <h2>Powering concierge experiences…</h2>
+    <p>See how leading brands…</p>
+  </div>
 
-  <!-- Slide okları (opsiyonel, sekme dışında; nereye koyarsan) -->
+  <!-- Slide okları (opsiyonel; dış div'in çocuğu, nereye koyarsan) -->
   <button data-ls-prev aria-label="Önceki">←</button>
   <button data-ls-next aria-label="Sonraki">→</button>
 
-  <!-- Sekme barı (opsiyonel boş kutu; yoksa JS oluşturur) -->
+  <!-- Boş sekme barı — bu da bir normal Div Block; JS logoları buraya taşır.
+       (Koymazsan JS listenin hemen öncesine kendisi oluşturur.) -->
   <div data-ls-tabs></div>
 
-  <!-- Collection List -->
-  <div role="list">
+  <!-- Collection List Wrapper (nested CMS bloğu) -->
+  <div class="collection-list-wrapper">
+    <div role="list">
 
-    <!-- Collection Item = bir marka / slide -->
-    <div role="listitem" data-ls-item>
+      <!-- Collection Item = bir marka / slide (İÇİNE yazılabilen tek yer) -->
+      <div role="listitem" data-ls-item>
 
-      <!-- Logo sekmesi → JS bunu data-ls-tabs barına taşır -->
-      <a data-ls-tab>
-        <img data-ls-logo src="[CMS logo PNG]" alt="[CMS marka adı]">
-        <span data-ls-fill></span>            <!-- auto-advance ilerleme çubuğu -->
-      </a>
+        <!-- Logo sekmesi → JS bunu dıştaki data-ls-tabs barına taşır -->
+        <a data-ls-tab>
+          <img data-ls-logo src="[CMS logo PNG]" alt="[CMS marka adı]">
+          <span data-ls-fill></span>            <!-- auto-advance ilerleme çubuğu -->
+        </a>
 
-      <!-- Arka plan katmanı (stacked, çapraz geçer). grain buraya. -->
-      <div data-ls-bg data-grain data-grain-intensity="0.12">
-        <img src="[CMS arka plan]" alt="" loading="lazy">
-        <div data-ls-overlay></div>           <!-- opsiyonel kontrast tint'i -->
-      </div>
-
-      <!-- İçerik (stacked, stagger ile girer) -->
-      <div data-ls-panel>
-        <blockquote data-ls-anim>[CMS alıntı]</blockquote>
-        <div data-ls-anim>
-          <img src="[CMS avatar]" alt="">
-          <span>[CMS yazar]</span>
-          <span>[CMS ünvan]</span>
+        <!-- Arka plan katmanı (stacked, çapraz geçer). grain buraya. -->
+        <div data-ls-bg data-grain data-grain-intensity="0.12">
+          <img src="[CMS arka plan]" alt="" loading="lazy">
+          <div data-ls-overlay></div>           <!-- opsiyonel kontrast tint'i -->
         </div>
-        <div data-ls-anim>[CMS istatistik]</div>
-        <a data-ls-anim href="[CMS link]">Read story →</a>
+
+        <!-- İçerik (stacked, stagger ile girer) -->
+        <div data-ls-panel>
+          <blockquote data-ls-anim>[CMS alıntı]</blockquote>
+          <div data-ls-anim>
+            <img src="[CMS avatar]" alt="">
+            <span>[CMS yazar]</span>
+            <span>[CMS ünvan]</span>
+          </div>
+          <div data-ls-anim>[CMS istatistik]</div>
+          <a data-ls-anim href="[CMS link]">Read story →</a>
+        </div>
+
       </div>
+      <!-- diğer Collection Item'lar… -->
 
     </div>
-    <!-- diğer Collection Item'lar… -->
-
   </div>
-</section>
+</div>
 ```
 
 Kök attribute'ları (hepsi opsiyonel):
