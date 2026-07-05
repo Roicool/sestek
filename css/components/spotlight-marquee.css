@@ -1,23 +1,34 @@
 /*!
- * spotlight-marquee.css v1.0.0
+ * spotlight-marquee.css v1.1.0
  * Structure only — you style the section, image and headline in the Designer.
- * The cursor spotlight is [data-sp-light]; the moving strip is [data-sp-track].
+ * The moving strip is [data-sp-track]; the cursor spotlight is [data-sp-light].
+ *
+ * This is a BACKGROUND marquee: the track fills the section's full height and
+ * the images run full-height side by side. Do NOT position the images absolute
+ * — keep them in the track's flex flow; the track itself is the layer that fills
+ * the background. Give [data-spotlight] a height (it's the hero/section box).
  * https://github.com/roicool/sestek
  */
 
 [data-spotlight] { position: relative; overflow: hidden; }
 
-/* The strip that scrolls. inline-flex so children sit in one row; JS moves x. */
+/* The strip fills the section height and scrolls horizontally (JS moves x). */
 [data-sp-track] {
-  display: inline-flex;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
   flex-wrap: nowrap;
+  align-items: stretch;
   will-change: transform;
 }
-[data-sp-track] > * { flex: 0 0 auto; }
-[data-sp-track] img { display: block; max-width: none; }
+/* Every cell / image runs the full height, side by side (aspect kept for imgs). */
+[data-sp-track] > * { flex: 0 0 auto; height: 100%; }
+[data-sp-track] img { display: block; height: 100%; width: auto; max-width: none; }
 
-/* The cursor spotlight: dark everywhere, transparent (revealing the bright strip)
-   in a soft circle at the pointer. JS drives --sp-x/--sp-y/--sp-r each frame. */
+/* Cursor spotlight: dark everywhere, transparent (revealing the bright strip) in
+   a soft circle at the pointer. JS drives --sp-x/--sp-y/--sp-r each frame. */
 [data-sp-light] {
   position: absolute;
   inset: 0;
