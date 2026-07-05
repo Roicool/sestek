@@ -1,0 +1,106 @@
+/*!
+ * pin-slider.css v1.0.0
+ * Layout + critical structure for the pin-slider component. The motion lives in
+ * js/components/pin-slider.js (GSAP/ScrollTrigger); this file only owns the two
+ * modes' geometry, bound by the same data-attributes:
+ *   [data-ps-mode="horizontal"]  desktop  — pinned frame, cards in a row
+ *   [data-ps-mode="stack"]       mobile   — position:sticky stacking cards
+ *   [data-ps-reduced]            reduced-motion fallback (native scroll strip)
+ *
+ * Colours / radii / card internals → design in Webflow. This owns geometry only.
+ * Drives: js/components/pin-slider.js
+ * https://github.com/roicool/sestek
+ */
+
+[data-ps-slider] {
+  --ps-gap: var(--spacing--6, 1.5rem);
+  --ps-card-w: min(72vw, 40rem);      /* desktop card width */
+  --ps-pad: var(--spacing--8, 2rem);  /* frame side padding */
+  --ps-sticky-top: var(--spacing--6, 1.5rem);
+  --ps-radius: var(--radius--lg, 1rem);
+  position: relative;
+}
+
+/* ── Viewport / frame ─────────────────────────────────────────────── */
+[data-ps-slider] [data-ps-viewport] {
+  width: 100%;
+  overflow: hidden;                    /* clip the off-screen cards while pinned */
+}
+
+/* ── Track ────────────────────────────────────────────────────────── */
+[data-ps-slider] [data-ps-track] {
+  display: flex;
+  gap: var(--ps-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  will-change: transform;              /* JS animates x / scale on this element */
+}
+
+/* ── Card ─────────────────────────────────────────────────────────── */
+[data-ps-slider] [data-ps-card] {
+  flex: 0 0 auto;
+  border-radius: var(--ps-radius);
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DESKTOP — pinned horizontal row (JS sets data-ps-mode="horizontal")
+   ───────────────────────────────────────────────────────────────────── */
+[data-ps-slider][data-ps-mode="horizontal"] [data-ps-viewport] {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+}
+[data-ps-slider][data-ps-mode="horizontal"] [data-ps-track] {
+  padding-inline: var(--ps-pad);
+  align-items: center;
+}
+[data-ps-slider][data-ps-mode="horizontal"] [data-ps-card] {
+  width: var(--ps-card-w);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   MOBILE — sticky stacking cards (JS sets data-ps-mode="stack").
+   Pure CSS drives the stack: each card sticks under the previous, so the
+   next one scrolls up and pins on top. JS only adds the scale-down depth.
+   ───────────────────────────────────────────────────────────────────── */
+[data-ps-slider][data-ps-mode="stack"] [data-ps-viewport] {
+  overflow: visible;                   /* sticky can't stick inside an overflow clip */
+}
+[data-ps-slider][data-ps-mode="stack"] [data-ps-track] {
+  flex-direction: column;
+  gap: var(--ps-gap);
+  padding-inline: var(--ps-pad);
+  will-change: auto;
+}
+[data-ps-slider][data-ps-mode="stack"] [data-ps-card] {
+  position: sticky;
+  top: var(--ps-sticky-top);
+  width: 100%;
+  min-height: 60vh;
+  will-change: transform;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   REDUCED MOTION — no pin, no transforms. Desktop becomes a native
+   horizontal-scroll strip; mobile keeps a plain vertical list.
+   ───────────────────────────────────────────────────────────────────── */
+[data-ps-slider][data-ps-reduced] [data-ps-viewport] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+[data-ps-slider][data-ps-reduced] [data-ps-track] {
+  padding-inline: var(--ps-pad);
+}
+[data-ps-slider][data-ps-reduced] [data-ps-card] {
+  width: var(--ps-card-w);
+  scroll-snap-align: center;
+}
+@media (max-width: 767px) {
+  [data-ps-slider][data-ps-reduced] [data-ps-viewport] { overflow-x: visible; }
+  [data-ps-slider][data-ps-reduced] [data-ps-track] { flex-direction: column; }
+  [data-ps-slider][data-ps-reduced] [data-ps-card] { width: 100%; }
+}
