@@ -1,38 +1,49 @@
 /*!
- * language-grid.js v1.0.0
- * Ramp-style bento grid for a Webflow CMS list (logos / languages / customers).
- * A calm, fixed grid of cells — NOT a scrolling marquee. Every INTERVAL a couple
- * of resting cells cross-fade to another item pulled from an off-grid pool, so a
- * large CMS list keeps cycling through a small tile board. Click a cell and it
- * expands to a 2×2 block (Ramp/Vanta "feature card" feel), swapping its compact
- * face for a detail face bound to whatever CMS fields you put there; click again,
- * hit ✕, press Esc, or open another cell to collapse.
+ * language-grid.js v1.1.0
+ * Ramp-style bento grid for a hand-authored (or CMS) list of tiles — a calm,
+ * fixed grid, NOT a scrolling marquee. Every INTERVAL a couple of resting tiles
+ * cross-fade to another item pulled from an off-grid pool, so a large list keeps
+ * cycling through a small board. Click a tile and it expands to an N×N block
+ * (Ramp/Vanta "feature card" feel), swapping its compact face for a detail face;
+ * click again, hit ✕, press Esc, or open another tile to collapse.
  *
- * The expand/collapse is animated with a FLIP pass (First-Last-Invert-Play) via
- * the Web Animations API — no GSAP needed. prefers-reduced-motion drops the
- * animation and the auto-shuffle; everything still works as a click-to-expand grid.
+ * A fixed FEATURE cell (the big visual on the side) can hold several slides that
+ * cross-fade on their own clock — so the image area rotates too, like Ramp's
+ * customer card. Place it left or right and size it in columns/rows.
  *
- * ── DOM (Webflow CMS — plain Div Block root wrapping the Collection) ──────────
+ * Expand/collapse is a FLIP pass (First-Last-Invert-Play) via the Web Animations
+ * API — no GSAP needed. prefers-reduced-motion drops the animation and the
+ * auto-rotation; everything still works as a click-to-expand grid.
  *
- *   [data-lang-grid]                     ← plain Div Block = root (the grid)
- *     [data-lg-feature]                  ← OPTIONAL fixed 2×2 hero cell (a stat /
- *                                           CTA card that never rotates)
- *     [Collection List]                  ← authored freely; JS reads the items
- *       [data-lg-item]                   ← Collection Item = one tile
- *         [data-lg-face]                 ← compact content shown in the grid
- *                                           (logo, flag + name…)
- *         [data-lg-detail]               ← content revealed when the tile expands
- *                                           (bind any CMS fields: stats, quote…)
- *         [data-lg-close] (optional)     ← a ✕ button inside the detail face
+ * ── DOM (build it yourself; items are direct children of the root) ────────────
+ *
+ *   [data-lang-grid]                     ← the grid (plain div)
+ *
+ *     [data-lg-feature]                  ← OPTIONAL big visual cell (fixed).
+ *       [data-lg-feature-slide]          ← 1+ slides; if 2+ they cross-fade on
+ *       [data-lg-feature-slide]            data-lg-feature-interval. First = active.
+ *
+ *     [data-lg-item]                     ← one tile (author as many as you like;
+ *       [data-lg-face]                     more than data-lg-visible → pool/rotate)
+ *       [data-lg-detail]                 ← revealed when the tile expands
+ *         [data-lg-close] (optional)     ← ✕ button inside the detail face
  *
  * Root attributes (all optional):
- *   data-lg-cols       grid columns at full width          (default 6)
- *   data-lg-visible    tiles on the board at once; the rest
- *                      become the rotation pool             (default: all items)
- *   data-lg-interval   ms between auto-shuffles             (default 10000)
- *   data-lg-swap       tiles swapped per shuffle tick       (default 2)
- *   data-lg-autoplay   "false" → no auto-shuffle            (default true)
- *   data-lg-expand     "false" → tiles are static, no click-to-expand (default true)
+ *   data-lg-cols            grid columns at full width          (default 6)
+ *   data-lg-visible         tiles on the board at once; the rest
+ *                           become the rotation pool            (default: all)
+ *   data-lg-interval        ms between tile shuffles            (default 10000)
+ *   data-lg-swap            tiles swapped per shuffle tick       (default 2)
+ *   data-lg-autoplay        "false" → no auto-rotation          (default true)
+ *   data-lg-expand          "false" → static, no click-expand   (default true)
+ *   data-lg-expand-cols     expanded block width in columns      (default 2)
+ *   data-lg-expand-rows     expanded block height in rows        (default 2)
+ *
+ * Feature cell attributes (on [data-lg-feature]):
+ *   data-lg-feature-cols      width in columns                   (default 2)
+ *   data-lg-feature-rows      height in rows                     (default 2)
+ *   data-lg-feature-place     "start" (top-left) | "end" (top-right)  (default start)
+ *   data-lg-feature-interval  ms between feature slides          (default: data-lg-interval)
  *
  * API:
  *   Sestek.initLanguageGrid()  — wire every [data-lang-grid] on the page
@@ -45,10 +56,11 @@
 (function (global) {
   "use strict";
 
-  var attrNum = (Sestek && Sestek.util && Sestek.util.attrNum) || function (el, name, def) {
-    var v = parseFloat(el.getAttribute(name));
-    return isNaN(v) ? def : v;
-  };
+  var attrNum = (global.Sestek && global.Sestek.util && global.Sestek.util.attrNum) ||
+    function (el, name, def) {
+      var v = parseFloat(el.getAttribute(name));
+      return isNaN(v) ? def : v;
+    };
 
   function prefersReduced() {
     return global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -64,42 +76,70 @@
       return null;
     }
 
-    var reduce   = prefersReduced();
-    var cols     = Math.max(2, attrNum(root, "data-lg-cols", 6));
-    var interval = attrNum(root, "data-lg-interval", 10000);
-    var swapN    = Math.max(1, attrNum(root, "data-lg-swap", 2));
-    var autoplay = root.getAttribute("data-lg-autoplay") !== "false" && !reduce;
+    var reduce    = prefersReduced();
+    var cols      = Math.max(2, attrNum(root, "data-lg-cols", 6));
+    var interval  = attrNum(root, "data-lg-interval", 10000);
+    var swapN     = Math.max(1, attrNum(root, "data-lg-swap", 2));
+    var autoplay  = root.getAttribute("data-lg-autoplay") !== "false" && !reduce;
     var canExpand = root.getAttribute("data-lg-expand") !== "false";
+    var expCols   = Math.max(1, attrNum(root, "data-lg-expand-cols", 2));
+    var expRows   = Math.max(1, attrNum(root, "data-lg-expand-rows", 2));
 
-    var feature  = root.querySelector("[data-lg-feature]");
     root.style.setProperty("--lg-cols", cols);
+    root.style.setProperty("--lg-exp-col", "span " + expCols);
+    root.style.setProperty("--lg-exp-row", "span " + expRows);
     root.setAttribute("data-lg-ready", "");
 
-    // The Collection List that actually holds the items — the grid tiles are
-    // rendered as direct children of the root, so lift each item up to the root
-    // and drop the now-empty CMS wrappers out of the layout.
+    // The parent that actually holds the items (a CMS list, or the root itself
+    // when you author by hand). Lift every item to be a direct grid child and
+    // collapse any wrapper so only our grid drives layout.
     var listWrap = items[0].parentElement;
+    items.forEach(function (it) { it.classList.add("lg-item"); root.appendChild(it); });
+    if (listWrap && listWrap !== root) {
+      var w = listWrap;
+      while (w && w !== root) { w.style.display = "none"; w = w.parentElement; }
+    }
 
-    // Off-grid pool: everything beyond the visible count waits here (kept in the
-    // DOM but display:none) and rotates in over time.
+    // ── Feature cell (fixed big visual, optional) ─────────────────
+    var feature = root.querySelector("[data-lg-feature]");
+    var featureStart = function () {}, featureStop = function () {};
+    if (feature) {
+      root.appendChild(feature); // keep it a direct grid child
+      var fCols = Math.max(1, attrNum(root, "data-lg-feature-cols", 2));
+      var fRows = Math.max(1, attrNum(root, "data-lg-feature-rows", 2));
+      var place = (root.getAttribute("data-lg-feature-place") || "start").toLowerCase();
+      // Pin the feature explicitly and let the tiles pack densely around it.
+      feature.style.setProperty("--lg-feat-col",
+        place === "end" ? ((-(fCols + 1)) + " / -1") : ("1 / span " + fCols));
+      feature.style.setProperty("--lg-feat-row", "1 / span " + fRows);
+      root.style.setProperty("--lg-flow", "dense");
+
+      // Feature slides: if 2+, cross-fade them on their own clock.
+      var fslides = Array.prototype.slice.call(feature.querySelectorAll("[data-lg-feature-slide]"));
+      if (fslides.length > 1) {
+        var fi = 0;
+        fslides.forEach(function (s, idx) {
+          s.setAttribute("data-lg-fslide", "");
+          if (idx === 0) s.setAttribute("data-lg-fslide-on", ""); else s.removeAttribute("data-lg-fslide-on");
+        });
+        var fInt = attrNum(root, "data-lg-feature-interval", interval);
+        var fTimer = null;
+        var fStep = function () {
+          fslides[fi].removeAttribute("data-lg-fslide-on");
+          fi = (fi + 1) % fslides.length;
+          fslides[fi].setAttribute("data-lg-fslide-on", "");
+        };
+        featureStart = function () { if (autoplay && !fTimer) fTimer = setInterval(function () { if (playing) fStep(); }, fInt); };
+        featureStop  = function () { if (fTimer) { clearInterval(fTimer); fTimer = null; } };
+      }
+    }
+
+    // Off-grid pool: everything beyond the visible count waits (display:none)
+    // and rotates in over time.
     var visibleCount = attrNum(root, "data-lg-visible", items.length);
     visibleCount = Math.max(1, Math.min(visibleCount, items.length));
-
-    // Move every item to be a direct child of the root, in order, then collapse
-    // the original Collection wrappers so only our grid drives layout.
-    items.forEach(function (it) {
-      it.classList.add("lg-item");
-      root.appendChild(it);
-    });
-    if (listWrap && listWrap !== root) {
-      var wrap = listWrap;
-      while (wrap && wrap !== root) { wrap.style.display = "none"; wrap = wrap.parentElement; }
-    }
-    // Keep the feature card first in the flow if present.
-    if (feature) root.insertBefore(feature, root.firstChild);
-
-    var onGrid = items.slice(0, visibleCount);   // tiles currently placed
-    var pool   = items.slice(visibleCount);      // tiles waiting to rotate in
+    var onGrid = items.slice(0, visibleCount);
+    var pool   = items.slice(visibleCount);
     pool.forEach(function (it) { it.setAttribute("data-lg-pool", ""); });
 
     // ── Expand / collapse (FLIP) ──────────────────────────────────
@@ -153,7 +193,7 @@
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") collapse(); });
 
-    // ── Auto-shuffle: swap resting tiles with pool tiles ──────────
+    // ── Auto-rotation: swap resting tiles with pool tiles ─────────
     var playing = autoplay, timer = null;
 
     function swapOne() {
@@ -165,8 +205,6 @@
       var pi = Math.floor(Math.random() * pool.length);
       var coming = pool[pi];
 
-      // Cross-fade: fade the outgoing tile, swap it in place for the incoming
-      // one (which takes its grid slot via DOM position), fade the new one in.
       going.setAttribute("data-lg-fade", "");
       var delay = reduce ? 0 : 260;
       setTimeout(function () {
@@ -175,10 +213,8 @@
         coming.setAttribute("data-lg-fade", "");
         going.setAttribute("data-lg-pool", "");
         going.removeAttribute("data-lg-fade");
-        // update bookkeeping
         onGrid[onGrid.indexOf(going)] = coming;
         pool[pi] = going;
-        // next frame: fade the incoming tile up
         requestAnimationFrame(function () {
           requestAnimationFrame(function () { coming.removeAttribute("data-lg-fade"); });
         });
@@ -189,20 +225,18 @@
       if (!playing || expanded) return;   // never reshuffle under an open tile
       for (var i = 0; i < swapN; i++) swapOne();
     }
-    function start() { if (autoplay && !timer) timer = setInterval(tick, interval); }
-    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function start() { if (autoplay && !timer) timer = setInterval(tick, interval); featureStart(); }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } featureStop(); }
 
-    // Pause the shuffle while the pointer is on the grid (reading), like Ramp.
+    // Pause rotation while the pointer is on the grid (reading), like Ramp.
     if (autoplay && global.matchMedia("(hover: hover) and (pointer: fine)").matches) {
       root.addEventListener("mouseenter", function () { playing = false; });
       root.addEventListener("mouseleave", function () { playing = true; });
     }
-    // Don't burst-catch-up when the tab was hidden.
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) stop(); else start();
     });
 
-    // Re-measure kills a half-open expand cleanly.
     var rT;
     global.addEventListener("resize", function () {
       clearTimeout(rT); rT = setTimeout(collapse, 150);
