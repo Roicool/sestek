@@ -260,7 +260,8 @@
 
     // ── GSAP yoksa / reduced-motion: her şey açık, oklar dolu ──────────────────
     if (!hasGsap || reduce) {
-      conns.forEach(function (c) { c.node.style.opacity = "1"; drawShow(c.base); drawShow(c.fill); });
+      nodes.forEach(function (nd) { nd.style.opacity = "1"; nd.style.visibility = "visible"; });
+      conns.forEach(function (c) { drawShow(c.base); drawShow(c.fill); });
       window.addEventListener("resize", layout);
       return { relayout: layout };
     }
@@ -282,10 +283,19 @@
       },
     });
 
-    conns.forEach(function (c) {
-      tl.to(c.base, drawVars(0.5))                                   // 1) gri çizilsin
-        .to(c.fill, drawVars(0.6))                                   // 2) Sestek dolsun
-        .to(c.node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");  // node açılır
+    // Her node kendi step'inde açılır (ok'u olsun olmasın). Ok'u olan node'da
+    // önce gri taban, sonra Sestek dolgusu çizilir; ok'u olmayan (örn. ilk node —
+    // logodan ok çıkmaz) sadece açılır. Böylece ilk node da görünür.
+    nodes.forEach(function (node) {
+      var c = null;
+      for (var k = 0; k < conns.length; k++) { if (conns[k].node === node) { c = conns[k]; break; } }
+      if (c) {
+        tl.to(c.base, drawVars(0.5))                                   // 1) gri çizilsin
+          .to(c.fill, drawVars(0.6))                                   // 2) Sestek dolsun
+          .to(node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");    // node açılır
+      } else {
+        tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 });            // ok'suz node — sadece aç
+      }
     });
 
     return { timeline: tl, relayout: layout };
