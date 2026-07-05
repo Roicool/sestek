@@ -1,0 +1,40 @@
+/*!
+ * demo-form.css v1.0.0
+ * "Try Live Demo" section — critical/behavioural styles only. Layout, colours,
+ * the gradient panel and card chrome all come from the Webflow Designer + RC
+ * tokens; this file only owns the bits the JS depends on.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── KVKK consent — hidden by default; demo-form.js reveals it for TR ──
+ * Kept out of the DOM flow so non-TR visitors never see it and Webflow's
+ * native validation can't trip on it. JS adds .is-visible when the visitor's
+ * country (IP geo, lang fallback) matches and makes the checkbox required. */
+[data-demo-form-kvkk] {
+  display: none;
+}
+[data-demo-form-kvkk].is-visible {
+  display: flex;            /* typical checkbox + label row; override in Designer */
+}
+
+/* ── Right-panel copy — fades during the industry swap (JS toggles opacity) ── */
+[data-demo-form-heading],
+[data-demo-form-body] {
+  will-change: opacity;
+}
+
+/* ── Lottie travels into the thank-you placeholder on submit ──────────
+ * GSAP owns the transform tween; this just keeps the element from being
+ * clipped or claiming pointer events mid-flight. */
+[data-demo-form-lottie] {
+  pointer-events: none;
+}
+
+/* ── Reduced motion — no fades, no transform tween (JS skips them too) ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-demo-form-heading],
+  [data-demo-form-body] {
+    will-change: auto;
+    transition: none !important;
+  }
+}

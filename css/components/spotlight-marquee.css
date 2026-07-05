@@ -1,0 +1,62 @@
+/*!
+ * spotlight-marquee.css v1.1.0
+ * Structure only — you style the section, image and headline in the Designer.
+ * The moving strip is [data-sp-track]; the cursor spotlight is [data-sp-light].
+ *
+ * This is a BACKGROUND marquee: the track fills the section's full height and
+ * the images run full-height side by side. Do NOT position the images absolute
+ * — keep them in the track's flex flow; the track itself is the layer that fills
+ * the background. Give [data-spotlight] a height (it's the hero/section box).
+ * https://github.com/roicool/sestek
+ */
+
+[data-spotlight] { position: relative; overflow: hidden; }
+
+/* The strip fills the section height and scrolls horizontally (JS moves x). */
+[data-sp-track] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  will-change: transform;
+}
+/* Every cell / image runs the full height, side by side (aspect kept for imgs). */
+[data-sp-track] > * { flex: 0 0 auto; height: 100%; }
+[data-sp-track] img { display: block; height: 100%; width: auto; max-width: none; }
+
+/* Cursor spotlight: dark everywhere, transparent (revealing the bright strip) in
+   a soft circle at the pointer. JS drives --sp-x/--sp-y/--sp-r each frame. */
+[data-sp-light] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle var(--sp-r, 0px) at var(--sp-x, 50%) var(--sp-y, 50%),
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) var(--sp-soft, 45%),
+    rgba(0, 0, 0, var(--sp-dark, 0.82)) 100%);
+}
+
+/* Headline / content sits above the dim so it stays fully readable. */
+[data-sp-content] { position: relative; z-index: 2; }
+
+/* Mobile: the marquee is NOT an absolute full-height background — it becomes a
+   band at the bottom, in normal flow, still scrolling. Content sits above it. */
+@media (max-width: 767px) {
+  [data-spotlight] { display: flex; flex-direction: column; }
+  [data-sp-content] { order: 1; }
+  [data-sp-track] {
+    position: relative;
+    top: auto; bottom: auto; left: auto;
+    order: 2;
+    width: 100%;
+    height: var(--sp-mobile-height, 32vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sp-track] { will-change: auto; }
+}
