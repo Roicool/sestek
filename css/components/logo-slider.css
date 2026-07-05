@@ -21,15 +21,6 @@
   min-width: 0; /* let text wrap instead of forcing the grid track wider */
 }
 
-/* Tab bar overlays the slides: same grid cell, pinned to the top of the stage,
-   above the backgrounds (z 0) and panels (z 1). align-self keeps it to its own
-   height so the area below it stays clickable. Give [data-ls-panel] some top
-   padding in the Designer so the content clears the logos. */
-[data-ls-stage] > [data-ls-tabs] {
-  grid-area: 1 / 1;
-  align-self: start;
-  z-index: 2;
-}
 
 /* Non-active slides never take pointer input. Opacity/visibility are owned by
    GSAP inline styles (JS path) so they are NOT set here — that would fight the

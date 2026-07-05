@@ -30,8 +30,7 @@
  * Collection Wrapper or Collection List. So the root is NOT the Collection
  * Wrapper: it is a plain Div Block that WRAPS the whole thing. Each item authors
  * its own logo tab / background / panel; at runtime JS gathers every item's tab
- * into one shared bar and OVERLAYS that bar on top of the slides (inside the
- * stage, above the backgrounds).
+ * into one shared bar that is a NORMAL row in the root flow (not overlaid).
  *
  *   [data-logo-slider]                        ← plain Div Block = root
  *
@@ -46,15 +45,13 @@
  *     [data-ls-prev]  <button>                ← optional arrows, anywhere in root
  *     [data-ls-next]  <button>                   (e.g. top-right)
  *
- *     [data-ls-tabs]                          ← OPTIONAL empty Div Block to style;
- *                                                JS moves it INTO the stage and
- *                                                fills it with the logo tabs.
- *                                                (Auto-created if you omit it.)
+ *     [data-ls-tabs]                          ← empty Div Block, a normal tabs row;
+ *                                                JS fills it with the logo tabs.
+ *                                                Style/position it freely. (Auto-
+ *                                                created before the list if omitted.)
  *
  *     [Collection List Wrapper]               ← the Webflow CMS block
- *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage);
- *                                                the tab bar is placed in here, over
- *                                                the slides, by JS
+ *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage)
  *         [data-ls-item]   role="listitem"    ← Collection Item = one brand/slide
  *           [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
  *             data-ls-color="#EC6608"           ← OPTIONAL: brand colour (CMS field)
@@ -116,19 +113,26 @@
     var stage = items[0].parentElement;
     stage.setAttribute("data-ls-stage", "");
 
+    // The Collection List Wrapper — the top-level block under the root holding
+    // the CMS list. Author the tab bar / arrows OUTSIDE it (root children).
+    var cmsBlock = stage;
+    while (cmsBlock.parentElement && cmsBlock.parentElement !== root) {
+      cmsBlock = cmsBlock.parentElement;
+    }
+
     // ── Tab bar: every item's [data-ls-tab] is gathered into one row so all the
-    //    logos are visible at once. The bar OVERLAYS the slides — it lives inside
-    //    the stage grid cell (on top of the backgrounds) rather than outside the
-    //    CMS block. The Designer may author an empty [data-ls-tabs] box anywhere
-    //    in the root (to style it); JS relocates it into the stage. If omitted,
-    //    JS creates one. (This is a runtime DOM move — not Webflow authoring —
-    //    so dropping a node into the CMS list here is fine.)
+    //    logos are visible at once. The bar is a NORMAL element in the root flow
+    //    (author an empty [data-ls-tabs] where you want it, and style it freely);
+    //    it is NOT overlaid on the slides. With section-bg mode the background is
+    //    already behind everything, so the tabs sit over it naturally; in per-item
+    //    mode the bar reads as a tabs row above the content. If you omit it, JS
+    //    creates one just before the CMS block.
     var tabsBar = root.querySelector("[data-ls-tabs]");
     if (!tabsBar) {
       tabsBar = document.createElement("div");
       tabsBar.setAttribute("data-ls-tabs", "");
+      root.insertBefore(tabsBar, cmsBlock);
     }
-    if (tabsBar.parentElement !== stage) stage.appendChild(tabsBar);
     tabsBar.setAttribute("role", "tablist");
     if (!tabsBar.getAttribute("aria-label")) tabsBar.setAttribute("aria-label", "Customer stories");
 
