@@ -123,9 +123,21 @@
     mm.add(desktop, function () {
       root.setAttribute("data-ps-mode", "horizontal");
 
-      // Distance the track must travel so its last edge reaches the viewport's.
+      // Distance the track must travel so the LAST card sits fully in view with
+      // a trailing gap equal to the track's side padding.
+      //
+      // Not scrollWidth: when content overflows a padded flex container, browsers
+      // omit the trailing (right) padding from scrollWidth, so scrollWidth -
+      // clientWidth stops the slide ~one padding short and cuts the last card.
+      // Measure the real geometry instead — (last card's right edge − track's
+      // left edge) is transform-independent (both shift with the track's x), so
+      // it's safe to read at any point during a ScrollTrigger refresh.
       function distance() {
-        return Math.max(0, track.scrollWidth - viewport.clientWidth);
+        var last = cards[cards.length - 1];
+        var trackLeft = track.getBoundingClientRect().left;
+        var lastRight = last.getBoundingClientRect().right;
+        var padR = parseFloat(getComputedStyle(track).paddingRight) || 0;
+        return Math.max(0, (lastRight - trackLeft) + padR - viewport.clientWidth);
       }
       var maxX     = distance();
       // Hold: a scroll stretch AT THE START where the section is pinned but the
