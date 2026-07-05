@@ -1,5 +1,5 @@
 /*!
- * heading-shine.css v1.3.0
+ * heading-shine.css v1.4.0
  * Animated multi-colour "shine" on a heading — a radial glow of Sestek's
  * brand colours (turquoise → lilac → magenta) drifting across the text and
  * fading back into the element's own colour. Pure CSS, no JS.
@@ -59,29 +59,35 @@
 }
 
 /* ── Display / large-type mode ─────────────────────────────────────────
- * Bigger glow (wider colour stops + farthest-corner so it reaches across
- * the whole element), a larger background so the highlight scales up with
- * the type, and a slower corner-to-corner sweep so the shine visibly
- * travels over huge letters instead of sitting in one corner. */
+ * A corner radial glow (brand/deep) is mostly currentColor with a small
+ * tinted blob in one corner — on a display-1 (huge font-size) that blob
+ * covers only a sliver of the letters and reads as "no glow". So the display
+ * modes use a diagonal SWEEP band instead: a coloured stripe that travels
+ * across the whole heading and fades back to currentColor at both edges, so
+ * the shine is clearly visible end to end on giant type while the text keeps
+ * its own colour. The 300% background + band sitting at 35–65% means both
+ * ends of the animation show pure currentColor, so the loop is seamless. */
 [data-heading-mask="display"],
 [data-heading-mask="display-deep"] {
-  background-size: 300% 300%;
-  animation-name: sestek-heading-shine-display;
-  animation-duration: 7s;
+  background-size: 300% 100%;
+  animation-name: sestek-heading-shine-sweep;
+  animation-duration: 5.5s;
 }
 
 [data-heading-mask="display"] {
-  background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #00ffeb 8%,
-    #7f81ae 22%,
-    currentColor 46%);
+  background-image: linear-gradient(100deg,
+    currentColor 35%,
+    #00ffeb 46%,
+    #7f81ae 54%,
+    currentColor 65%);
 }
 
 [data-heading-mask="display-deep"] {
-  background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #0e9488 8%,
-    #565978 22%,
-    currentColor 46%);
+  background-image: linear-gradient(100deg,
+    currentColor 35%,
+    #0e9488 46%,
+    #565978 54%,
+    currentColor 65%);
 }
 
 @keyframes sestek-heading-shine {
@@ -90,12 +96,12 @@
   100% { background-position: 0% 20%; }
 }
 
-/* A wider sweep for the display mode: the glow crosses the full heading
- * (bottom-left → top-right and back) so large type shimmers end to end. */
-@keyframes sestek-heading-shine-display {
-  0%   { background-position: 0% 100%; }
-  50%  { background-position: 100% 0%; }
-  100% { background-position: 0% 100%; }
+/* Display mode: slide the coloured band across the full heading. With a 300%
+ * background the band enters from one edge, crosses the text, and exits the
+ * other — both ends land on pure currentColor, so the loop has no visible jump. */
+@keyframes sestek-heading-shine-sweep {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
