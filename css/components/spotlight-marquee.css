@@ -1,0 +1,37 @@
+/*!
+ * spotlight-marquee.css v1.0.0
+ * Structure only — you style the section, image and headline in the Designer.
+ * The cursor spotlight is [data-sp-light]; the moving strip is [data-sp-track].
+ * https://github.com/roicool/sestek
+ */
+
+[data-spotlight] { position: relative; overflow: hidden; }
+
+/* The strip that scrolls. inline-flex so children sit in one row; JS moves x. */
+[data-sp-track] {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  will-change: transform;
+}
+[data-sp-track] > * { flex: 0 0 auto; }
+[data-sp-track] img { display: block; max-width: none; }
+
+/* The cursor spotlight: dark everywhere, transparent (revealing the bright strip)
+   in a soft circle at the pointer. JS drives --sp-x/--sp-y/--sp-r each frame. */
+[data-sp-light] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle var(--sp-r, 0px) at var(--sp-x, 50%) var(--sp-y, 50%),
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) var(--sp-soft, 45%),
+    rgba(0, 0, 0, var(--sp-dark, 0.82)) 100%);
+}
+
+/* Headline / content sits above the dim so it stays fully readable. */
+[data-sp-content] { position: relative; z-index: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sp-track] { will-change: auto; }
+}
