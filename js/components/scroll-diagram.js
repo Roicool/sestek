@@ -43,10 +43,14 @@
  *
  * Node başına override edilebilenler (o okun kendisini etkiler):
  *   data-dg-from       kaynak: "logo" | step no
- *   data-dg-anchor     okun bu node'a GİRDİĞİ kenar:
+ *   data-dg-anchor     port yoksa okun bu node'a GİRDİĞİ kenar:
  *                      "auto" | "left" | "right" | "top" | "bottom"  (default auto)
- *   data-dg-out        okun KAYNAKTAN ÇIKTIĞI kenar (aynı değerler)  (default auto)
- *                      auto = baskın eksene göre kenar ortası (hizalı)
+ *
+ * PORT div'leri (en garantili — okun çıkış/giriş noktasını SEN belirlersin):
+ *   Node'un içine boş bir div koy ve konumlandır; okun ucu o div'in MERKEZİNE gelir.
+ *     [data-dg-out]   kaynak node içinde → ok buradan ÇIKAR
+ *     [data-dg-in]    hedef node içinde  → ok buraya GİRER
+ *   Port yoksa auto kenar-ortasına düşülür. (Node başına birer tane; döngü/zincir için ideal.)
  *   data-dg-shape / data-dg-curve / data-dg-radius  → global değeri geçersiz kılar
  *
  * https://github.com/roicool/sestek
@@ -60,6 +64,14 @@
   var SVGNS = "http://www.w3.org/2000/svg";
 
   function n(v) { return v.toFixed(1); }
+
+  /** Bir port elementinin (varsa) stage-relative merkezi; yoksa null. */
+  function portCenter(node, sel, sr) {
+    var port = node.querySelector(sel);
+    if (!port) return null;
+    var r = port.getBoundingClientRect();
+    return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2, nx: 0, ny: 0 };
+  }
 
   /** Elementin stage-relative kutusu (merkez + yarı-boyutlar). */
   function rectOf(el, sr) {
@@ -214,7 +226,6 @@
         radius: attrNum(node, "data-dg-radius", radius0),
         shape:  node.getAttribute("data-dg-shape") || shape0,
         anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef (bu node) kenarı
-        out:    node.getAttribute("data-dg-out") || "auto",    // kaynak çıkış kenarı
         base: mkPath("dg-line dg-line--base"),
         fill: mkPath("dg-line dg-line--fill"),
       });
@@ -232,7 +243,6 @@
           radius: attrNum(firstNode, "data-dg-radius", radius0),
           shape:  firstNode.getAttribute("data-dg-shape") || shape0,
           anchor: firstNode.getAttribute("data-dg-anchor") || "auto",
-          out:    firstNode.getAttribute("data-dg-out") || "auto",
           base: mkPath("dg-line dg-line--base"),
           fill: mkPath("dg-line dg-line--fill"),
         });
@@ -251,9 +261,11 @@
       var origin = { x: lb.cx, y: lb.cy }; // kavisin "iç" tarafı = merkez
       conns.forEach(function (c) {
         var sb = rectOf(c.source, sr), db = rectOf(c.node, sr);
-        // Uçlar kutu KENARININ ORTASINA bağlanır (hizalı); out/anchor ile override.
-        var a = edgePoint(sb, db.cx, db.cy, gap, c.out);
-        var b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
+        // Uçlar: önce KAYNAKTA [data-dg-out] / HEDEFTE [data-dg-in] port'una
+        // bağlanır (tam o noktadan çıkıp girer). Port yoksa auto kenar-ortası
+        // (anchor ile hedef kenarı zorlanabilir).
+        var a = portCenter(c.source, "[data-dg-out]", sr) || edgePoint(sb, db.cx, db.cy, gap, "auto");
+        var b = portCenter(c.node,   "[data-dg-in]",  sr) || edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
         var d = c.shape === "elbow"
           ? elbowPath(a, b, c.radius, head)
           : curvePath(a, b, c.curve, head, origin);
