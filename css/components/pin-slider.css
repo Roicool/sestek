@@ -30,6 +30,7 @@
 /* ── Track ────────────────────────────────────────────────────────── */
 [data-ps-slider] [data-ps-track] {
   display: flex;
+  flex-wrap: nowrap;                   /* never wrap — one continuous row to scrub */
   gap: var(--ps-gap);
   will-change: transform;              /* JS animates x / scale on this element */
 }
@@ -48,8 +49,15 @@
 }
 
 /* ── Card ─────────────────────────────────────────────────────────── */
+/* Width is mode-INDEPENDENT so the row always overflows and is scrubbable —
+   even before JS sets data-ps-mode, or if the CMS display:contents flatten
+   would otherwise let flex shrink each card to its content and fit them all
+   on one screen. flex-shrink:0 + min-width guarantee the overflow. Stack /
+   reduced-mobile override this back to 100% below. */
 [data-ps-slider] [data-ps-card] {
   flex: 0 0 auto;
+  width: var(--ps-card-w);
+  min-width: var(--ps-card-w);         /* belt-and-suspenders vs. flex shrink */
   border-radius: var(--ps-radius);
   overflow: hidden;
 }
@@ -65,9 +73,6 @@
 [data-ps-slider][data-ps-mode="horizontal"] [data-ps-track] {
   padding-inline: var(--ps-pad);
   align-items: center;
-}
-[data-ps-slider][data-ps-mode="horizontal"] [data-ps-card] {
-  width: var(--ps-card-w);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -88,6 +93,7 @@
   position: sticky;
   top: var(--ps-sticky-top);
   width: 100%;
+  min-width: 0;                        /* undo the desktop overflow width */
   min-height: 60vh;
   will-change: transform;
 }
@@ -112,5 +118,5 @@
 @media (max-width: 767px) {
   [data-ps-slider][data-ps-reduced] [data-ps-viewport] { overflow-x: visible; }
   [data-ps-slider][data-ps-reduced] [data-ps-track] { flex-direction: column; }
-  [data-ps-slider][data-ps-reduced] [data-ps-card] { width: 100%; }
+  [data-ps-slider][data-ps-reduced] [data-ps-card] { width: 100%; min-width: 0; }
 }
