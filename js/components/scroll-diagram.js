@@ -35,7 +35,10 @@
  *   data-dg-scrub      scrub değeri; "false" → snap yok       (default true)
  *   data-dg-start      ScrollTrigger start                    (default "center center")
  *   data-dg-line-w     çizgi kalınlığı (px)                   (default 2.5)
- *   data-dg-gap        node kenarına bırakılan boşluk (px)    (default 10)
+ *   data-dg-gap        node kenarına/port'a bırakılan boşluk (px) (default 10)
+ *
+ * Ok dolgusu Sestek gradient'iyle boyanır (base gri kalır). Renkleri CSS'ten ver:
+ *   --dg-grad-from (default #EC008C)   --dg-grad-to (default #9d4bff)
  *   data-dg-shape      "curve" | "elbow" (yumuşak köşeli L)   (default curve)
  *   data-dg-curve      kavis; + DIŞA (çember yayı), - içe, 0=düz (default 0.18)
  *   data-dg-radius     elbow köşe yumuşatma yarıçapı (px)     (default 24)
@@ -224,6 +227,18 @@
       stage.insertBefore(svg, stage.firstChild); // node'ların ALTINDA kalsın
     }
 
+    // Sestek gradient (ok dolgusu için). Renkler --dg-grad-from/to ile override
+    // edilir (Sestek pembe→viyole default). userSpaceOnUse → tüm diyagramda tek,
+    // tutarlı bir gradient alanı; koordinatlar layout'ta stage boyutuna set edilir.
+    var gradId = "dg-grad-" + Math.random().toString(36).slice(2, 7);
+    var grad = document.createElementNS(SVGNS, "linearGradient");
+    grad.setAttribute("id", gradId);
+    grad.setAttribute("gradientUnits", "userSpaceOnUse");
+    var gs1 = document.createElementNS(SVGNS, "stop"); gs1.setAttribute("offset", "0"); gs1.style.stopColor = "var(--dg-grad-from, #EC008C)";
+    var gs2 = document.createElementNS(SVGNS, "stop"); gs2.setAttribute("offset", "1"); gs2.style.stopColor = "var(--dg-grad-to, #9d4bff)";
+    grad.appendChild(gs1); grad.appendChild(gs2);
+    var defs = document.createElementNS(SVGNS, "defs"); defs.appendChild(grad); svg.appendChild(defs);
+
     function mkPath(cls) {
       var p = document.createElementNS(SVGNS, "path");
       p.setAttribute("class", cls);
@@ -283,19 +298,26 @@
       console.warn("[Sestek ScrollDiagram] no connections resolved.", root);
     }
 
+    // Dolgu okları Sestek gradient'i ile boyanır (base gri kalır).
+    conns.forEach(function (c) { c.fill.setAttribute("stroke", "url(#" + gradId + ")"); });
+
     // ── Geometri: svg'yi stage pikseline eşitle, path 'd'lerini yaz ────────────
     function layout() {
       var sr = stage.getBoundingClientRect();
       svg.setAttribute("viewBox", "0 0 " + sr.width + " " + sr.height);
+      grad.setAttribute("x1", 0); grad.setAttribute("y1", 0);
+      grad.setAttribute("x2", sr.width); grad.setAttribute("y2", sr.height);
       var lb = rectOf(logo, sr);
       var origin = { x: lb.cx, y: lb.cy }; // kavisin "iç" tarafı = merkez
       conns.forEach(function (c) {
         var sb = rectOf(c.source, sr), db = rectOf(c.node, sr);
-        // Uçlar: önce KAYNAKTA [data-dg-out] / HEDEFTE [data-dg-in] port'una
-        // bağlanır (tam o noktadan çıkıp girer). Port yoksa auto kenar-ortası
-        // (anchor ile hedef kenarı zorlanabilir).
-        var a = portCenter(c.source, "[data-dg-out]", sr) || edgePoint(sb, db.cx, db.cy, gap, "auto");
-        var b = portCenter(c.node,   "[data-dg-in]",  sr) || edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
+        // Uçlar: KAYNAKTA [data-dg-out] / HEDEFTE [data-dg-in] port'una bağlanır.
+        // Port merkezini kenar normali yönünde 'gap' kadar DIŞA kaydırırız → ok
+        // node'un içine girmez, hemen dışında biter. Port yoksa auto kenar-ortası.
+        var a = portCenter(c.source, "[data-dg-out]", sr);
+        if (a) { a.x += a.nx * gap; a.y += a.ny * gap; } else { a = edgePoint(sb, db.cx, db.cy, gap, "auto"); }
+        var b = portCenter(c.node, "[data-dg-in]", sr);
+        if (b) { b.x += b.nx * gap; b.y += b.ny * gap; } else { b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor); }
         var d = c.shape === "elbow"
           ? elbowPath(a, b, c.radius, head)
           : curvePath(a, b, c.curve, head, origin);
