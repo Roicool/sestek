@@ -61,11 +61,8 @@
 }
 /* Gri taban çizgisi */
 .dg-line--base { stroke: var(--dg-line-base, #d0d3d8); }
-/* Sestek rengiyle dolan üst çizgi (DrawSVG 0→100 bunu animasyonlar) */
+/* Sestek rengiyle dolan üst çizgi (stroke-dashoffset ile çizilir) */
 .dg-line--fill { stroke: var(--brand-primary--500, #EC008C); }
-
-/* Ok başı — fill katmanının rengini alır */
-[data-dg-lines] marker path { fill: var(--brand-primary--500, #EC008C); }
 
 /* Erişilebilirlik: hareket istemeyene her şey anında açık kalsın */
 @media (prefers-reduced-motion: reduce) {
