@@ -1,0 +1,70 @@
+/*!
+ * scroll-diagram.css v1.0.0
+ * Behavioural CSS only — pin bağlamı, katman düzeni, ok stilleri. Node konumları
+ * (top/left), renkler ve logo Webflow Designer'dan gelir. Attribute-driven;
+ * styling class yok. Renkler RC-STRUCTURE tokenlarını referanslar.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* Pin edilen kök: viewport yüksekliğinde tek ekran. Scroll mesafesini
+   ScrollTrigger'ın pin+end'i üretir — buraya ekstra yükseklik verme. */
+[data-diagram] {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Tüm absolute çocukların konum bağlamı + SVG ile ortak koordinat sistemi */
+[data-dg-stage] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ok katmanı stage'i birebir kaplar; tıklamayı geçirir. overflow:visible →
+   ok başları kenardan taşsa da kırpılmaz. Boyut/viewBox JS'te set edilir. */
+[data-dg-lines] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Merkez logo */
+[data-dg-logo] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* Node'lar: konumu SEN verirsin (top/left/%). transform ile merkeze hizalanır.
+   Reveal opacity/transform'unu GSAP inline yazar; pre-init'te gizle (flash yok). */
+[data-dg-node] {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  will-change: transform, opacity;
+}
+[data-diagram]:not([data-dg-ready]) [data-dg-node] { opacity: 0; }
+
+/* ── Oklar ─────────────────────────────────────────────────────────────────── */
+.dg-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--dg-line-w, 2.5);
+}
+/* Gri taban çizgisi */
+.dg-line--base { stroke: var(--dg-line-base, #d0d3d8); }
+/* Sestek rengiyle dolan üst çizgi (stroke-dashoffset ile çizilir) */
+.dg-line--fill { stroke: var(--brand-primary--500, #EC008C); }
+
+/* Erişilebilirlik: hareket istemeyene her şey anında açık kalsın */
+@media (prefers-reduced-motion: reduce) {
+  [data-diagram]:not([data-dg-ready]) [data-dg-node] { opacity: 1; }
+}

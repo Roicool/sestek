@@ -1,0 +1,103 @@
+/*!
+ * scroll-stack.css v1.2.0
+ * Pinned scroll-driven "card deck" section — structure/behaviour only.
+ * Colours, fonts, card internals and exact spacing come from the Webflow
+ * Designer + RC tokens.
+ *
+ * [data-sstack-stage] MUST have an explicit size (aspect-ratio or min-height)
+ * — its card children are position:absolute and stacked exactly on top of
+ * each other, so the stage itself doesn't grow to fit them.
+ *
+ * Drives: js/components/scroll-stack.js
+ * https://github.com/roicool/sestek
+ */
+
+.sstack {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Left column — persistent list ───────────────────────────── */
+.sstack__item {
+  cursor: pointer;
+}
+
+/*
+ * The expandable part of a row (description/CTA). height:0 removes it from
+ * layout entirely; JS grows the active one (0 → auto) and shrinks the rest —
+ * the "one drops, the other rises" reveal, same mechanic as scroll-tabs.
+ */
+.sstack__body {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+/*
+ * Right column — the card deck. perspective is what makes the cards' rotateX
+ * tilt (set by JS per depth level) actually recede in 3D instead of just
+ * squashing flat; JS also sets this inline from data-sstack-perspective, this
+ * is only the pre-JS/fallback value.
+ */
+.sstack__stage {
+  position: relative;
+  perspective: 1200px;
+}
+
+/*
+ * Every card lives in the SAME spot (inset:0) — depth is expressed through
+ * transform (yPercent/scale/rotateX) and opacity, driven by JS. Percentage
+ * transforms scale with the card's own box, so nothing needs re-measuring on
+ * resize. transform-origin at the bottom edge is what makes the rotateX tilt
+ * read as "tipping back/away" rather than pivoting through the card's centre.
+ */
+.sstack__card {
+  position: absolute;
+  inset: 0;
+  transform-origin: center bottom;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  /* Only the active (front) card should ever be clickable — the ones
+     peeking behind it are a depth preview, not yet interactive. */
+  pointer-events: none;
+}
+
+.sstack__card.is-active {
+  pointer-events: auto;
+}
+
+/* A video card's own <video> fills the card box; object-fit is the only
+   thing this file needs to own — everything else (poster, controls look)
+   is yours. */
+.sstack__card video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * Hover controls (play/pause, restart, mute) — hidden until the active card
+ * is hovered. pointer-events:none while hidden so the invisible buttons
+ * don't block clicks to whatever's under them; auto again on hover.
+ */
+.sstack__controls {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.sstack__card.is-active:hover .sstack__controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sstack__body,
+  .sstack__card,
+  .sstack__controls {
+    will-change: auto !important;
+    transition: none !important;
+  }
+}
