@@ -1,0 +1,109 @@
+/*!
+ * logo-slider.css v1.0.0
+ * Behavioural CSS only — layout, stacking, state visibility, greyscale logos.
+ * Colours, spacing, fonts, the fill bar's look and the panel layout all come
+ * from the Webflow Designer. Every selector is attribute-driven; no styling
+ * classes are required. All values reference RC-STRUCTURE tokens where any
+ * value is needed at all.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Stage: every slide stacked in one grid cell → section keeps the height
+   of the tallest slide, so switching never shifts layout. ────────────────── */
+[data-ls-stage] {
+  display: grid;
+  position: relative;
+}
+[data-ls-stage] > [data-ls-item] {
+  grid-area: 1 / 1;
+  position: relative;
+  min-width: 0; /* let text wrap instead of forcing the grid track wider */
+}
+
+/* Non-active slides never take pointer input. Opacity/visibility are owned by
+   GSAP inline styles (JS path) so they are NOT set here — that would fight the
+   cross-fade. The pure-CSS fallbacks below cover the no-GSAP / pre-init paths. */
+[data-ls-item][aria-hidden="true"] { pointer-events: none; }
+
+/* Pre-init (script not run yet): show only the first slide so stacked items
+   don't all overlap while the page boots. */
+[data-logo-slider]:not([data-ls-ready]) [data-ls-item] { opacity: 0; }
+[data-logo-slider]:not([data-ls-ready]) [data-ls-item]:first-child { opacity: 1; }
+
+/* No-GSAP fallback: CSS owns the swap (gentle opacity fade). */
+[data-logo-slider][data-ls-plain] [data-ls-item] {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--ls-fade, 0.5s) ease;
+}
+[data-logo-slider][data-ls-plain] [data-ls-item][aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── Background layer: full-bleed image behind the panel. grain.js appends its
+   overlay in here; the optional tint sits above the image, below the panel. ─ */
+[data-ls-bg] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden; /* clip the scale-settle and the 300% grain overlay */
+}
+[data-ls-bg] > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-ls-overlay] {
+  position: absolute;
+  inset: 0;
+}
+[data-ls-panel] {
+  position: relative;
+  z-index: 1; /* content above background + grain */
+}
+
+/* ── Tab bar: single row of logos; scrolls horizontally on narrow screens so
+   the logos never squash. Look/gap/alignment come from the Designer. ─────── */
+[data-ls-tabs] {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+[data-ls-tabs]::-webkit-scrollbar { display: none; }
+[data-ls-tab] {
+  flex: 0 0 auto;
+  position: relative;
+  cursor: pointer;
+}
+
+/* ── Logos: greyscale + dimmed until hovered or active (own colour then). ── */
+[data-ls-logo] {
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+[data-ls-tab]:hover [data-ls-logo],
+[data-ls-tab]:focus-visible [data-ls-logo],
+[data-ls-tab][aria-selected="true"] [data-ls-logo] {
+  filter: none;
+  opacity: 1;
+}
+
+/* ── Auto-advance fill: JS scales it 0→1 along X while the slide is active.
+   Its height/colour/position (usually a thin bar) come from the Designer. ── */
+[data-ls-fill] {
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* ── Reduced motion: no transitions, no progress bar (autoplay is off in JS). */
+@media (prefers-reduced-motion: reduce) {
+  [data-ls-logo] { transition: none; }
+  [data-ls-fill] { display: none; }
+  [data-logo-slider][data-ls-plain] [data-ls-item] { transition: none; }
+}

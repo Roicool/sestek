@@ -653,6 +653,8 @@ DOM yapısı:
 | `css/components/dropdown.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/dropdown.css` |
 | `js/components/page-transitions.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/page-transitions.js` |
 | `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
+| `js/components/logo-slider.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js` |
+| `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
 
 ### Accordion
 
@@ -1475,6 +1477,113 @@ sağda; açıkken border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel
 beyaz kart, `0.75rem` köşe, gölgeli; linkler hover/aktifken pembe
 (`--brand-primary--100`) arka plan + pembe metin alır — search sonuç
 kartlarıyla aynı tonlar.
+
+### Logo Slider
+
+Marka-logolu, sekmeli hikaye slider'ı (Webflow CMS). Her Collection Item = bir
+marka = bir slide: kendi logo sekmesini, arka plan görselini ve içeriğini (alıntı,
+yazar, istatistik, CTA) taşır. Logolar tek bir sekme barına toplanır; aktif
+sekmenin `data-ls-fill` çubuğu `dwell` süresince dolar ve slider otomatik ilerler.
+Arka planlar hafif scale-settle ile çapraz geçer, panel içerikleri stagger ile
+girer. Hover/focus/sekme gizlenince otomatik ilerleme duraklar.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/grain.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initLogoSlider(); // tüm [data-logo-slider] bloklarını başlatır
+    Sestek.initGrain();      // [data-grain] arka plan görsellerine film grain
+  });
+</script>
+```
+
+#### Webflow CMS yapısı
+
+```html
+<!-- Collection Wrapper — custom attribute: data-logo-slider -->
+<section data-logo-slider data-ls-dwell="6">
+
+  <!-- Statik başlık/açıklama (istersen) — component'in dışında, serbest -->
+
+  <!-- Slide okları (opsiyonel, sekme dışında; nereye koyarsan) -->
+  <button data-ls-prev aria-label="Önceki">←</button>
+  <button data-ls-next aria-label="Sonraki">→</button>
+
+  <!-- Sekme barı (opsiyonel boş kutu; yoksa JS oluşturur) -->
+  <div data-ls-tabs></div>
+
+  <!-- Collection List -->
+  <div role="list">
+
+    <!-- Collection Item = bir marka / slide -->
+    <div role="listitem" data-ls-item>
+
+      <!-- Logo sekmesi → JS bunu data-ls-tabs barına taşır -->
+      <a data-ls-tab>
+        <img data-ls-logo src="[CMS logo PNG]" alt="[CMS marka adı]">
+        <span data-ls-fill></span>            <!-- auto-advance ilerleme çubuğu -->
+      </a>
+
+      <!-- Arka plan katmanı (stacked, çapraz geçer). grain buraya. -->
+      <div data-ls-bg data-grain data-grain-intensity="0.12">
+        <img src="[CMS arka plan]" alt="" loading="lazy">
+        <div data-ls-overlay></div>           <!-- opsiyonel kontrast tint'i -->
+      </div>
+
+      <!-- İçerik (stacked, stagger ile girer) -->
+      <div data-ls-panel>
+        <blockquote data-ls-anim>[CMS alıntı]</blockquote>
+        <div data-ls-anim>
+          <img src="[CMS avatar]" alt="">
+          <span>[CMS yazar]</span>
+          <span>[CMS ünvan]</span>
+        </div>
+        <div data-ls-anim>[CMS istatistik]</div>
+        <a data-ls-anim href="[CMS link]">Read story →</a>
+      </div>
+
+    </div>
+    <!-- diğer Collection Item'lar… -->
+
+  </div>
+</section>
+```
+
+Kök attribute'ları (hepsi opsiyonel):
+
+- **`data-ls-autoplay`** — `"false"` → otomatik ilerleme kapalı (default açık).
+- **`data-ls-dwell`** — her slide'ın ilerlemeden önce beklediği saniye (default `6`).
+- **`data-ls-fade`** — çapraz geçiş süresi sn (default `0.6`).
+- **`data-ls-ease`** — GSAP ease (default `power2.out`).
+- **`data-ls-loop`** — `"false"` → uçlarda durur, oklar disable olur (default döngü).
+
+**Notlar**
+- Sekmeler `role="tablist"`/`tab`, slide'lar `role="tabpanel"` olarak otomatik
+  ARIA alır. Klavye: ok tuşları + Home/End sekmeler arasında gezer, Enter/Space seçer.
+- Logolar normalde grayscale + soluk; hover/focus ve **aktif** sekmede kendi
+  renklerine döner (CSS `[data-ls-tab][aria-selected="true"] [data-ls-logo]`).
+- `[data-ls-anim]` verirsen sadece o elementler stagger'lanır; vermezsen
+  `[data-ls-panel]`'in doğrudan çocukları animasyon alır.
+- **grain ayrı çalışır:** `[data-ls-bg]`'ye `data-grain` ekle + `Sestek.initGrain()`
+  çağır; iki component birbirine karışmadan composable şekilde çalışır.
+- **GSAP yoksa** slider tıkla/ok ile çalışan bir switcher'a düşer (anlık geçiş,
+  otomatik ilerleme yok) — sessizce degrade olur.
+- `prefers-reduced-motion`: otomatik ilerleme kapalı, geçişler anlık, fill gizli,
+  grain hiç çizilmez.
+- Tüm slide'lar tek grid hücresinde üst üste yığılır → bölüm en uzun slide'ın
+  yüksekliğini korur, geçişte layout zıplamaz.
+- CSS yalnızca davranışsaldır (stacking, state görünürlüğü, grayscale). Renk,
+  spacing, font, fill çubuğunun görünümü ve panel düzeni Webflow Designer'dan gelir.
 
 ---
 
