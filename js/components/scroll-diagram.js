@@ -7,8 +7,10 @@
  *
  * Node'ların konumunu ve sırasını SEN verirsin; component konumları okuyup
  * (getBoundingClientRect) okları otomatik üretir, sıralar ve scrub timeline'a
- * bağlar. Bağlantı kaynağı varsayılan olarak bir önceki step; data-dg-from ile
- * override edilir (merkezden dallanma mümkün).
+ * bağlar. Bağlantı kaynağı varsayılan olarak bir önceki step (ilk node'un oku
+ * yoktur — logodan varsayılan ok ÇIKMAZ). data-dg-from ile override edilir:
+ * "logo" ya da bir step no. Döngüyü kapatmak için son node'a değil, ilk node'a
+ * data-dg-from="<son step>" ver.
  *
  * Oklar kavisli (cubic bézier). Çizim proje standardı DrawSVGPlugin ile yapılır
  * (docs/gsap-svg.md §5); plugin yüklü değilse pathLength=1 + stroke-dashoffset
@@ -34,11 +36,16 @@
  *   data-dg-start      ScrollTrigger start                    (default "center center")
  *   data-dg-line-w     çizgi kalınlığı (px)                   (default 2.5)
  *   data-dg-gap        node kenarına bırakılan boşluk (px)    (default 10)
- *   data-dg-curve      kavis miktarı; + DIŞA (merkez etrafında çember yayı),
- *                      - içe, 0 = düz. ±0.4 tipik.            (default 0.18)
+ *   data-dg-shape      "curve" | "elbow" (yumuşak köşeli L)   (default curve)
+ *   data-dg-curve      kavis; + DIŞA (çember yayı), - içe, 0=düz (default 0.18)
+ *   data-dg-radius     elbow köşe yumuşatma yarıçapı (px)     (default 24)
  *   data-dg-head       ok başı kanat uzunluğu (px)            (default 11)
  *
- * Node başına data-dg-curve ile o okun kavisi ayrı verilebilir (negatif → ters yön).
+ * Node başına override edilebilenler (o okun kendisini etkiler):
+ *   data-dg-from       kaynak: "logo" | step no
+ *   data-dg-anchor     okun bu node'a girdiği kenar:
+ *                      "auto" | "left" | "right" | "top" | "bottom"  (default auto)
+ *   data-dg-shape / data-dg-curve / data-dg-radius  → global değeri geçersiz kılar
  *
  * https://github.com/roicool/sestek
  */
@@ -50,56 +57,78 @@
 
   var SVGNS = "http://www.w3.org/2000/svg";
 
-  function center(el, stageRect) {
+  function n(v) { return v.toFixed(1); }
+
+  /** Elementin stage-relative kutusu (merkez + yarı-boyutlar). */
+  function rectOf(el, sr) {
     var r = el.getBoundingClientRect();
     return {
-      x: r.left - stageRect.left + r.width / 2,
-      y: r.top - stageRect.top + r.height / 2,
-      // node kenarına inmek için yarı-boyut (min köşe) + biraz pad
-      rad: Math.min(r.width, r.height) / 2,
+      cx: r.left - sr.left + r.width / 2,
+      cy: r.top - sr.top + r.height / 2,
+      hw: r.width / 2, hh: r.height / 2,
     };
   }
 
-  function n(v) { return v.toFixed(1); }
-
   /**
-   * Kaynak→hedef merkezlerinden, uçları node kenarına kırpılmış KAVİSLİ (cubic
-   * bézier) bir path üretir; sonuna ok başını path'in devamı olarak ekler (böylece
-   * çizim tamamlanırken en sonda ortaya çıkar). curve: perpendiküler yay miktarı.
+   * Bir kutunun KENARINDA, (tx,ty) noktasına bakan yöndeki bağlanma noktası
+   * (+ gap kadar dışarı). anchor verilirse o kenarın ortasına zorlar → oklar
+   * text'in içine girmez. Dönen nx,ny = dışarı normal (ok yönü için).
    */
-  function pathD(src, dst, gap, curve, head, origin) {
-    var dx = dst.x - src.x, dy = dst.y - src.y;
-    var len = Math.hypot(dx, dy) || 1;
-    var ux = dx / len, uy = dy / len;      // yön birim vektörü
-    var px = -uy, py = ux;                  // perpendiküler (yay yönü)
+  function edgePoint(box, tx, ty, gap, anchor) {
+    if (anchor === "left")   return { x: box.cx - box.hw - gap, y: box.cy, nx: -1, ny: 0 };
+    if (anchor === "right")  return { x: box.cx + box.hw + gap, y: box.cy, nx: 1,  ny: 0 };
+    if (anchor === "top")    return { x: box.cx, y: box.cy - box.hh - gap, nx: 0, ny: -1 };
+    if (anchor === "bottom") return { x: box.cx, y: box.cy + box.hh + gap, nx: 0, ny: 1 };
+    // auto: merkezden hedefe giden ışının kutu sınırıyla kesişimi
+    var dx = tx - box.cx, dy = ty - box.cy;
+    var t = 1 / Math.max(Math.abs(dx) / (box.hw || 1e-6), Math.abs(dy) / (box.hh || 1e-6), 1e-6);
+    var ex = box.cx + dx * t, ey = box.cy + dy * t;
+    var dl = Math.hypot(dx, dy) || 1;
+    return { x: ex + dx / dl * gap, y: ey + dy / dl * gap, nx: dx / dl, ny: dy / dl };
+  }
 
-    // uçları node kenarından geri çek
-    var x1 = src.x + ux * (src.rad + gap), y1 = src.y + uy * (src.rad + gap);
-    var x2 = dst.x - ux * (dst.rad + gap), y2 = dst.y - uy * (dst.rad + gap);
+  /** Ok başı: uca (x2,y2) gelen (idx,idy) yönüne göre iki kanat — path devamı. */
+  function arrowHead(x2, y2, idx, idy, h) {
+    var bx = -idx * h, by = -idy * h;                 // uçtan geriye
+    var px = -idy * h * 0.55, py = idx * h * 0.55;    // kanat açıklığı
+    return "M" + n(x2 + bx + px) + "," + n(y2 + by + py) +
+           "L" + n(x2) + "," + n(y2) +
+           "L" + n(x2 + bx - px) + "," + n(y2 + by - py);
+  }
 
-    // Yay yönünü DIŞARI çevir: perp'i, orta noktanın merkezden (origin) uzaklaşan
-    // yönüne hizala → oklar logonun etrafında bir çember yayı gibi dışarı bükülür.
+  /** KAVİSLİ (cubic bézier) ok; yay origin'den (merkez) dışa bükülür. */
+  function curvePath(a, b, curve, head, origin) {
+    var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
+    var dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    var ux = dx / len, uy = dy / len, px = -uy, py = ux;
     if (origin) {
       var mx = (x1 + x2) / 2 - origin.x, my = (y1 + y2) / 2 - origin.y;
       if (px * mx + py * my < 0) { px = -px; py = -py; }
     }
-
-    var bow = curve * len;                  // yay derinliği mesafeyle ölçekli (+dışa, -içe)
+    var bow = curve * len;
     var c1x = x1 + ux * len * 0.33 + px * bow, c1y = y1 + uy * len * 0.33 + py * bow;
     var c2x = x1 + ux * len * 0.66 + px * bow, c2y = y1 + uy * len * 0.66 + py * bow;
-
-    // uçtaki teğet (ok başını buna göre döndür)
-    var tx = x2 - c2x, ty = y2 - c2y;
-    var tl = Math.hypot(tx, ty) || 1;
-    tx /= tl; ty /= tl;
-    var backx = -tx * head, backy = -ty * head;   // uçtan geriye
-    var perpx = -ty * head * 0.55, perpy = tx * head * 0.55;
-    var lwx = x2 + backx + perpx, lwy = y2 + backy + perpy; // sol kanat
-    var rwx = x2 + backx - perpx, rwy = y2 + backy - perpy; // sağ kanat
-
+    var tx = x2 - c2x, ty = y2 - c2y, tl = Math.hypot(tx, ty) || 1;
     return "M" + n(x1) + "," + n(y1) +
            "C" + n(c1x) + "," + n(c1y) + " " + n(c2x) + "," + n(c2y) + " " + n(x2) + "," + n(y2) +
-           "M" + n(lwx) + "," + n(lwy) + "L" + n(x2) + "," + n(y2) + "L" + n(rwx) + "," + n(rwy);
+           arrowHead(x2, y2, tx / tl, ty / tl, head);
+  }
+
+  /** Köşesi yumuşatılmış L (elbow) ok — dik segmentler + radius'lu köşe. */
+  function elbowPath(a, b, radius, head) {
+    var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
+    var horizFirst = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+    var cx = horizFirst ? x2 : x1, cy = horizFirst ? y1 : y2; // köşe noktası
+    var r = Math.min(radius, Math.hypot(cx - x1, cy - y1), Math.hypot(x2 - cx, y2 - cy));
+    var s1x = Math.sign(cx - x1), s1y = Math.sign(cy - y1); // seg1 ekseni
+    var s2x = Math.sign(x2 - cx), s2y = Math.sign(y2 - cy); // seg2 ekseni
+    var ax = cx - s1x * r, ay = cy - s1y * r;               // köşeden r önce
+    var bx = cx + s2x * r, by = cy + s2y * r;               // köşeden r sonra
+    return "M" + n(x1) + "," + n(y1) +
+           "L" + n(ax) + "," + n(ay) +
+           "Q" + n(cx) + "," + n(cy) + " " + n(bx) + "," + n(by) +
+           "L" + n(x2) + "," + n(y2) +
+           arrowHead(x2, y2, s2x, s2y, head);
   }
 
   function setupInstance(root) {
@@ -125,6 +154,8 @@
     var perNode = attrNum(root, "data-dg-distance", 200);
     var head    = attrNum(root, "data-dg-head", 11);
     var curve0  = attrNum(root, "data-dg-curve", 0.18);
+    var radius0 = attrNum(root, "data-dg-radius", 24);       // elbow köşe yumuşaklığı
+    var shape0  = root.getAttribute("data-dg-shape") || "curve"; // curve | elbow
     var startAt = root.getAttribute("data-dg-start") || "center center";
     var scrubA  = root.getAttribute("data-dg-scrub");
     var scrub   = scrubA === "false" ? false : (scrubA ? (parseFloat(scrubA) || true) : true);
@@ -154,34 +185,53 @@
       return p;
     }
 
-    // Her node için bir bağlantı (base + fill path) kur
-    var conns = nodes.map(function (node, i) {
+    // Her node için bir bağlantı (base + fill path) kur.
+    // Kaynak: data-dg-from="logo" | "<step no>"; yoksa bir önceki step. İlk node'un
+    // (ve kaynağı olmayanın) oku YOKTUR — logodan varsayılan ok çıkmaz.
+    var conns = [];
+    nodes.forEach(function (node, i) {
       var fromRaw = node.getAttribute("data-dg-from");
-      var source;
-      if (fromRaw === "logo" || (!fromRaw && i === 0)) {
+      var source = null;
+      if (fromRaw === "logo") {
         source = logo;
       } else if (fromRaw) {
         source = nodes.filter(function (nd) {
           return String(attrNum(nd, "data-dg-step", NaN)) === fromRaw;
-        })[0] || logo;
-      } else {
+        })[0] || null;
+      } else if (i > 0) {
         source = nodes[i - 1]; // default: bir önceki step
       }
-      var curve = attrNum(node, "data-dg-curve", curve0); // node bazında override
-      return {
-        node: node, source: source, curve: curve,
+      if (!source) return; // kaynak yok → bu node'a ok çizme
+
+      conns.push({
+        node: node, source: source,
+        curve:  attrNum(node, "data-dg-curve", curve0),
+        radius: attrNum(node, "data-dg-radius", radius0),
+        shape:  node.getAttribute("data-dg-shape") || shape0,
+        anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef kenarı
         base: mkPath("dg-line dg-line--base"),
         fill: mkPath("dg-line dg-line--fill"),
-      };
+      });
     });
+
+    if (!conns.length) {
+      console.warn("[Sestek ScrollDiagram] no connections resolved.", root);
+    }
 
     // ── Geometri: svg'yi stage pikseline eşitle, path 'd'lerini yaz ────────────
     function layout() {
       var sr = stage.getBoundingClientRect();
       svg.setAttribute("viewBox", "0 0 " + sr.width + " " + sr.height);
-      var origin = center(logo, sr); // diyagramın merkezi = kavisin "iç" tarafı
+      var lb = rectOf(logo, sr);
+      var origin = { x: lb.cx, y: lb.cy }; // kavisin "iç" tarafı = merkez
       conns.forEach(function (c) {
-        var d = pathD(center(c.source, sr), center(c.node, sr), gap, c.curve, head, origin);
+        var sb = rectOf(c.source, sr), db = rectOf(c.node, sr);
+        // Uçlar kutu KENARINA bağlanır (text'in içine girmez); anchor override edilebilir.
+        var a = edgePoint(sb, db.cx, db.cy, gap, "auto");
+        var b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
+        var d = c.shape === "elbow"
+          ? elbowPath(a, b, c.radius, head)
+          : curvePath(a, b, c.curve, head, origin);
         c.base.setAttribute("d", d);
         c.fill.setAttribute("d", d);
       });
