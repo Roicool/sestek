@@ -73,16 +73,16 @@
 
 [data-heading-mask="display"] {
   background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #00ffeb 8%,
-    #7f81ae 22%,
-    currentColor 46%);
+    #00ffeb 16%,
+    #7f81ae 40%,
+    currentColor 74%);
 }
 
 [data-heading-mask="display-deep"] {
   background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #0e9488 8%,
-    #565978 22%,
-    currentColor 46%);
+    #0e9488 16%,
+    #565978 40%,
+    currentColor 74%);
 }
 
 @keyframes sestek-heading-shine {
