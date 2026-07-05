@@ -1544,10 +1544,11 @@ Webflow `</body>` öncesi:
       <!-- Collection Item = bir marka / slide (İÇİNE yazılabilen tek yer) -->
       <div role="listitem" data-ls-item>
 
-        <!-- Logo sekmesi → JS bunu dıştaki data-ls-tabs barına taşır -->
-        <a data-ls-tab>
+        <!-- Logo sekmesi → JS bunu dıştaki data-ls-tabs barına taşır.
+             data-ls-color: markanın CMS'teki renk kodu (hex/rgb) — fill bu renkte dolar -->
+        <a data-ls-tab data-ls-color="[CMS marka renk kodu]">
           <img data-ls-logo src="[CMS logo PNG]" alt="[CMS marka adı]">
-          <span data-ls-fill></span>            <!-- auto-advance ilerleme çubuğu -->
+          <span data-ls-fill></span>            <!-- auto-advance çubuğu: ortadan dışa, marka renginde dolar -->
         </a>
 
         <!-- Arka plan katmanı (stacked, çapraz geçer). grain buraya. -->
@@ -1593,6 +1594,13 @@ Kök attribute'ları (hepsi opsiyonel):
   ARIA alır. Klavye: ok tuşları + Home/End sekmeler arasında gezer, Enter/Space seçer.
 - Logolar normalde grayscale + soluk; hover/focus ve **aktif** sekmede kendi
   renklerine döner (CSS `[data-ls-tab][aria-selected="true"] [data-ls-logo]`).
+- **Fill barı marka renginde:** `data-ls-tab`'a (veya item'a) `data-ls-color`
+  ver — CMS'teki hex/rgb renk kodunu bağla. JS bunu `--ls-color` olarak basar,
+  `[data-ls-fill]` o renkte **ortadan dışa** dolar. Bar varsayılan olarak sekmenin
+  üstünde ince bir çizgidir; konum/kalınlığı Designer'dan değiştirebilirsin.
+- **Logolar sıkışık geliyorsa** sekme barını Designer'da yay: `[data-ls-tabs]`'a
+  `gap` + `justify-content:space-between` (veya sekmelere `flex:1`) ver — bar zaten
+  tam genişliktedir, sadece dağıtımı sende.
 - `[data-ls-anim]` verirsen sadece o elementler stagger'lanır; vermezsen
   `[data-ls-panel]`'in doğrudan çocukları animasyon alır.
 - **grain ayrı çalışır:** `[data-ls-bg]`'ye `data-grain` ekle + `Sestek.initGrain()`

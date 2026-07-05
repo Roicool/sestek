@@ -51,8 +51,11 @@
  *                                                the slides, by JS
  *         [data-ls-item]   role="listitem"    ← Collection Item = one brand/slide
  *           [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
+ *             data-ls-color="#EC6608"           ← OPTIONAL: brand colour (CMS field)
+ *                                                 the fill bar draws in; on the item works too
  *             <img data-ls-logo src="…" alt="Brand">  ← PNG; greyscale until active/hover
  *             [data-ls-fill]                    ← the auto-advance progress bar
+ *                                                 (fills centre-out in --ls-color)
  *           [data-ls-bg]                        ← background layer (stacked, cross-fade)
  *             <img src="…" alt="" loading="lazy">
  *             [data-ls-overlay]                 ← OPTIONAL tint for text contrast
@@ -132,6 +135,14 @@
       tabs.push(tab || null);
       fills.push(tab ? tab.querySelector("[data-ls-fill]") : null);
 
+      // Per-brand fill colour, bound from a CMS text field (hex/rgb/CSS colour)
+      // to data-ls-color on the tab (or the item). Exposed as the --ls-color
+      // custom property so the fill bar draws in that brand's own colour.
+      if (tab) {
+        var color = tab.getAttribute("data-ls-color") || item.getAttribute("data-ls-color");
+        if (color) tab.style.setProperty("--ls-color", color.trim());
+      }
+
       // Wire ARIA + roving focus between the tab (control) and item (panel).
       var panelId = uid + "-panel-" + i;
       var tabId   = uid + "-tab-" + i;
@@ -197,7 +208,7 @@
       var f = fills[active];
       var advance = function () { go(active + 1, false); };
       if (f) {
-        gsap.set(f, { transformOrigin: "left center", scaleX: 0 });
+        gsap.set(f, { transformOrigin: "center center", scaleX: 0 });
         fillTween = gsap.to(f, { scaleX: 1, duration: dwell, ease: "none", onComplete: advance });
       } else {
         // No fill element on this tab — still time the advance off a proxy tween.

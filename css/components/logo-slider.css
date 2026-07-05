@@ -103,11 +103,19 @@
   opacity: 1;
 }
 
-/* ── Auto-advance fill: JS scales it 0→1 along X while the slide is active.
-   Its height/colour/position (usually a thin bar) come from the Designer. ── */
+/* ── Auto-advance fill: JS scales it 0→1 along X (from the centre out) while the
+   slide is active. It draws in the brand's own colour, bound per item from a CMS
+   field to data-ls-color (JS exposes it as --ls-color). Default is a thin bar at
+   the top of the tab — move/resize it freely in the Designer. ──────────────── */
 [data-ls-fill] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--ls-color, currentColor);
   transform: scaleX(0);
-  transform-origin: left center;
+  transform-origin: center center;
   will-change: transform;
 }
 
