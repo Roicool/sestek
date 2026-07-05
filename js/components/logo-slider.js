@@ -261,10 +261,23 @@
       fills.forEach(function (f) { if (f) gsap.set(f, { scaleX: 0 }); });
     }
 
+    /** Static state: full bar on the active tab, empty elsewhere. Used when the
+     *  fill isn't animating (autoplay off / no GSAP) so it still reads as the
+     *  active indicator — the coloured segment under the reference's active tab. */
+    function showActiveFill() {
+      fills.forEach(function (f, idx) {
+        if (!f) return;
+        var on = idx === active;
+        if (hasGsap) gsap.set(f, { transformOrigin: "center center", scaleX: on ? 1 : 0 });
+        else f.style.transform = on ? "scaleX(1)" : "scaleX(0)";
+      });
+    }
+
     function startFill() {
-      if (!hasGsap) return;
+      // Not auto-advancing (or no GSAP): show the active bar full, statically.
+      if (!hasGsap || !autoplay) { showActiveFill(); return; }
       killFill();
-      if (!autoplay || paused) return;
+      if (paused) return;
       var f = fills[active];
       var advance = function () { go(active + 1, false); };
       if (f) {
