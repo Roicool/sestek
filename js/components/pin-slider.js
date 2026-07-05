@@ -40,7 +40,7 @@
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)
  *   data-ps-hold         pin-hold before the slide, ×viewport h (default 0.5)
- *   data-ps-settle       last-card-framed beat before outro, ×h (default 0.35)
+ *   data-ps-settle       last-card-framed beat before outro, ×h (default 0.6)
  *   data-ps-outro        outro length as a fraction of viewport (default 0.9)
  *   data-ps-scrub        ScrollTrigger scrub smoothing seconds  (default 1)
  *   data-ps-end-scale    track scale at the end of the outro    (default 0.82)
@@ -100,7 +100,7 @@
     var d          = root.dataset;
     var breakpoint = attrNum(root, "data-ps-breakpoint", 768);
     var holdFrac   = attrNum(root, "data-ps-hold",       0.5);
-    var settleFrac = attrNum(root, "data-ps-settle",     0.35);
+    var settleFrac = attrNum(root, "data-ps-settle",     0.6);
     var outroFrac  = attrNum(root, "data-ps-outro",      0.9);
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
@@ -196,6 +196,11 @@
           scale: endScale,
           autoAlpha: 0,
           transformOrigin: viewCentreInTrack + "px center",
+          // Back-load the dissolve: with an ease-in the track stays at full
+          // scale/opacity through the FIRST part of the outro, so the last card
+          // lingers crisp and readable and only melts away toward the end — it
+          // "recedes late" rather than starting to fade the instant it lands.
+          ease: "power2.in",
           duration: outroPx,
         }, holdPx + maxX + settlePx);
       }
