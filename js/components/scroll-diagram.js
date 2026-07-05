@@ -34,7 +34,8 @@
  *   data-dg-start      ScrollTrigger start                    (default "center center")
  *   data-dg-line-w     çizgi kalınlığı (px)                   (default 2.5)
  *   data-dg-gap        node kenarına bırakılan boşluk (px)    (default 10)
- *   data-dg-curve      kavis miktarı (0 = düz, ±0.4 tipik)    (default 0.18)
+ *   data-dg-curve      kavis miktarı; + DIŞA (merkez etrafında çember yayı),
+ *                      - içe, 0 = düz. ±0.4 tipik.            (default 0.18)
  *   data-dg-head       ok başı kanat uzunluğu (px)            (default 11)
  *
  * Node başına data-dg-curve ile o okun kavisi ayrı verilebilir (negatif → ters yön).
@@ -66,7 +67,7 @@
    * bézier) bir path üretir; sonuna ok başını path'in devamı olarak ekler (böylece
    * çizim tamamlanırken en sonda ortaya çıkar). curve: perpendiküler yay miktarı.
    */
-  function pathD(src, dst, gap, curve, head) {
+  function pathD(src, dst, gap, curve, head, origin) {
     var dx = dst.x - src.x, dy = dst.y - src.y;
     var len = Math.hypot(dx, dy) || 1;
     var ux = dx / len, uy = dy / len;      // yön birim vektörü
@@ -76,7 +77,14 @@
     var x1 = src.x + ux * (src.rad + gap), y1 = src.y + uy * (src.rad + gap);
     var x2 = dst.x - ux * (dst.rad + gap), y2 = dst.y - uy * (dst.rad + gap);
 
-    var bow = curve * len;                  // yay derinliği mesafeyle ölçekli
+    // Yay yönünü DIŞARI çevir: perp'i, orta noktanın merkezden (origin) uzaklaşan
+    // yönüne hizala → oklar logonun etrafında bir çember yayı gibi dışarı bükülür.
+    if (origin) {
+      var mx = (x1 + x2) / 2 - origin.x, my = (y1 + y2) / 2 - origin.y;
+      if (px * mx + py * my < 0) { px = -px; py = -py; }
+    }
+
+    var bow = curve * len;                  // yay derinliği mesafeyle ölçekli (+dışa, -içe)
     var c1x = x1 + ux * len * 0.33 + px * bow, c1y = y1 + uy * len * 0.33 + py * bow;
     var c2x = x1 + ux * len * 0.66 + px * bow, c2y = y1 + uy * len * 0.66 + py * bow;
 
@@ -171,8 +179,9 @@
     function layout() {
       var sr = stage.getBoundingClientRect();
       svg.setAttribute("viewBox", "0 0 " + sr.width + " " + sr.height);
+      var origin = center(logo, sr); // diyagramın merkezi = kavisin "iç" tarafı
       conns.forEach(function (c) {
-        var d = pathD(center(c.source, sr), center(c.node, sr), gap, c.curve, head);
+        var d = pathD(center(c.source, sr), center(c.node, sr), gap, c.curve, head, origin);
         c.base.setAttribute("d", d);
         c.fill.setAttribute("d", d);
       });
