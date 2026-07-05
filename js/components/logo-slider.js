@@ -1,5 +1,5 @@
 /*!
- * logo-slider.js v1.1.0
+ * logo-slider.js v1.2.0
  * Brand-logo tabbed story slider for Webflow CMS. Everything is authored inside
  * the Collection List — JS never copies content into a separate "stage". Each
  * Collection Item = one brand = one slide, carrying BOTH its own logo tab AND
@@ -260,6 +260,27 @@
       });
     }
 
+    // ── Keep the active tab in view ───────────────────────────────
+    // On narrow screens the tab bar scrolls horizontally (CSS overflow-x:auto).
+    // When the slide changes — especially via autoslide — the newly active logo
+    // may sit outside the viewport, so scroll the BAR (not the page) to centre
+    // it. No-op when every tab already fits.
+    function scrollTabIntoView(i, smooth) {
+      var tab = tabs[i];
+      if (!tab || !tabsBar) return;
+      if (tabsBar.scrollWidth <= tabsBar.clientWidth + 1) return; // all tabs fit
+      var barRect = tabsBar.getBoundingClientRect();
+      var tabRect = tab.getBoundingClientRect();
+      var target = tabsBar.scrollLeft + (tabRect.left - barRect.left) -
+                   (tabsBar.clientWidth - tabRect.width) / 2;      // centre the tab
+      target = Math.max(0, Math.min(target, tabsBar.scrollWidth - tabsBar.clientWidth));
+      if (typeof tabsBar.scrollTo === "function") {
+        tabsBar.scrollTo({ left: target, behavior: (smooth && !reduce) ? "smooth" : "auto" });
+      } else {
+        tabsBar.scrollLeft = target;
+      }
+    }
+
     // ── Auto-advance fill ─────────────────────────────────────────
     function killFill() {
       if (fillTween) { fillTween.kill(); fillTween = null; }
@@ -351,6 +372,7 @@
       render(i);
       setSectionBg(i, true);
       updateArrows();
+      scrollTabIntoView(i, true);
       killFill();
       if (mainTl) mainTl.kill();
 
@@ -442,6 +464,7 @@
     render(active);
     setSectionBg(active, false);
     updateArrows();
+    scrollTabIntoView(active, false);
     if (hasGsap) {
       items.forEach(function (it, idx) {
         gsap.set(it, { opacity: idx === active ? 1 : 0, visibility: idx === active ? "visible" : "hidden" });
