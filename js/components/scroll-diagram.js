@@ -214,6 +214,24 @@
       });
     });
 
+    // data-dg-loop → döngüyü kapat: son node'dan ilk node'a ok. Kapanış oku son
+    // node göründükten SONRA çizilir (aşağıdaki forward/backward zamanlaması).
+    if (Sestek.util.flag(root.getAttribute("data-dg-loop")) && nodes.length >= 2) {
+      var firstNode = nodes[0], lastNode = nodes[nodes.length - 1];
+      var alreadyIn = conns.some(function (c) { return c.node === firstNode; });
+      if (!alreadyIn && firstNode !== lastNode) {
+        conns.push({
+          node: firstNode, source: lastNode,
+          curve:  attrNum(firstNode, "data-dg-curve", curve0),
+          radius: attrNum(firstNode, "data-dg-radius", radius0),
+          shape:  firstNode.getAttribute("data-dg-shape") || shape0,
+          anchor: firstNode.getAttribute("data-dg-anchor") || "auto",
+          base: mkPath("dg-line dg-line--base"),
+          fill: mkPath("dg-line dg-line--fill"),
+        });
+      }
+    }
+
     if (!conns.length) {
       console.warn("[Sestek ScrollDiagram] no connections resolved.", root);
     }
@@ -283,19 +301,26 @@
       },
     });
 
-    // Her node kendi step'inde açılır (ok'u olsun olmasın). Ok'u olan node'da
-    // önce gri taban, sonra Sestek dolgusu çizilir; ok'u olmayan (örn. ilk node —
-    // logodan ok çıkmaz) sadece açılır. Böylece ilk node da görünür.
-    nodes.forEach(function (node) {
-      var c = null;
-      for (var k = 0; k < conns.length; k++) { if (conns[k].node === node) { c = conns[k]; break; } }
-      if (c) {
-        tl.to(c.base, drawVars(0.5))                                   // 1) gri çizilsin
-          .to(c.fill, drawVars(0.6))                                   // 2) Sestek dolsun
-          .to(node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");    // node açılır
-      } else {
-        tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 });            // ok'suz node — sadece aç
-      }
+    // Her node kendi step'inde açılır. Bir ok, iki ucundan SONRA görünen node'un
+    // step'inde çizilir: ileri ok (kaynak önce göründü) → hedefin step'inde,
+    // hedefle birlikte; geri/kapanış oku (kaynak sonra görünür, örn. son→ilk
+    // döngü) → kaynağın step'inde, node göründükten sonra. Böylece ilk node da
+    // görünür ve kapanış oku görünmeyen node'dan çizilmez.
+    function drawArrow(c) { tl.to(c.base, drawVars(0.5)).to(c.fill, drawVars(0.6)); }
+
+    nodes.forEach(function (node, idx) {
+      // 1) bu node'a giren İLERİ oklar (kaynağı zaten görünmüş)
+      var drewForward = false;
+      conns.forEach(function (c) {
+        if (c.node === node && nodes.indexOf(c.source) < idx) { drawArrow(c); drewForward = true; }
+      });
+      // 2) node'u aç (ileri ok varsa çizimle üst üste bindir)
+      if (drewForward) tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");
+      else             tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 });
+      // 3) bu node'dan çıkan GERİ/kapanış okları (hedefi zaten görünmüş)
+      conns.forEach(function (c) {
+        if (c.source === node && nodes.indexOf(c.node) < idx) { drawArrow(c); }
+      });
     });
 
     return { timeline: tl, relayout: layout };
