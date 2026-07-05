@@ -1,5 +1,5 @@
 /*!
- * language-grid.css v1.1.0
+ * language-grid.css v1.2.0
  * Behavioural CSS for language-grid.js — grid layout, the N×N expand span, the
  * cross-fade / dim states, the compact/detail face swap, and the fixed feature
  * cell (placement, span, and its own slide cross-fade). Look (colours, borders,
@@ -18,7 +18,7 @@
 }
 
 /* Square tiles by default; override aspect-ratio in the Designer if desired. */
-[data-lang-grid] .lg-item {
+[data-lang-grid] [data-lg-item] {
   position: relative;
   aspect-ratio: 1 / 1;
   cursor: pointer;
@@ -37,7 +37,7 @@
 [data-lang-grid] [data-lg-dim] { opacity: .4; }
 
 /* The expanded tile takes an N×N block (size set by JS from data-lg-expand-*). */
-[data-lang-grid] .lg-item[data-lg-expanded] {
+[data-lang-grid] [data-lg-item][data-lg-expanded] {
   grid-column: var(--lg-exp-col, span 2);
   grid-row: var(--lg-exp-row, span 2);
   z-index: 3;
@@ -76,25 +76,25 @@
   opacity: 0;
   pointer-events: none;
 }
-[data-lang-grid] .lg-item[data-lg-expanded] [data-lg-face] {
+[data-lang-grid] [data-lg-item][data-lg-expanded] [data-lg-face] {
   opacity: 0;
   pointer-events: none;
 }
-[data-lang-grid] .lg-item[data-lg-expanded] [data-lg-detail] {
+[data-lang-grid] [data-lg-item][data-lg-expanded] [data-lg-detail] {
   opacity: 1;
   pointer-events: auto;
   transition-delay: .1s;
 }
 
 /* Keyboard focus affordance for the interactive tiles. */
-[data-lang-grid] .lg-item:focus-visible {
+[data-lang-grid] [data-lg-item]:focus-visible {
   outline: 2px solid var(--lg-focus, currentColor);
   outline-offset: 2px;
 }
 
 /* Reduced motion: no fades, no scale — instant, functional grid. */
 @media (prefers-reduced-motion: reduce) {
-  [data-lang-grid] .lg-item,
+  [data-lang-grid] [data-lg-item],
   [data-lang-grid] [data-lg-face],
   [data-lang-grid] [data-lg-detail],
   [data-lg-feature] [data-lg-fslide] { transition: none; }

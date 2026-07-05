@@ -1,5 +1,5 @@
 /*!
- * language-grid.js v1.1.0
+ * language-grid.js v1.2.0
  * Ramp-style bento grid for a hand-authored (or CMS) list of tiles — a calm,
  * fixed grid, NOT a scrolling marquee. Every INTERVAL a couple of resting tiles
  * cross-fade to another item pulled from an off-grid pool, so a large list keeps
@@ -94,7 +94,7 @@
     // when you author by hand). Lift every item to be a direct grid child and
     // collapse any wrapper so only our grid drives layout.
     var listWrap = items[0].parentElement;
-    items.forEach(function (it) { it.classList.add("lg-item"); root.appendChild(it); });
+    items.forEach(function (it) { root.appendChild(it); });
     if (listWrap && listWrap !== root) {
       var w = listWrap;
       while (w && w !== root) { w.style.display = "none"; w = w.parentElement; }
@@ -146,7 +146,7 @@
     var expanded = null;
 
     function flip(mutate) {
-      var tiles = Array.prototype.slice.call(root.querySelectorAll(".lg-item"));
+      var tiles = Array.prototype.slice.call(root.querySelectorAll("[data-lg-item]"));
       if (feature) tiles.push(feature);
       if (reduce) { mutate(); return; }
       var firsts = tiles.map(function (t) { return t.getBoundingClientRect(); });
@@ -188,7 +188,7 @@
     root.addEventListener("click", function (e) {
       if (!canExpand) return;
       if (e.target.closest("[data-lg-close]")) { collapse(); return; }
-      var t = e.target.closest(".lg-item");
+      var t = e.target.closest("[data-lg-item]");
       if (t && onGrid.indexOf(t) !== -1) expandTile(t);
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") collapse(); });
