@@ -1,5 +1,5 @@
 /*!
- * language-grid.js v1.2.0
+ * language-grid.js v1.3.0
  * Ramp-style bento grid for a hand-authored (or CMS) list of tiles — a calm,
  * fixed grid, NOT a scrolling marquee. Every INTERVAL a couple of resting tiles
  * cross-fade to another item pulled from an off-grid pool, so a large list keeps
@@ -104,15 +104,22 @@
     var feature = root.querySelector("[data-lg-feature]");
     var featureStart = function () {}, featureStop = function () {};
     if (feature) {
-      root.appendChild(feature); // keep it a direct grid child
-      var fCols = Math.max(1, attrNum(root, "data-lg-feature-cols", 2));
-      var fRows = Math.max(1, attrNum(root, "data-lg-feature-rows", 2));
-      var place = (root.getAttribute("data-lg-feature-place") || "start").toLowerCase();
-      // Pin the feature explicitly and let the tiles pack densely around it.
-      feature.style.setProperty("--lg-feat-col",
-        place === "end" ? ((-(fCols + 1)) + " / -1") : ("1 / span " + fCols));
-      feature.style.setProperty("--lg-feat-row", "1 / span " + fRows);
-      root.style.setProperty("--lg-flow", "dense");
+      root.appendChild(feature); // keep it a direct grid child (and last → mobile stacks it at the bottom)
+
+      // Placement is OPT-IN. When you build the grid in the Webflow Designer and
+      // position the feature card per breakpoint there, OMIT these attributes and
+      // the component leaves the feature's grid-column/row entirely to your CSS.
+      // Set them only if you author by hand (plain div) and want JS to place it.
+      if (root.hasAttribute("data-lg-feature-cols") ||
+          root.hasAttribute("data-lg-feature-rows") ||
+          root.hasAttribute("data-lg-feature-place")) {
+        var fCols = Math.max(1, attrNum(root, "data-lg-feature-cols", 2));
+        var fRows = Math.max(1, attrNum(root, "data-lg-feature-rows", 2));
+        var place = (root.getAttribute("data-lg-feature-place") || "start").toLowerCase();
+        feature.style.setProperty("--lg-feat-col",
+          place === "end" ? ((-(fCols + 1)) + " / -1") : ("1 / span " + fCols));
+        feature.style.setProperty("--lg-feat-row", "1 / span " + fRows);
+      }
 
       // Feature slides: if 2+, cross-fade them on their own clock.
       var fslides = Array.prototype.slice.call(feature.querySelectorAll("[data-lg-feature-slide]"));
