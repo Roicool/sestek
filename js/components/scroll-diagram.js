@@ -80,7 +80,13 @@
     var L = nb.left - sr.left, T = nb.top - sr.top, W = nb.width, H = nb.height;
     var dl = Math.abs(x - L), dr = Math.abs(L + W - x), dt = Math.abs(y - T), db = Math.abs(T + H - y);
     var m = Math.min(dl, dr, dt, db), nx = 0, ny = 0;
-    if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === dt) ny = -1; else ny = 1;
+    // Noktayı en yakın node KENARINA projekte et (port'un o kenar boyunca konumu
+    // korunur). Port node'un içinde/ortasında olsa bile ok kenarda başlar/biter,
+    // içeri girmez. layout ayrıca 'gap' kadar dışarı kaydırır.
+    if (m === dl)      { nx = -1; x = L; }
+    else if (m === dr) { nx = 1;  x = L + W; }
+    else if (m === dt) { ny = -1; y = T; }
+    else               { ny = 1;  y = T + H; }
     return { x: x, y: y, nx: nx, ny: ny };
   }
 
