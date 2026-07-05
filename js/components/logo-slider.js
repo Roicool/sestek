@@ -1,5 +1,5 @@
 /*!
- * logo-slider.js v1.0.0
+ * logo-slider.js v1.1.0
  * Brand-logo tabbed story slider for Webflow CMS. Everything is authored inside
  * the Collection List — JS never copies content into a separate "stage". Each
  * Collection Item = one brand = one slide, carrying BOTH its own logo tab AND
@@ -13,7 +13,8 @@
  * tabs stay inside their items. Clicking a tab, the prev/next arrows, or the
  * keyboard switches slides. When it is the active slide, that tab's [data-ls-fill]
  * bar animates 0→100 % over `dwell`; on completion the slider auto-advances.
- * Hover / focus / a hidden tab pauses the fill; leaving resumes it.
+ * Hovering the slides PANEL or the tab bar (not the whole section), keyboard
+ * focus, or a hidden tab pauses the fill; leaving the panel/tabs resumes it.
  *
  * Backgrounds cross-fade with a subtle scale-settle; panel contents stagger in.
  * The film-grain overlay is NOT this component's job — put `data-grain` on the
@@ -394,8 +395,40 @@
 
     // Pause auto-advance on hover / keyboard focus / tab-away — resume on leave.
     if (autoplay) {
-      root.addEventListener("mouseenter", pause);
-      root.addEventListener("mouseleave", resume);
+      // Scope the hover-pause to the actual slider PANEL (the slides block) plus
+      // the tab bar — NOT the whole root. In section-bg mode the root fills the
+      // entire section, so binding hover to it paused the moment the pointer was
+      // anywhere in that huge area and only "resumed" once you left it — which,
+      // for a full-bleed section, effectively never happened (it looked like the
+      // autoslide only came back after you clicked a tab, because a click restarts
+      // the fill directly). Watching just the panel + tabs keeps the pause tight
+      // and makes it resume the instant the pointer leaves the slides/logos.
+      var hoverZones = [cmsBlock];
+      if (tabsBar && tabsBar !== cmsBlock) hoverZones.push(tabsBar);
+
+      // One shared "over the panel" count across the zones. Moving directly from
+      // one zone to an adjacent one fires leave-then-enter, so a plain resume on
+      // every leave would flicker; defer the resume a frame and cancel it if the
+      // pointer lands on the other zone, so it only fires when truly outside both.
+      var hoverCount = 0, resumeFrame = 0;
+      function cancelResume() {
+        if (resumeFrame) { cancelAnimationFrame(resumeFrame); resumeFrame = 0; }
+      }
+      function zoneEnter() { hoverCount++; cancelResume(); pause(); }
+      function zoneLeave() {
+        hoverCount = Math.max(0, hoverCount - 1);
+        if (hoverCount > 0) return;
+        cancelResume();
+        resumeFrame = requestAnimationFrame(function () {
+          resumeFrame = 0;
+          if (hoverCount === 0) resume();
+        });
+      }
+      hoverZones.forEach(function (zone) {
+        zone.addEventListener("mouseenter", zoneEnter);
+        zone.addEventListener("mouseleave", zoneLeave);
+      });
+
       root.addEventListener("focusin", pause);
       root.addEventListener("focusout", function (e) {
         if (!root.contains(e.relatedTarget)) resume();

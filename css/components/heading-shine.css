@@ -1,5 +1,5 @@
 /*!
- * heading-shine.css v1.2.0
+ * heading-shine.css v1.3.0
  * Animated multi-colour "shine" on a heading — a radial glow of Sestek's
  * brand colours (turquoise → lilac → magenta) drifting across the text and
  * fading back into the element's own colour. Pure CSS, no JS.
@@ -8,9 +8,23 @@
  * gradient is currentColor the heading keeps whatever colour you set in
  * Designer, so only the moving glow is tinted.
  *
- * Two tone options, chosen by the attribute value:
- *   data-heading-mask="brand"  vivid brand colours (turquoise/lilac/magenta)
- *   data-heading-mask="deep"   the same hues, deeper / less neon
+ * Tone options, chosen by the attribute value:
+ *   data-heading-mask="brand"        vivid brand colours (turquoise/lilac/magenta)
+ *   data-heading-mask="deep"         the same hues, deeper / less neon
+ *   data-heading-mask="display"      vivid, tuned for VERY LARGE type (display-1,
+ *                                    hero headings): a bigger, softer glow that
+ *                                    sweeps diagonally across the whole heading
+ *   data-heading-mask="display-deep" the display sweep in the deeper tone
+ *
+ * Why a separate "display" mode?
+ *   The brand/deep glow is calibrated for body-scale headings — its colour
+ *   stops (%) and 200% background travel make a small highlight that reads well
+ *   on an h2/h3. On a display-1 (huge font-size) that same glow shrinks to a
+ *   faint corner blob and the sweep barely moves. The display modes widen the
+ *   colour stops, enlarge the background so the highlight scales up with the
+ *   type, and sweep corner-to-corner so the shine actually travels across the
+ *   giant letters. Drop it on any large heading — including Webflow display
+ *   classes like .display-1 / .display-2.
  *
  * Add the attribute to any text element (h1, h2, a span inside a heading…).
  *
@@ -18,7 +32,9 @@
  */
 
 [data-heading-mask="brand"],
-[data-heading-mask="deep"] {
+[data-heading-mask="deep"],
+[data-heading-mask="display"],
+[data-heading-mask="display-deep"] {
   padding-block: 0.1em;
   margin-block: -0.1em;
   background-clip: text;
@@ -42,13 +58,49 @@
     currentColor 20%);
 }
 
+/* ── Display / large-type mode ─────────────────────────────────────────
+ * Bigger glow (wider colour stops + farthest-corner so it reaches across
+ * the whole element), a larger background so the highlight scales up with
+ * the type, and a slower corner-to-corner sweep so the shine visibly
+ * travels over huge letters instead of sitting in one corner. */
+[data-heading-mask="display"],
+[data-heading-mask="display-deep"] {
+  background-size: 300% 300%;
+  animation-name: sestek-heading-shine-display;
+  animation-duration: 7s;
+}
+
+[data-heading-mask="display"] {
+  background-image: radial-gradient(circle farthest-corner at 0% 0%,
+    #00ffeb 8%,
+    #7f81ae 22%,
+    currentColor 46%);
+}
+
+[data-heading-mask="display-deep"] {
+  background-image: radial-gradient(circle farthest-corner at 0% 0%,
+    #0e9488 8%,
+    #565978 22%,
+    currentColor 46%);
+}
+
 @keyframes sestek-heading-shine {
   0%   { background-position: 0% 20%; }
   50%  { background-position: 15% 0%; }
   100% { background-position: 0% 20%; }
 }
 
+/* A wider sweep for the display mode: the glow crosses the full heading
+ * (bottom-left → top-right and back) so large type shimmers end to end. */
+@keyframes sestek-heading-shine-display {
+  0%   { background-position: 0% 100%; }
+  50%  { background-position: 100% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-heading-mask="brand"],
-  [data-heading-mask="deep"] { animation: none; }
+  [data-heading-mask="deep"],
+  [data-heading-mask="display"],
+  [data-heading-mask="display-deep"] { animation: none; }
 }
