@@ -1603,8 +1603,19 @@ Kök attribute'ları (hepsi opsiyonel):
   tam genişliktedir, sadece dağıtımı sende.
 - `[data-ls-anim]` verirsen sadece o elementler stagger'lanır; vermezsen
   `[data-ls-panel]`'in doğrudan çocukları animasyon alır.
-- **grain ayrı çalışır:** `[data-ls-bg]`'ye `data-grain` ekle + `Sestek.initGrain()`
-  çağır; iki component birbirine karışmadan composable şekilde çalışır.
+- **Section background modu (opsiyonel):** Kök'e boş bir `[data-ls-bg-wrap]`
+  koyarsan arka plan **tüm section'ı** kaplar ve slide değişince cross-fade ile
+  değişir (referans "prefooter-slider" tekniği). JS her markanın bg görselini
+  (`[data-ls-bg] img`'in src'i, ya da `[data-ls-bg-img]`, ya da item'da
+  `data-ls-bg-src`) okuyup wrap'in içine cross-fade katmanları olarak klonlar;
+  item-içi `[data-ls-bg]` otomatik gizlenir. Fluted-glass / `data-noise` /
+  gradient overlay'lerini `[data-ls-bg-wrap]`'in **çocukları** olarak yaz — görsellerin
+  üstünde, içeriğin altında dururlar. Wrap `z-index:-1` ile her şeyin arkasında kalır.
+  `[data-ls-bg-wrap]` koymazsan eski davranış (her item kendi bg'sini stage
+  hücresinde gösterir) aynen sürer.
+- **grain ayrı çalışır:** `[data-ls-bg]`'ye (veya section modda `[data-ls-bg-wrap]`'e)
+  `data-grain` ekle + `Sestek.initGrain()` çağır; ya da senin CSS `data-noise`'unu
+  kullan. İkisini birden değil.
 - **GSAP yoksa** slider tıkla/ok ile çalışan bir switcher'a düşer (anlık geçiş,
   otomatik ilerleme yok) — sessizce degrade olur.
 - `prefers-reduced-motion`: otomatik ilerleme kapalı, geçişler anlık, fill gizli,

@@ -52,8 +52,31 @@
   visibility: visible;
 }
 
-/* ── Background layer: full-bleed image behind the panel. grain.js appends its
-   overlay in here; the optional tint sits above the image, below the panel. ─ */
+/* ── Section background mode: a single full-section layer behind everything,
+   cross-fading between brands. Root establishes a stacking context so the wrap
+   can sit at z -1 (behind the in-flow content) like a real page background.
+   Author fluted-glass / noise / gradient overlays as children of the wrap. ── */
+[data-ls-bg-section] { position: relative; z-index: 0; }
+[data-ls-bg-wrap] {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden; /* clip the oversized layers + the 200% noise overlay */
+}
+[data-ls-bg-wrap] > [data-ls-bg-layer] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* In section mode the per-item background is redundant (the wrap shows it). */
+[data-ls-bg-section] [data-ls-item] [data-ls-bg],
+[data-ls-bg-section] [data-ls-bg-img] { display: none; }
+
+/* ── Per-item background layer (default mode): full-bleed image behind the panel.
+   grain.js appends its overlay in here; the optional tint sits above the image,
+   below the panel. ─────────────────────────────────────────────────────────── */
 [data-ls-bg] {
   position: absolute;
   inset: 0;

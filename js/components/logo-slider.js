@@ -35,6 +35,12 @@
  *
  *   [data-logo-slider]                        ← plain Div Block = root
  *
+ *     [data-ls-bg-wrap]                       ← OPTIONAL full-section background.
+ *       (JS injects one cross-fading <img> per      Present → "section bg mode":
+ *        brand here; add your overlays below)        the bg fills the whole section
+ *       [data-ls-overlay] / fluted-glass            behind everything and swaps per
+ *       [data-noise]                                 slide. Omit → per-item bg mode.
+ *
  *     (optional static header — title, subtitle, "See all" — authored freely)
  *
  *     [data-ls-prev]  <button>                ← optional arrows, anywhere in root
@@ -56,10 +62,11 @@
  *             <img data-ls-logo src="…" alt="Brand">  ← PNG; greyscale until active/hover
  *             [data-ls-fill]                    ← the auto-advance progress bar
  *                                                 (fills centre-out in --ls-color)
- *           [data-ls-bg]                        ← background layer (stacked, cross-fade)
- *             <img src="…" alt="" loading="lazy">
- *             [data-ls-overlay]                 ← OPTIONAL tint for text contrast
- *             (add data-grain here + Sestek.initGrain() for film grain)
+ *           [data-ls-bg]                        ← per-item background (default mode).
+ *             <img src="…" alt="" loading="lazy">   In section-bg mode JS reads this
+ *             [data-ls-overlay]                 ← img's src (or [data-ls-bg-img], or
+ *             (add data-grain + Sestek.initGrain)   data-ls-bg-src on the item) and
+ *                                                   hides this in-item layer.
  *           [data-ls-panel]                     ← content (stacked, staggered in)
  *             [data-ls-anim] …                  ← OPTIONAL: mark which children
  *                                                 animate; default = panel's children
@@ -161,6 +168,48 @@
         }
       }
     });
+
+    // ── Section background (optional) ─────────────────────────────
+    // If a [data-ls-bg-wrap] exists at the root, the slider runs in "section
+    // background" mode: instead of each slide showing its own [data-ls-bg] in
+    // the stage cell, JS reads every brand's background image and builds a stack
+    // of cross-fading layers filling the WHOLE section, behind everything. The
+    // active brand's layer fades in on switch. Author your fluted-glass / noise /
+    // gradient overlays as children of [data-ls-bg-wrap] — they sit above the
+    // images but below the content. (Webflow-legal: the wrap is a plain Div Block
+    // in the root; the images are cloned at runtime.)
+    var bgWrap = root.querySelector("[data-ls-bg-wrap]");
+    var bgLayers = [];
+    if (bgWrap) {
+      root.setAttribute("data-ls-bg-section", "");
+      bgWrap.setAttribute("aria-hidden", "true");
+      // Insert the images before the first authored child (your overlays) so the
+      // images stay in item order AND every overlay keeps painting above them.
+      var bgAnchor = bgWrap.firstChild;
+      items.forEach(function (item) {
+        var srcEl = item.querySelector("[data-ls-bg-img]") || item.querySelector("[data-ls-bg] img");
+        var src = (srcEl && srcEl.getAttribute("src")) || item.getAttribute("data-ls-bg-src") || "";
+        var layer = document.createElement("img");
+        layer.setAttribute("data-ls-bg-layer", "");
+        layer.setAttribute("role", "presentation");
+        layer.setAttribute("aria-hidden", "true");
+        layer.setAttribute("loading", "lazy");
+        if (src) layer.src = src;
+        layer.style.opacity = "0";
+        bgWrap.insertBefore(layer, bgAnchor);
+        bgLayers.push(layer);
+      });
+    }
+
+    function setSectionBg(i, animate) {
+      if (!bgLayers.length) return;
+      var dur = (animate && !reduce && hasGsap) ? fade : 0;
+      bgLayers.forEach(function (layer, idx) {
+        var on = idx === i;
+        if (hasGsap) gsap.to(layer, { opacity: on ? 1 : 0, duration: dur, ease: ease, overwrite: "auto" });
+        else layer.style.opacity = on ? "1" : "0";
+      });
+    }
 
     // ── State helpers ─────────────────────────────────────────────
     var active = items.findIndex(function (it) {
@@ -271,6 +320,7 @@
       var prev = active;
       active = i;
       render(i);
+      setSectionBg(i, true);
       updateArrows();
       killFill();
       if (mainTl) mainTl.kill();
@@ -329,6 +379,7 @@
 
     // ── Initial state ─────────────────────────────────────────────
     render(active);
+    setSectionBg(active, false);
     updateArrows();
     if (hasGsap) {
       items.forEach(function (it, idx) {
