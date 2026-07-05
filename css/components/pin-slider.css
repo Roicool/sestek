@@ -34,6 +34,19 @@
   will-change: transform;              /* JS animates x / scale on this element */
 }
 
+/* ── CMS flatten ──────────────────────────────────────────────────────
+   Each card comes from its OWN collection, so the track holds one Collection
+   List Wrapper ([data-ps-cms]) per card. display:contents removes the Wrapper,
+   its inner Collection List (.w-dyn-items) and the empty-state node from the
+   box tree, so each Collection Item ([data-ps-card]) becomes a direct flex
+   child of [data-ps-track] — the row/stack lays out as if the CMS levels
+   weren't there. (Grid on the list is overridden to nothing via contents.) */
+[data-ps-slider] [data-ps-cms],
+[data-ps-slider] [data-ps-cms] > .w-dyn-list,
+[data-ps-slider] [data-ps-cms] .w-dyn-items {
+  display: contents;
+}
+
 /* ── Card ─────────────────────────────────────────────────────────── */
 [data-ps-slider] [data-ps-card] {
   flex: 0 0 auto;

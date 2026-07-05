@@ -25,8 +25,17 @@
  * DOM:
  *   [data-ps-slider]                 section root
  *     [data-ps-viewport]             pinned/sticky frame (overflow clip on desktop)
- *       [data-ps-track]              the horizontal track (div, role="list")
- *         [data-ps-card]             one card (div, role="listitem") — 4 expected, any n works
+ *       [data-ps-track]              the horizontal track (a plain div)
+ *         [data-ps-cms]              Collection List Wrapper — ONE per collection,
+ *                                    flattened to display:contents by the CSS so
+ *                                    the item below becomes a direct flex child
+ *           (Collection List)        also flattened (display:contents)
+ *             [data-ps-card]         Collection Item = the card (4 collections → 4)
+ *
+ * Each card is bound to a DIFFERENT CMS collection, so there are 4 separate
+ * Collection Lists in the track (each limited to 1 item). data-ps-cms +
+ * data-ps-card carry the layout; the Webflow list levels in between contribute
+ * nothing to layout thanks to display:contents.
  *
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)
