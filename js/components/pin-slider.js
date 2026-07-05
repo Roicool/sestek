@@ -39,6 +39,7 @@
  *
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)
+ *   data-ps-hold         pin-hold before the slide, ×viewport h (default 0.5)
  *   data-ps-outro        outro length as a fraction of viewport (default 0.9)
  *   data-ps-scrub        ScrollTrigger scrub smoothing seconds  (default 1)
  *   data-ps-end-scale    track scale at the end of the outro    (default 0.82)
@@ -92,6 +93,7 @@
 
     var d          = root.dataset;
     var breakpoint = attrNum(root, "data-ps-breakpoint", 768);
+    var holdFrac   = attrNum(root, "data-ps-hold",       0.5);
     var outroFrac  = attrNum(root, "data-ps-outro",      0.9);
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
@@ -119,13 +121,14 @@
         return Math.max(0, track.scrollWidth - viewport.clientWidth);
       }
       var maxX     = distance();
+      // Hold: a scroll stretch AT THE START where the section is pinned but the
+      // track stays put — time to read the heading before anything moves.
+      var holdPx   = viewport.clientHeight * holdFrac;
       var outroPx  = viewport.clientHeight * outroFrac;
-      var totalPx  = maxX + outroPx;
-      // Fraction of the timeline spent sliding vs. dissolving — keeps the two
-      // phases proportional to their real scroll length however wide the track.
-      var slideDur = totalPx > 0 ? maxX / totalPx : 1;
-      var outroDur = 1 - slideDur;
+      var totalPx  = holdPx + maxX + outroPx;
 
+      // Timeline runs in px-proportional "seconds" so each phase maps to its
+      // real scroll length; scrub stretches the whole thing over end - start.
       var tl = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
@@ -136,23 +139,25 @@
           pinSpacing: true,
           scrub: scrub,
           anticipatePin: 1,
-          invalidateOnRefresh: true,      // recompute distance() on resize
+          invalidateOnRefresh: true,      // recompute distances on resize
           refreshPriority: 1,             // pin resolves before reveal/color-shift
         },
       });
 
-      // Phase 1 — slide the whole track sideways.
+      // Phase 0 — hold: nothing moves for the first holdPx of scroll (the gap
+      // before the slide tween below leaves the track at x:0 while pinned).
+      // Phase 1 — slide the whole track sideways, starting AFTER the hold.
       if (maxX > 0) {
-        tl.to(track, { x: function () { return -distance(); }, duration: slideDur }, 0);
+        tl.to(track, { x: function () { return -distance(); }, duration: maxX }, holdPx);
       }
       // Phase 2 — recede into depth: scale down + fade the track away.
-      if (outroDur > 0) {
+      if (outroPx > 0) {
         tl.to(track, {
           scale: endScale,
           autoAlpha: 0,
           transformOrigin: "center center",
-          duration: outroDur,
-        }, slideDur);
+          duration: outroPx,
+        }, holdPx + maxX);
       }
 
       // matchMedia cleanup: revert the timeline + its ScrollTrigger and clear

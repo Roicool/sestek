@@ -18,13 +18,20 @@
   --ps-pad: var(--spacing--8, 2rem);  /* frame side padding */
   --ps-sticky-top: var(--spacing--6, 1.5rem);
   --ps-radius: var(--radius--lg, 1rem);
+  /* Opaque surface behind the cards — as the outro fades them, this is what
+     shows through, NOT whatever sits behind the section (e.g. the heading).
+     Match it to the section's real background. */
+  --ps-bg: var(--neutral--050, #f6f5f2);
   position: relative;
 }
 
 /* ── Viewport / frame ─────────────────────────────────────────────── */
 [data-ps-slider] [data-ps-viewport] {
+  position: relative;
+  z-index: 1;                          /* sit above sibling content behind it */
   width: 100%;
   overflow: hidden;                    /* clip the off-screen cards while pinned */
+  background: var(--ps-bg);            /* fading cards reveal this, not the heading */
 }
 
 /* ── Track ────────────────────────────────────────────────────────── */
