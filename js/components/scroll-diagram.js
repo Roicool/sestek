@@ -10,11 +10,12 @@
  * bağlar. Bağlantı kaynağı varsayılan olarak bir önceki step; data-dg-from ile
  * override edilir (merkezden dallanma mümkün).
  *
- * Oklar kavisli (cubic bézier) ve pathLength=1 + stroke-dashoffset ile çizilir,
- * yani DrawSVG gerekmez ve resize'a dayanıklıdır. Ok başı path'in son parçası
- * olduğundan çizim tamamlanırken en sonda ortaya çıkar.
+ * Oklar kavisli (cubic bézier). Çizim proje standardı DrawSVGPlugin ile yapılır
+ * (docs/gsap-svg.md §5); plugin yüklü değilse pathLength=1 + stroke-dashoffset
+ * fallback'ine düşer (aynı sonuç, ekstra bağımlılık yok). Ok başı path'in son
+ * parçası olduğundan çizim tamamlanırken en sonda ortaya çıkar.
  *
- * Bağımlılık: gsap + ScrollTrigger (+ Sestek.util). Ekstra plugin gerekmez.
+ * Bağımlılık: gsap + ScrollTrigger (+ Sestek.util). DrawSVGPlugin opsiyonel/önerilir.
  *
  * ── DOM (kendin kur) ─────────────────────────────────────────────────────────
  *
@@ -122,7 +123,11 @@
 
     var reduce  = Sestek.util.prefersReducedMotion();
     var hasGsap = typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined";
+    // Proje standardı çizim yolu = DrawSVGPlugin (docs/gsap-svg.md §5). Yüklüyse
+    // onu kullan; değilse aşağıda manuel stroke-dashoffset'e düşülür.
+    var hasDraw = hasGsap && typeof DrawSVGPlugin !== "undefined";
     if (hasGsap) gsap.registerPlugin(ScrollTrigger);
+    if (hasDraw) gsap.registerPlugin(DrawSVGPlugin);
 
     // ── SVG ok katmanı ───────────────────────────────────────────────────────
     var svg = stage.querySelector("[data-dg-lines]");
@@ -177,14 +182,26 @@
     layout();
     root.setAttribute("data-dg-ready", ""); // CSS'in pre-init gizlemesini kaldırır
 
-    // Her path'i "çizilmemiş" başlat: dash = tüm uzunluk (1), offset = 1 → gizli.
-    function hide(p)  { p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "1"; }
-    function show(p)  { p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "0"; }
-    conns.forEach(function (c) { hide(c.base); hide(c.fill); });
+    // Çizim soyutlaması: DrawSVG varsa onu, yoksa pathLength=1 + dashoffset kullan.
+    function drawHide(p) {
+      if (hasDraw) { gsap.set(p, { drawSVG: 0 }); }
+      else { p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "1"; }
+    }
+    function drawShow(p) {
+      if (hasDraw) { gsap.set(p, { drawSVG: "100%" }); }
+      else { p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "0"; }
+    }
+    // "0% → 100%" çizen tween'in vars'ı. DrawSVG'de "live" resize'da yeniden hesaplar.
+    function drawVars(dur) {
+      return hasDraw ? { drawSVG: "0% 100% live", duration: dur }
+                     : { strokeDashoffset: 0, duration: dur };
+    }
+
+    conns.forEach(function (c) { drawHide(c.base); drawHide(c.fill); });
 
     // ── GSAP yoksa / reduced-motion: her şey açık, oklar dolu ──────────────────
     if (!hasGsap || reduce) {
-      conns.forEach(function (c) { c.node.style.opacity = "1"; show(c.base); show(c.fill); });
+      conns.forEach(function (c) { c.node.style.opacity = "1"; drawShow(c.base); drawShow(c.fill); });
       window.addEventListener("resize", layout);
       return { relayout: layout };
     }
@@ -207,8 +224,8 @@
     });
 
     conns.forEach(function (c) {
-      tl.to(c.base, { strokeDashoffset: 0, duration: 0.5 })          // 1) gri çizilsin
-        .to(c.fill, { strokeDashoffset: 0, duration: 0.6 })          // 2) Sestek dolsun
+      tl.to(c.base, drawVars(0.5))                                   // 1) gri çizilsin
+        .to(c.fill, drawVars(0.6))                                   // 2) Sestek dolsun
         .to(c.node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");  // node açılır
     });
 
