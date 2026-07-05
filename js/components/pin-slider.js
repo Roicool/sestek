@@ -49,8 +49,24 @@
 (function (global) {
   "use strict";
 
-  var attrNum = Sestek.util.attrNum;
-  var prefersReduced = Sestek.util.prefersReducedMotion;
+  // Read helpers lazily (inside functions) — NOT at load time. If this file
+  // loads before js/core/utils.js, touching Sestek.util at parse time would
+  // throw and initPinSlider would never get defined. These fallbacks also let
+  // the component work even if utils.js is absent.
+  function attrNum(el, attr, fallback) {
+    if (global.Sestek && Sestek.util && Sestek.util.attrNum) {
+      return Sestek.util.attrNum(el, attr, fallback);
+    }
+    var v = parseFloat(el.getAttribute(attr));
+    return isNaN(v) ? fallback : v;
+  }
+  function prefersReduced() {
+    if (global.Sestek && Sestek.util && Sestek.util.prefersReducedMotion) {
+      return Sestek.util.prefersReducedMotion();
+    }
+    return typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
 
   function warn(msg, el) {
     if (global.console && global.console.warn) {
