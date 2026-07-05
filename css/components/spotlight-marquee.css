@@ -43,6 +43,20 @@
 /* Headline / content sits above the dim so it stays fully readable. */
 [data-sp-content] { position: relative; z-index: 2; }
 
+/* Mobile: the marquee is NOT an absolute full-height background — it becomes a
+   band at the bottom, in normal flow, still scrolling. Content sits above it. */
+@media (max-width: 767px) {
+  [data-spotlight] { display: flex; flex-direction: column; }
+  [data-sp-content] { order: 1; }
+  [data-sp-track] {
+    position: relative;
+    top: auto; bottom: auto; left: auto;
+    order: 2;
+    width: 100%;
+    height: var(--sp-mobile-height, 32vh);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-sp-track] { will-change: auto; }
 }
