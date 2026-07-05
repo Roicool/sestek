@@ -1,28 +1,34 @@
 /*!
- * language-field.css v1.0.0
- * Structure only — you style the flags, the lit state, the wire and the dot in
- * the Designer. Every selector is attribute-driven.
+ * language-field.css v1.2.0
+ * Structure only — you style the flags, the lit state, the wires and the dot in
+ * the Designer. Attribute-driven.
+ *   [data-lf-wire] — soft grey base line (colour: --lf-line)
+ *   [data-lf-flow] — the brand colour that flows along it (colour: --lf-color)
+ *   [data-lf-dot]  — the pulse head (colour: --lf-color)
  * https://github.com/roicool/sestek
  */
 
-/* Root clips the scattered field; JS sets position:relative if it's static. */
 [data-language-field] { position: relative; overflow: hidden; }
 
-/* Flags are absolutely scattered by JS (left/top %, translate -50%). */
 [data-lf-item] { position: absolute; will-change: transform; }
 
-/* Wire layer fills the root, behind the flags; the centre headline sits on top. */
 [data-lf-wires] {
   position: absolute; inset: 0; width: 100%; height: 100%;
   z-index: 0; pointer-events: none; overflow: visible;
 }
 [data-lf-center] { position: relative; z-index: 2; }
 
-/* Defaults you can override: wire + dot use --lf-color (fallback currentColor).
-   Kept at zero specificity so any Designer styling wins. */
-:where([data-lf-wire]) { stroke: var(--lf-color, currentColor); stroke-width: 1; fill: none; }
-:where([data-lf-dot])  { fill: var(--lf-color, currentColor); }
+/* Zero-specificity defaults so any Designer styling wins. */
+:where([data-lf-wire]) {
+  stroke: var(--lf-line, rgba(150,150,170,.14)); stroke-width: 1; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+:where([data-lf-flow]) {
+  stroke: var(--lf-color, currentColor); stroke-width: 1.5; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+:where([data-lf-dot]) { fill: var(--lf-color, currentColor); }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-lf-wire], [data-lf-dot] { display: none; }
+  [data-lf-wire], [data-lf-flow], [data-lf-dot] { display: none; }
 }
