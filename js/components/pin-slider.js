@@ -25,8 +25,8 @@
  * DOM:
  *   [data-ps-slider]                 section root
  *     [data-ps-viewport]             pinned/sticky frame (overflow clip on desktop)
- *       [data-ps-track]              the horizontal track (<ol> for a11y)
- *         [data-ps-card]             one card (<li>) — expects exactly 4, but any n works
+ *       [data-ps-track]              the horizontal track (div, role="list")
+ *         [data-ps-card]             one card (div, role="listitem") — 4 expected, any n works
  *
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)

@@ -31,9 +31,6 @@
 [data-ps-slider] [data-ps-track] {
   display: flex;
   gap: var(--ps-gap);
-  margin: 0;
-  padding: 0;
-  list-style: none;
   will-change: transform;              /* JS animates x / scale on this element */
 }
 
