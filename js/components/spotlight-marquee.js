@@ -60,24 +60,26 @@
     // ── Spotlight overlay ─────────────────────────────────────────
     var light = root.querySelector("[data-sp-light]");
     if (!light) { light = document.createElement("div"); light.setAttribute("data-sp-light", ""); light.setAttribute("aria-hidden", "true"); root.appendChild(light); }
-    light.style.setProperty("--sp-dark", dark);
     light.style.setProperty("--sp-soft", (soft * 100) + "%");
-    var curX = root.clientWidth / 2, curY = root.clientHeight / 2, curR = 0;
-    var tgtX = curX, tgtY = curY, tgtR = 0;
+    light.style.setProperty("--sp-r", radius + "px");     // constant hole size
+    // Idle = fully bright (--sp-dark 0). On hover, "focus mode": the surroundings
+    // darken (--sp-dark → dark) while the spotlight stays bright.
+    var curX = root.clientWidth / 2, curY = root.clientHeight / 2, curD = 0;
+    var tgtX = curX, tgtY = curY, tgtD = 0;
     function applyLight() {
       light.style.setProperty("--sp-x", curX + "px");
       light.style.setProperty("--sp-y", curY + "px");
-      light.style.setProperty("--sp-r", curR + "px");
+      light.style.setProperty("--sp-dark", curD);
     }
     applyLight();
 
     root.addEventListener("pointermove", function (e) {
       var r = root.getBoundingClientRect();
-      tgtX = e.clientX - r.left; tgtY = e.clientY - r.top; tgtR = radius;
-      if (reduce) { curX = tgtX; curY = tgtY; curR = tgtR; applyLight(); }
+      tgtX = e.clientX - r.left; tgtY = e.clientY - r.top; tgtD = dark;
+      if (reduce) { curX = tgtX; curY = tgtY; curD = tgtD; applyLight(); }
     });
-    root.addEventListener("pointerenter", function () { tgtR = radius; });
-    root.addEventListener("pointerleave", function () { tgtR = 0; if (reduce) { curR = 0; applyLight(); } });
+    root.addEventListener("pointerenter", function () { tgtD = dark; });
+    root.addEventListener("pointerleave", function () { tgtD = 0; if (reduce) { curD = 0; applyLight(); } });
 
     // ── Marquee: clone whole sets until the strip covers container + one unit ──
     var unit = 0, pos = 0, running = true;
@@ -122,7 +124,7 @@
       }
       curX += (tgtX - curX) * follow;
       curY += (tgtY - curY) * follow;
-      curR += (tgtR - curR) * follow;
+      curD += (tgtD - curD) * follow;
       applyLight();
     }
     gsap.ticker.add(tick);
