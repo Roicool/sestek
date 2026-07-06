@@ -125,6 +125,16 @@
       // content up before the scale/fade phase — only when content overflows.
       var fakeRatio = diff > 0 ? diff / (diff + windowH) : 0;
 
+      // CRITICAL: pinSpacing:false means ScrollTrigger does NOT reserve any
+      // document space for the scroll this pin consumes — the browser's total
+      // scrollable height must already include it, or the next panel starts
+      // sliding in before this one is done (wrong-time pin / overlapping in
+      // the wrong place). This margin manually reserves exactly the fake-scroll
+      // distance, same as the original technique this component is based on.
+      if (fakeRatio) {
+        panel.style.marginBottom = innerH * fakeRatio + "px";
+      }
+
       var tl = gsap.timeline({
         scrollTrigger: {
           trigger: panel,
