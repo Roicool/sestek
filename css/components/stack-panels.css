@@ -11,12 +11,13 @@
   position: relative;
 }
 
-/* Each panel must be an OPAQUE, full-viewport layer: while pinned it sits
-   under the next panel sliding up over it, so it needs its own solid
-   background (design in Webflow) or the page behind it will show through. */
+/* Each panel must be an OPAQUE layer: while pinned it sits under the next
+   panel sliding up over it, so it needs its own solid background (design in
+   Webflow) or the page behind it will show through. Height is whatever the
+   panel's own content/CSS gives it — NOT forced to 100vh; the JS fake-scroll
+   phase already handles panels taller (or shorter) than the viewport. */
 [data-stack-panels] [data-sp-panel] {
   position: relative;
-  min-height: 100vh;
   overflow: hidden;
   will-change: transform, opacity;
   transform-origin: center center;
@@ -41,6 +42,5 @@
 /* Reduced motion / pin-blocked fallback: plain stacked-in-flow panels, no
    pin, no scale/fade — every panel just reads top to bottom normally. */
 [data-stack-panels][data-sp-reduced] [data-sp-panel] {
-  min-height: auto;
   overflow: visible;
 }
