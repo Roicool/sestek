@@ -43,6 +43,11 @@
  *                            portion before it)                  (default 0.1)
  *   data-sp-mid-fade         opacity reached at the end of the scale portion,
  *                            right before the quick fade-to-0    (default 0.5)
+ *   data-sp-blur             px blur on the outgoing card at full dissolve —
+ *                            depth-of-field, makes it recede behind the incoming
+ *                            card. 0 = off.                       (default 4)
+ *   data-sp-lift             px the outgoing card drifts upward as it dissolves,
+ *                            for a subtle "lifted away" feel. 0 = off (default 0)
  *   data-sp-scrub            ScrollTrigger scrub value/seconds   (default true)
  *   data-sp-refresh-priority-start
  *                            refreshPriority of the FIRST panel; each next
@@ -107,6 +112,10 @@
     var endScale   = attrNum(root, "data-sp-scale", 0.7);
     var fadePortion = attrNum(root, "data-sp-fade-portion", 0.1);
     var midFade    = attrNum(root, "data-sp-mid-fade", 0.5);
+    // Premium depth: the outgoing card blurs (depth-of-field, recedes behind the
+    // incoming one) and can drift slightly up. Both purely optional.
+    var blurPx     = attrNum(root, "data-sp-blur", 4);   // px blur at full dissolve
+    var liftPx     = attrNum(root, "data-sp-lift", 0);   // px upward drift (0 = off)
     // Readable HOLD before the dissolve: fraction of the pinned scroll the card
     // stays fully settled (scale 1, opacity 1) so it can actually be READ before
     // it starts scaling/fading. 0 = dissolve immediately (old behaviour).
@@ -193,12 +202,15 @@
       if (!fakeRatio && holdFrac > 0 && holdFrac < 1) {
         tl.to({}, { duration: (holdFrac / (1 - holdFrac)), ease: "none" });
       }
-      // The premium beat: outgoing panel scales down + dims, then a quick final
-      // fade to 0 — same shape as the reference (0.9 scale/dim, 0.1 fade).
-      tl.fromTo(panel,
-        { scale: 1, opacity: 1 },
-        { scale: endScale, opacity: midFade, duration: 1 - fadePortion, ease: "none" }
-      ).to(panel, { opacity: 0, duration: fadePortion, ease: "none" });
+      // The premium beat: outgoing panel scales down + dims (+ optional blur/
+      // upward drift for depth), then a quick final fade to 0 — same shape as
+      // the reference (0.9 scale/dim, 0.1 fade), enriched.
+      var fromVars = { scale: 1, opacity: 1 };
+      var toVars   = { scale: endScale, opacity: midFade, duration: 1 - fadePortion, ease: "none" };
+      if (blurPx > 0) { fromVars.filter = "blur(0px)"; toVars.filter = "blur(" + blurPx + "px)"; }
+      if (liftPx)     { fromVars.y = 0; toVars.y = -liftPx; }
+      tl.fromTo(panel, fromVars, toVars)
+        .to(panel, { opacity: 0, duration: fadePortion, ease: "none" });
 
       triggers.push(tl);
     });

@@ -19,7 +19,7 @@
 [data-stack-panels] [data-sp-panel] {
   position: relative;
   overflow: hidden;
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
   transform-origin: center center;
 }
 
