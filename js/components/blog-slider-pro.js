@@ -128,8 +128,29 @@
       };
     }
 
-    root._blogSwiper = new Swiper(root, config);
-    return root._blogSwiper;
+    var swiper = new Swiper(root, config);
+    root._blogSwiper = swiper;
+
+    // ── Pause autoplay when the slider is off-screen ──────────────────────
+    // Swiper only pauses autoplay on tab/visibility change, NOT when scrolled
+    // out of view — so without this it keeps advancing invisibly (wasteful and
+    // the user returns mid-sequence). Stop it when the slider leaves the
+    // viewport, resume when it comes back. (No-op if autoplay is off/absent.)
+    if (config.autoplay && swiper.autoplay && typeof IntersectionObserver === "function") {
+      var io = new IntersectionObserver(function (entries) {
+        var e = entries[0];
+        if (!e) return;
+        if (e.isIntersecting) {
+          swiper.autoplay.start();
+        } else {
+          swiper.autoplay.stop();
+        }
+      }, { threshold: 0.2 });   // at least ~20% visible counts as on-screen
+      io.observe(root);
+      root._blogSliderIO = io;
+    }
+
+    return swiper;
   }
 
   /** Initialise every [data-blog-slider-pro] on the page. */
