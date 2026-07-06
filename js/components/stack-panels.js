@@ -9,6 +9,15 @@
  * first: the inner content translates up to reveal the rest before the
  * scale/fade kicks in, so nothing is skipped.
  *
+ * Panels keep their natural height (no forced 100vh). The pin's start point
+ * adapts to that: "bottom bottom" only behaves correctly for panels AT LEAST
+ * one viewport tall (that's what makes the reference technique work); shorter
+ * panels use "top top" instead, or the pin fires far too late. One side
+ * effect: a panel shorter than the viewport gets a shorter scale/fade dwell
+ * (proportional to its own height) than a tall one (a full viewport of
+ * scroll) — expected, not a bug, but worth knowing if you want the motion
+ * timing to feel consistent across panels of different heights.
+ *
  * This is a SEPARATE component from pin-slider.js (horizontal slide) and
  * scroll-stack.js (list + receding card deck) — different visual, its own
  * DOM/attributes. Do not mix them into the same root.
@@ -117,10 +126,11 @@
     var triggers = [];
     // The LAST panel never pins/dissolves — it's the final resting layer.
     panels.slice(0, -1).forEach(function (panel, i) {
-      var inner = panel.querySelector("[data-sp-inner]");
+      var inner   = panel.querySelector("[data-sp-inner]");
       var windowH = window.innerHeight;
-      var innerH = inner ? inner.offsetHeight : windowH;
-      var diff = innerH - windowH;
+      var panelH  = panel.offsetHeight;                  // panel's OWN natural height
+      var innerH  = inner ? inner.offsetHeight : panelH;
+      var diff    = innerH - windowH;
       // Portion (0–1) of the pinned scroll spent "fake-scrolling" the inner
       // content up before the scale/fade phase — only when content overflows.
       var fakeRatio = diff > 0 ? diff / (diff + windowH) : 0;
@@ -135,10 +145,18 @@
         panel.style.marginBottom = innerH * fakeRatio + "px";
       }
 
+      // "bottom bottom" only makes sense as a start when the panel is AT LEAST
+      // one viewport tall — for a panel that fits inside the viewport (no
+      // forced 100vh anymore, panels keep their natural height), "bottom
+      // bottom" doesn't fire until the panel has nearly scrolled OUT of view,
+      // so the pin kicks in far too late / in the wrong spot. Use "top top"
+      // for anything shorter than the viewport instead.
+      var startPos = panelH >= windowH ? "bottom bottom" : "top top";
+
       var tl = gsap.timeline({
         scrollTrigger: {
           trigger: panel,
-          start: "bottom bottom",
+          start: startPos,
           end: function () {
             return fakeRatio ? "+=" + inner.offsetHeight : "bottom top";
           },
