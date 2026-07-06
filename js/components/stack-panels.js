@@ -32,6 +32,11 @@
  *                                    always fit one screen.
  *
  * Root attributes:
+ *   data-sp-hold             fraction of the pinned scroll the card stays fully
+ *                            settled/readable (scale 1, opacity 1) BEFORE it
+ *                            starts to dissolve. 0 = dissolve immediately.
+ *                            Raise it if the card fades before you can read it.
+ *                                                                 (default 0.5)
  *   data-sp-scale            end scale of an outgoing panel      (default 0.7)
  *   data-sp-fade-portion     fraction of the outgoing tween spent on the
  *                            final quick fade-to-0 (vs. the scale+mid-fade
@@ -102,6 +107,10 @@
     var endScale   = attrNum(root, "data-sp-scale", 0.7);
     var fadePortion = attrNum(root, "data-sp-fade-portion", 0.1);
     var midFade    = attrNum(root, "data-sp-mid-fade", 0.5);
+    // Readable HOLD before the dissolve: fraction of the pinned scroll the card
+    // stays fully settled (scale 1, opacity 1) so it can actually be READ before
+    // it starts scaling/fading. 0 = dissolve immediately (old behaviour).
+    var holdFrac   = attrNum(root, "data-sp-hold", 0.5);
     var scrubA     = root.getAttribute("data-sp-scrub");
     var scrub      = scrubA === "false" ? false : (scrubA ? (parseFloat(scrubA) || true) : true);
     // refreshPriority of the FIRST panel; each next panel gets one less. MUST
@@ -146,15 +155,17 @@
         panel.style.marginBottom = innerH * fakeRatio + "px";
       }
 
-      // Faithful to the reference: the pin starts the moment the panel is fully
-      // in view (its bottom reaches the viewport bottom) and, for a normal
-      // panel, releases as its top passes the viewport top — that release is
-      // exactly when the NEXT panel has slid up to cover it, so the scale+fade
-      // reads as "the top card dissolving as the next takes its place".
+      // Normal panels pin CENTRED (start "center center") so the card is fully
+      // settled in the middle of the screen — readable — before anything moves.
+      // Tall panels keep the reference "bottom bottom" (their fake-scroll needs
+      // the panel fully in view first). Release for a normal panel is as its top
+      // passes the viewport top — exactly when the NEXT panel has slid up over
+      // it, so the scale+fade reads as "the top card dissolving as the next
+      // takes its place".
       var tl = gsap.timeline({
         scrollTrigger: {
           trigger: panel,
-          start: "bottom bottom",
+          start: fakeRatio ? "bottom bottom" : "center center",
           end: function () {
             return fakeRatio ? "+=" + inner.offsetHeight : "bottom top";
           },
@@ -173,6 +184,14 @@
           ease: "none",
           duration: 1 / (1 - fakeRatio) - 1,
         });
+      }
+      // HOLD: keep the card fully settled/readable for the first holdFrac of the
+      // pinned scroll, THEN dissolve — so the scale/fade never starts before the
+      // card is centred and legible. (Skipped for tall panels: their fake-scroll
+      // above already provides the reading time.) An empty tween just consumes
+      // timeline time; scrub maps it onto real scroll distance.
+      if (!fakeRatio && holdFrac > 0 && holdFrac < 1) {
+        tl.to({}, { duration: (holdFrac / (1 - holdFrac)), ease: "none" });
       }
       // The premium beat: outgoing panel scales down + dims, then a quick final
       // fade to 0 — same shape as the reference (0.9 scale/dim, 0.1 fade).
