@@ -52,6 +52,15 @@
  *                        pin length so the pin follows the content
  *   data-ps-end          end string when data-ps-end-trigger is set
  *                        (default "bottom bottom")
+ *   data-ps-refresh-priority   ScrollTrigger refreshPriority (see PROJECT.md
+ *                        "ScrollTrigger — Pinli Bölüm Kuralları" Kural 1). If this
+ *                        page has OTHER pinned sections (hero, scroll-tabs, …),
+ *                        this MUST be set lower than anything above pin-slider on
+ *                        the page and higher than anything below it — sharing a
+ *                        priority with another pin makes refresh order undefined
+ *                        and breaks pin-spacing (sections overlap / pin "does
+ *                        nothing"). Default assumes pin-slider is the LAST pinned
+ *                        section on the page (lowest priority, 0).
  *
  * https://github.com/roicool/sestek
  */
@@ -108,20 +117,30 @@
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
 
-    // Pin uses position:fixed — a transform/filter/perspective/will-change on any
-    // ANCESTOR re-bases that fixed element and the pin visibly slips (sibling
-    // sections overlap). Warn loudly so it's diagnosable (see PROJECT.md Kural 3).
-    (function () {
+    // ── SAFETY BARRIER 1: pin-breaking ancestor ──────────────────────────
+    // Pin uses position:fixed — a transform/filter/perspective/will-change on ANY
+    // ancestor re-bases that fixed element and the pin visibly slips (sibling
+    // sections overlap → the layout "blows up"). Rather than paint a broken pinned
+    // section, DEGRADE to the non-pinned native-scroll fallback (data-ps-reduced).
+    // Fix the ancestor (PROJECT.md Kural 3) or set data-ps-force-pin="true" to
+    // override the guard once the ancestor is clean.
+    function pinBlocker() {
       for (var p = root.parentElement; p && p !== document.body; p = p.parentElement) {
         var cs = getComputedStyle(p);
         if (cs.transform !== "none" || cs.filter !== "none" ||
-            cs.perspective !== "none" || cs.willChange.indexOf("transform") > -1) {
-          warn("Pin will slip: an ancestor has transform/filter/perspective/" +
-               "will-change. Remove it from this ancestor (PROJECT.md Kural 3):", p);
-          break;
-        }
+            cs.perspective !== "none" || cs.willChange.indexOf("transform") > -1) return p;
       }
-    })();
+      return null;
+    }
+    var forcePin = (root.getAttribute("data-ps-force-pin") || "") === "true";
+    var blocker  = pinBlocker();
+    if (blocker && !forcePin) {
+      warn("Pin DISABLED — ancestor has transform/filter/perspective/will-change; " +
+           "position:fixed would slip (PROJECT.md Kural 3). Using native-scroll " +
+           "fallback. Clean the ancestor or set data-ps-force-pin=\"true\".", blocker);
+      root.setAttribute("data-ps-reduced", "");
+      return;
+    }
 
     // Reduced motion: no pinning, no scrub. Desktop falls back to a native
     // horizontal-scroll strip; mobile keeps the CSS sticky stack (harmless,
@@ -184,7 +203,11 @@
         scrub: scrub,
         anticipatePin: 1,
         invalidateOnRefresh: true,        // recompute distances on resize
-        refreshPriority: 1,               // pin resolves before reveal/color-shift
+        // NOT hardcoded: with multiple pinned sections on a page, a shared/fixed
+        // priority makes refresh order undefined between them (PROJECT.md Kural 1).
+        // Default 0 assumes this is the LOWEST/last pin on the page — set
+        // data-ps-refresh-priority explicitly if that's not true here.
+        refreshPriority: attrNum(root, "data-ps-refresh-priority", 0),
       };
       var endEl = d.psEndTrigger ? document.querySelector(d.psEndTrigger) : null;
       if (d.psEndTrigger && !endEl) warn("data-ps-end-trigger not found: " + d.psEndTrigger, root);
