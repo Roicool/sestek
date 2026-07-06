@@ -600,6 +600,23 @@
   flex-direction : column;
   overflow       : hidden;
   background     : var(--nav-mobile-bg);
+  /* Hidden by default IN CSS — not only by JS. The scripts load deferred from
+     a CDN, so there's a window during page load where nav.js hasn't run yet;
+     without this, the full-screen overlay sat visible over the page until
+     init ("mobile menu flashes open on load"). GSAP writes inline opacity on
+     open/close, which outranks the opacity here, so animations are untouched.
+     The delayed visibility transition keeps the close fade-out visible before
+     the element goes display-level hidden. */
+  opacity        : 0;
+  visibility     : hidden;
+  pointer-events : none;
+  transition     : visibility 0s linear 0.25s;
+}
+
+.nav--mobile-open .nav__mobile {
+  visibility     : visible;
+  pointer-events : auto;
+  transition     : none;
 }
 
 .nav__mobile[aria-hidden="true"] {
