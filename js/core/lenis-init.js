@@ -1,9 +1,15 @@
 /*!
- * lenis-init.js v1.3.0
+ * lenis-init.js v1.3.1
  * Lenis smooth scroll — optional GSAP ScrollTrigger sync + stale-height guard
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.3.1 — refreshes no longer cause scroll jank: ScrollTrigger.refresh()
+ *          is expensive (re-measures every trigger), so firing it while the
+ *          page is still loading images (height changes constantly) or while
+ *          the user is mid-scroll produced a stutter-then-catch-up feel.
+ *          Now: body-height observer stays silent until window load, and any
+ *          pending refresh waits for Lenis to go idle before running.
  * v1.3.0 — dynamic-content refresh plumbing (fixes "can't scroll to the
  *          bottom" / mispositioned triggers after CMS filter/load, lazy
  *          images, accordions…):
@@ -63,12 +69,25 @@
    * against a height that later changed. Call it after ANY dynamic content
    * change; the 200ms debounce collapses bursts (e.g. a filter re-render)
    * into a single re-measure.
+   *
+   * Jank guard: ScrollTrigger.refresh() re-measures every trigger and forces
+   * layout — running it while the user is mid-scroll makes the page hitch
+   * (stutter, then catch up). So if Lenis is still moving when the debounce
+   * fires, the refresh re-arms and waits for the scroll to go idle; the
+   * re-measure then runs once, invisibly, between gestures.
    */
   function refreshScroll() {
     if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(function () {
+    refreshTimer = setTimeout(function tick() {
+      var lenis = global.lenisInstance;
+      // Still scrolling (user gesture or scrollTo in flight)? Check again
+      // shortly — never re-measure under the user's finger/wheel.
+      if (lenis && (lenis.isScrolling || Math.abs(lenis.velocity || 0) > 0.05)) {
+        refreshTimer = setTimeout(tick, 150);
+        return;
+      }
       refreshTimer = null;
-      if (global.lenisInstance) global.lenisInstance.resize();
+      if (lenis) lenis.resize();
       if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
     }, 200);
   }
@@ -151,9 +170,16 @@
 
     // Catch-all: ANY body height change (lazy images/embeds, accordions,
     // tabs, custom async content) schedules a debounced refresh.
+    //
+    // Silent until window load: while assets stream in, the body height
+    // changes constantly — refreshing on each change made scrolling stutter
+    // during load ("heavy, then snaps back"). ScrollTrigger already refreshes
+    // itself on load, and our late passes below cover post-load settling, so
+    // pre-load observer events carry no information worth the jank.
     if (typeof ResizeObserver !== "undefined") {
       var lastHeight = document.body.scrollHeight;
       bodyObserver = new ResizeObserver(function () {
+        if (document.readyState !== "complete") return;   // load still in progress
         var h = document.body.scrollHeight;
         if (h !== lastHeight) {
           lastHeight = h;
@@ -165,16 +191,12 @@
 
     // Late safety refreshes: fonts/images that settle after `load` without
     // changing body height enough to trip the observer (or on browsers
-    // without ResizeObserver). Cheap, and torn down by destroyLenis().
+    // without ResizeObserver). Routed through refreshScroll() so they too
+    // wait for scroll-idle instead of hitching an in-flight gesture.
     var arm = function () {
       lateTimeouts.push(
-        setTimeout(function () {
-          if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-        }, 500),
-        setTimeout(function () {
-          if (global.lenisInstance) global.lenisInstance.resize();
-          if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-        }, 1500)
+        setTimeout(refreshScroll, 500),
+        setTimeout(refreshScroll, 1500)
       );
     };
     if (document.readyState === "complete") {
