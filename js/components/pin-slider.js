@@ -40,8 +40,11 @@
  * Root attributes:
  *   data-ps-breakpoint   min-width px for the horizontal mode   (default 768)
  *   data-ps-hold         pin-hold before the slide, ×viewport h (default 0.5)
- *   data-ps-settle       last-card-framed beat before outro, ×h (default 0.35)
- *   data-ps-outro        outro length as a fraction of viewport (default 0.9)
+ *   data-ps-settle       last-card-framed beat before outro, ×h (default 0.35;
+ *                        only applies when the outro is enabled)
+ *   data-ps-outro        depth-fade outro length, ×viewport h   (default 0 = OFF;
+ *                        set e.g. 0.9 to recede/dissolve the track after the last
+ *                        card — otherwise the slide ends on the last card framed)
  *   data-ps-scrub        ScrollTrigger scrub smoothing seconds  (default 1)
  *   data-ps-end-scale    track scale at the end of the outro    (default 0.82)
  *   data-ps-end-trigger  selector whose bottom releases the pin (e.g.
@@ -101,9 +104,24 @@
     var breakpoint = attrNum(root, "data-ps-breakpoint", 768);
     var holdFrac   = attrNum(root, "data-ps-hold",       0.5);
     var settleFrac = attrNum(root, "data-ps-settle",     0.35);
-    var outroFrac  = attrNum(root, "data-ps-outro",      0.9);
+    var outroFrac  = attrNum(root, "data-ps-outro",      0);   // depth-fade OFF by default
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
+
+    // Pin uses position:fixed — a transform/filter/perspective/will-change on any
+    // ANCESTOR re-bases that fixed element and the pin visibly slips (sibling
+    // sections overlap). Warn loudly so it's diagnosable (see PROJECT.md Kural 3).
+    (function () {
+      for (var p = root.parentElement; p && p !== document.body; p = p.parentElement) {
+        var cs = getComputedStyle(p);
+        if (cs.transform !== "none" || cs.filter !== "none" ||
+            cs.perspective !== "none" || cs.willChange.indexOf("transform") > -1) {
+          warn("Pin will slip: an ancestor has transform/filter/perspective/" +
+               "will-change. Remove it from this ancestor (PROJECT.md Kural 3):", p);
+          break;
+        }
+      }
+    })();
 
     // Reduced motion: no pinning, no scrub. Desktop falls back to a native
     // horizontal-scroll strip; mobile keeps the CSS sticky stack (harmless,
@@ -143,22 +161,25 @@
       // Hold: a scroll stretch AT THE START where the section is pinned but the
       // track stays put — time to read the heading before anything moves.
       var holdPx   = viewport.clientHeight * holdFrac;
-      // Settle: after the slide, a short beat where the LAST card sits fully
-      // framed (nothing moving) before the outro dissolves it — so it never
-      // starts fading mid-cut.
-      var settlePx = viewport.clientHeight * settleFrac;
+      // Settle + outro only exist when the depth-fade is enabled (outroFrac > 0).
+      // With it OFF (default), the slide simply ends on the last card fully framed
+      // and the pin releases — the card is never dissolved before it's seen.
       var outroPx  = viewport.clientHeight * outroFrac;
+      var settlePx = outroPx > 0 ? viewport.clientHeight * settleFrac : 0;
       var totalPx  = holdPx + maxX + settlePx + outroPx;
 
       // Pin length: default is the px total above. If data-ps-end-trigger names
       // an element (e.g. ".section__resources"), the pin instead RELEASES when
       // that element's bottom reaches the viewport bottom — so the pinned range
-      // follows the content, not a viewport-height guess. The timeline's phase
-      // weights still proportion hold/slide/settle/outro across that range.
+      // follows the content, not a viewport-height guess.
+      //
+      // Pin the ROOT section (pin: true), NOT the inner viewport: pinning the
+      // trigger lets ScrollTrigger's pin-spacer reserve the section's full height
+      // so sibling sections flow after it instead of sliding over the pinned frame.
       var stCfg = {
         trigger: root,
         start: "top top",
-        pin: viewport,
+        pin: true,
         pinSpacing: true,
         scrub: scrub,
         anticipatePin: 1,
