@@ -1,0 +1,52 @@
+/*!
+ * blog-slider-pro.css v1.0.0
+ * Behavioural CSS for the "pro" blog slider — same base geometry as
+ * blog-slider.css plus the opt-in trailing edge fade (enabled by JS when
+ * data-bs-fade is set). Swiper handles slide widths; card design is yours.
+ *
+ * Requires Swiper's own CSS (swiper-bundle.min.css) loaded first.
+ * Drives: js/components/blog-slider-pro.js
+ * https://github.com/roicool/sestek
+ */
+
+[data-blog-slider-pro] {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+}
+[data-blog-slider-pro].swiper-grabbing { cursor: grabbing; }
+
+[data-blog-slider-pro] .swiper-slide {
+  height: auto;
+}
+
+/* Edge mask/fade — JS adds .bs-faded and sets --bs-fade when data-bs-fade > 0.
+   Fades the TRAILING (right) edge so the bleeding next card dissolves softly,
+   like marquee.css. The leading edge stays crisp so the first/active card and
+   the prev arrow read clearly. */
+[data-blog-slider-pro].bs-faded {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black calc(100% - var(--bs-fade, 48px)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black calc(100% - var(--bs-fade, 48px)),
+    transparent 100%
+  );
+}
+
+/* Pre-init guard: keep the wrapper a simple clipped row so there's no vertical
+   stack flash of all slides before Swiper mounts. */
+[data-blog-slider-pro]:not(.swiper-initialized) [data-bs-wrapper] {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--bs-gap, 1rem);
+  overflow: hidden;
+}
+[data-blog-slider-pro]:not(.swiper-initialized) [data-bs-slide] {
+  flex: 0 0 auto;
+}

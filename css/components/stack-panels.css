@@ -1,0 +1,46 @@
+/*!
+ * stack-panels.css v1.0.0
+ * Behavioural CSS only — geometry + stacking context for the "stacking
+ * panels" scrollytelling effect. Colours/spacing/content design in Webflow.
+ * Motion (pin, scale, fade, fake-scroll) lives in js/components/stack-panels.js.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-stack-panels] {
+  position: relative;
+}
+
+/* Each panel must be an OPAQUE layer: while pinned it sits under the next
+   panel sliding up over it, so it needs its own solid background (design in
+   Webflow) or the page behind it will show through. Height is whatever the
+   panel's own content/CSS gives it — NOT forced to 100vh; the JS fake-scroll
+   phase already handles panels taller (or shorter) than the viewport. */
+[data-stack-panels] [data-sp-panel] {
+  position: relative;
+  overflow: hidden;
+  will-change: transform, opacity, filter;
+  transform-origin: center center;
+}
+
+/* Stacking order: later panels must paint OVER earlier ones since pinSpacing
+   is false and they physically overlap during the transition. */
+[data-stack-panels] [data-sp-panel] {
+  z-index: 1;
+}
+[data-stack-panels] [data-sp-panel] ~ [data-sp-panel] {
+  z-index: 2;
+}
+
+/* Inner content wrapper — only present on panels taller than the viewport.
+   JS translates this during the fake-scroll phase; it must be able to hold
+   content taller than 100vh without clipping until that phase runs. */
+[data-stack-panels] [data-sp-inner] {
+  will-change: transform;
+}
+
+/* Reduced motion / pin-blocked fallback: plain stacked-in-flow panels, no
+   pin, no scale/fade — every panel just reads top to bottom normally. */
+[data-stack-panels][data-sp-reduced] [data-sp-panel] {
+  overflow: visible;
+}

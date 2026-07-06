@@ -1,0 +1,36 @@
+/*!
+ * blog-slider.css v1.0.0
+ * Behavioural CSS only — Swiper handles slide widths/positioning from the JS
+ * config (slidesPerView + spaceBetween). Card design, colours and the
+ * pagination/arrow look are yours in the Webflow Designer. Attribute-driven.
+ *
+ * Requires Swiper's own CSS (swiper-bundle.min.css) loaded first.
+ * Drives: js/components/blog-slider.js
+ * https://github.com/roicool/sestek
+ */
+
+/* Root: clip the bleeding next slide to the container edge. grab cursor is set
+   by Swiper (grabCursor:true) but declared here too for the pre-init frame. */
+[data-blog-slider] {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+}
+[data-blog-slider].swiper-grabbing { cursor: grabbing; }
+
+/* Let each slide's own height drive the row (cards of equal design height). */
+[data-blog-slider] .swiper-slide {
+  height: auto;
+}
+
+/* Pre-init guard: before Swiper mounts, keep the wrapper a simple row so there
+   is no vertical stack flash of all slides. */
+[data-blog-slider]:not(.swiper-initialized) [data-bs-wrapper] {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--bs-gap, 1rem);
+  overflow: hidden;
+}
+[data-blog-slider]:not(.swiper-initialized) [data-bs-slide] {
+  flex: 0 0 auto;
+}
