@@ -266,7 +266,13 @@
     }
 
     // ── Başlangıç durumları ────────────────────────────────────────────────────
+    // Oku olan node'lar gizli başlar (scroll'da açılır). Oku OLMAYAN "kök" node'lar
+    // (ör. ilk step / logodan ok çıkmadığı için) baştan görünür kalır.
+    var targeted = conns.map(function (c) { return c.node; });
     gsap.set(nodes, { autoAlpha: 0, y: 16 });
+    nodes.forEach(function (node) {
+      if (targeted.indexOf(node) === -1) gsap.set(node, { autoAlpha: 1, y: 0 });
+    });
 
     // ── Scrub timeline: scroll ederken çiz ─────────────────────────────────────
     var tl = gsap.timeline({
