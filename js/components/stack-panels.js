@@ -9,14 +9,11 @@
  * first: the inner content translates up to reveal the rest before the
  * scale/fade kicks in, so nothing is skipped.
  *
- * Panels keep their natural height (no forced 100vh). The pin's start point
- * adapts to that: "bottom bottom" only behaves correctly for panels AT LEAST
- * one viewport tall (that's what makes the reference technique work); shorter
- * panels use "top top" instead, or the pin fires far too late. One side
- * effect: a panel shorter than the viewport gets a shorter scale/fade dwell
- * (proportional to its own height) than a tall one (a full viewport of
- * scroll) — expected, not a bug, but worth knowing if you want the motion
- * timing to feel consistent across panels of different heights.
+ * IMPORTANT: each panel should be at least one viewport tall (the effect pins
+ * a full-screen panel and dissolves it as the next covers it — that's the
+ * nature of it). Give [data-sp-panel] min-height: 100svh in the Designer (or
+ * whatever full-screen value you use). The pin starts when the panel fills the
+ * screen ("bottom bottom") and releases as the next panel covers it.
  *
  * This is a SEPARATE component from pin-slider.js (horizontal slide) and
  * scroll-stack.js (list + receding card deck) — different visual, its own
@@ -45,11 +42,11 @@
  *   data-sp-refresh-priority-start
  *                            refreshPriority of the FIRST panel; each next
  *                            panel gets one less (see PROJECT.md "ScrollTrigger
- *                            — Pinli Bölüm Kuralları" Kural 1). If this page
- *                            has OTHER pinned sections (hero, pin-slider, …),
- *                            set this so the whole run sits in the correct
- *                            slot for this component's position on the page.
- *                                                                 (default 10)
+ *                            — Pinli Bölüm Kuralları" Kural 1). MUST stay below
+ *                            anything pinned ABOVE this on the page — e.g. a
+ *                            hero pinned at priority 2. Default 0 keeps the run
+ *                            under a typical hero; raise/lower only if your page
+ *                            order needs it.                       (default 0)
  *
  * https://github.com/roicool/sestek
  */
@@ -107,7 +104,13 @@
     var midFade    = attrNum(root, "data-sp-mid-fade", 0.5);
     var scrubA     = root.getAttribute("data-sp-scrub");
     var scrub      = scrubA === "false" ? false : (scrubA ? (parseFloat(scrubA) || true) : true);
-    var priorityStart = attrNum(root, "data-sp-refresh-priority-start", 10);
+    // refreshPriority of the FIRST panel; each next panel gets one less. MUST
+    // stay BELOW anything pinned ABOVE this component on the page (e.g. a hero
+    // at priority 2) — a higher value makes these panels refresh before that
+    // hero, so they measure their start BEFORE the hero's pin-spacing exists
+    // and land in the wrong place (PROJECT.md Kural 1). Default 0 → this whole
+    // run sits under a typical hero and in page order among itself.
+    var priorityStart = attrNum(root, "data-sp-refresh-priority-start", 0);
 
     if (prefersReduced()) {
       root.setAttribute("data-sp-reduced", "");
@@ -128,35 +131,30 @@
     panels.slice(0, -1).forEach(function (panel, i) {
       var inner   = panel.querySelector("[data-sp-inner]");
       var windowH = window.innerHeight;
-      var panelH  = panel.offsetHeight;                  // panel's OWN natural height
-      var innerH  = inner ? inner.offsetHeight : panelH;
+      var innerH  = inner ? inner.offsetHeight : panel.offsetHeight;
       var diff    = innerH - windowH;
       // Portion (0–1) of the pinned scroll spent "fake-scrolling" the inner
-      // content up before the scale/fade phase — only when content overflows.
+      // content up before the scale/fade phase — ONLY when a panel's content is
+      // taller than the viewport. For normal (≤ viewport) panels this is 0 and
+      // the whole fake-scroll branch is skipped — identical to the reference.
       var fakeRatio = diff > 0 ? diff / (diff + windowH) : 0;
 
-      // CRITICAL: pinSpacing:false means ScrollTrigger does NOT reserve any
-      // document space for the scroll this pin consumes — the browser's total
-      // scrollable height must already include it, or the next panel starts
-      // sliding in before this one is done (wrong-time pin / overlapping in
-      // the wrong place). This margin manually reserves exactly the fake-scroll
-      // distance, same as the original technique this component is based on.
+      // Only tall panels need extra reserved scroll space (see fakeRatio). With
+      // pinSpacing:false ScrollTrigger reserves none, so add exactly the
+      // fake-scroll distance as margin — verbatim from the reference technique.
       if (fakeRatio) {
         panel.style.marginBottom = innerH * fakeRatio + "px";
       }
 
-      // "bottom bottom" only makes sense as a start when the panel is AT LEAST
-      // one viewport tall — for a panel that fits inside the viewport (no
-      // forced 100vh anymore, panels keep their natural height), "bottom
-      // bottom" doesn't fire until the panel has nearly scrolled OUT of view,
-      // so the pin kicks in far too late / in the wrong spot. Use "top top"
-      // for anything shorter than the viewport instead.
-      var startPos = panelH >= windowH ? "bottom bottom" : "top top";
-
+      // Faithful to the reference: the pin starts the moment the panel is fully
+      // in view (its bottom reaches the viewport bottom) and, for a normal
+      // panel, releases as its top passes the viewport top — that release is
+      // exactly when the NEXT panel has slid up to cover it, so the scale+fade
+      // reads as "the top card dissolving as the next takes its place".
       var tl = gsap.timeline({
         scrollTrigger: {
           trigger: panel,
-          start: startPos,
+          start: "bottom bottom",
           end: function () {
             return fakeRatio ? "+=" + inner.offsetHeight : "bottom top";
           },
@@ -176,6 +174,8 @@
           duration: 1 / (1 - fakeRatio) - 1,
         });
       }
+      // The premium beat: outgoing panel scales down + dims, then a quick final
+      // fade to 0 — same shape as the reference (0.9 scale/dim, 0.1 fade).
       tl.fromTo(panel,
         { scale: 1, opacity: 1 },
         { scale: endScale, opacity: midFade, duration: 1 - fadePortion, ease: "none" }
