@@ -49,6 +49,20 @@
  *                        pin length so the pin follows the content
  *   data-ps-end          end string when data-ps-end-trigger is set
  *                        (default "bottom bottom")
+ *   data-ps-frame        selector for the max-width content wrapper the last
+ *                        card should settle inside (e.g. ".container-2xl").
+ *                        Without this the slide targets the raw viewport edge,
+ *                        which can be wider than the visual container — the
+ *                        card then reads as "not fully in frame" right when
+ *                        the settle/outro starts. Default: the pinned viewport
+ *                        itself (previous behaviour).
+ *   data-ps-heading-fade heading fade-out length, ×viewport h (default 0.3).
+ *                        Only applies if a [data-ps-heading] child exists.
+ *
+ * Optional child:
+ *   [data-ps-heading]    fades out (+ small rise) starting the instant the
+ *                        section pins/scroll begins, so it's gone before the
+ *                        cards start moving.
  *
  * https://github.com/roicool/sestek
  */
@@ -97,6 +111,8 @@
     var cards = Array.prototype.slice.call(track.querySelectorAll("[data-ps-card]"));
     if (!cards.length) { warn("No [data-ps-card] children.", root); return; }
 
+    var heading = root.querySelector("[data-ps-heading]");
+
     var d          = root.dataset;
     var breakpoint = attrNum(root, "data-ps-breakpoint", 768);
     var holdFrac   = attrNum(root, "data-ps-hold",       0.5);
@@ -104,6 +120,15 @@
     var outroFrac  = attrNum(root, "data-ps-outro",      0.9);
     var scrub      = d.psScrub !== undefined ? parseFloat(d.psScrub) : 1;
     var endScale   = attrNum(root, "data-ps-end-scale",  0.82);
+    var headingOutFrac = attrNum(root, "data-ps-heading-fade", 0.3);
+
+    // Frame the last card must fully settle inside before anything (settle/
+    // outro) happens — e.g. a centred max-width wrapper (".container-2xl")
+    // that's narrower than the full-bleed pinned viewport. Falls back to the
+    // viewport itself if not given (previous behaviour).
+    var frameSel = root.getAttribute("data-ps-frame");
+    var frameEl  = frameSel ? document.querySelector(frameSel) : null;
+    if (frameSel && !frameEl) warn("data-ps-frame not found: " + frameSel, root);
 
     // Reduced motion: no pinning, no scrub. Desktop falls back to a native
     // horizontal-scroll strip; mobile keeps the CSS sticky stack (harmless,
@@ -129,15 +154,18 @@
       // Not scrollWidth: when content overflows a padded flex container, browsers
       // omit the trailing (right) padding from scrollWidth, so scrollWidth -
       // clientWidth stops the slide ~one padding short and cuts the last card.
-      // Measure the real geometry instead — (last card's right edge − track's
-      // left edge) is transform-independent (both shift with the track's x), so
-      // it's safe to read at any point during a ScrollTrigger refresh.
+      // Measure the real geometry instead: last card's right edge vs. the RIGHT
+      // EDGE OF THE FRAME (data-ps-frame, or the viewport if not set). Using an
+      // actual edge coordinate (not viewport.clientWidth) means the target frame
+      // can be narrower and off-centre from the full-bleed pinned viewport — the
+      // slide then stops with the card flush inside that frame, not the raw
+      // browser edge, so it never looks "cut off"/gone before it's truly framed.
       function distance() {
         var last = cards[cards.length - 1];
-        var trackLeft = track.getBoundingClientRect().left;
         var lastRight = last.getBoundingClientRect().right;
         var padR = parseFloat(getComputedStyle(track).paddingRight) || 0;
-        return Math.max(0, (lastRight - trackLeft) + padR - viewport.clientWidth);
+        var frameRight = (frameEl || viewport).getBoundingClientRect().right;
+        return Math.max(0, lastRight + padR - frameRight);
       }
       var maxX     = distance();
       // Hold: a scroll stretch AT THE START where the section is pinned but the
@@ -177,6 +205,13 @@
       // Timeline runs in px-proportional "seconds" so each phase maps to its
       // real scroll length; scrub stretches the whole thing over end - start.
       var tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: stCfg });
+
+      // Heading: fades out (+ small rise) the INSTANT scroll begins, over the
+      // first headingOutPx — gone well before the cards start moving.
+      if (heading) {
+        var headingOutPx = viewport.clientHeight * headingOutFrac;
+        tl.to(heading, { autoAlpha: 0, y: -16, duration: headingOutPx }, 0);
+      }
 
       // Phase 0 — hold: nothing moves for the first holdPx of scroll (the gap
       // before the slide tween below leaves the track at x:0 while pinned).
