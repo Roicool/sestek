@@ -1,6 +1,12 @@
 /*!
- * grid-dot.js v1.0.0
+ * grid-dot.js v1.1.0
  * Scroll-following dot that travels ON the border-grid lines, with a trail.
+ *
+ * Changelog
+ * v1.1.0 — velocity-reactive trail: length follows |scroll velocity| and
+ *          melts to zero when scrolling stops (data-grid-dot-tail is now
+ *          the MAX length); warn when exit-* has no re-entry stop after it.
+ * v1.0.0 — initial release
  * The route is never hand-drawn: on init (and on resize) the component
  * measures the real geometry — the vertical-line container's left/right
  * edges and each stop section's bottom border — and generates an SVG path
@@ -25,7 +31,8 @@
  *
  * Stage attributes (all optional):
  *   data-grid-dot                 stage marker (required)
- *   data-grid-dot-tail="160"      trail length in px along the route
+ *   data-grid-dot-tail="160"      MAX trail length in px — actual length
+ *                                 follows scroll velocity, 0 when idle
  *   data-grid-dot-scrub="0.8"     ScrollTrigger scrub lag (seconds)
  *   data-grid-dot-start="top 75%" ScrollTrigger start
  *   data-grid-dot-end="bottom 25%"ScrollTrigger end
@@ -61,7 +68,9 @@
   "use strict";
 
   var SVG_NS = "http://www.w3.org/2000/svg";
-  var OFFSCREEN = 120;   // px past the viewport edge for exit/re-entry legs
+  var OFFSCREEN = 120;     // px past the viewport edge for exit/re-entry legs
+  var VEL_TO_TAIL = 0.12;  // px of tail per px/s of scroll velocity
+  var TAIL_EASE = 0.12;    // per-frame easing toward the target tail length
   var instances = [];
 
   function prefersReducedMotion() {
@@ -113,11 +122,22 @@
       // "pass" → nothing extra; the point above anchors the straight leg
     });
 
+    if (pendingExit) {
+      // exit-* on the LAST stop: nothing left to re-enter from, so the dot
+      // leaves the screen and never comes back. Usually a markup mistake —
+      // add one more [data-grid-dot-stop] section below to be the re-entry.
+      console.warn("[grid-dot] exit-" + pendingExit + " on the last stop has no re-entry — add a [data-grid-dot-stop] section after it", inst.stage);
+    }
+
     return d;
   }
 
   /* ── Build / teardown of the scrubbed timeline ───────────────────── */
   function teardown(inst) {
+    if (inst.tick) {
+      gsap.ticker.remove(inst.tick);
+      inst.tick = null;
+    }
     if (inst.tl) {
       if (inst.tl.scrollTrigger) inst.tl.scrollTrigger.kill();
       inst.tl.kill();
@@ -134,14 +154,11 @@
     inst.route.setAttribute("d", d);
     inst.trail.setAttribute("d", d);
 
-    var len  = inst.route.getTotalLength();
-    var tail = Math.min(inst.tail, len);
-    // Dash window trick: [tail dash, len gap] and offset = tail - distance
-    // keeps the visible segment exactly `tail` px behind the dot. No DrawSVG
-    // needed — works with the project's pinned gsap@3.12.5.
-    inst.trail.style.strokeDasharray  = tail + " " + len;
-    inst.trail.style.strokeDashoffset = tail;
+    var len = inst.route.getTotalLength();
 
+    // The dot rides the route on a scrubbed timeline; the trail is NOT a
+    // tween — it's driven per-frame below, so its length can breathe with
+    // scroll velocity.
     inst.tl = gsap.timeline({
       defaults: { ease: "none" },              // required under scrub
       scrollTrigger: {
@@ -152,11 +169,29 @@
       }
     });
 
-    inst.tl
-      .to(inst.dot, {
-        motionPath: { path: inst.route, align: inst.route, alignOrigin: [0.5, 0.5] }
-      }, 0)
-      .to(inst.trail, { strokeDashoffset: tail - len }, 0);
+    inst.tl.to(inst.dot, {
+      motionPath: { path: inst.route, align: inst.route, alignOrigin: [0.5, 0.5] }
+    }, 0);
+
+    // Velocity-reactive trail (comet): each frame the visible dash window
+    // ends at the dot and its length eases toward |scroll velocity| — it
+    // stretches while you scroll and melts to zero when you stop. Reading
+    // tl.progress() (not raw scroll) keeps the trail glued to the scrubbed,
+    // lagging dot. Costs one dasharray write per frame — no layout, cheap.
+    var tailCur = 0;
+    inst.tick = function () {
+      if (!inst.tl || !inst.tl.scrollTrigger) return;
+      var head   = inst.tl.progress() * len;
+      var v      = inst.tl.scrollTrigger.getVelocity();      // px/s, 0 when idle
+      var target = Math.min(inst.tail, Math.abs(v) * VEL_TO_TAIL);
+      tailCur += (target - tailCur) * TAIL_EASE;
+      var t = Math.max(tailCur, 0.001);                      // 0 dash + round cap = artifact
+      inst.trail.style.strokeDasharray = t + " " + len;
+      // window sits BEHIND the motion: [head-t, head] scrolling down,
+      // [head, head+t] scrolling back up
+      inst.trail.style.strokeDashoffset = String(v < 0 ? -head : t - head);
+    };
+    gsap.ticker.add(inst.tick);
 
     inst.stage.setAttribute("data-grid-dot-ready", "");
   }

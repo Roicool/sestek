@@ -663,9 +663,10 @@ DOM yapısı:
 Border grid çizgilerinin üzerinde scroll'a bağlı ilerleyen nokta + arkasında iz.
 Rota elle çizilmez: JS, `data-grid-dot-lines` container'ının dikey kenarlarını
 ve `data-grid-dot-stop` section'larının alt sınırlarını ölçüp SVG path'i
-gerçek geometriden üretir (resize'da yeniden). Nokta MotionPath ile, iz
-`stroke-dashoffset` penceresiyle aynı scrub timeline'ından sürülür — ikisi
-her zaman kilitli. Border grid'in kendi CSS'i bu component'e dahil değildir;
+gerçek geometriden üretir (resize'da yeniden). Nokta MotionPath ile sürülür;
+iz hıza duyarlıdır: scroll hızlandıkça uzar, scroll durunca sıfıra süzülür
+(`data-grid-dot-tail` = maksimum uzunluk), köşelerden yumuşak döner.
+Border grid'in kendi CSS'i bu component'e dahil değildir;
 `grid-dot.css` yalnızca nokta/iz/overlay stillerini içerir.
 
 ```html
@@ -693,7 +694,8 @@ DOM:
 <!--
   Stage (rotanın koordinat uzayı — bordered section'ları sarar):
     data-grid-dot
-    data-grid-dot-tail="160"        iz uzunluğu px (rota boyunca)
+    data-grid-dot-tail="160"        MAKSİMUM iz uzunluğu px — gerçek uzunluk
+                                    scroll hızına bağlı, dururken 0
     data-grid-dot-scrub="0.8"       scrub gecikmesi sn
     data-grid-dot-start="top 75%"   ScrollTrigger start
     data-grid-dot-end="bottom 25%"  ScrollTrigger end
