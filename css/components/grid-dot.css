@@ -1,0 +1,70 @@
+/*!
+ * grid-dot.css v1.0.0
+ * Motion layer for the scroll-following grid dot + trail.
+ * ONLY styles the dot, the trail and the injected SVG overlay —
+ * the border grid itself (section/container borders) is site CSS.
+ * JS : js/components/grid-dot.js
+ *
+ * Tune per page/stage with CSS variables (set them on [data-grid-dot]):
+ *   --grid-dot-color          dot + trail colour        (default currentColor)
+ *   --grid-dot-size           dot diameter              (default 10px)
+ *   --grid-dot-halo           halo ring colour          (default 15% of color hint below)
+ *   --grid-dot-halo-size      halo ring width           (default 4px)
+ *   --grid-dot-trail-width    trail stroke width        (default 2px)
+ *   --grid-dot-trail-opacity  trail opacity             (default 0.75)
+ *   --grid-dot-z              overlay z-index           (default 5)
+ */
+
+/* Stage: the coordinate space of the route. Required by the mechanism. */
+[data-grid-dot] {
+  position: relative;
+}
+
+/* Injected SVG overlay — never blocks interaction, never clips the route
+   (route coordinates go past the viewport when the dot exits the screen). */
+.grid-dot-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: var(--grid-dot-z, 5);
+}
+
+/* Invisible motion path — MotionPathPlugin reads it, nobody sees it. */
+.grid-dot-route {
+  fill: none;
+  stroke: none;
+}
+
+/* Trail: same path data as the route; the visible dash window is driven
+   from JS via stroke-dasharray/-dashoffset, locked to the dot's progress. */
+.grid-dot-trail {
+  fill: none;
+  stroke: var(--grid-dot-color, currentColor);
+  stroke-width: var(--grid-dot-trail-width, 2px);
+  stroke-linecap: round;
+  opacity: var(--grid-dot-trail-opacity, 0.75);
+}
+
+/* The dot. Moves with transform only (MotionPath) — compositor friendly. */
+.grid-dot-point {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--grid-dot-size, 10px);
+  height: var(--grid-dot-size, 10px);
+  border-radius: 50%;
+  background: var(--grid-dot-color, currentColor);
+  box-shadow: 0 0 0 var(--grid-dot-halo-size, 4px)
+              var(--grid-dot-halo, rgba(90, 70, 255, 0.15));
+  z-index: calc(var(--grid-dot-z, 5) + 1);
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0; /* hidden until JS positions it — no top-left flash */
+}
+
+[data-grid-dot-ready] .grid-dot-point {
+  opacity: 1;
+}
