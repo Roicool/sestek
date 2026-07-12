@@ -655,8 +655,6 @@ DOM yapısı:
 | `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
 | `js/components/logo-slider.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js` |
 | `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
-| `js/components/grid-dot.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/grid-dot.js` |
-| `css/components/grid-dot.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/grid-dot.css` |
 | `js/components/grid-draw.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/grid-draw.js` |
 | `css/components/grid-draw.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/grid-draw.css` |
 
@@ -706,96 +704,7 @@ DOM — border'ı olan ve çizilmesini istediğiniz HER elemente işaret konur:
 Notlar:
 
 - `prefers-reduced-motion: reduce` → animasyon kurulmaz, border'lar düz görünür.
-- grid-dot ile birlikte kullanılabilir; ikisi bağımsız component'tir.
 
-### Grid Dot
-
-Border grid çizgilerinin üzerinde scroll'a bağlı ilerleyen nokta + arkasında iz.
-Rota elle çizilmez: JS, `data-grid-dot-lines` container'ının dikey kenarlarını
-ve `data-grid-dot-stop` section'larının alt sınırlarını ölçüp SVG path'i
-gerçek geometriden üretir (resize'da yeniden). Nokta MotionPath ile sürülür;
-iz hıza duyarlıdır: scroll hızlandıkça uzar, scroll durunca sıfıra süzülür
-(`data-grid-dot-tail` = maksimum uzunluk), köşelerden yumuşak döner.
-Border grid'in kendi CSS'i bu component'e dahil değildir;
-`grid-dot.css` yalnızca nokta/iz/overlay stillerini içerir.
-
-```html
-<!-- in <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/grid-dot.css">
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/grid-dot.js" defer></script>
-```
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initGridDot(); // tüm [data-grid-dot] stage'lerini başlatır
-  });
-</script>
-```
-
-DOM:
-
-```html
-<!--
-  Stage (rotanın koordinat uzayı — bordered section'ları sarar):
-    data-grid-dot
-    data-grid-dot-tail="160"        MAKSİMUM iz uzunluğu px — gerçek uzunluk
-                                    scroll hızına bağlı, dururken 0
-    data-grid-dot-scrub="0.8"       scrub gecikmesi sn
-    data-grid-dot-start="top 75%"   ScrollTrigger start
-    data-grid-dot-end="bottom 25%"  ScrollTrigger end
-    data-grid-dot-side="left"       başlangıç dikeyi: left | right
-    data-grid-dot-media="(min-width: 768px)"  altında katman kapalı
-
-  Çizgi container'ı (zorunlu, stage içinde bir kez):
-    data-grid-dot-lines             dikey borderların sahibi olan container
-
-  Duraklar — data-grid-dot-stop, değer = o section'ın ALT sınırındaki manevra:
-    (boş) / "pass"    mevcut dikeyde devam
-    "cross"           karşı dikeye geç
-    "exit-right"      yatay çizgiden sağa, ekrandan çık; SONRAKİ durak
-                      geri giriş çizgisi olarak kullanılır (sol dikeye iner)
-    "exit-left"       aynısının aynadaki hâli (sağ dikeye iner)
-
-  Renk/boyut CSS variable ile (stage'e): --grid-dot-color, --grid-dot-size,
-  --grid-dot-trail-width, --grid-dot-trail-opacity, --grid-dot-halo, --grid-dot-z
--->
-<div data-grid-dot data-grid-dot-tail="180">
-
-  <section class="bg-section" data-grid-dot-stop="exit-right">
-    <div class="bg-container" data-grid-dot-lines> … </div>
-  </section>
-
-  <section class="bg-section" data-grid-dot-stop>   <!-- geri giriş sınırı -->
-    <div class="bg-container"> … </div>
-  </section>
-
-  <section class="bg-section" data-grid-dot-stop="cross">
-    <div class="bg-container"> … </div>
-  </section>
-
-  <section class="bg-section" data-grid-dot-stop>   <!-- rota burada biter -->
-    <div class="bg-container"> … </div>
-  </section>
-
-</div>
-```
-
-Notlar:
-
-- `prefers-reduced-motion: reduce` → katman hiç kurulmaz.
-- Overlay `pointer-events: none` — tıklamayı asla engellemez; SVG
-  `overflow: visible` — çizim kırpılmaz. Stage atalarında `overflow: hidden`
-  olmamalı; `body`'de `overflow-x: hidden` gerekli (ekran dışı rota
-  segmentleri yatay scrollbar açmasın diye).
-- Lenis ile ekstra kod gerekmez — `Sestek.initLenis()` ScrollTrigger
-  sync'ini zaten yapar. Script sırası: lenis → gsap → ScrollTrigger →
-  MotionPathPlugin → lenis-init → grid-dot.
 
 ### Accordion
 
