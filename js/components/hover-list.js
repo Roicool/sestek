@@ -1,5 +1,5 @@
 /*!
- * hover-list.js v2.2.0
+ * hover-list.js v2.3.0
  * Editorial link list with a rail-locked image (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons/
  *     labels / a hidden arrow) to an active state — handled in CSS via
@@ -23,8 +23,11 @@
  *     [data-hlist-item="0"]             a row — should be (or wrap) an <a>
  *       …labels / icons…                  style .is-active states in CSS
  *       [data-hlist-arrow]               optional — hidden arrow, shown on hover
+ *       [data-hlist-anchor]              optional — invisible slot in the row grid;
+ *                                        the square copies its X + box (responsive,
+ *                                        no magic inset). First one wins.
  *     [data-hlist-item="1"]             …
- *     [data-hlist-cursor]               the square (X fixed via CSS, Y by JS)
+ *     [data-hlist-cursor]               the square (X: anchor or CSS inset, Y by JS)
  *       [data-hlist-media]              overflow-hidden square window
  *         [data-hlist-vis="0"]           image layer for item 0 (index matches)
  *         [data-hlist-vis="1"]           image layer for item 1
@@ -68,6 +71,19 @@
     var vises = Array.from(root.querySelectorAll("[data-hlist-vis]"));
     vises.forEach(function (v) { media.appendChild(v); });
 
+    // Optional layout anchor: a real (usually invisible) slot placed in the row
+    // grid where the square should sit. The square copies its X + box from the
+    // anchor, so its horizontal position/size come from the layout on EVERY
+    // screen — no magic --hlist-inset number. X is the same across rows, so the
+    // first anchor is enough. Falls back to the CSS right-inset if absent.
+    var anchor = root.querySelector("[data-hlist-anchor]");
+    function placeX() {
+      if (!anchor) return;
+      var a = anchor.getBoundingClientRect();
+      var r = root.getBoundingClientRect();
+      gsap.set(cursor, { left: a.left - r.left, right: "auto", width: a.width, height: a.height });
+    }
+
     var followDur = num(root, "data-hlist-follow", 0.4);
     var slideDur  = num(root, "data-hlist-slide", 0.55);
     var canHover  = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -83,6 +99,7 @@
     // Image layers stacked; all parked below the window until activated.
     gsap.set(vises, { position: "absolute", inset: 0, yPercent: 100 });
     gsap.set(cursor, { autoAlpha: 0, scale: reduce ? 1 : 0.85, pointerEvents: "none" });
+    placeX();
 
     function show() {
       if (visible) return;
@@ -146,8 +163,9 @@
         });
       });
 
-      // Keep the resting Y correct if the layout reflows.
+      // Keep the X/box and resting Y correct if the layout reflows.
       window.addEventListener("resize", function () {
+        placeX();
         if (curIdx >= 0) moveTo(curIdx, true);
       });
     }
