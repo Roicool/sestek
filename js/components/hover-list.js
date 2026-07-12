@@ -1,5 +1,5 @@
 /*!
- * hover-list.js v2.1.0
+ * hover-list.js v2.2.0
  * Editorial link list with a rail-locked image (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons/
  *     labels / a hidden arrow) to an active state — handled in CSS via
@@ -47,18 +47,10 @@
     return isNaN(v) ? fallback : v;
   }
 
-  /**
-   * Initializes a rail-locked hover list.
-   * @param {string} [selector="[data-hover-list]"]
-   */
-  function initHoverList(selector) {
-    var root = document.querySelector(selector || "[data-hover-list]");
-    if (!root) { console.warn("[Sestek HoverList] No [data-hover-list] found."); return; }
+  /** Build one list instance. */
+  function build(root) {
     if (root._hoverListInit) return;                       // idempotent
     root._hoverListInit = true;
-    if (typeof gsap === "undefined") {
-      console.error("[Sestek HoverList] GSAP required."); return;
-    }
 
     var items  = Array.from(root.querySelectorAll("[data-hlist-item]"));
     var cursor = root.querySelector("[data-hlist-cursor]");
@@ -182,6 +174,19 @@
 
     if (canHover) setupDesktop();
     else          setupMobile();
+  }
+
+  /**
+   * Initializes every rail-locked hover list on the page in one call.
+   * @param {string} [selector="[data-hover-list]"] narrow the scope if needed
+   */
+  function initHoverList(selector) {
+    if (typeof gsap === "undefined") {
+      console.error("[Sestek HoverList] GSAP required."); return;
+    }
+    var roots = document.querySelectorAll(selector || "[data-hover-list]");
+    if (!roots.length) { console.warn("[Sestek HoverList] No [data-hover-list] found."); return; }
+    roots.forEach(build);
   }
 
   global.Sestek = global.Sestek || {};
