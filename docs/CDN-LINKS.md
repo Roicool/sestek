@@ -655,58 +655,6 @@ DOM yapısı:
 | `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
 | `js/components/logo-slider.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js` |
 | `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
-| `js/components/grid-draw.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/grid-draw.js` |
-| `css/components/grid-draw.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/grid-draw.css` |
-
-### Grid Draw
-
-Border grid çizgilerinin element viewport'a girince kendini çizmesi —
-yataylar soldan sağa (`scaleX`), dikeyler yukarıdan aşağı (`scaleY`), bir kez.
-Scrub yok, pin yok, frame-frame iş yok. Tetikleme **IntersectionObserver**
-ile yapılır (ScrollTrigger değil) — gerçek ekran kesişimine baktığı için
-sayfadaki pinli section'lar pozisyon matematiğini bozamaz. Tek bağımlılık gsap.
-Hangi kenarların çizileceği, renk ve kalınlık elementin KENDİ border CSS'inden
-ölçülür; JS gerçek border'ı gizleyip yerine çizgi overlay'lerini oynatır.
-JS yüklenmezse border'lar normal görünür (progressive enhancement).
-
-```html
-<!-- in <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/grid-draw.css">
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/grid-draw.js" defer></script>
-```
-
-Webflow `</body>` öncesi:
-
-```html
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initGridDraw(); // tüm [data-grid-draw] elementlerini başlatır
-  });
-</script>
-```
-
-DOM — border'ı olan ve çizilmesini istediğiniz HER elemente işaret konur:
-
-```html
-<!--
-  data-grid-draw                    işaret (zorunlu)
-  data-grid-draw-duration="0.8"     çizim süresi sn
-  data-grid-draw-ease="power2.out"  GSAP ease
-  data-grid-draw-delay="0"          gecikme sn (komşuları kaydırmak için)
-  data-grid-draw-offset="15"        viewport alt kenarından % pay — element
-                                    ekranın alt %15'ini geçince çizilir
-                                    (0 = ilk piksel görünür görünmez)
--->
-<section class="bg-section" data-grid-draw>            <!-- border-bottom çizilir -->
-  <div class="bg-container" data-grid-draw> … </div>   <!-- border-left/right çizilir -->
-</section>
-```
-
-Notlar:
-
-- `prefers-reduced-motion: reduce` → animasyon kurulmaz, border'lar düz görünür.
-
 
 ### Accordion
 
