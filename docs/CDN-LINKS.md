@@ -639,6 +639,8 @@ DOM yapısı:
 | `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
 | `js/components/fill-bars.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/fill-bars.js` |
 | `css/components/fill-bars.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/fill-bars.css` |
+| `js/components/hover-list.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hover-list.js` |
+| `css/components/hover-list.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hover-list.css` |
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |

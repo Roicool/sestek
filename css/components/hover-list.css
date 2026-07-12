@@ -1,0 +1,61 @@
+/*!
+ * hover-list.css v1.0.0
+ * Editorial link list with a cursor-following image — critical/behavioural
+ * styles only. Bound via data-attributes (same hooks the JS targets).
+ * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── List ────────────────────────────────────────────────────── */
+[data-hover-list] {
+  position: relative;
+}
+
+/* Each row is a link. Give descendants their active look via .is-active
+   (JS) or :hover (CSS) — e.g. colour, arrow shift, icon fill. */
+[data-hlist-item] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing--6);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ── Cursor visual — the floating square ─────────────────────── */
+/* JS sets position:fixed + centres it on the pointer; keep it out of flow
+   and non-interactive so it never blocks the links underneath. */
+[data-hlist-cursor] {
+  width: var(--hlist-size, 13rem);
+  height: var(--hlist-size, 13rem);
+  pointer-events: none;
+  visibility: hidden;                 /* revealed by GSAP autoAlpha */
+  will-change: transform, opacity;
+}
+
+/* The window — clips the sliding image so only one shows at a time. */
+[data-hlist-media] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius--md, 0.75rem);
+}
+
+/* Image layers — JS stacks (absolute/inset:0) and slides them on yPercent. */
+[data-hlist-vis] {
+  will-change: transform;
+}
+[data-hlist-vis] img,
+[data-hlist-vis] > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Pointer-less devices — no cursor visual, rows stay links ── */
+@media (hover: none), (pointer: coarse) {
+  [data-hlist-cursor] { display: none; }
+}
