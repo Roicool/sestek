@@ -1,5 +1,5 @@
 /*!
- * hover-list.css v4.1.0
+ * hover-list.css v4.2.0
  * Editorial link list with a mouse-following preview — critical/behavioural
  * styles only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
@@ -50,16 +50,7 @@
   display: none;
 }
 
-/* Layout placeholder — an invisible spacer that keeps its box so JS can read
-   the follower's X + size from it. Give it the size/position you want the
-   square, then it stays correct on every screen. Do NOT display:none it
-   (that zeroes its box); keep it in flow, just invisible. */
-[data-hlist-anchor] {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* ── The follower — X: anchor or CSS inset, Y tracks the mouse (JS) ─ */
+/* ── The follower — X locked here (CSS), Y tracks the mouse (JS) ─ */
 /* Absolute against the list, pinned to a fixed right inset; JS sets only
    transform:translateY. Out of flow + pointer-events:none so it never blocks
    the links underneath. */
