@@ -1,5 +1,5 @@
 /*!
- * hover-list.js v2.0.0
+ * hover-list.js v2.1.0
  * Editorial link list with a rail-locked image (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons/
  *     labels / a hidden arrow) to an active state — handled in CSS via
@@ -62,12 +62,19 @@
 
     var items  = Array.from(root.querySelectorAll("[data-hlist-item]"));
     var cursor = root.querySelector("[data-hlist-cursor]");
-    var vises  = cursor ? Array.from(cursor.querySelectorAll("[data-hlist-vis]")) : [];
 
     if (!items.length) {
       console.warn("[Sestek HoverList] Need [data-hlist-item] rows."); return;
     }
     if (!cursor) return;                                   // no visual → plain links
+
+    // Single-collection friendly: the per-item image [data-hlist-vis] may live
+    // INSIDE each row (one CMS Collection List). Collect them in document order
+    // (= row order → index matches) and relocate them into the shared square
+    // window so they can stack + slide. Works too if they're already in place.
+    var media = cursor.querySelector("[data-hlist-media]") || cursor;
+    var vises = Array.from(root.querySelectorAll("[data-hlist-vis]"));
+    vises.forEach(function (v) { media.appendChild(v); });
 
     var followDur = num(root, "data-hlist-follow", 0.4);
     var slideDur  = num(root, "data-hlist-slide", 0.55);
