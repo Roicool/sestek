@@ -1,5 +1,5 @@
 /*!
- * fill-bars.css v3.0.0
+ * fill-bars.css v3.0.1
  * Pinned scroll-driven fill-bars section — critical/behavioural styles only.
  * Bound via data-attributes (same hooks the JS targets) — no class dependency.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
@@ -119,21 +119,27 @@
 [data-fbar-visual-base] {
   position: relative;
   z-index: 0;
+  display: block;
+  margin-inline: auto;
 }
 
 /* Per-item visuals stack on top of the base and crossfade by active state.
-   They're absolutely positioned over the base, so the base defines the box
-   size; give the base real content (or a min-height) so the stage has height. */
+   They're absolutely positioned over the base (which defines the box size);
+   flex-centre keeps each visual centred both axes regardless of its own size. */
 [data-fbar-vis] {
   position: absolute;
   inset: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   will-change: transform, opacity;
   pointer-events: none;
 }
 [data-fbar-vis] > * {
   max-width: 100%;
+  max-height: 100%;
 }
 
 /* ── Responsive: single column; rail stays vertical (fill = scaleY) ─ */
