@@ -1,5 +1,6 @@
 /*!
- * ask-ai.js v1.0.0
+ * ask-ai.js v1.1.0
+ * v1.1.0 — add "gemini" target (opens Google AI Mode, udm=50)
  * "Ask AI" buttons — each link deep-links straight into a chosen AI
  * assistant's chat with a pre-filled prompt (e.g. "Sestek nedir, ne iş
  * yapar?"), so a visitor — or an AI agent reading the page — can one click
@@ -19,6 +20,7 @@
  *     <a data-ask-ai-target="chatgpt">...icon...</a>
  *     <a data-ask-ai-target="claude">...icon...</a>
  *     <a data-ask-ai-target="perplexity">...icon...</a>
+ *     <a data-ask-ai-target="gemini">...icon...</a>
  *   </div>
  *
  * Attributes:
@@ -30,7 +32,9 @@
  *                             just that one assistant.
  *   data-ask-ai-prompt        plain, locale-less fallback prompt — used if no
  *                             data-ask-ai-prompt-<lang> matches the page.
- *   data-ask-ai-target        "chatgpt" | "claude" | "perplexity" (required per link)
+ *   data-ask-ai-target        "chatgpt" | "claude" | "perplexity" | "gemini"
+ *                             (required per link; gemini opens Google AI Mode —
+ *                             gemini.google.com doesn't support URL prefill)
  *
  * If neither is set, falls back to a generic "tell me about <page title>"
  * prompt built from document.title + location.href.
@@ -53,6 +57,12 @@
     },
     perplexity: function (q) {
       return "https://www.perplexity.ai/search?q=" + q;
+    },
+    // gemini.google.com has no native URL-prefill; Google AI Mode (udm=50)
+    // is the Gemini-powered surface that does — same pattern blog-utils.js
+    // uses for its "google" provider.
+    gemini: function (q) {
+      return "https://www.google.com/search?udm=50&q=" + q;
     },
   };
 
