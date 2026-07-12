@@ -1,5 +1,5 @@
 /*!
- * fill-bars.css v2.0.0
+ * fill-bars.css v3.0.0
  * Pinned scroll-driven fill-bars section — critical/behavioural styles only.
  * Bound via data-attributes (same hooks the JS targets) — no class dependency.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
@@ -17,55 +17,96 @@
   width: 100%;
 }
 
-/* The pinned inner: holds the two columns. NO overflow clipping here. */
+/* Pinned inner: rail | content | visual. NO overflow clipping here. */
 [data-fbar-inner] {
   display: grid;
-  grid-template-columns: var(--fbar-list-col, 1fr) var(--fbar-visual-col, 1.15fr);
+  grid-template-columns:
+    var(--fbar-rail-col, auto)
+    var(--fbar-content-col, minmax(0, 1.2fr))
+    var(--fbar-visual-col, minmax(0, 1fr));
   align-items: center;
   gap: var(--spacing--10);
   min-height: 100vh;
 }
 
-/* ── Left column — the item list ─────────────────────────────── */
-[data-fbar-list] {
+/* ── LEFT — the vertical marker rail ─────────────────────────── */
+[data-fbar-rail] {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing--6);
+  align-items: flex-start;
+  gap: var(--spacing--5);
 }
 
-/* One row. Dimmed until active; the bar rail sits under its content. */
+/* One marker row: the dot/bar + its number sit side by side. */
 [data-fbar-item] {
-  position: relative;
-  opacity: var(--fbar-idle-opacity, 0.45);
-  transition: opacity var(--fbar-speed, 0.35s) ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--4);
   user-select: none;
 }
-[data-fbar-item].is-active {
-  opacity: 1;
-}
 
-/* The bar rail — a thin track. overflow:hidden here is fine (contained bar). */
+/* The marker: a dot by default; morphs into a tall bar when active.
+   overflow:hidden clips the fill; the width/height transition does the morph. */
 [data-fbar-track] {
   position: relative;
-  width: 100%;
-  height: var(--fbar-track-h, 3px);
+  flex: none;
+  width: var(--fbar-dot-size, 10px);
+  height: var(--fbar-dot-size, 10px);
   border-radius: var(--radius--full, 999px);
-  background-color: var(--neutral--200);
+  background-color: var(--neutral--300);
   overflow: hidden;
+  transition:
+    width  0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.45s ease;
+}
+[data-fbar-item].is-active [data-fbar-track] {
+  width: var(--fbar-bar-w, 4px);
+  height: var(--fbar-bar-h, 96px);
+  background-color: var(--neutral--200);
 }
 
-/* The fill — GSAP drives scaleX 0→1 (transform, GPU-composited). */
+/* The fill — GSAP drives scaleY 0→1 from the top (transform, GPU-composited). */
 [data-fbar-fill] {
   position: absolute;
   inset: 0;
-  transform: scaleX(0);
-  transform-origin: left center;
+  transform: scaleY(0);
+  transform-origin: top center;
   border-radius: inherit;
   background-color: var(--brand-primary--500, currentColor);
   will-change: transform;
 }
 
-/* ── Right column — the visual stage (untouchable) ───────────── */
+/* The number — only the active item shows it; JS settle-reveals it. */
+[data-fbar-num] {
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-primary--500, currentColor);
+  visibility: hidden;
+  opacity: 0;
+}
+[data-fbar-item].is-active [data-fbar-num] {
+  visibility: visible;
+}
+
+/* ── CENTRE — swapping text panels ───────────────────────────── */
+[data-fbar-content] {
+  position: relative;
+  min-height: var(--fbar-content-min, 40vh);
+}
+/* Panels stack so they can crossfade; JS reveals the active one. */
+[data-fbar-panel] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing--5);
+}
+[data-fbar-anim] {
+  will-change: transform, opacity;
+}
+
+/* ── RIGHT — the visual stage (untouchable) ──────────────────── */
 [data-fbar-visual] {
   position: relative;
   /* No overflow:hidden — the diagram may bleed past its box by design. */
@@ -88,26 +129,26 @@
   inset: 0;
   z-index: 1;
   opacity: 0;
-  transition: opacity var(--fbar-vis-speed, 0.5s) ease;
+  will-change: transform, opacity;
   pointer-events: none;
-}
-[data-fbar-vis].is-active {
-  opacity: 1;
 }
 [data-fbar-vis] > * {
   max-width: 100%;
 }
 
-/* ── Responsive: stack to one column, visual on top ──────────── */
+/* ── Responsive: single column; rail stays vertical (fill = scaleY) ─ */
 @media (max-width: 768px) {
   [data-fbar-inner] {
     grid-template-columns: 1fr;
     gap: var(--spacing--8);
     align-content: center;
   }
-  [data-fbar-visual] { order: -1; }
+  /* Rail runs alongside the content; keep it vertical so the scaleY fill
+     (driven inline by GSAP) is correct on every viewport. Panels stay
+     absolutely stacked so hidden ones don't reserve vertical space. */
+  [data-fbar-content] { min-height: var(--fbar-content-min-m, 50vh); }
+  [data-fbar-visual] { order: 1; }
 }
 
-/* ── Reduced motion — static, all bars full, first item active ─ */
-[data-fill-bars].is-static [data-fbar-fill] { transform: scaleX(1); }
-[data-fill-bars].is-static [data-fbar-item] { opacity: 1; }
+/* ── Reduced motion — static, bars full, first item shown ────── */
+[data-fill-bars].is-static [data-fbar-fill] { transform: scaleY(1); }
