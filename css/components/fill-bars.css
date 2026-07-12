@@ -1,5 +1,5 @@
 /*!
- * fill-bars.css v1.0.0
+ * fill-bars.css v1.1.0
  * Pinned scroll-driven fill-bars section — critical/behavioural styles only.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
  *
@@ -70,6 +70,30 @@
   /* No overflow:hidden — the diagram may bleed past its box by design. */
 }
 .fbar__visual > * {
+  max-width: 100%;
+}
+
+/* Fixed background layer — always visible, sits behind the swapping visuals. */
+.fbar__visual-base {
+  position: relative;
+  z-index: 0;
+}
+
+/* Per-item visuals stack on top of the base and crossfade by active state.
+   They're absolutely positioned over the base, so the base defines the box
+   size; give the base real content (or a min-height) so the stage has height. */
+.fbar__vis {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--fbar-vis-speed, 0.5s) ease;
+  pointer-events: none;
+}
+.fbar__vis.is-active {
+  opacity: 1;
+}
+.fbar__vis > * {
   max-width: 100%;
 }
 

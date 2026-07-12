@@ -1,5 +1,5 @@
 /*!
- * fill-bars.js v1.0.0
+ * fill-bars.js v1.1.0
  * Pinned, scroll-driven "fill bars" section (Attio/Retool-style):
  *   • The section pins.
  *   • A left-column list of items each carry a thin progress bar. As you scroll,
@@ -28,7 +28,10 @@
  *           [data-fbar-track]             the bar rail
  *             [data-fbar-fill]            the fill (scaleX 0→1) — required
  *         [data-fbar-item="1"]          …
- *       [data-fbar-visual]              RIGHT column — the diagram; never clipped
+ *       [data-fbar-visual]              RIGHT column — the visual stage; never clipped
+ *         [data-fbar-visual-base]         optional fixed background (always shown)
+ *         [data-fbar-vis="0"]             per-item visual — crossfades in when its
+ *         [data-fbar-vis="1"]             item is active (index matches the item)
  *
  * Root attributes (all optional):
  *   data-fbar-end     pin scroll distance         (default "300%")
@@ -67,6 +70,9 @@
 
     var items = Array.from(root.querySelectorAll("[data-fbar-item]"));
     var fills = items.map(function (it) { return it.querySelector("[data-fbar-fill]"); });
+    // Per-item visuals (optional). Indexed by data-fbar-vis; the active item's
+    // visual crossfades in over the fixed [data-fbar-visual-base] background.
+    var visuals = Array.from(root.querySelectorAll("[data-fbar-vis]"));
 
     var n = items.length;
     if (!n || fills.some(function (f) { return !f; })) {
@@ -110,6 +116,10 @@
       curActive = idx;
       for (var i = 0; i < items.length; i++) {
         items[i].classList.toggle("is-active", i === idx);
+      }
+      // Swap the matching visual (CSS crossfades it in over the fixed base).
+      for (var v = 0; v < visuals.length; v++) {
+        visuals[v].classList.toggle("is-active", v === idx);
       }
     }
 
