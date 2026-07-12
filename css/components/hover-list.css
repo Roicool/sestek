@@ -1,5 +1,5 @@
 /*!
- * hover-list.css v2.0.0
+ * hover-list.css v2.1.0
  * Editorial link list with a rail-locked image — critical/behavioural styles
  * only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
@@ -75,6 +75,17 @@
 [data-hlist-vis] {
   will-change: transform;
 }
+
+/* Single-collection: the image lives inside the row until JS relocates it into
+   the square. Hide any [data-hlist-vis] NOT yet inside the window so it doesn't
+   flash in the row (Designer + first paint); it shows once moved into media. */
+[data-hover-list] :not([data-hlist-media]) > [data-hlist-vis] {
+  visibility: hidden;
+}
+[data-hlist-media] > [data-hlist-vis] {
+  visibility: visible;
+}
+
 [data-hlist-vis] img,
 [data-hlist-vis] > * {
   width: 100%;
