@@ -1,20 +1,18 @@
 /*!
- * hover-list.css v2.1.0
- * Editorial link list with a rail-locked image — critical/behavioural styles
+ * hover-list.css v3.0.0
+ * Editorial link list with in-place row visuals — critical/behavioural styles
  * only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
  *
- * Responsive model: no multi-column layout to reflow, so it switches on the
- * device's HOVER capability, not viewport WIDTH. JS (matchMedia "hover:hover")
- * adds .is-touch on touch devices, which reparks the square (below). Spacing
- * uses fluid --spacing--* (clamp), so it scales without breakpoints. Reduced-
- * motion is handled in JS (the animation is GSAP-inline; a CSS @media can't
- * reach it).
+ * Responsive model: the visual lives in the row's own layout slot, so its
+ * position/size are pure CSS — correct on every screen with no JS placement.
+ * Desktop reveals on hover; touch reveals the row at the viewport centre while
+ * scrolling (JS adds .is-touch, purely a hook — no layout change needed).
+ * Reduced-motion is handled in JS (the reveal is GSAP-inline).
  * https://github.com/roicool/sestek
  */
 
 /* ── List ────────────────────────────────────────────────────── */
-/* position:relative → the square is absolutely positioned against THIS box. */
 [data-hover-list] {
   position: relative;
 }
@@ -46,63 +44,18 @@
   transform: translateX(0);
 }
 
-/* ── The square visual — X locked here (CSS), Y driven by JS ─── */
-/* Absolute against the list, pinned to a fixed right inset; JS only ever
-   sets transform:translateY to line it up with the active row. Out of flow
-   + pointer-events:none so it never blocks the links underneath. */
-[data-hlist-cursor] {
-  position: absolute;
-  top: 0;
-  right: var(--hlist-inset, 0);
-  width: var(--hlist-size, 13rem);
-  height: var(--hlist-size, 13rem);
-  pointer-events: none;
-  visibility: hidden;                 /* revealed by GSAP autoAlpha */
-  will-change: transform, opacity;
-  z-index: 5;
-}
-
-/* The window — clips the sliding image so only one shows at a time. */
-[data-hlist-media] {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: var(--radius--md, 0.75rem);
-}
-
-/* Image layers — JS stacks (absolute/inset:0) and slides them on yPercent. */
+/* ── Row visual — sits in the layout slot, JS reveals it ─────── */
+/* Sizing/placement is yours (Webflow). visibility:hidden avoids a flash
+   before GSAP takes over (JS uses autoAlpha). Wrap it in an overflow:hidden
+   box if you want the reveal to hard-clip instead of just rising in. */
 [data-hlist-vis] {
-  will-change: transform;
-}
-
-/* Single-collection: the image lives inside the row until JS relocates it into
-   the square. Hide any [data-hlist-vis] NOT yet inside the window so it doesn't
-   flash in the row (Designer + first paint); it shows once moved into media. */
-[data-hover-list] :not([data-hlist-media]) > [data-hlist-vis] {
   visibility: hidden;
+  will-change: transform, opacity;
 }
-[data-hlist-media] > [data-hlist-vis] {
-  visibility: visible;
-}
-
 [data-hlist-vis] img,
 [data-hlist-vis] > * {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* ── Mobile / touch — square parks in a fixed corner (scroll-driven) ──
-   JS adds .is-touch; active row = the one at the viewport centre while
-   scrolling. Fixed placement overrides the absolute rail position. */
-[data-hover-list].is-touch [data-hlist-cursor] {
-  position: fixed;
-  top: auto;
-  right: var(--hlist-m-inset, 1.25rem);
-  bottom: var(--hlist-m-inset, 1.25rem);
-  width: var(--hlist-m-size, 7.5rem);
-  height: var(--hlist-m-size, 7.5rem);
-  z-index: 60;
 }
