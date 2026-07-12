@@ -1,5 +1,5 @@
 /*!
- * hover-list.css v1.0.0
+ * hover-list.css v1.1.0
  * Editorial link list with a cursor-following image — critical/behavioural
  * styles only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
@@ -55,7 +55,14 @@
   display: block;
 }
 
-/* ── Pointer-less devices — no cursor visual, rows stay links ── */
-@media (hover: none), (pointer: coarse) {
-  [data-hlist-cursor] { display: none; }
+/* ── Mobile / touch — square parks in a fixed corner (scroll-driven) ──
+   JS places it via .is-touch; the active row is the one at the viewport
+   centre while scrolling. The image still slides upward on change. */
+[data-hover-list].is-touch [data-hlist-cursor] {
+  position: fixed;
+  right: var(--hlist-m-inset, 1.25rem);
+  bottom: var(--hlist-m-inset, 1.25rem);
+  width: var(--hlist-m-size, 7.5rem);
+  height: var(--hlist-m-size, 7.5rem);
+  z-index: 60;
 }

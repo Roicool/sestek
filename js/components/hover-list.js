@@ -1,5 +1,5 @@
 /*!
- * hover-list.js v1.0.0
+ * hover-list.js v1.1.0
  * Editorial link list with a cursor-following image (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons/
  *     labels) to an active state — handled in CSS via :hover / .is-active.
@@ -9,8 +9,11 @@
  *     visual (the frame never jumps).
  *
  * Position + swaps are transform + opacity only (GPU-composited), pointer
- * tracking is smoothed with gsap.quickTo. Pointer-only (hover:hover) — on
- * touch the list is just a plain set of links, no cursor visual.
+ * tracking is smoothed with gsap.quickTo.
+ *
+ * Mobile / touch (no hover): the square parks in a fixed corner and the
+ * active row becomes whichever one sits at the viewport centre while you
+ * scroll (IntersectionObserver) — same upward image-slide, no cursor follow.
  *
  * Requires : gsap registered.
  *
@@ -63,29 +66,18 @@
       console.warn("[Sestek HoverList] Need [data-hlist-item] rows."); return;
     }
 
-    // Pointer-only. On touch/coarse pointers the rows are plain links.
-    var canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (!canHover || !cursor) return;
+    if (!cursor) return;                                  // no visual → plain links
 
     var followDur = num(root, "data-hlist-follow", 0.35);
     var slideDur  = num(root, "data-hlist-slide", 0.55);
+    var canHover  = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
     var curIdx  = -1;
     var visible = false;
 
-    // ── Cursor visual: fixed, centred on the pointer ──────────────
-    gsap.set(cursor, {
-      position: "fixed", top: 0, left: 0,
-      xPercent: -50, yPercent: -50,
-      autoAlpha: 0, scale: 0.85, pointerEvents: "none",
-      zIndex: 60,
-    });
     // Image layers stacked; all parked below the window until activated.
     gsap.set(vises, { position: "absolute", inset: 0, yPercent: 100 });
-
-    // Smoothed pointer follow — quickTo keeps the square "stuck" but silky.
-    var toX = gsap.quickTo(cursor, "x", { duration: followDur, ease: "power3" });
-    var toY = gsap.quickTo(cursor, "y", { duration: followDur, ease: "power3" });
+    gsap.set(cursor, { autoAlpha: 0, scale: 0.85, pointerEvents: "none" });
 
     function show() {
       if (visible) return;
@@ -120,23 +112,50 @@
       }
     }
 
-    // ── Wire pointer events ───────────────────────────────────────
-    root.addEventListener("pointermove", function (e) {
-      toX(e.clientX);
-      toY(e.clientY);
-    });
-    root.addEventListener("pointerenter", show);
-    root.addEventListener("pointerleave", function () {
-      hide();
-      for (var i = 0; i < items.length; i++) items[i].classList.remove("is-active");
-      // Park the current layer so the next enter slides fresh.
-      if (vises[curIdx]) gsap.to(vises[curIdx], { yPercent: -100, duration: 0.3, ease: "power2.in" });
-      curIdx = -1;
-    });
+    // ── Desktop: square follows the pointer, active = hovered row ──
+    function setupDesktop() {
+      gsap.set(cursor, { position: "fixed", top: 0, left: 0, xPercent: -50, yPercent: -50, zIndex: 60 });
+      var toX = gsap.quickTo(cursor, "x", { duration: followDur, ease: "power3" });
+      var toY = gsap.quickTo(cursor, "y", { duration: followDur, ease: "power3" });
 
-    items.forEach(function (item, i) {
-      item.addEventListener("pointerenter", function () { setActive(i); });
-    });
+      root.addEventListener("pointermove", function (e) { toX(e.clientX); toY(e.clientY); });
+      root.addEventListener("pointerenter", show);
+      root.addEventListener("pointerleave", function () {
+        hide();
+        for (var i = 0; i < items.length; i++) items[i].classList.remove("is-active");
+        if (vises[curIdx]) gsap.to(vises[curIdx], { yPercent: -100, duration: 0.3, ease: "power2.in" });
+        curIdx = -1;
+      });
+      items.forEach(function (item, i) {
+        item.addEventListener("pointerenter", function () { setActive(i); });
+      });
+    }
+
+    // ── Mobile: square parks in a fixed corner (CSS-placed); active =
+    //    whichever row sits at the viewport centre while you scroll. Same
+    //    upward image-slide, just driven by IntersectionObserver, not hover.
+    function setupMobile() {
+      root.classList.add("is-touch");
+      // A zero-height band across the viewport centre: the row crossing it wins.
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            var idx = items.indexOf(e.target);
+            if (idx >= 0) setActive(idx);
+          }
+        });
+      }, { rootMargin: "-50% 0px -50% 0px", threshold: 0 });
+      items.forEach(function (it) { io.observe(it); });
+
+      // Reveal the square only while the list itself is on screen.
+      var rootIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) show(); else hide(); });
+      }, { threshold: 0 });
+      rootIO.observe(root);
+    }
+
+    if (canHover) setupDesktop();
+    else          setupMobile();
   }
 
   global.Sestek = global.Sestek || {};
