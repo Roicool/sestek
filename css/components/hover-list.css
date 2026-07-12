@@ -1,18 +1,18 @@
 /*!
- * hover-list.css v3.0.0
- * Editorial link list with in-place row visuals — critical/behavioural styles
- * only. Bound via data-attributes (same hooks the JS targets).
+ * hover-list.css v4.0.0
+ * Editorial link list with a mouse-following preview — critical/behavioural
+ * styles only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
  *
- * Responsive model: the visual lives in the row's own layout slot, so its
- * position/size are pure CSS — correct on every screen with no JS placement.
- * Desktop reveals on hover; touch reveals the row at the viewport centre while
- * scrolling (JS adds .is-touch, purely a hook — no layout change needed).
- * Reduced-motion is handled in JS (the reveal is GSAP-inline).
+ * Responsive model: switches on the device's HOVER capability, not viewport
+ * WIDTH. JS (matchMedia "hover:hover") adds .is-touch on touch devices, which
+ * reparks the follower in a fixed corner. Spacing uses fluid --spacing--*
+ * (clamp). Reduced-motion is handled in JS (the animation is GSAP-inline).
  * https://github.com/roicool/sestek
  */
 
 /* ── List ────────────────────────────────────────────────────── */
+/* position:relative → the follower is positioned against THIS box. */
 [data-hover-list] {
   position: relative;
 }
@@ -44,18 +44,59 @@
   transform: translateX(0);
 }
 
-/* ── Row visual — sits in the layout slot, JS reveals it ─────── */
-/* Sizing/placement is yours (Webflow). visibility:hidden avoids a flash
-   before GSAP takes over (JS uses autoAlpha). Wrap it in an overflow:hidden
-   box if you want the reveal to hard-clip instead of just rising in. */
-[data-hlist-vis] {
-  visibility: hidden;
-  will-change: transform, opacity;
+/* Source visual — lives in the row only as a template to clone; never shown
+   in the row itself (JS clones it into the follower window). */
+[data-hlist-item] [data-hlist-vis] {
+  display: none;
 }
-[data-hlist-vis] img,
-[data-hlist-vis] > * {
+
+/* ── The follower — X locked here (CSS), Y tracks the mouse (JS) ─ */
+/* Absolute against the list, pinned to a fixed right inset; JS sets only
+   transform:translateY. Out of flow + pointer-events:none so it never blocks
+   the links underneath. */
+[data-hlist-cursor] {
+  position: absolute;
+  top: 0;
+  right: var(--hlist-inset, 0);
+  width: var(--hlist-size, 13rem);
+  height: var(--hlist-size, 13rem);
+  pointer-events: none;
+  visibility: hidden;                 /* revealed by GSAP autoAlpha */
+  will-change: transform, opacity;
+  z-index: 5;
+}
+
+/* The window — clips the sliding clones so only one shows at a time. */
+[data-hlist-cursor-inner] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius--md, 0.75rem);
+}
+
+/* Cloned visuals — stacked so they can slide past each other on yPercent. */
+[data-hlist-cursor-inner] [data-hlist-vis] {
+  display: block;
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+[data-hlist-cursor-inner] [data-hlist-vis] img,
+[data-hlist-cursor-inner] [data-hlist-vis] > * {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* ── Mobile / touch — follower parks in a fixed corner (scroll-driven) ─ */
+[data-hover-list].is-touch [data-hlist-cursor] {
+  position: fixed;
+  top: auto;
+  right: var(--hlist-m-inset, 1.25rem);
+  bottom: var(--hlist-m-inset, 1.25rem);
+  width: var(--hlist-m-size, 7.5rem);
+  height: var(--hlist-m-size, 7.5rem);
+  z-index: 60;
 }
