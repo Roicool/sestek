@@ -1,5 +1,5 @@
 /*!
- * hover-list.js v4.0.0
+ * hover-list.js v4.1.0
  * Editorial link list with a mouse-following preview (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons /
  *     labels / a hidden arrow) to an active state — CSS via :hover / .is-active.
@@ -27,7 +27,10 @@
  *         [data-hlist-arrow]             optional — hidden arrow, shown on hover
  *         [data-hlist-vis]               this row's SOURCE visual (cloned; hidden
  *                                        in the row by CSS, shown in the follower)
- *     [data-hlist-cursor]               the follower (X: CSS, Y: mouse)
+ *     [data-hlist-anchor]               optional — one invisible spacer in the
+ *                                       layout; the follower copies its X + box
+ *                                       (responsive, no magic inset)
+ *     [data-hlist-cursor]               the follower (X: anchor or CSS, Y: mouse)
  *       [data-hlist-cursor-inner]       overflow-hidden window; clones land here
  *
  * Root attributes (all optional):
@@ -59,11 +62,24 @@
     var follower = root.querySelector("[data-hlist-cursor]");
     var inner    = root.querySelector("[data-hlist-cursor-inner]") || follower;
     var listEl   = root.querySelector("[data-hlist-collection]") || root;
+    var anchor   = root.querySelector("[data-hlist-anchor]");
 
     if (!items.length) {
       console.warn("[Sestek HoverList] Need [data-hlist-item] rows."); return;
     }
     if (!follower) return;                                 // no follower → plain links
+
+    // Optional layout placeholder: a single (invisible) spacer sitting in the
+    // grid where the follower's X column should be. The follower copies its X +
+    // box from it, so horizontal position/size come from the layout on EVERY
+    // screen — no magic --hlist-inset number. Y still tracks the mouse. Falls
+    // back to the CSS right-inset when absent.
+    function placeX() {
+      if (!anchor) return;
+      var a = anchor.getBoundingClientRect();
+      var r = root.getBoundingClientRect();
+      gsap.set(follower, { left: a.left - r.left, right: "auto", width: a.width, height: a.height });
+    }
 
     var slideDur  = num(root, "data-hlist-slide", 0.5);
     var followDur = num(root, "data-hlist-follow", 0.6);
@@ -77,6 +93,8 @@
     var firstEntry = true;
 
     gsap.set(follower, { autoAlpha: 0 });
+    placeX();
+    window.addEventListener("resize", placeX);
 
     /** Clones currently living in the follower window. */
     function clones() { return inner.querySelectorAll("[data-hlist-vis]"); }
