@@ -1,0 +1,65 @@
+/*!
+ * scrollbar.css v1.0.0
+ * Branded page scrollbar — slim, rounded, gradient thumb on a quiet track.
+ * Pure CSS, no JS; Lenis scrolls the real window so the native bar this
+ * styles stays perfectly in sync.
+ *
+ * Tune via variables on :root (all optional):
+ *   --sb-size         bar thickness                     (default 10px)
+ *   --sb-track        track colour                      (default transparent-ish)
+ *   --sb-thumb        thumb colour / gradient start     (default brand magenta)
+ *   --sb-thumb-2      gradient end                      (default violet)
+ *   --sb-thumb-hover  thumb hover colour                (default brighter magenta)
+ *   --sb-radius       thumb rounding                    (default 999px)
+ *
+ * Firefox only supports two flat colours (scrollbar-color), so it gets the
+ * solid brand colour instead of the gradient — consistent, just simpler.
+ * https://github.com/roicool/sestek
+ */
+
+:root {
+  --sb-size        : 10px;
+  --sb-track       : color-mix(in srgb, currentColor 6%, transparent);
+  --sb-thumb       : var(--brand--magenta, #e6007e);
+  --sb-thumb-2     : var(--brand--violet, #7c3aed);
+  --sb-thumb-hover : var(--brand--magenta-bright, #ff2d9c);
+  --sb-radius      : 999px;
+}
+
+/* ── Firefox ─────────────────────────────────────────────────────── */
+html {
+  scrollbar-width : thin;
+  scrollbar-color : var(--sb-thumb) transparent;
+}
+
+/* ── WebKit (Chrome / Edge / Safari / Arc / Opera) ───────────────── */
+::-webkit-scrollbar {
+  width  : var(--sb-size);
+  height : var(--sb-size);          /* horizontal bars (code blocks, tables) */
+}
+
+::-webkit-scrollbar-track {
+  background : var(--sb-track);
+}
+
+/*
+ * The transparent border + background-clip trick inset-pads the thumb inside
+ * the bar, so it reads as a floating pill rather than a full-width block —
+ * the thumb is drawn narrower than the gutter it slides in.
+ */
+::-webkit-scrollbar-thumb {
+  background      : linear-gradient(180deg, var(--sb-thumb), var(--sb-thumb-2));
+  background-clip : padding-box;
+  border          : 3px solid transparent;
+  border-radius   : var(--sb-radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background      : var(--sb-thumb-hover);
+  background-clip : padding-box;
+  border          : 2px solid transparent;  /* pill swells slightly on hover */
+}
+
+::-webkit-scrollbar-corner {
+  background : transparent;
+}
