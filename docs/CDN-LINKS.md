@@ -527,7 +527,9 @@ DOM (Webflow — herhangi bir elemente attribute ekle):
   data-reveal-ease         GSAP ease                             (default "expo.out")
   data-reveal-scale        opsiyonel zoom-settle (örn 1.08 → 1)  (default 1, kapalı)
   data-reveal-start        ScrollTrigger tetik noktası           (default "top 85%")
-  data-reveal-once         "false" → geri scroll'da tekrar oynar (default true)
+  data-reveal-once         "true" → bir kez oynar, açık kalır. Default false:
+                           çift yönlü — ekrana her girişte oynar (aşağı VEYA
+                           yukarı scroll'da), her çıkışta geri sarar
 -->
 <div class="card" data-reveal="left" data-reveal-delay="0.1" data-reveal-duration="1.2">…</div>
 

@@ -1,6 +1,11 @@
 /*!
- * reveal.js v1.1.0
+ * reveal.js v1.2.0
  * Size-reveal entrance — the "Webflow grow-in" look, fully data-attribute driven.
+ *
+ * Changelog
+ * v1.2.0 — bidirectional by default: plays every time the element enters the
+ *          viewport (from either direction) and reverses every time it leaves.
+ *          Set data-reveal-once="true" for the old play-once behaviour.
  *
  * The element does NOT slide in from offscreen (old WordPress style). Instead it
  * appears to GROW from zero to its own CSS-defined size as it scrolls into view:
@@ -33,7 +38,9 @@
  *   data-reveal-scale     optional inner zoom-settle, e.g. 1.08 → 1   (default 1,
  *                         off). Adds the premium Webflow image-reveal depth.
  *   data-reveal-start     ScrollTrigger start position          (default "top 85%")
- *   data-reveal-once      "false" to replay on scroll back up        (default true)
+ *   data-reveal-once      "true" → play only once and stay revealed. Default
+ *                         false: bidirectional — plays on every viewport enter
+ *                         (scrolling down OR back up), reverses on every leave.
  *
  * https://github.com/roicool/sestek
  */
@@ -63,7 +70,7 @@
     delay: 0,
     ease: "expo.out",
     start: "top 85%",
-    once: true,
+    once: false,
     scale: 1,
   };
 
@@ -95,7 +102,7 @@
     var scale    = o.scale    != null ? o.scale    : attrNum(el, "data-reveal-scale", DEFAULTS.scale);
     var ease     = o.ease     || el.getAttribute("data-reveal-ease")  || DEFAULTS.ease;
     var start    = o.start    || el.getAttribute("data-reveal-start") || DEFAULTS.start;
-    var once     = o.once != null ? o.once : el.getAttribute("data-reveal-once") !== "false";
+    var once     = o.once != null ? o.once : el.getAttribute("data-reveal-once") === "true";
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
@@ -127,7 +134,9 @@
         // so by the time a reveal measures its start/end the pin-spacing above it
         // already exists and "top 85%" resolves against the real document height.
         refreshPriority: -1,
-        toggleActions: once ? "play none none none" : "play none none reverse",
+        // Bidirectional: play on every enter (either direction), reverse on
+        // every leave — scroll down past it and back up, it re-reveals.
+        toggleActions: once ? "play none none none" : "play reverse play reverse",
       },
       onComplete: function () { el.style.willChange = "auto"; },
       onReverseComplete: function () { el.style.willChange = "clip-path, transform"; },
