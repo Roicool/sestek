@@ -1,0 +1,88 @@
+/*!
+ * fill-bars.css v1.0.0
+ * Pinned scroll-driven fill-bars section — critical/behavioural styles only.
+ * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
+ *
+ * NON-NEGOTIABLE: the visual column (the diagram) is NEVER clipped. Do not add
+ * overflow:hidden, transform, filter, perspective or will-change:transform to
+ * [data-fill-bars], [data-fbar-inner] or any ancestor — that would break the
+ * GSAP pin (position:fixed) AND clip the drawing. See docs/PROJECT.md → Kural 3.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Section ─────────────────────────────────────────────────── */
+.fbar {
+  position: relative;
+  width: 100%;
+}
+
+/* The pinned inner: holds the two columns. NO overflow clipping here. */
+.fbar__inner {
+  display: grid;
+  grid-template-columns: var(--fbar-list-col, 1fr) var(--fbar-visual-col, 1.15fr);
+  align-items: center;
+  gap: var(--spacing--10);
+  min-height: 100vh;
+}
+
+/* ── Left column — the item list ─────────────────────────────── */
+.fbar__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing--6);
+}
+
+/* One row. Dimmed until active; the bar rail sits under its content. */
+.fbar__item {
+  position: relative;
+  opacity: var(--fbar-idle-opacity, 0.45);
+  transition: opacity var(--fbar-speed, 0.35s) ease;
+  user-select: none;
+}
+.fbar__item.is-active {
+  opacity: 1;
+}
+
+/* The bar rail — a thin track. overflow:hidden here is fine (contained bar). */
+.fbar__track {
+  position: relative;
+  width: 100%;
+  height: var(--fbar-track-h, 3px);
+  border-radius: var(--radius--full, 999px);
+  background-color: var(--neutral--200);
+  overflow: hidden;
+}
+
+/* The fill — GSAP drives scaleX 0→1 (transform, GPU-composited). */
+.fbar__fill {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  border-radius: inherit;
+  background-color: var(--brand-primary--500, currentColor);
+  will-change: transform;
+}
+
+/* ── Right column — the visual / diagram (untouchable) ───────── */
+.fbar__visual {
+  position: relative;
+  /* No overflow:hidden — the diagram may bleed past its box by design. */
+}
+.fbar__visual > * {
+  max-width: 100%;
+}
+
+/* ── Responsive: stack to one column, visual on top ──────────── */
+@media (max-width: 768px) {
+  .fbar__inner {
+    grid-template-columns: 1fr;
+    gap: var(--spacing--8);
+    align-content: center;
+  }
+  .fbar__visual { order: -1; }
+}
+
+/* ── Reduced motion — static, all bars full, first item active ─ */
+.fbar.is-static .fbar__fill { transform: scaleX(1); }
+.fbar.is-static .fbar__item { opacity: 1; }
