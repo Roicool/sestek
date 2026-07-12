@@ -1,18 +1,26 @@
 /*!
- * hover-list.css v1.1.0
- * Editorial link list with a cursor-following image — critical/behavioural
- * styles only. Bound via data-attributes (same hooks the JS targets).
+ * hover-list.css v2.0.0
+ * Editorial link list with a rail-locked image — critical/behavioural styles
+ * only. Bound via data-attributes (same hooks the JS targets).
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
+ *
+ * Responsive model: no multi-column layout to reflow, so it switches on the
+ * device's HOVER capability, not viewport WIDTH. JS (matchMedia "hover:hover")
+ * adds .is-touch on touch devices, which reparks the square (below). Spacing
+ * uses fluid --spacing--* (clamp), so it scales without breakpoints. Reduced-
+ * motion is handled in JS (the animation is GSAP-inline; a CSS @media can't
+ * reach it).
  * https://github.com/roicool/sestek
  */
 
 /* ── List ────────────────────────────────────────────────────── */
+/* position:relative → the square is absolutely positioned against THIS box. */
 [data-hover-list] {
   position: relative;
 }
 
-/* Each row is a link. Give descendants their active look via .is-active
-   (JS) or :hover (CSS) — e.g. colour, arrow shift, icon fill. */
+/* Each row is a link. Give descendants their active look via .is-active (JS)
+   or :hover (CSS) — colour, arrow reveal, icon fill. */
 [data-hlist-item] {
   display: flex;
   align-items: center;
@@ -23,15 +31,35 @@
   cursor: pointer;
 }
 
-/* ── Cursor visual — the floating square ─────────────────────── */
-/* JS sets position:fixed + centres it on the pointer; keep it out of flow
-   and non-interactive so it never blocks the links underneath. */
+/* Hidden arrow — revealed on the active/hovered row (slides in from the left). */
+[data-hlist-arrow] {
+  opacity: 0;
+  transform: translateX(-0.75rem);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+}
+[data-hlist-item].is-active [data-hlist-arrow],
+[data-hlist-item]:hover [data-hlist-arrow] {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── The square visual — X locked here (CSS), Y driven by JS ─── */
+/* Absolute against the list, pinned to a fixed right inset; JS only ever
+   sets transform:translateY to line it up with the active row. Out of flow
+   + pointer-events:none so it never blocks the links underneath. */
 [data-hlist-cursor] {
+  position: absolute;
+  top: 0;
+  right: var(--hlist-inset, 0);
   width: var(--hlist-size, 13rem);
   height: var(--hlist-size, 13rem);
   pointer-events: none;
   visibility: hidden;                 /* revealed by GSAP autoAlpha */
   will-change: transform, opacity;
+  z-index: 5;
 }
 
 /* The window — clips the sliding image so only one shows at a time. */
@@ -56,10 +84,11 @@
 }
 
 /* ── Mobile / touch — square parks in a fixed corner (scroll-driven) ──
-   JS places it via .is-touch; the active row is the one at the viewport
-   centre while scrolling. The image still slides upward on change. */
+   JS adds .is-touch; active row = the one at the viewport centre while
+   scrolling. Fixed placement overrides the absolute rail position. */
 [data-hover-list].is-touch [data-hlist-cursor] {
   position: fixed;
+  top: auto;
   right: var(--hlist-m-inset, 1.25rem);
   bottom: var(--hlist-m-inset, 1.25rem);
   width: var(--hlist-m-size, 7.5rem);

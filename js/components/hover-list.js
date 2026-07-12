@@ -1,35 +1,37 @@
 /*!
- * hover-list.js v1.1.0
- * Editorial link list with a cursor-following image (Work AI Institute-style):
+ * hover-list.js v2.0.0
+ * Editorial link list with a rail-locked image (Work AI Institute-style):
  *   • Each row is a full-width link. Hovering a row flips it (and its icons/
- *     labels) to an active state — handled in CSS via :hover / .is-active.
- *   • A single square "cursor visual" follows the pointer while it's over the
- *     list. Moving from one row to the next keeps the square stuck to the
- *     cursor; only the IMAGE inside slides upward to swap to the new row's
- *     visual (the frame never jumps).
+ *     labels / a hidden arrow) to an active state — handled in CSS via
+ *     :hover / .is-active.
+ *   • A single square visual is locked to a fixed X (right side, CSS-placed)
+ *     and only moves on the Y axis to line up with the active row. It does NOT
+ *     follow the mouse. Moving between rows glides the square vertically and
+ *     slides the IMAGE inside upward to swap (the frame just repositions).
  *
- * Position + swaps are transform + opacity only (GPU-composited), pointer
- * tracking is smoothed with gsap.quickTo.
+ * Movement + swaps are transform + opacity only (GPU-composited), eased with
+ * gsap.quickTo. prefers-reduced-motion collapses all of it to instant.
  *
  * Mobile / touch (no hover): the square parks in a fixed corner and the
  * active row becomes whichever one sits at the viewport centre while you
- * scroll (IntersectionObserver) — same upward image-slide, no cursor follow.
+ * scroll (IntersectionObserver) — same upward image-slide.
  *
  * Requires : gsap registered.
  *
  * DOM contract (Webflow — only the attributes matter, design is yours):
- *   [data-hover-list]                   root / list
+ *   [data-hover-list]                   root / list (position:relative)
  *     [data-hlist-item="0"]             a row — should be (or wrap) an <a>
- *       …your labels / icons…             style .is-active states in CSS
+ *       …labels / icons…                  style .is-active states in CSS
+ *       [data-hlist-arrow]               optional — hidden arrow, shown on hover
  *     [data-hlist-item="1"]             …
- *     [data-hlist-cursor]               the floating square (position:fixed)
+ *     [data-hlist-cursor]               the square (X fixed via CSS, Y by JS)
  *       [data-hlist-media]              overflow-hidden square window
  *         [data-hlist-vis="0"]           image layer for item 0 (index matches)
  *         [data-hlist-vis="1"]           image layer for item 1
  *
  * Root attributes (all optional):
- *   data-hlist-follow   pointer-follow smoothing in seconds (default 0.35)
- *   data-hlist-slide    image slide duration in seconds     (default 0.55)
+ *   data-hlist-follow   Y-glide easing in seconds        (default 0.4)
+ *   data-hlist-slide    image slide duration in seconds  (default 0.55)
  *
  * https://github.com/roicool/sestek
  */
@@ -46,7 +48,7 @@
   }
 
   /**
-   * Initializes a cursor-following hover list.
+   * Initializes a rail-locked hover list.
    * @param {string} [selector="[data-hover-list]"]
    */
   function initHoverList(selector) {
@@ -65,42 +67,37 @@
     if (!items.length) {
       console.warn("[Sestek HoverList] Need [data-hlist-item] rows."); return;
     }
+    if (!cursor) return;                                   // no visual → plain links
 
-    if (!cursor) return;                                  // no visual → plain links
-
-    var followDur = num(root, "data-hlist-follow", 0.35);
+    var followDur = num(root, "data-hlist-follow", 0.4);
     var slideDur  = num(root, "data-hlist-slide", 0.55);
     var canHover  = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    // Respect prefers-reduced-motion: kill the glide, the scale pop and the
+    // image slide — the square jumps and images swap instantly.
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { followDur = 0.001; slideDur = 0.001; }
 
     var curIdx  = -1;
     var visible = false;
 
     // Image layers stacked; all parked below the window until activated.
     gsap.set(vises, { position: "absolute", inset: 0, yPercent: 100 });
-    gsap.set(cursor, { autoAlpha: 0, scale: 0.85, pointerEvents: "none" });
+    gsap.set(cursor, { autoAlpha: 0, scale: reduce ? 1 : 0.85, pointerEvents: "none" });
 
     function show() {
       if (visible) return;
       visible = true;
-      gsap.to(cursor, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "power3.out" });
+      gsap.to(cursor, { autoAlpha: 1, scale: 1, duration: reduce ? 0.001 : 0.4, ease: "power3.out" });
     }
     function hide() {
       if (!visible) return;
       visible = false;
-      gsap.to(cursor, { autoAlpha: 0, scale: 0.85, duration: 0.35, ease: "power2.in" });
+      gsap.to(cursor, { autoAlpha: 0, scale: reduce ? 1 : 0.85, duration: reduce ? 0.001 : 0.35, ease: "power2.in" });
     }
 
     /** Swap to layer idx: outgoing slides up & out, incoming slides up in. */
-    function setActive(idx) {
-      if (idx === curIdx) return;
-      var prev = curIdx;
-      curIdx = idx;
-      // prev: the layer to slide out (may be -1 on first enter — no-op below).
-
-      for (var i = 0; i < items.length; i++) {
-        items[i].classList.toggle("is-active", i === idx);
-      }
-
+    function slideImage(idx, prev) {
       if (vises[prev]) {
         gsap.to(vises[prev], { yPercent: -100, duration: slideDur, ease: "power3.inOut", overwrite: true });
       }
@@ -112,31 +109,54 @@
       }
     }
 
-    // ── Desktop: square follows the pointer, active = hovered row ──
-    function setupDesktop() {
-      gsap.set(cursor, { position: "fixed", top: 0, left: 0, xPercent: -50, yPercent: -50, zIndex: 60 });
-      var toX = gsap.quickTo(cursor, "x", { duration: followDur, ease: "power3" });
-      var toY = gsap.quickTo(cursor, "y", { duration: followDur, ease: "power3" });
+    /** Mark active row + swap the image. Y-positioning is per-mode (below). */
+    function setActive(idx) {
+      if (idx === curIdx) return;
+      var prev = curIdx;
+      curIdx = idx;
+      for (var i = 0; i < items.length; i++) {
+        items[i].classList.toggle("is-active", i === idx);
+      }
+      slideImage(idx, prev);
+    }
 
-      root.addEventListener("pointermove", function (e) { toX(e.clientX); toY(e.clientY); });
+    // ── Desktop: X fixed (CSS), square glides on Y to the hovered row ─────
+    function setupDesktop() {
+      var toY = gsap.quickTo(cursor, "y", { duration: followDur, ease: "power3" });
+      var placed = false;
+
+      /** Y so the square's centre lines up with row idx's centre. */
+      function moveTo(idx, instant) {
+        var it = items[idx];
+        if (!it) return;
+        var y = it.offsetTop + it.offsetHeight / 2 - cursor.offsetHeight / 2;
+        if (instant) gsap.set(cursor, { y: y }); else toY(y);
+      }
+
       root.addEventListener("pointerenter", show);
       root.addEventListener("pointerleave", function () {
         hide();
         for (var i = 0; i < items.length; i++) items[i].classList.remove("is-active");
-        if (vises[curIdx]) gsap.to(vises[curIdx], { yPercent: -100, duration: 0.3, ease: "power2.in" });
-        curIdx = -1;
+        curIdx = -1; placed = false;
       });
       items.forEach(function (item, i) {
-        item.addEventListener("pointerenter", function () { setActive(i); });
+        item.addEventListener("pointerenter", function () {
+          moveTo(i, !placed);            // first entry: jump, don't glide from top
+          placed = true;
+          setActive(i);
+        });
+      });
+
+      // Keep the resting Y correct if the layout reflows.
+      window.addEventListener("resize", function () {
+        if (curIdx >= 0) moveTo(curIdx, true);
       });
     }
 
-    // ── Mobile: square parks in a fixed corner (CSS-placed); active =
-    //    whichever row sits at the viewport centre while you scroll. Same
-    //    upward image-slide, just driven by IntersectionObserver, not hover.
+    // ── Mobile: square parks in a fixed corner (CSS .is-touch); active =
+    //    whichever row sits at the viewport centre while scrolling. ─────────
     function setupMobile() {
       root.classList.add("is-touch");
-      // A zero-height band across the viewport centre: the row crossing it wins.
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
           if (e.isIntersecting) {
@@ -147,7 +167,6 @@
       }, { rootMargin: "-50% 0px -50% 0px", threshold: 0 });
       items.forEach(function (it) { io.observe(it); });
 
-      // Reveal the square only while the list itself is on screen.
       var rootIO = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) { if (e.isIntersecting) show(); else hide(); });
       }, { threshold: 0 });
