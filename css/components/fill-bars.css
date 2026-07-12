@@ -1,6 +1,7 @@
 /*!
- * fill-bars.css v1.1.0
+ * fill-bars.css v2.0.0
  * Pinned scroll-driven fill-bars section — critical/behavioural styles only.
+ * Bound via data-attributes (same hooks the JS targets) — no class dependency.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
  *
  * NON-NEGOTIABLE: the visual column (the diagram) is NEVER clipped. Do not add
@@ -11,13 +12,13 @@
  */
 
 /* ── Section ─────────────────────────────────────────────────── */
-.fbar {
+[data-fill-bars] {
   position: relative;
   width: 100%;
 }
 
 /* The pinned inner: holds the two columns. NO overflow clipping here. */
-.fbar__inner {
+[data-fbar-inner] {
   display: grid;
   grid-template-columns: var(--fbar-list-col, 1fr) var(--fbar-visual-col, 1.15fr);
   align-items: center;
@@ -26,25 +27,25 @@
 }
 
 /* ── Left column — the item list ─────────────────────────────── */
-.fbar__list {
+[data-fbar-list] {
   display: flex;
   flex-direction: column;
   gap: var(--spacing--6);
 }
 
 /* One row. Dimmed until active; the bar rail sits under its content. */
-.fbar__item {
+[data-fbar-item] {
   position: relative;
   opacity: var(--fbar-idle-opacity, 0.45);
   transition: opacity var(--fbar-speed, 0.35s) ease;
   user-select: none;
 }
-.fbar__item.is-active {
+[data-fbar-item].is-active {
   opacity: 1;
 }
 
 /* The bar rail — a thin track. overflow:hidden here is fine (contained bar). */
-.fbar__track {
+[data-fbar-track] {
   position: relative;
   width: 100%;
   height: var(--fbar-track-h, 3px);
@@ -54,7 +55,7 @@
 }
 
 /* The fill — GSAP drives scaleX 0→1 (transform, GPU-composited). */
-.fbar__fill {
+[data-fbar-fill] {
   position: absolute;
   inset: 0;
   transform: scaleX(0);
@@ -64,17 +65,17 @@
   will-change: transform;
 }
 
-/* ── Right column — the visual / diagram (untouchable) ───────── */
-.fbar__visual {
+/* ── Right column — the visual stage (untouchable) ───────────── */
+[data-fbar-visual] {
   position: relative;
   /* No overflow:hidden — the diagram may bleed past its box by design. */
 }
-.fbar__visual > * {
+[data-fbar-visual] > * {
   max-width: 100%;
 }
 
-/* Fixed background layer — always visible, sits behind the swapping visuals. */
-.fbar__visual-base {
+/* Fixed background layer — always visible, defines the stage size. */
+[data-fbar-visual-base] {
   position: relative;
   z-index: 0;
 }
@@ -82,7 +83,7 @@
 /* Per-item visuals stack on top of the base and crossfade by active state.
    They're absolutely positioned over the base, so the base defines the box
    size; give the base real content (or a min-height) so the stage has height. */
-.fbar__vis {
+[data-fbar-vis] {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -90,23 +91,23 @@
   transition: opacity var(--fbar-vis-speed, 0.5s) ease;
   pointer-events: none;
 }
-.fbar__vis.is-active {
+[data-fbar-vis].is-active {
   opacity: 1;
 }
-.fbar__vis > * {
+[data-fbar-vis] > * {
   max-width: 100%;
 }
 
 /* ── Responsive: stack to one column, visual on top ──────────── */
 @media (max-width: 768px) {
-  .fbar__inner {
+  [data-fbar-inner] {
     grid-template-columns: 1fr;
     gap: var(--spacing--8);
     align-content: center;
   }
-  .fbar__visual { order: -1; }
+  [data-fbar-visual] { order: -1; }
 }
 
 /* ── Reduced motion — static, all bars full, first item active ─ */
-.fbar.is-static .fbar__fill { transform: scaleX(1); }
-.fbar.is-static .fbar__item { opacity: 1; }
+[data-fill-bars].is-static [data-fbar-fill] { transform: scaleX(1); }
+[data-fill-bars].is-static [data-fbar-item] { opacity: 1; }
