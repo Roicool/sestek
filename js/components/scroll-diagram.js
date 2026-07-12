@@ -35,7 +35,10 @@
  *   data-dg-scrub      scrub değeri; "false" → snap yok       (default true)
  *   data-dg-start      ScrollTrigger start                    (default "center center")
  *   data-dg-line-w     çizgi kalınlığı (px)                   (default 2.5)
- *   data-dg-gap        node kenarına bırakılan boşluk (px)    (default 10)
+ *   data-dg-gap        node kenarına/port'a bırakılan boşluk (px) (default 10)
+ *
+ * Ok dolgusu Sestek gradient'iyle boyanır (base gri kalır). Renkleri CSS'ten ver:
+ *   --dg-grad-from (default #EC008C)   --dg-grad-to (default #9d4bff)
  *   data-dg-shape      "curve" | "elbow" (yumuşak köşeli L)   (default curve)
  *   data-dg-curve      kavis; + DIŞA (çember yayı), - içe, 0=düz (default 0.18)
  *   data-dg-radius     elbow köşe yumuşatma yarıçapı (px)     (default 24)
@@ -43,8 +46,14 @@
  *
  * Node başına override edilebilenler (o okun kendisini etkiler):
  *   data-dg-from       kaynak: "logo" | step no
- *   data-dg-anchor     okun bu node'a girdiği kenar:
+ *   data-dg-anchor     port yoksa okun bu node'a GİRDİĞİ kenar:
  *                      "auto" | "left" | "right" | "top" | "bottom"  (default auto)
+ *
+ * PORT div'leri (en garantili — okun çıkış/giriş noktasını SEN belirlersin):
+ *   Node'un içine boş bir div koy ve konumlandır; okun ucu o div'in MERKEZİNE gelir.
+ *     [data-dg-out]   kaynak node içinde → ok buradan ÇIKAR
+ *     [data-dg-in]    hedef node içinde  → ok buraya GİRER
+ *   Port yoksa auto kenar-ortasına düşülür. (Node başına birer tane; döngü/zincir için ideal.)
  *   data-dg-shape / data-dg-curve / data-dg-radius  → global değeri geçersiz kılar
  *
  * https://github.com/roicool/sestek
@@ -58,6 +67,28 @@
   var SVGNS = "http://www.w3.org/2000/svg";
 
   function n(v) { return v.toFixed(1); }
+
+  /** Bir port elementinin (varsa) stage-relative merkezi + bulunduğu kenarın
+   *  DIŞA normali (hangi kenardaysa: sol=-x, sağ=+x, üst=-y, alt=+y). Bu normal,
+   *  okun o port'tan hangi yönde çıkacağını/gireceğini belirler (elbow için). */
+  function portCenter(node, sel, sr) {
+    var port = node.querySelector(sel);
+    if (!port) return null;
+    var r = port.getBoundingClientRect();
+    var x = r.left - sr.left + r.width / 2, y = r.top - sr.top + r.height / 2;
+    var nb = node.getBoundingClientRect();
+    var L = nb.left - sr.left, T = nb.top - sr.top, W = nb.width, H = nb.height;
+    var dl = Math.abs(x - L), dr = Math.abs(L + W - x), dt = Math.abs(y - T), db = Math.abs(T + H - y);
+    var m = Math.min(dl, dr, dt, db), nx = 0, ny = 0;
+    // Noktayı en yakın node KENARINA projekte et (port'un o kenar boyunca konumu
+    // korunur). Port node'un içinde/ortasında olsa bile ok kenarda başlar/biter,
+    // içeri girmez. layout ayrıca 'gap' kadar dışarı kaydırır.
+    if (m === dl)      { nx = -1; x = L; }
+    else if (m === dr) { nx = 1;  x = L + W; }
+    else if (m === dt) { ny = -1; y = T; }
+    else               { ny = 1;  y = T + H; }
+    return { x: x, y: y, nx: nx, ny: ny };
+  }
 
   /** Elementin stage-relative kutusu (merkez + yarı-boyutlar). */
   function rectOf(el, sr) {
@@ -79,12 +110,15 @@
     if (anchor === "right")  return { x: box.cx + box.hw + gap, y: box.cy, nx: 1,  ny: 0 };
     if (anchor === "top")    return { x: box.cx, y: box.cy - box.hh - gap, nx: 0, ny: -1 };
     if (anchor === "bottom") return { x: box.cx, y: box.cy + box.hh + gap, nx: 0, ny: 1 };
-    // auto: merkezden hedefe giden ışının kutu sınırıyla kesişimi
+    // auto: baskın eksene göre KENARIN TAM ORTASINA bağlan (köşegen kesişime değil)
+    // → yatay ok sol/sağ kenar ortasından, dikey ok üst/alt kenar ortasından çıkar/girer.
     var dx = tx - box.cx, dy = ty - box.cy;
-    var t = 1 / Math.max(Math.abs(dx) / (box.hw || 1e-6), Math.abs(dy) / (box.hh || 1e-6), 1e-6);
-    var ex = box.cx + dx * t, ey = box.cy + dy * t;
-    var dl = Math.hypot(dx, dy) || 1;
-    return { x: ex + dx / dl * gap, y: ey + dy / dl * gap, nx: dx / dl, ny: dy / dl };
+    if (Math.abs(dx) * (box.hh || 1e-6) >= Math.abs(dy) * (box.hw || 1e-6)) {
+      var sx = dx >= 0 ? 1 : -1;
+      return { x: box.cx + sx * (box.hw + gap), y: box.cy, nx: sx, ny: 0 };
+    }
+    var sy = dy >= 0 ? 1 : -1;
+    return { x: box.cx, y: box.cy + sy * (box.hh + gap), nx: 0, ny: sy };
   }
 
   /** Ok başı: uca (x2,y2) gelen (idx,idy) yönüne göre iki kanat — path devamı. */
@@ -114,21 +148,43 @@
            arrowHead(x2, y2, tx / tl, ty / tl, head);
   }
 
-  /** Köşesi yumuşatılmış L (elbow) ok — dik segmentler + radius'lu köşe. */
+  /** Köşeleri yumuşatılmış çok-köşeli path + uçta ok başı. */
+  function polyArrow(pts, radius, head) {
+    var d = "M" + n(pts[0].x) + "," + n(pts[0].y);
+    for (var i = 1; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+      var d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y), d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      if (d1 < 1 || d2 < 1) { d += "L" + n(p1.x) + "," + n(p1.y); continue; }
+      var r = Math.min(radius, d1 / 2, d2 / 2);
+      d += "L" + n(p1.x + (p0.x - p1.x) / d1 * r) + "," + n(p1.y + (p0.y - p1.y) / d1 * r) +
+           "Q" + n(p1.x) + "," + n(p1.y) + " " +
+           n(p1.x + (p2.x - p1.x) / d2 * r) + "," + n(p1.y + (p2.y - p1.y) / d2 * r);
+    }
+    var last = pts[pts.length - 1], prev = pts[pts.length - 2];
+    var ex = last.x - prev.x, ey = last.y - prev.y, el = Math.hypot(ex, ey) || 1;
+    return d + "L" + n(last.x) + "," + n(last.y) + arrowHead(last.x, last.y, ex / el, ey / el, head);
+  }
+
+  /** Yön-farkında elbow: ok, ÇIKIŞ port'unun kenarına dik çıkar, GİRİŞ port'unun
+   *  kenarına dik girer. a.nx/ny = çıkış normali, b.nx/ny = giriş (dışa) normali. */
   function elbowPath(a, b, radius, head) {
-    var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
-    var horizFirst = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
-    var cx = horizFirst ? x2 : x1, cy = horizFirst ? y1 : y2; // köşe noktası
-    var r = Math.min(radius, Math.hypot(cx - x1, cy - y1), Math.hypot(x2 - cx, y2 - cy));
-    var s1x = Math.sign(cx - x1), s1y = Math.sign(cy - y1); // seg1 ekseni
-    var s2x = Math.sign(x2 - cx), s2y = Math.sign(y2 - cy); // seg2 ekseni
-    var ax = cx - s1x * r, ay = cy - s1y * r;               // köşeden r önce
-    var bx = cx + s2x * r, by = cy + s2y * r;               // köşeden r sonra
-    return "M" + n(x1) + "," + n(y1) +
-           "L" + n(ax) + "," + n(ay) +
-           "Q" + n(cx) + "," + n(cy) + " " + n(bx) + "," + n(by) +
-           "L" + n(x2) + "," + n(y2) +
-           arrowHead(x2, y2, s2x, s2y, head);
+    var exitH = a.nx !== 0, exitV = a.ny !== 0;
+    var entryH = b.nx !== 0, entryV = b.ny !== 0;
+    var pts = [{ x: a.x, y: a.y }];
+    if (exitH && entryV) {
+      pts.push({ x: b.x, y: a.y });                       // yatay çık → dikey gir
+    } else if (exitV && entryH) {
+      pts.push({ x: a.x, y: b.y });                       // dikey çık → yatay gir
+    } else if (exitH && entryH) {
+      var mx = (a.x + b.x) / 2; pts.push({ x: mx, y: a.y }, { x: mx, y: b.y }); // yatay-yatay → Z
+    } else if (exitV && entryV) {
+      var my = (a.y + b.y) / 2; pts.push({ x: a.x, y: my }, { x: b.x, y: my }); // dikey-dikey → Z
+    } else {
+      var hf = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y); // yön yoksa baskın eksen
+      pts.push(hf ? { x: b.x, y: a.y } : { x: a.x, y: b.y });
+    }
+    pts.push({ x: b.x, y: b.y });
+    return polyArrow(pts, radius, head);
   }
 
   function setupInstance(root) {
@@ -177,6 +233,18 @@
       stage.insertBefore(svg, stage.firstChild); // node'ların ALTINDA kalsın
     }
 
+    // Sestek gradient (ok dolgusu için). Renkler --dg-grad-from/to ile override
+    // edilir (Sestek pembe→viyole default). userSpaceOnUse → tüm diyagramda tek,
+    // tutarlı bir gradient alanı; koordinatlar layout'ta stage boyutuna set edilir.
+    var gradId = "dg-grad-" + Math.random().toString(36).slice(2, 7);
+    var grad = document.createElementNS(SVGNS, "linearGradient");
+    grad.setAttribute("id", gradId);
+    grad.setAttribute("gradientUnits", "userSpaceOnUse");
+    var gs1 = document.createElementNS(SVGNS, "stop"); gs1.setAttribute("offset", "0"); gs1.style.stopColor = "var(--dg-grad-from, #EC008C)";
+    var gs2 = document.createElementNS(SVGNS, "stop"); gs2.setAttribute("offset", "1"); gs2.style.stopColor = "var(--dg-grad-to, #9d4bff)";
+    grad.appendChild(gs1); grad.appendChild(gs2);
+    var defs = document.createElementNS(SVGNS, "defs"); defs.appendChild(grad); svg.appendChild(defs);
+
     function mkPath(cls) {
       var p = document.createElementNS(SVGNS, "path");
       p.setAttribute("class", cls);
@@ -208,27 +276,54 @@
         curve:  attrNum(node, "data-dg-curve", curve0),
         radius: attrNum(node, "data-dg-radius", radius0),
         shape:  node.getAttribute("data-dg-shape") || shape0,
-        anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef kenarı
+        anchor: node.getAttribute("data-dg-anchor") || "auto", // hedef (bu node) kenarı
         base: mkPath("dg-line dg-line--base"),
         fill: mkPath("dg-line dg-line--fill"),
       });
     });
 
+    // data-dg-loop → döngüyü kapat: son node'dan ilk node'a ok. Kapanış oku son
+    // node göründükten SONRA çizilir (aşağıdaki forward/backward zamanlaması).
+    if (Sestek.util.flag(root.getAttribute("data-dg-loop")) && nodes.length >= 2) {
+      var firstNode = nodes[0], lastNode = nodes[nodes.length - 1];
+      var alreadyIn = conns.some(function (c) { return c.node === firstNode; });
+      if (!alreadyIn && firstNode !== lastNode) {
+        conns.push({
+          node: firstNode, source: lastNode,
+          curve:  attrNum(firstNode, "data-dg-curve", curve0),
+          radius: attrNum(firstNode, "data-dg-radius", radius0),
+          shape:  firstNode.getAttribute("data-dg-shape") || shape0,
+          anchor: firstNode.getAttribute("data-dg-anchor") || "auto",
+          base: mkPath("dg-line dg-line--base"),
+          fill: mkPath("dg-line dg-line--fill"),
+        });
+      }
+    }
+
     if (!conns.length) {
       console.warn("[Sestek ScrollDiagram] no connections resolved.", root);
     }
+
+    // Dolgu okları Sestek gradient'i ile boyanır (base gri kalır).
+    conns.forEach(function (c) { c.fill.setAttribute("stroke", "url(#" + gradId + ")"); });
 
     // ── Geometri: svg'yi stage pikseline eşitle, path 'd'lerini yaz ────────────
     function layout() {
       var sr = stage.getBoundingClientRect();
       svg.setAttribute("viewBox", "0 0 " + sr.width + " " + sr.height);
+      grad.setAttribute("x1", 0); grad.setAttribute("y1", 0);
+      grad.setAttribute("x2", sr.width); grad.setAttribute("y2", sr.height);
       var lb = rectOf(logo, sr);
       var origin = { x: lb.cx, y: lb.cy }; // kavisin "iç" tarafı = merkez
       conns.forEach(function (c) {
         var sb = rectOf(c.source, sr), db = rectOf(c.node, sr);
-        // Uçlar kutu KENARINA bağlanır (text'in içine girmez); anchor override edilebilir.
-        var a = edgePoint(sb, db.cx, db.cy, gap, "auto");
-        var b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor);
+        // Uçlar: KAYNAKTA [data-dg-out] / HEDEFTE [data-dg-in] port'una bağlanır.
+        // Port merkezini kenar normali yönünde 'gap' kadar DIŞA kaydırırız → ok
+        // node'un içine girmez, hemen dışında biter. Port yoksa auto kenar-ortası.
+        var a = portCenter(c.source, "[data-dg-out]", sr);
+        if (a) { a.x += a.nx * gap; a.y += a.ny * gap; } else { a = edgePoint(sb, db.cx, db.cy, gap, "auto"); }
+        var b = portCenter(c.node, "[data-dg-in]", sr);
+        if (b) { b.x += b.nx * gap; b.y += b.ny * gap; } else { b = edgePoint(db, sb.cx, sb.cy, gap, c.anchor); }
         var d = c.shape === "elbow"
           ? elbowPath(a, b, c.radius, head)
           : curvePath(a, b, c.curve, head, origin);
@@ -260,7 +355,8 @@
 
     // ── GSAP yoksa / reduced-motion: her şey açık, oklar dolu ──────────────────
     if (!hasGsap || reduce) {
-      conns.forEach(function (c) { c.node.style.opacity = "1"; drawShow(c.base); drawShow(c.fill); });
+      nodes.forEach(function (nd) { nd.style.opacity = "1"; nd.style.visibility = "visible"; });
+      conns.forEach(function (c) { drawShow(c.base); drawShow(c.fill); });
       window.addEventListener("resize", layout);
       return { relayout: layout };
     }
@@ -288,10 +384,26 @@
       },
     });
 
-    conns.forEach(function (c) {
-      tl.to(c.base, drawVars(0.5))                                   // 1) gri çizilsin
-        .to(c.fill, drawVars(0.6))                                   // 2) Sestek dolsun
-        .to(c.node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");  // node açılır
+    // Her node kendi step'inde açılır. Bir ok, iki ucundan SONRA görünen node'un
+    // step'inde çizilir: ileri ok (kaynak önce göründü) → hedefin step'inde,
+    // hedefle birlikte; geri/kapanış oku (kaynak sonra görünür, örn. son→ilk
+    // döngü) → kaynağın step'inde, node göründükten sonra. Böylece ilk node da
+    // görünür ve kapanış oku görünmeyen node'dan çizilmez.
+    function drawArrow(c) { tl.to(c.base, drawVars(0.5)).to(c.fill, drawVars(0.6)); }
+
+    nodes.forEach(function (node, idx) {
+      // 1) bu node'a giren İLERİ oklar (kaynağı zaten görünmüş)
+      var drewForward = false;
+      conns.forEach(function (c) {
+        if (c.node === node && nodes.indexOf(c.source) < idx) { drawArrow(c); drewForward = true; }
+      });
+      // 2) node'u aç (ileri ok varsa çizimle üst üste bindir)
+      if (drewForward) tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 }, "<0.2");
+      else             tl.to(node, { autoAlpha: 1, y: 0, duration: 0.4 });
+      // 3) bu node'dan çıkan GERİ/kapanış okları (hedefi zaten görünmüş)
+      conns.forEach(function (c) {
+        if (c.source === node && nodes.indexOf(c.node) < idx) { drawArrow(c); }
+      });
     });
 
     return { timeline: tl, relayout: layout };
