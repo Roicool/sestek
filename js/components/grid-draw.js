@@ -1,13 +1,24 @@
 /*!
- * grid-draw.js v1.0.0
- * Self-drawing border-grid lines. When a bordered element scrolls into
- * view its border lines draw themselves once — horizontals left→right
+ * grid-draw.js v1.1.0
+ * Self-drawing border-grid lines. When a bordered element enters the
+ * viewport its border lines draw themselves once — horizontals left→right
  * (scaleX), verticals top→bottom (scaleY) — then never replay.
  *
+ * Changelog
+ * v1.1.0 — trigger moved from ScrollTrigger to IntersectionObserver.
+ *          ScrollTrigger's start/end math breaks around pinned sections
+ *          (pin spacers shift positions unless every trigger declares
+ *          pinnedContainer), which made lines fire instantly and appear
+ *          pre-drawn. IO watches REAL viewport intersection, so pinning
+ *          elsewhere on the page can't affect it. ScrollTrigger is no
+ *          longer a dependency — only gsap. data-grid-draw-start was
+ *          replaced by data-grid-draw-offset.
+ * v1.0.0 — initial release
+ *
  * Stability by design: NO scrub, no pinning, no per-frame work. Each
- * element gets one fire-and-forget GSAP timeline behind a ScrollTrigger
- * with `once: true`, the same class of behaviour as reveal.js /
- * section-title.js. After the tween ends the component is inert.
+ * element gets one paused GSAP timeline played once by a one-shot
+ * IntersectionObserver — the same class of behaviour as section-title.js.
+ * After the tween ends the component is inert.
  *
  * How it works: the element's own border CSS stays the single source of
  * truth — the JS measures which edges have a border (width > 0), their
@@ -18,7 +29,7 @@
  * Without JS the real borders simply stay visible — progressive
  * enhancement for free.
  *
- * Requires globals : gsap, ScrollTrigger
+ * Requires globals : gsap
  * Optional globals : Sestek.util (prefersReducedMotion)
  * CSS : css/components/grid-draw.css
  *
@@ -33,10 +44,12 @@
  *   data-grid-draw-duration="0.8"     draw duration in seconds
  *   data-grid-draw-ease="power2.out"  GSAP ease
  *   data-grid-draw-delay="0"          delay in seconds (stagger siblings)
- *   data-grid-draw-start="top 85%"    ScrollTrigger start
+ *   data-grid-draw-offset="15"        viewport bottom margin in % — element
+ *                                     must clear the bottom N% of the screen
+ *                                     before it draws (0 = any pixel visible)
  *
- * prefers-reduced-motion: reduce → nothing is initialised; the real
- * borders stay as plain CSS.
+ * prefers-reduced-motion: reduce (or no IntersectionObserver) → nothing is
+ * initialised; the real borders stay as plain CSS.
  *
  * https://github.com/roicool/sestek
  */
@@ -68,7 +81,8 @@
     var lines = [];
 
     Object.keys(EDGES).forEach(function (edge) {
-      var width = parseFloat(cs["border" + edge.charAt(0).toUpperCase() + edge.slice(1) + "Width"]);
+      var prop = "border" + edge.charAt(0).toUpperCase() + edge.slice(1);
+      var width = parseFloat(cs[prop + "Width"]);
       if (!width) return;                      // this edge has no border → no line
 
       var conf = EDGES[edge];
@@ -76,7 +90,7 @@
       line.className = "grid-draw-line";
       Object.keys(conf.pos).forEach(function (p) { line.style[p] = conf.pos[p]; });
       line.style[conf.size] = width + "px";
-      line.style.background = cs["border" + edge.charAt(0).toUpperCase() + edge.slice(1) + "Color"];
+      line.style.background = cs[prop + "Color"];
       line.style.transformOrigin = conf.origin;
       line._axis = conf.axis;
       el.appendChild(line);
@@ -93,16 +107,12 @@
     // and a no-JS page keeps its borders.) border stays in layout.
     el.style.borderColor = "transparent";
 
+    // Lines start undrawn; a paused timeline is played once by the IO below.
     var tl = gsap.timeline({
+      paused: true,
       defaults: {
         duration: parseFloat(el.getAttribute("data-grid-draw-duration")) || 0.8,
         ease: el.getAttribute("data-grid-draw-ease") || "power2.out"
-      },
-      delay: parseFloat(el.getAttribute("data-grid-draw-delay")) || 0,
-      scrollTrigger: {
-        trigger: el,
-        start: el.getAttribute("data-grid-draw-start") || "top 85%",
-        once: true                             // fire-and-forget: never replays
       }
     });
 
@@ -110,20 +120,37 @@
       var fromVars = {}, toVars = {};
       fromVars[line._axis] = 0;
       toVars[line._axis] = 1;
-      tl.fromTo(line, fromVars, toVars, i * STAGGER);
+      gsap.set(line, fromVars);                // hidden immediately, not on play
+      tl.to(line, toVars, i * STAGGER);
     });
 
-    instances.push({ el: el, lines: lines, tl: tl });
+    // IntersectionObserver instead of ScrollTrigger ON PURPOSE: it reads
+    // the element's real on-screen position, so pinned sections elsewhere
+    // (whose spacers shift ScrollTrigger's start/end math) can't break it.
+    var offset = parseFloat(el.getAttribute("data-grid-draw-offset"));
+    if (isNaN(offset)) offset = 15;
+    var delay = parseFloat(el.getAttribute("data-grid-draw-delay")) || 0;
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        io.disconnect();                       // one-shot — never replays
+        delay ? gsap.delayedCall(delay, function () { tl.play(); }) : tl.play();
+      });
+    }, { rootMargin: "0px 0px -" + offset + "% 0px", threshold: 0 });
+
+    io.observe(el);
+    instances.push({ el: el, lines: lines, tl: tl, io: io });
   }
 
   /** Initialise every [data-grid-draw] element on the page. */
   function initGridDraw(selector) {
-    if (!global.gsap || !global.ScrollTrigger) {
-      console.warn("[grid-draw] gsap + ScrollTrigger must be loaded first");
+    if (!global.gsap) {
+      console.warn("[grid-draw] gsap must be loaded first");
       return;
     }
-    if (prefersReducedMotion()) return;        // real borders stay as-is
-    gsap.registerPlugin(ScrollTrigger);
+    // no motion (or no IO support) → real borders stay as plain CSS
+    if (prefersReducedMotion() || !("IntersectionObserver" in global)) return;
 
     var els = document.querySelectorAll(selector || "[data-grid-draw]");
     Array.prototype.forEach.call(els, setup);
@@ -132,7 +159,7 @@
   /** Tear everything down and restore the real borders. */
   function destroyGridDraw() {
     instances.forEach(function (inst) {
-      if (inst.tl.scrollTrigger) inst.tl.scrollTrigger.kill();
+      inst.io.disconnect();
       inst.tl.kill();
       inst.lines.forEach(function (line) {
         if (line.parentNode) line.parentNode.removeChild(line);
