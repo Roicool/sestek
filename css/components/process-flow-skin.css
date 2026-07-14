@@ -84,7 +84,7 @@
 }
 
 /* ── Card stack (variants overlap; JS shows one) ──────────────────────────*/
-.pf_stack { position: relative; width: 100%; display: flex; justify-content: center; }
+.pf_stack { position: relative; width: 100%; display: flex; }
 .pf_card { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
 .pf_card:first-child { position: relative; left: auto; transform: none; }
 /* checkout column stacks card-checkout directly */
