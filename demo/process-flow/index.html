@@ -184,13 +184,176 @@
 
   <!-- GSAP core only — no Club plugins (draw uses native stroke-dashoffset) -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-  <script src="../../js/components/process-flow.js" defer></script>
-  <script>
-    /* file:// won't run deferred module order reliably — serve with
-       `python3 -m http.server` from the repo root and open /demo/process-flow/. */
-    document.addEventListener("DOMContentLoaded", function () {
-      Sestek.initProcessFlow();
-    });
+
+  <!-- process-flow.js inlined so the demo is self-contained (no GitHub request).
+       In production, load it from the CDN instead:
+       https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/process-flow.js -->
+  <script defer>
+  (function (global) {
+    "use strict";
+
+    function cssVar(root, name, fallback) {
+      var v = getComputedStyle(root).getPropertyValue(name);
+      return (v && v.trim()) || fallback;
+    }
+
+    function build(root) {
+      if (root._processFlowInit) return;                      // idempotent
+      root._processFlowInit = true;
+
+      var toArray = gsap.utils.toArray;
+      var prompts = toArray(root.querySelectorAll("[data-process-flow-prompt]"));
+      var avatar = root.querySelector("[data-process-flow-avatar]");
+      var fills = toArray(root.querySelectorAll("[data-process-flow-fill]"));
+      var draw = root.querySelector("[data-process-flow-draw]");
+      var tags = toArray(root.querySelectorAll("[data-process-flow-tag]"));
+      var track = root.querySelector("[data-process-flow-track]");
+      var cards = toArray(root.querySelectorAll("[data-process-flow-card]"));
+
+      if (!draw || !track || !tags.length || !cards.length) {
+        console.warn("[Sestek ProcessFlow] Need [data-process-flow-draw], " +
+          "[data-process-flow-track], and matching [data-process-flow-tag]/" +
+          "[data-process-flow-card] elements.");
+        return;
+      }
+
+      var accent = cssVar(root, "--pf-accent", "#0b4fff");
+      var muted = cssVar(root, "--pf-muted", "#c3c2b2");
+      var tagActiveBg = cssVar(root, "--pf-tag-active-bg", "#d8dade");
+      var tagIdleBg = cssVar(root, "--pf-tag-idle-bg", "#f0efe3");
+
+      var CARD_DELAY = parseFloat(root.getAttribute("data-process-flow-card-delay")) || 0.6;
+      var PHASE_DELAY = parseFloat(root.getAttribute("data-process-flow-phase-delay")) || 1.4;
+
+      var segCount = Math.min(tags.length, cards.length);
+      var stepPct = 100 / segCount;
+      var firstFill = fills[0] || null;
+      var lastFill = fills.length ? fills[fills.length - 1] : null;
+
+      function wrapOf(tag) { return tag.querySelector("[data-process-flow-tag-wrap]"); }
+      function textOf(tag) { return tag.querySelector("[data-process-flow-tag-text]"); }
+      function contentOf(card) { return card.firstElementChild; }
+
+      var drawLen = draw.getTotalLength();
+
+      gsap.set(track, { width: segCount * 100 + "%" });
+      cards.slice(0, segCount).forEach(function (card) {
+        gsap.set(card, { width: stepPct + "%" });
+      });
+
+      gsap.set(draw, { strokeDasharray: drawLen, strokeDashoffset: drawLen });
+      if (fills.length) gsap.set(fills, { width: "0%" });
+      tags.forEach(function (tag) {
+        var w = wrapOf(tag);
+        if (w) gsap.set(w, { width: 0 });
+      });
+      cards.forEach(function (card) {
+        var c = contentOf(card);
+        if (c) gsap.set(c, { opacity: 0, y: 12 });
+      });
+      if (avatar) gsap.set(avatar, { color: muted });
+      if (prompts.length) {
+        gsap.set(prompts, { opacity: 0 });
+        gsap.set(prompts[0], { opacity: 1 });
+      }
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (fills.length) gsap.set(fills, { width: "100%" });
+        gsap.set(draw, { strokeDashoffset: 0 });
+        if (avatar) gsap.set(avatar, { color: accent });
+        var t0 = tags[0], w0 = wrapOf(t0), x0 = textOf(t0), c0 = contentOf(cards[0]);
+        gsap.set(t0, { backgroundColor: tagActiveBg, color: accent });
+        if (w0) gsap.set(w0, { width: "auto" });
+        if (x0) gsap.set(x0, { color: accent });
+        if (c0) gsap.set(c0, { opacity: 1, y: 0 });
+        return;
+      }
+
+      var tl = gsap.timeline({ repeat: -1, defaults: { ease: "power4.out" } });
+
+      prompts.forEach(function (_, phaseIndex) {
+        addPhase();
+        addReset(phaseIndex);
+      });
+      if (!prompts.length) { addPhase(); addReset(-1); }
+
+      function addPhase() {
+        if (firstFill) tl.to(firstFill, { width: "100%", duration: 0.5 });
+        if (avatar) tl.to(avatar, { color: accent, duration: 0.5 }, "<50%");
+
+        tl.to(draw, { strokeDashoffset: 0, duration: 0.6 }, "-=0.3");
+
+        tags.slice(0, segCount).forEach(function (tag, i) {
+          var isFirst = i === 0;
+          var wrap = wrapOf(tag);
+          var text = textOf(tag);
+
+          tl.to(tag, { backgroundColor: tagActiveBg, color: accent, duration: 0.4 },
+            isFirst ? "-=0.1" : "<0.3");
+          if (wrap) tl.to(wrap, { width: "auto", duration: 0.6 }, "<");
+          if (text) tl.to(text, { color: accent, duration: 0.4 }, "<");
+
+          if (!isFirst) {
+            var prevWrap = wrapOf(tags[i - 1]);
+            if (prevWrap) tl.to(prevWrap, { width: 0, duration: 0.6 }, "<");
+            tl.to(track, { xPercent: -stepPct * i, duration: 0.8 }, "<");
+          }
+
+          var content = contentOf(cards[i]);
+          if (content) tl.to(content, { opacity: 1, y: 0, duration: isFirst ? 0.5 : 0.7 }, "<");
+          tl.to({}, { duration: CARD_DELAY });
+        });
+
+        if (lastFill && lastFill !== firstFill) {
+          tl.to(lastFill, { width: "100%", duration: 0.6 }, "<");
+        }
+        tl.to({}, { duration: PHASE_DELAY });
+      }
+
+      function addReset(phaseIndex) {
+        var contents = cards.map(contentOf).filter(Boolean);
+        var wraps = tags.map(wrapOf).filter(Boolean);
+        var texts = tags.map(textOf).filter(Boolean);
+        var fadeTargets = fills.concat([draw]);
+
+        tl.to(fadeTargets, { opacity: 0, duration: 0.6 });
+        if (contents.length) tl.to(contents, { opacity: 0, y: 12, duration: 0.6 }, "<");
+        if (wraps.length) tl.to(wraps, { width: 0, duration: 0.6 }, "<");
+        if (avatar) tl.to(avatar, { color: muted, duration: 0.4 }, "<");
+        tl.to(tags, { backgroundColor: tagIdleBg, color: muted, duration: 0.4 }, "<");
+        if (texts.length) tl.to(texts, { color: muted, duration: 0.4 }, "<");
+
+        if (prompts.length) {
+          var next = (phaseIndex + 1) % prompts.length;
+          tl.to(prompts[phaseIndex], { opacity: 0, duration: 0.6 }, "<");
+          tl.to(prompts[next], { opacity: 1, duration: 0.6 }, "<");
+        }
+
+        tl.to(track, { xPercent: 0, duration: 0.6 }, "<");
+        if (fills.length) tl.set(fills, { width: "0%" });
+        tl.set(draw, { strokeDashoffset: drawLen });
+        tl.set(fadeTargets, { opacity: 1 });
+      }
+
+      root._processFlowTimeline = tl;
+    }
+
+    function initProcessFlow(selector) {
+      if (typeof gsap === "undefined") {
+        console.error("[Sestek ProcessFlow] GSAP required."); return;
+      }
+      var roots = document.querySelectorAll(selector || "[data-process-flow]");
+      if (!roots.length) { console.warn("[Sestek ProcessFlow] No [data-process-flow] found."); return; }
+      roots.forEach(build);
+    }
+
+    global.Sestek = global.Sestek || {};
+    global.Sestek.initProcessFlow = initProcessFlow;
+  })(window);
+
+  document.addEventListener("DOMContentLoaded", function () {
+    Sestek.initProcessFlow();
+  });
   </script>
 </body>
 </html>
