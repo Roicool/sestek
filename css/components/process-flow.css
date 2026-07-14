@@ -7,14 +7,15 @@
  * https://github.com/roicool/sestek
  */
 
-/* ── Colour tokens — process-flow.js reads these so the timeline stays synced ── */
+/* ── Colour tokens — process-flow.js reads these so the timeline stays synced.
+   Bound to RC Structure tokens with hex fallbacks (works standalone too). ─── */
 [data-process-flow] {
-  --pf-accent: #0b4fff;
-  --pf-ink: #232323;
-  --pf-muted: #c3c2b2;
-  --pf-tag-idle-bg: #f0efe3;
-  --pf-tag-idle-bd: #e2e1d3;
-  --pf-tag-active-bg: #d8dade;
+  --pf-accent:        var(--color-text--accent, #0b4fff);          /* brand-primary--600 */
+  --pf-ink:           var(--color-text--base, #232323);            /* neutral--900 */
+  --pf-muted:         var(--color-text--muted, #c3c2b2);           /* neutral--500 */
+  --pf-tag-idle-bg:   var(--surface--muted, #f0efe3);              /* neutral--050 */
+  --pf-tag-idle-bd:   var(--border--color-border-muted, #e2e1d3);  /* neutral--100 */
+  --pf-tag-active-bg: var(--brand-primary--200, #d8dade);
 }
 
 /* ── Personas — clip shows the active row; JS scrolls the stack yPercent ────── */
