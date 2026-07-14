@@ -11,7 +11,6 @@
  */
 
 [data-process-flow] {
-  --pf-mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
   --pf-card-dark: #232323;
   --pf-card-white: #ffffff;
 }
@@ -33,7 +32,6 @@
 .pf_persona-wrap { display: block; }
 .pf_persona-name,
 .pf_persona-line {
-  font-family: var(--pf-mono);
   font-size: 0.66rem;
   letter-spacing: 0.06em;
   line-height: 1.55;
