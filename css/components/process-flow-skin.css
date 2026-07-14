@@ -1,11 +1,12 @@
 /*!
- * process-flow-skin.css v1.0.0
- * Full VISUAL skin for the Auxia-style process-flow (pairs with process-flow.js
- * + process-flow.css). Structural/mechanical rules live in process-flow.css;
- * this file is the look — personas, rail, pills, and the three card designs.
- * Class names match the Webflow build (pf_*, card-*). Tweak freely.
- *
- * Colours read the same --pf-* tokens (RC Structure with hex fallbacks).
+ * process-flow-skin.css v1.1.0
+ * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
+ * class names used in the Sestek build (section__process, pf__inner, pf_persona,
+ * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
+ *   - process-flow.css  (structural hooks / --pf-* tokens)
+ *   - process-flow.js   (the GSAP loop)
+ * Animated props (opacity, blur, transform, drawSVG, pill width, active colours)
+ * are set by the JS — this file is layout + resting look only.
  * https://github.com/roicool/sestek
  */
 
@@ -15,15 +16,21 @@
   --pf-card-white: #ffffff;
 }
 
-/* ── Scene layout ─────────────────────────────────────────────────────────── */
-.pf__inner { position: relative; min-height: 300px; }
+/* ── Scene wrapper (= Auxia .hero_visual) ─────────────────────────────────
+   MUST be relative — personas, rail and columns position against it. */
+.pf__inner {
+  position: relative;
+  min-height: 460px;
+}
 
-/* ── Personas (absolute left; JS scrolls the clip) ────────────────────────── */
+/* ── Personas (absolute left; JS scrolls the clip) ────────────────────────
+   .pf_personas-clip also gets overflow:hidden from process-flow.css. */
 .pf_personas { position: absolute; left: 0; top: 4px; width: 13rem; z-index: 3; }
-.pf_personas-clip { height: 5.75rem; }                 /* ~1.4 rows visible; overflow:hidden in process-flow.css */
+.pf_personas-clip { height: 5.75rem; }                 /* ~1.4 rows visible */
 .pf_persona { display: flex; gap: 0.5rem; align-items: flex-start; height: 4rem; }
 .pf_persona-icon { flex: none; width: 0.8rem; height: 0.8rem; margin-top: 1px; color: var(--pf-muted); }
 .pf_persona-icon svg { display: block; width: 100%; height: 100%; }
+.pf_persona-wrap { display: block; }
 .pf_persona-name,
 .pf_persona-line {
   font-family: var(--pf-mono);
@@ -35,17 +42,17 @@
 }
 .pf_persona-name { font-weight: 600; }
 
-/* ── Rail (light track behind the drawn blue line) ─────────────────────────
-   Full-width, edge to edge. Height ≈ the SVG viewBox height (0 0 1231 71) so
-   preserveAspectRatio="none" does NOT squash the step-down. The flat-left line
-   is at the TOP of this box (persona level); the pill line is at the BOTTOM. */
-.pf_rail { position: absolute; left: 0; right: 0; top: 1.25rem; height: 4.4rem; z-index: 1; }
+/* ── Rail: full width, edge to edge ───────────────────────────────────────
+   Height ≈ the SVG viewBox height (0 0 1231 71) so preserveAspectRatio="none"
+   does NOT squash the step-down. Flat-left line sits at the TOP of this box
+   (persona level); the pill line sits at the BOTTOM. */
+.pf_rail { position: absolute; left: 0; right: 0; top: 1.25rem; height: 4.4rem; z-index: 1; pointer-events: none; }
 .pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .pf_track { fill: none; stroke: var(--pf-tag-idle-bd); stroke-width: 2; }
 .pf_track.is-dash { stroke-dasharray: 4 5; opacity: 0.7; }
-/* .pf_draw stroke/fill handled in process-flow.css via [data-pf-draw] */
+.pf_draw { fill: none; stroke: var(--pf-accent); stroke-width: 2; }   /* also set via [data-pf-draw] */
 
-/* ── Columns: pill sits above its card stack, aligned in 3 tracks ─────────── */
+/* ── Columns: pill above its card stack, 3 aligned tracks ─────────────────*/
 .pf_columns {
   position: relative; z-index: 2;
   margin-left: 15.5rem;                                /* clear the personas */
@@ -53,10 +60,11 @@
   grid-template-columns: 1.35fr 1fr 0.95fr;
   gap: 1.6rem;
   align-items: start;
+  padding-top: 4.9rem;                                 /* drop the pills onto the rail's bottom line */
 }
 .pf_col { display: flex; flex-direction: column; align-items: center; }
 
-/* ── Pill ─────────────────────────────────────────────────────────────────── */
+/* ── Pill (sits on the rail line) ─────────────────────────────────────────*/
 .pf_pill {
   display: inline-flex; align-items: center; gap: 0.4rem;
   height: 1.5rem; padding: 0 0.7rem;
@@ -66,10 +74,11 @@
   color: var(--pf-muted);
   margin-bottom: 1.4rem;
   white-space: nowrap;
+  font-size: 0;                                        /* swallow the stray "✦" text node */
 }
-.pf_pill-spark { flex: none; width: 0.56rem; height: 0.56rem; }
+.pf_pill-spark { flex: none; width: 0.6rem; height: 0.6rem; font-size: 0; }
 .pf_pill-spark svg { display: block; width: 100%; height: 100%; }
-/* .pf_pill-textwrap collapse handled in process-flow.css via [data-pf-pill-wrap] */
+/* .pf_pill-textwrap collapse handled in process-flow.css ([data-pf-pill-wrap]) */
 .pf_pill-text {
   display: inline-block;
   font-family: var(--pf-mono);
@@ -78,12 +87,15 @@
   color: inherit;
 }
 
-/* ── Card stack (all phase variants overlap; JS shows one) ────────────────── */
+/* ── Card stack (variants overlap; JS shows one) ──────────────────────────*/
 .pf_stack { position: relative; width: 100%; display: flex; justify-content: center; }
 .pf_card { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
 .pf_card:first-child { position: relative; left: auto; transform: none; }
+/* checkout column stacks card-checkout directly */
+.pf_stack > .card-checkout { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+.pf_stack > .card-checkout:first-child { position: relative; left: auto; transform: none; }
 
-/* ── Notification card (dark) ─────────────────────────────────────────────── */
+/* ── Notification card (dark) ─────────────────────────────────────────────*/
 .card-notif {
   width: 20rem; display: flex; gap: 0.75rem;
   background: var(--pf-card-dark); color: #fff;
@@ -98,9 +110,9 @@
 .card-notif-head { display: flex; align-items: baseline; gap: 0.5rem; }
 .card-notif-app { font-weight: 700; font-size: 0.85rem; }
 .card-notif-time { font-size: 0.7rem; color: #9a9a9a; margin-left: auto; }
-.card-notif-body { font-size: 0.75rem; color: #c9c9c9; margin-top: 0.2rem; line-height: 1.42; }
+.card-notif-body { font-size: 0.78rem; color: #c9c9c9; line-height: 1.42; }
 
-/* ── Media card (image or video) ──────────────────────────────────────────── */
+/* ── Media card (image or video) ──────────────────────────────────────────*/
 .card-media {
   position: relative; width: 14.75rem; height: 18.75rem;
   border-radius: 1rem; overflow: hidden; background: #23252a;   /* fallback while media loads */
@@ -111,14 +123,13 @@
   object-fit: cover; display: block;
   background-size: cover; background-position: center;
 }
+.card-media-img video { width: 100%; height: 100%; object-fit: cover; }
 .card-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,0) 58%); }
 .card-media-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 1rem; color: #fff; z-index: 1; }
-.card-media-info h4,
-.card-media-info .pf_media-title { margin: 0 0 0.3rem; font-size: 1.05rem; line-height: 1.2; font-weight: 700; }
-.card-media-info p,
-.card-media-info .pf_media-sub { margin: 0 0 0.7rem; font-size: 0.72rem; color: #d8d8d8; line-height: 1.35; }
+.card-media-info .text-sm { font-size: 1.05rem; line-height: 1.2; font-weight: 700; margin-bottom: 0.3rem; color: #fff; }
+.card-media-info .text-xs { font-size: 0.72rem; color: #d8d8d8; line-height: 1.35; margin-bottom: 0.7rem; }
 
-/* "15% off" badge (Auxia's .process_discount) */
+/* "15% off" badge (Auxia .process_discount) */
 .process_discount,
 .card-media-badge {
   position: absolute; top: 0.85rem; left: 0.85rem; z-index: 1;
@@ -126,34 +137,38 @@
   letter-spacing: .06em; padding: 0.25rem 0.5rem; border-radius: 0.4rem; text-transform: uppercase;
 }
 
-/* Shared card button */
-.pf_button {
+/* Media button */
+.card-media-info .pf_button {
   display: inline-block; background: #1c1c1c; color: #fff; border: none;
   border-radius: 0.5rem; padding: 0.45rem 0.85rem; font-size: 0.75rem; font-weight: 600;
   text-decoration: none; cursor: pointer;
 }
 
-/* ── Checkout card (white) ────────────────────────────────────────────────── */
+/* ── Checkout card (white) ────────────────────────────────────────────────*/
 .card-checkout {
   width: 12.5rem; background: var(--pf-card-white); border-radius: 0.9rem; padding: 1rem;
   box-shadow: 0 22px 44px -20px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.06);
   color: var(--pf-ink);
 }
 .card-checkout-h { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.75rem; }
-.card-checkout-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: #6a6a6a; margin-bottom: 0.55rem; }
+.card-checkout-row { display: flex; justify-content: space-between; font-size: 0.78rem; color: #6a6a6a; margin-bottom: 0.55rem; }
+.card-checkout-row .checkout-label { color: inherit; }
 .card-checkout-row.is-total,
 .card-checkout-row.total { color: var(--pf-accent); font-weight: 700; }
-.card-checkout .pf_button.is-dark,
+.card-checkout-row.is-total .checkout-label,
+.card-checkout-row.total .checkout-label { color: var(--pf-accent); }
+.card-checkout .pf_button,
 .card-checkout button {
-  width: 100%; margin-top: 0.4rem; background: #ededed; color: var(--pf-ink);
+  display: block; width: 100%; margin-top: 0.4rem; background: #ededed; color: var(--pf-ink);
   text-align: center; border: none; border-radius: 0.5rem; padding: 0.55rem;
-  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Mobile fallback (stack everything, hide the rail) ────────────────────── */
+/* ── Mobile (stack columns, hide the rail) ────────────────────────────────*/
 @media (max-width: 56.25rem) {
-  .pf_columns { margin-left: 0; grid-template-columns: 1fr; gap: 1.1rem; justify-items: center; }
+  .pf_columns { margin-left: 0; grid-template-columns: 1fr; gap: 1.1rem; justify-items: center; padding-top: 0; }
   .pf_personas { position: relative; width: auto; margin-bottom: 1.5rem; }
   .pf_rail { display: none; }
-  .pf_card { position: relative; left: auto; transform: none; }
+  .pf_card,
+  .pf_stack > .card-checkout { position: relative; left: auto; transform: none; }
 }
