@@ -3,178 +3,330 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Process Flow — Auxia-style looping flow</title>
-
-  <!-- Component structural CSS (relative for the demo; use CDN in Webflow) -->
-  <link rel="stylesheet" href="../../css/components/process-flow.css">
-
+  <title>Process Flow — Auxia-style journey loop</title>
   <style>
-    /* ── Demo skin only — the component CSS owns the mechanics ── */
     :root {
-      --bg: #f0efe3;
+      --bg: #ece9dd;
       --blue: #0b4fff;
-      --dark: #232323;
+      --ink: #232323;
       --muted: #c3c2b2;
+      --tag-idle-bg: #f0efe3;
+      --tag-idle-bd: #e2e1d3;
+      --tag-active-bg: #d8dade;
+      --mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     * { box-sizing: border-box; }
+    html, body { margin: 0; }
     body {
-      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      background: var(--bg);
-      color: var(--dark);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 64px 24px;
     }
 
-    .pf { width: min(920px, 92vw); padding: 48px 32px 64px; }
+    /* ── Scene ─────────────────────────────────────────────────────────────── */
+    .pf { position: relative; width: 100%; max-width: 1120px; }
+    .pf_inner { position: relative; min-height: 300px; }
 
-    /* Prompt crossfade — component CSS handles opacity/absolute stacking */
-    .pf_prompt-wrap {
-      position: relative;
-      height: 28px;
-      margin-bottom: 40px;
-      text-align: center;
+    /* ── Personas (left, vertical stack, active one dark) ──────────────────── */
+    .pf_personas { position: absolute; left: 0; top: 4px; width: 210px; z-index: 3; }
+    .pf_personas-clip { height: 92px; overflow: hidden; }
+    .pf_persona {
+      display: flex; gap: 8px; align-items: flex-start;
+      height: 64px;
     }
-    .pf_prompt {
-      font-size: 15px;
-      letter-spacing: 0.02em;
+    .pf_persona-icon { color: inherit; flex: none; margin-top: 1px; }
+    .pf_persona-icon svg { display: block; width: 13px; height: 13px; }
+    .pf_persona-name, .pf_persona-line {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
+      line-height: 1.55;
+      text-transform: uppercase;
       color: var(--muted);
     }
+    .pf_persona-name { font-weight: 600; }
+    .pf_persona-icon { color: var(--muted); }
 
-    /* Flow row */
-    .pf_flow {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      margin-bottom: 40px;
+    /* ── Rail: the light track + the blue drawn line ───────────────────────── */
+    .pf_rail { position: absolute; left: 0; right: 0; top: 92px; height: 40px; z-index: 1; }
+    .pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .pf_track { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: 0.5; }
+    .pf_track.is-dash { stroke-dasharray: 4 5; }
+    .pf_draw  { fill: none; stroke: var(--blue); stroke-width: 1.75; }
+
+    /* ── Pills row (sits ON the rail line) + cards, aligned in 3 columns ────── */
+    .pf_columns {
+      position: relative; z-index: 2;
+      margin-left: 250px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 0.95fr;
+      gap: 26px;
+      align-items: start;
     }
-    .pf_avatar { color: var(--muted); font-size: 11px; font-weight: 600; padding-right: 10px; }
-    .pf_line { flex: 1 1 auto; height: 2px; background: rgba(0,0,0,.06); min-width: 24px; }
-    .pf_curve { width: 150px; height: 70px; overflow: visible; flex: none; }
-    .pf_curve-track { fill: none; stroke: var(--muted); stroke-width: 2; opacity: 0.35; }
+    .pf_col { display: flex; flex-direction: column; align-items: center; }
 
-    .pf_tags { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; flex: none; }
-    .pf_tag {
-      display: flex; align-items: center; gap: 8px;
-      padding: 4px 6px; border-radius: 6px;
-      background: var(--bg); width: fit-content;
+    .pf_pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 24px; padding: 0 11px;
+      border-radius: 999px;
+      background: var(--tag-idle-bg);
+      border: 1px solid var(--tag-idle-bd);
+      color: var(--muted);
+      margin-bottom: 22px;
+      white-space: nowrap;
     }
-    .pf_tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
-    .pf_tag-text { font-size: 12px; letter-spacing: 0.02em; color: var(--muted); padding-right: 2px; }
+    .pf_pill-spark { flex: none; width: 9px; height: 9px; }
+    .pf_pill-spark svg { display: block; width: 100%; height: 100%; }
+    .pf_pill-textwrap { display: inline-block; overflow: hidden; white-space: nowrap; }
+    .pf_pill-text {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: inherit;
+    }
 
-    /* Cards */
-    .pf_viewport { border-radius: 16px; }
-    .pf_card { align-items: center; justify-content: center; display: flex; padding: 24px; }
+    /* card stack: 3 phase-variants share one slot; only the active is shown */
+    .pf_stack { position: relative; width: 100%; display: flex; justify-content: center; }
+    .pf_slot  { grid-row: 2; }
+    .pf_card  { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+    .pf_card:first-child { position: relative; left: auto; transform: none; }
 
+    /* ── Notification card (dark) ──────────────────────────────────────────── */
     .card-notif {
-      display: flex; gap: 12px; background: var(--dark); color: #fff;
-      border-radius: 14px; padding: 16px 18px; width: 320px;
+      width: 322px; display: flex; gap: 12px;
+      background: #232323; color: #fff;
+      border-radius: 15px; padding: 15px 17px;
+      box-shadow: 0 22px 40px -18px rgba(0,0,0,.45), 0 4px 10px rgba(0,0,0,.12);
     }
     .card-notif-icon {
-      width: 34px; height: 34px; border-radius: 9px; background: #e8542d;
-      display: flex; align-items: center; justify-content: center; flex: none; font-size: 18px;
+      width: 36px; height: 36px; border-radius: 10px; flex: none;
+      display: flex; align-items: center; justify-content: center; font-size: 19px;
     }
-    .card-notif-title { font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: baseline; }
-    .card-notif-title span { font-weight: 400; font-size: 11px; color: #999; }
-    .card-notif-body { font-size: 12.5px; color: #cfcfcf; margin-top: 4px; line-height: 1.4; }
+    .card-notif-head { display: flex; align-items: baseline; gap: 8px; }
+    .card-notif-app { font-weight: 700; font-size: 13.5px; }
+    .card-notif-time { font-size: 11px; color: #9a9a9a; margin-left: auto; }
+    .card-notif-body { font-size: 12px; color: #c9c9c9; margin-top: 3px; line-height: 1.42; }
 
+    /* ── Media card (photo) ────────────────────────────────────────────────── */
     .card-media {
-      position: relative; width: 260px; height: 320px; border-radius: 16px; overflow: hidden;
-      background: linear-gradient(160deg, #6b8f5a, #23422f 70%);
+      position: relative; width: 236px; height: 300px;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 26px 46px -20px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.14);
     }
-    .card-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0) 55%); }
-    .card-media-text { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px; color: #fff; }
-    .card-media-text h4 { margin: 0 0 6px; font-size: 18px; line-height: 1.25; }
-    .card-media-text p { margin: 0 0 12px; font-size: 12px; color: #dcdcdc; }
-    .card-media-text button { background: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; cursor: pointer; }
+    .card-media-img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    .card-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,0) 58%); }
+    .card-media-badge {
+      position: absolute; top: 14px; left: 14px;
+      background: #e8542d; color: #fff; font-weight: 700; font-size: 10px;
+      letter-spacing: .06em; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;
+    }
+    .card-media-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px; color: #fff; }
+    .card-media-info h4 { margin: 0 0 5px; font-size: 17px; line-height: 1.2; font-weight: 700; }
+    .card-media-info p { margin: 0 0 11px; font-size: 11.5px; color: #d8d8d8; line-height: 1.35; }
+    .card-media-info button {
+      background: #1c1c1c; color: #fff; border: none; border-radius: 8px;
+      padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
 
+    /* ── Checkout card (white) ─────────────────────────────────────────────── */
     .card-checkout {
-      width: 260px; background: #fff; border-radius: 14px; padding: 18px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+      width: 200px; background: #fff; border-radius: 14px; padding: 16px;
+      box-shadow: 0 22px 44px -20px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.06);
     }
-    .card-checkout-title { font-weight: 600; margin-bottom: 12px; }
-    .card-checkout-row { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 8px; }
-    .card-checkout-row.total { color: var(--blue); font-weight: 600; }
-    .card-checkout button { width: 100%; margin-top: 10px; background: #ececec; border: none; border-radius: 8px; padding: 10px; font-size: 13px; cursor: pointer; }
+    .card-checkout-h { font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+    .card-checkout-row { display: flex; justify-content: space-between; font-size: 12px; color: #6a6a6a; margin-bottom: 9px; }
+    .card-checkout-row.total { color: var(--blue); font-weight: 700; }
+    .card-checkout button {
+      width: 100%; margin-top: 6px; background: #ededed; color: #232323; border: none;
+      border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      .pf_columns { margin-left: 0; grid-template-columns: 1fr; gap: 18px; justify-items: center; }
+      .pf_personas { position: relative; width: auto; margin-bottom: 24px; }
+      .pf_rail { display: none; }
+      .pf_card { position: relative; left: auto; transform: none; }
+    }
   </style>
 </head>
 <body>
-  <section class="pf" data-process-flow>
+  <section class="pf" data-process-flow lang="en">
+    <div class="pf_inner">
 
-    <!-- 1 · Prompt crossfade — one prompt per phase -->
-    <div class="pf_prompt-wrap">
-      <p class="pf_prompt" data-process-flow-prompt>Maceraya hazır gezginleri bul</p>
-      <p class="pf_prompt" data-process-flow-prompt>İlgi alanına göre içerik üret</p>
-      <p class="pf_prompt" data-process-flow-prompt>Doğru anda satın almaya yönlendir</p>
-    </div>
-
-    <!-- 2 · Flow: avatar — line — curve — tags — line -->
-    <div class="pf_flow">
-      <span class="pf_avatar" data-process-flow-avatar>● Auxia</span>
-
-      <span class="pf_line" data-process-flow-line>
-        <span class="pf_line-fill" data-process-flow-fill></span>
-      </span>
-
-      <svg class="pf_curve" viewBox="0 0 150 70" xmlns="http://www.w3.org/2000/svg">
-        <path class="pf_curve-track" d="M0,35 C45,35 55,10 100,10 C130,10 140,35 150,35" data-process-flow-curve-track></path>
-        <path d="M0,35 C45,35 55,10 100,10 C130,10 140,35 150,35" data-process-flow-draw></path>
-      </svg>
-
-      <div class="pf_tags">
-        <span class="pf_tag" data-process-flow-tag>
-          <span class="pf_tag-dot"></span>
-          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>Bildirim</span></span>
-        </span>
-        <span class="pf_tag" data-process-flow-tag>
-          <span class="pf_tag-dot"></span>
-          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>İçerik</span></span>
-        </span>
-        <span class="pf_tag" data-process-flow-tag>
-          <span class="pf_tag-dot"></span>
-          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>Satın alma</span></span>
-        </span>
+      <!-- ── Personas ── -->
+      <div class="pf_personas">
+        <div class="pf_personas-clip" data-pf-personas>
+          <!-- persona 0 -->
+          <div class="pf_persona" data-pf-persona>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
+            <div>
+              <div class="pf_persona-name" data-pf-person-text>Luxury Traveler</div>
+              <div class="pf_persona-line" data-pf-person-text>3+ bookings in 12m</div>
+              <div class="pf_persona-line" data-pf-person-text>Logged into loyalty</div>
+            </div>
+          </div>
+          <!-- persona 1 -->
+          <div class="pf_persona" data-pf-persona>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
+            <div>
+              <div class="pf_persona-name" data-pf-person-text>Family Planner</div>
+              <div class="pf_persona-line" data-pf-person-text>App installed</div>
+              <div class="pf_persona-line" data-pf-person-text>Reviewed past stay</div>
+            </div>
+          </div>
+          <!-- persona 2 -->
+          <div class="pf_persona" data-pf-persona>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
+            <div>
+              <div class="pf_persona-name" data-pf-person-text>Adventure Seeker</div>
+              <div class="pf_persona-line" data-pf-person-text>2+ friends referred</div>
+              <div class="pf_persona-line" data-pf-person-text>Sorted by lowest price</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <span class="pf_line" data-process-flow-line>
-        <span class="pf_line-fill" data-process-flow-fill></span>
-      </span>
-    </div>
+      <!-- ── Rail (light track + blue drawn line) ── -->
+      <div class="pf_rail">
+        <svg viewBox="0 0 1120 40" preserveAspectRatio="none">
+          <!-- far-left dashed lead-in -->
+          <path class="pf_track is-dash" d="M0,10 H150"></path>
+          <!-- main track (light) -->
+          <path class="pf_track" d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
+          <!-- blue drawn line -->
+          <path class="pf_draw" id="pf-draw" d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
+        </svg>
+      </div>
 
-    <!-- 3 · Cards — track sized by JS; each card's FIRST CHILD is animated -->
-    <div class="pf_viewport" data-process-flow-viewport>
-      <div class="pf_cards-track" data-process-flow-track>
+      <!-- ── Pills + Cards (aligned in 3 columns) ── -->
+      <div class="pf_columns">
 
-        <div class="pf_card" data-process-flow-card>
-          <div class="card-notif">
-            <div class="card-notif-icon">🏔️</div>
-            <div>
-              <div class="card-notif-title">Yeni rota hazır <span>şimdi</span></div>
-              <div class="card-notif-body">Senin için Kaçkar Dağları'nda 4 günlük bir tur oluşturduk.</div>
+        <!-- Column 1: OFFER / notification -->
+        <div class="pf_col">
+          <span class="pf_pill" data-pf-pill>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
+              data-t0="Offer Discount" data-t1="SMS" data-t2="App Notification">Offer Discount</span></span>
+          </span>
+          <div class="pf_stack" data-pf-col>
+            <div class="pf_card" data-pf-card>
+              <div class="card-notif">
+                <div class="card-notif-icon" style="background:#12b4a6">🏖️</div>
+                <div style="flex:1">
+                  <div class="card-notif-head"><span class="card-notif-app">Vacay</span><span class="card-notif-time">now</span></div>
+                  <div class="card-notif-body" data-pf-splittext>Your next beach vacation is calling you. Save 15% if you book this week — use code BEACH15.</div>
+                </div>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-notif">
+                <div class="card-notif-icon" style="background:#5bd11e">🏔️</div>
+                <div style="flex:1">
+                  <div class="card-notif-head"><span class="card-notif-app">Climbify</span><span class="card-notif-time">now</span></div>
+                  <div class="card-notif-body" data-pf-splittext>The Roof of Africa has a spot with your name on it. Kilimanjaro summit season opens next month.</div>
+                </div>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-notif">
+                <div class="card-notif-icon" style="background:#f0762b">🧭</div>
+                <div style="flex:1">
+                  <div class="card-notif-head"><span class="card-notif-app">Trailhead</span><span class="card-notif-time">now</span></div>
+                  <div class="card-notif-body" data-pf-splittext>New summit challenge unlocked — refer a friend and you both get 20% off your next trek.</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="pf_card" data-process-flow-card>
-          <div class="card-media">
-            <div class="card-media-overlay"></div>
-            <div class="card-media-text">
-              <h4>Kaçkarlar'da <br>zirve macerası</h4>
-              <p>4 gün · orta zorluk · rehberli</p>
-              <button>Keşfet</button>
+        <!-- Column 2: NEW CREATIVE / media -->
+        <div class="pf_col">
+          <span class="pf_pill" data-pf-pill>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
+              data-t0="New Creative" data-t1="In-App Banner" data-t2="Rewards">New Creative</span></span>
+          </span>
+          <div class="pf_stack" data-pf-col>
+            <div class="pf_card" data-pf-card>
+              <div class="card-media">
+                <div class="card-media-img" style="background:linear-gradient(160deg,#7fb2d6,#1f5b7a 65%,#123047)"></div>
+                <div class="card-media-overlay"></div>
+                <span class="card-media-badge">15% Off</span>
+                <div class="card-media-info">
+                  <h4>The Beach is Calling</h4>
+                  <p>Escape to soft sands and turquoise waters where every moment feels like summer.</p>
+                  <button>Book now</button>
+                </div>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-media">
+                <div class="card-media-img" style="background:linear-gradient(160deg,#c98f5a,#5a3d2b 60%,#241611)"></div>
+                <div class="card-media-overlay"></div>
+                <span class="card-media-badge">Guided</span>
+                <div class="card-media-info">
+                  <h4>Climb Mount Kilimanjaro</h4>
+                  <p>Budget-friendly ways to take on Africa's highest peak, still with expert guides.</p>
+                  <button>Book now</button>
+                </div>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-media">
+                <div class="card-media-img" style="background:linear-gradient(160deg,#8fae63,#3f5a2c 60%,#20301a)"></div>
+                <div class="card-media-overlay"></div>
+                <span class="card-media-badge">-20%</span>
+                <div class="card-media-info">
+                  <h4>Trek the Inca Trail</h4>
+                  <p>Four-day guided trek to Machu Picchu at the lowest price we've ever offered.</p>
+                  <button>Book now</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="pf_card" data-process-flow-card>
-          <div class="card-checkout">
-            <div class="card-checkout-title">Rezervasyon özeti</div>
-            <div class="card-checkout-row"><span>Tur paketi</span><span>₺8.400</span></div>
-            <div class="card-checkout-row"><span>Ekipman</span><span>₺1.200</span></div>
-            <div class="card-checkout-row total"><span>Toplam</span><span>₺9.600</span></div>
-            <button>Satın al</button>
+        <!-- Column 3: CONVERSION / checkout -->
+        <div class="pf_col">
+          <span class="pf_pill" data-pf-pill>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
+              data-t0="Conversion" data-t1="Conversion" data-t2="Conversion">Conversion</span></span>
+          </span>
+          <div class="pf_stack" data-pf-col>
+            <div class="pf_card" data-pf-card>
+              <div class="card-checkout">
+                <div class="card-checkout-h">Checkout</div>
+                <div class="card-checkout-row"><span>Subtotal</span><span>$4,200</span></div>
+                <div class="card-checkout-row"><span>Discount applied</span><span>15%</span></div>
+                <div class="card-checkout-row total"><span>Total</span><span>$3,570</span></div>
+                <button>Checkout</button>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-checkout">
+                <div class="card-checkout-h">Checkout</div>
+                <div class="card-checkout-row"><span>Subtotal</span><span>$4,800</span></div>
+                <div class="card-checkout-row total"><span>Total</span><span>$4,800</span></div>
+                <button>Checkout</button>
+              </div>
+            </div>
+            <div class="pf_card" data-pf-card>
+              <div class="card-checkout">
+                <div class="card-checkout-h">Checkout</div>
+                <div class="card-checkout-row"><span>Subtotal</span><span>$3,900</span></div>
+                <div class="card-checkout-row"><span>Referral credit</span><span>−$780</span></div>
+                <div class="card-checkout-row total"><span>Total</span><span>$3,120</span></div>
+                <button>Checkout</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -182,177 +334,114 @@
     </div>
   </section>
 
-  <!-- GSAP core only — no Club plugins (draw uses native stroke-dashoffset) -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <!-- GSAP core + free Club plugins (DrawSVG, SplitText). ScrollSmoother NOT used —
+       the site's smooth scroll is handled by Lenis. -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 
-  <!-- process-flow.js inlined so the demo is self-contained (no GitHub request).
-       In production, load it from the CDN instead:
-       https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/process-flow.js -->
-  <script defer>
-  (function (global) {
-    "use strict";
+  <script>
+  window.addEventListener("load", function () {
+    gsap.registerPlugin(DrawSVGPlugin, SplitText);
 
-    function cssVar(root, name, fallback) {
-      var v = getComputedStyle(root).getPropertyValue(name);
-      return (v && v.trim()) || fallback;
+    var root = document.querySelector("[data-process-flow]");
+    var personas = gsap.utils.toArray("[data-pf-persona]");       // stacked rows
+    var pills = gsap.utils.toArray("[data-pf-pill]");
+    var cols = gsap.utils.toArray("[data-pf-col]");               // 3 card columns
+    var draw = "#pf-draw";
+    var PHASES = personas.length;                                 // 3
+
+    var ACTIVE_BLUE = "#0b4fff", INK = "#232323", MUTED = "#c3c2b2";
+    var TAG_ON = "#d8dade", TAG_OFF = "#f0efe3", TAG_BD_OFF = "#e2e1d3";
+
+    // cards[col][phase] — one card element per column per phase
+    var cards = cols.map(function (col) { return gsap.utils.toArray(col.querySelectorAll("[data-pf-card]")); });
+
+    // Build per-card intro timelines (blur reveal + inner stagger), like the real code
+    function cardIntro(cardEl) {
+      var tl = gsap.timeline({ paused: true });
+      tl.from(cardEl, { autoAlpha: 0, filter: "blur(10px)", duration: 1.4, ease: "power4.out" });
+      var body = cardEl.querySelector("[data-pf-splittext]");
+      if (body) {
+        var split = new SplitText(body, { type: "lines", mask: "lines", linesClass: "pf-line" });
+        tl.from(split.lines, { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.08, ease: "power4.out" }, "<0.25");
+      }
+      var info = cardEl.querySelectorAll(".card-media-info > *, .card-checkout-row, .card-checkout button, .card-notif-head > *");
+      if (info.length) tl.from(info, { y: 10, opacity: 0, duration: 0.8, stagger: 0.06, ease: "power4.out" }, "<0.15");
+      return tl;
     }
+    var intros = cards.map(function (colCards) { return colCards.map(cardIntro); });
 
-    function build(root) {
-      if (root._processFlowInit) return;                      // idempotent
-      root._processFlowInit = true;
+    // ── Initial state ────────────────────────────────────────────────────────
+    gsap.set(draw, { drawSVG: "0% 0%" });
+    gsap.set(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
+    gsap.set("[data-pf-pill-wrap]", { width: 0 });
+    // stack all cards, hide them
+    cards.forEach(function (colCards) { colCards.forEach(function (c) { gsap.set(c, { autoAlpha: 0 }); }); });
+    personas.forEach(function (p) {
+      gsap.set(p.querySelectorAll("[data-pf-person-text]"), { color: MUTED });
+      gsap.set(p.querySelector("[data-pf-person]"), { color: MUTED });
+    });
 
-      var toArray = gsap.utils.toArray;
-      var prompts = toArray(root.querySelectorAll("[data-process-flow-prompt]"));
-      var avatar = root.querySelector("[data-process-flow-avatar]");
-      var fills = toArray(root.querySelectorAll("[data-process-flow-fill]"));
-      var draw = root.querySelector("[data-process-flow-draw]");
-      var tags = toArray(root.querySelectorAll("[data-process-flow-tag]"));
-      var track = root.querySelector("[data-process-flow-track]");
-      var cards = toArray(root.querySelectorAll("[data-process-flow-card]"));
-
-      if (!draw || !track || !tags.length || !cards.length) {
-        console.warn("[Sestek ProcessFlow] Need [data-process-flow-draw], " +
-          "[data-process-flow-track], and matching [data-process-flow-tag]/" +
-          "[data-process-flow-card] elements.");
-        return;
-      }
-
-      var accent = cssVar(root, "--pf-accent", "#0b4fff");
-      var muted = cssVar(root, "--pf-muted", "#c3c2b2");
-      var tagActiveBg = cssVar(root, "--pf-tag-active-bg", "#d8dade");
-      var tagIdleBg = cssVar(root, "--pf-tag-idle-bg", "#f0efe3");
-
-      var CARD_DELAY = parseFloat(root.getAttribute("data-process-flow-card-delay")) || 0.6;
-      var PHASE_DELAY = parseFloat(root.getAttribute("data-process-flow-phase-delay")) || 1.4;
-
-      var segCount = Math.min(tags.length, cards.length);
-      var stepPct = 100 / segCount;
-      var firstFill = fills[0] || null;
-      var lastFill = fills.length ? fills[fills.length - 1] : null;
-
-      function wrapOf(tag) { return tag.querySelector("[data-process-flow-tag-wrap]"); }
-      function textOf(tag) { return tag.querySelector("[data-process-flow-tag-text]"); }
-      function contentOf(card) { return card.firstElementChild; }
-
-      var drawLen = draw.getTotalLength();
-
-      gsap.set(track, { width: segCount * 100 + "%" });
-      cards.slice(0, segCount).forEach(function (card) {
-        gsap.set(card, { width: stepPct + "%" });
-      });
-
-      gsap.set(draw, { strokeDasharray: drawLen, strokeDashoffset: drawLen });
-      if (fills.length) gsap.set(fills, { width: "0%" });
-      tags.forEach(function (tag) {
-        var w = wrapOf(tag);
-        if (w) gsap.set(w, { width: 0 });
-      });
-      cards.forEach(function (card) {
-        var c = contentOf(card);
-        if (c) gsap.set(c, { opacity: 0, y: 12 });
-      });
-      if (avatar) gsap.set(avatar, { color: muted });
-      if (prompts.length) {
-        gsap.set(prompts, { opacity: 0 });
-        gsap.set(prompts[0], { opacity: 1 });
-      }
-
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        if (fills.length) gsap.set(fills, { width: "100%" });
-        gsap.set(draw, { strokeDashoffset: 0 });
-        if (avatar) gsap.set(avatar, { color: accent });
-        var t0 = tags[0], w0 = wrapOf(t0), x0 = textOf(t0), c0 = contentOf(cards[0]);
-        gsap.set(t0, { backgroundColor: tagActiveBg, color: accent });
-        if (w0) gsap.set(w0, { width: "auto" });
-        if (x0) gsap.set(x0, { color: accent });
-        if (c0) gsap.set(c0, { opacity: 1, y: 0 });
-        return;
-      }
-
-      var tl = gsap.timeline({ repeat: -1, defaults: { ease: "power4.out" } });
-
-      prompts.forEach(function (_, phaseIndex) {
-        addPhase();
-        addReset(phaseIndex);
-      });
-      if (!prompts.length) { addPhase(); addReset(-1); }
-
-      function addPhase() {
-        if (firstFill) tl.to(firstFill, { width: "100%", duration: 0.5 });
-        if (avatar) tl.to(avatar, { color: accent, duration: 0.5 }, "<50%");
-
-        tl.to(draw, { strokeDashoffset: 0, duration: 0.6 }, "-=0.3");
-
-        tags.slice(0, segCount).forEach(function (tag, i) {
-          var isFirst = i === 0;
-          var wrap = wrapOf(tag);
-          var text = textOf(tag);
-
-          tl.to(tag, { backgroundColor: tagActiveBg, color: accent, duration: 0.4 },
-            isFirst ? "-=0.1" : "<0.3");
-          if (wrap) tl.to(wrap, { width: "auto", duration: 0.6 }, "<");
-          if (text) tl.to(text, { color: accent, duration: 0.4 }, "<");
-
-          if (!isFirst) {
-            var prevWrap = wrapOf(tags[i - 1]);
-            if (prevWrap) tl.to(prevWrap, { width: 0, duration: 0.6 }, "<");
-            tl.to(track, { xPercent: -stepPct * i, duration: 0.8 }, "<");
-          }
-
-          var content = contentOf(cards[i]);
-          if (content) tl.to(content, { opacity: 1, y: 0, duration: isFirst ? 0.5 : 0.7 }, "<");
-          tl.to({}, { duration: CARD_DELAY });
-        });
-
-        if (lastFill && lastFill !== firstFill) {
-          tl.to(lastFill, { width: "100%", duration: 0.6 }, "<");
+    // ── Line draw / undraw ─────────────────────────────────────────────────
+    function drawLine() {
+      return gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" }, { drawSVG: "0% 100%", duration: 1.5, ease: "none" });
+    }
+    function undrawLine(nextPhase) {
+      return gsap.timeline().to(draw, {
+        drawSVG: "100% 100%", duration: 1.4, ease: "none",
+        onStart: function () {
+          gsap.to("[data-pf-pill-wrap]", { width: 0, duration: 0.9, stagger: 0.25, ease: "power4.out" });
+          gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.25, ease: "power4.out" });
+        },
+        onComplete: function () {
+          pills.forEach(function (pill) {
+            var t = pill.querySelector("[data-pf-pill-text]");
+            var v = t.getAttribute("data-t" + nextPhase);
+            if (v) t.textContent = v;
+          });
         }
-        tl.to({}, { duration: PHASE_DELAY });
-      }
+      });
+    }
 
-      function addReset(phaseIndex) {
-        var contents = cards.map(contentOf).filter(Boolean);
-        var wraps = tags.map(wrapOf).filter(Boolean);
-        var texts = tags.map(textOf).filter(Boolean);
-        var fadeTargets = fills.concat([draw]);
+    // ── Master loop ────────────────────────────────────────────────────────
+    var master = gsap.timeline({ repeat: -1 });
 
-        tl.to(fadeTargets, { opacity: 0, duration: 0.6 });
-        if (contents.length) tl.to(contents, { opacity: 0, y: 12, duration: 0.6 }, "<");
-        if (wraps.length) tl.to(wraps, { width: 0, duration: 0.6 }, "<");
-        if (avatar) tl.to(avatar, { color: muted, duration: 0.4 }, "<");
-        tl.to(tags, { backgroundColor: tagIdleBg, color: muted, duration: 0.4 }, "<");
-        if (texts.length) tl.to(texts, { color: muted, duration: 0.4 }, "<");
+    for (var p = 0; p < PHASES; p++) {
+      (function (phase) {
+        var persona = personas[phase];
+        // draw the line in
+        master.add(drawLine());
+        // highlight the active persona
+        master.to(persona.querySelector("[data-pf-person]"), { color: ACTIVE_BLUE, duration: 1.1, ease: "power4.out" }, "<0.9");
+        master.to(persona.querySelectorAll("[data-pf-person-text]"), { color: INK, duration: 1, ease: "power4.out" }, "<0.3");
+        // open + activate the pills
+        master.to("[data-pf-pill-wrap]", { width: "auto", duration: 1, stagger: 0.25, ease: "power4.out" }, "<0.1");
+        master.to(pills, { color: ACTIVE_BLUE, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.25, ease: "power4.out" }, "<");
+        // reveal this phase's cards (blur-in), one per column
+        intros.forEach(function (colIntros) { master.add(colIntros[phase].play(0), "<0.2"); });
+        // hold
+        master.to({}, { duration: 2 });
 
-        if (prompts.length) {
-          var next = (phaseIndex + 1) % prompts.length;
-          tl.to(prompts[phaseIndex], { opacity: 0, duration: 0.6 }, "<");
-          tl.to(prompts[next], { opacity: 1, duration: 0.6 }, "<");
+        // transition out (unless it's the very last — reset handles that path too)
+        var next = (phase + 1) % PHASES;
+        master.add(undrawLine(next));
+        // shift persona stack up to the next one
+        master.to(personas, { yPercent: -100 * next, duration: 1, ease: "back.out(1.2)" }, "<30%");
+        // blur this phase's cards out
+        var outTargets = cards.map(function (c) { return c[phase]; });
+        master.to(outTargets, { autoAlpha: 0, filter: "blur(5px)", y: 32, duration: 1, stagger: 0.12, ease: "power4.out" }, "<");
+        // reset their y so the next intro starts clean
+        master.set(outTargets, { filter: "blur(0px)", y: 0 });
+        // fade the just-left persona back to muted (except on wrap, next phase re-highlights)
+        if (next !== 0) {
+          master.to(persona.querySelector("[data-pf-person]"), { color: MUTED, duration: 0.8 }, "<");
+          master.to(persona.querySelectorAll("[data-pf-person-text]"), { color: MUTED, duration: 0.8 }, "<");
+        } else {
+          master.to("[data-pf-person], [data-pf-person-text]", { color: MUTED, duration: 0.8 }, "<");
         }
-
-        tl.to(track, { xPercent: 0, duration: 0.6 }, "<");
-        if (fills.length) tl.set(fills, { width: "0%" });
-        tl.set(draw, { strokeDashoffset: drawLen });
-        tl.set(fadeTargets, { opacity: 1 });
-      }
-
-      root._processFlowTimeline = tl;
+      })(p);
     }
-
-    function initProcessFlow(selector) {
-      if (typeof gsap === "undefined") {
-        console.error("[Sestek ProcessFlow] GSAP required."); return;
-      }
-      var roots = document.querySelectorAll(selector || "[data-process-flow]");
-      if (!roots.length) { console.warn("[Sestek ProcessFlow] No [data-process-flow] found."); return; }
-      roots.forEach(build);
-    }
-
-    global.Sestek = global.Sestek || {};
-    global.Sestek.initProcessFlow = initProcessFlow;
-  })(window);
-
-  document.addEventListener("DOMContentLoaded", function () {
-    Sestek.initProcessFlow();
   });
   </script>
 </body>
