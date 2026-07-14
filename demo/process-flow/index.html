@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Process Flow — Auxia-style looping flow</title>
+
+  <!-- Component structural CSS (relative for the demo; use CDN in Webflow) -->
+  <link rel="stylesheet" href="../../css/components/process-flow.css">
+
+  <style>
+    /* ── Demo skin only — the component CSS owns the mechanics ── */
+    :root {
+      --bg: #f0efe3;
+      --blue: #0b4fff;
+      --dark: #232323;
+      --muted: #c3c2b2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .pf { width: min(920px, 92vw); padding: 48px 32px 64px; }
+
+    /* Prompt crossfade — component CSS handles opacity/absolute stacking */
+    .pf_prompt-wrap {
+      position: relative;
+      height: 28px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .pf_prompt {
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+
+    /* Flow row */
+    .pf_flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 40px;
+    }
+    .pf_avatar { color: var(--muted); font-size: 11px; font-weight: 600; padding-right: 10px; }
+    .pf_line { flex: 1 1 auto; height: 2px; background: rgba(0,0,0,.06); min-width: 24px; }
+    .pf_curve { width: 150px; height: 70px; overflow: visible; flex: none; }
+    .pf_curve-track { fill: none; stroke: var(--muted); stroke-width: 2; opacity: 0.35; }
+
+    .pf_tags { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; flex: none; }
+    .pf_tag {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 6px; border-radius: 6px;
+      background: var(--bg); width: fit-content;
+    }
+    .pf_tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+    .pf_tag-text { font-size: 12px; letter-spacing: 0.02em; color: var(--muted); padding-right: 2px; }
+
+    /* Cards */
+    .pf_viewport { border-radius: 16px; }
+    .pf_card { align-items: center; justify-content: center; display: flex; padding: 24px; }
+
+    .card-notif {
+      display: flex; gap: 12px; background: var(--dark); color: #fff;
+      border-radius: 14px; padding: 16px 18px; width: 320px;
+    }
+    .card-notif-icon {
+      width: 34px; height: 34px; border-radius: 9px; background: #e8542d;
+      display: flex; align-items: center; justify-content: center; flex: none; font-size: 18px;
+    }
+    .card-notif-title { font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: baseline; }
+    .card-notif-title span { font-weight: 400; font-size: 11px; color: #999; }
+    .card-notif-body { font-size: 12.5px; color: #cfcfcf; margin-top: 4px; line-height: 1.4; }
+
+    .card-media {
+      position: relative; width: 260px; height: 320px; border-radius: 16px; overflow: hidden;
+      background: linear-gradient(160deg, #6b8f5a, #23422f 70%);
+    }
+    .card-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0) 55%); }
+    .card-media-text { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px; color: #fff; }
+    .card-media-text h4 { margin: 0 0 6px; font-size: 18px; line-height: 1.25; }
+    .card-media-text p { margin: 0 0 12px; font-size: 12px; color: #dcdcdc; }
+    .card-media-text button { background: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; cursor: pointer; }
+
+    .card-checkout {
+      width: 260px; background: #fff; border-radius: 14px; padding: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+    .card-checkout-title { font-weight: 600; margin-bottom: 12px; }
+    .card-checkout-row { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 8px; }
+    .card-checkout-row.total { color: var(--blue); font-weight: 600; }
+    .card-checkout button { width: 100%; margin-top: 10px; background: #ececec; border: none; border-radius: 8px; padding: 10px; font-size: 13px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <section class="pf" data-process-flow>
+
+    <!-- 1 · Prompt crossfade — one prompt per phase -->
+    <div class="pf_prompt-wrap">
+      <p class="pf_prompt" data-process-flow-prompt>Maceraya hazır gezginleri bul</p>
+      <p class="pf_prompt" data-process-flow-prompt>İlgi alanına göre içerik üret</p>
+      <p class="pf_prompt" data-process-flow-prompt>Doğru anda satın almaya yönlendir</p>
+    </div>
+
+    <!-- 2 · Flow: avatar — line — curve — tags — line -->
+    <div class="pf_flow">
+      <span class="pf_avatar" data-process-flow-avatar>● Auxia</span>
+
+      <span class="pf_line" data-process-flow-line>
+        <span class="pf_line-fill" data-process-flow-fill></span>
+      </span>
+
+      <svg class="pf_curve" viewBox="0 0 150 70" xmlns="http://www.w3.org/2000/svg">
+        <path class="pf_curve-track" d="M0,35 C45,35 55,10 100,10 C130,10 140,35 150,35" data-process-flow-curve-track></path>
+        <path d="M0,35 C45,35 55,10 100,10 C130,10 140,35 150,35" data-process-flow-draw></path>
+      </svg>
+
+      <div class="pf_tags">
+        <span class="pf_tag" data-process-flow-tag>
+          <span class="pf_tag-dot"></span>
+          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>Bildirim</span></span>
+        </span>
+        <span class="pf_tag" data-process-flow-tag>
+          <span class="pf_tag-dot"></span>
+          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>İçerik</span></span>
+        </span>
+        <span class="pf_tag" data-process-flow-tag>
+          <span class="pf_tag-dot"></span>
+          <span class="pf_tag-text-wrap" data-process-flow-tag-wrap><span class="pf_tag-text" data-process-flow-tag-text>Satın alma</span></span>
+        </span>
+      </div>
+
+      <span class="pf_line" data-process-flow-line>
+        <span class="pf_line-fill" data-process-flow-fill></span>
+      </span>
+    </div>
+
+    <!-- 3 · Cards — track sized by JS; each card's FIRST CHILD is animated -->
+    <div class="pf_viewport" data-process-flow-viewport>
+      <div class="pf_cards-track" data-process-flow-track>
+
+        <div class="pf_card" data-process-flow-card>
+          <div class="card-notif">
+            <div class="card-notif-icon">🏔️</div>
+            <div>
+              <div class="card-notif-title">Yeni rota hazır <span>şimdi</span></div>
+              <div class="card-notif-body">Senin için Kaçkar Dağları'nda 4 günlük bir tur oluşturduk.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pf_card" data-process-flow-card>
+          <div class="card-media">
+            <div class="card-media-overlay"></div>
+            <div class="card-media-text">
+              <h4>Kaçkarlar'da <br>zirve macerası</h4>
+              <p>4 gün · orta zorluk · rehberli</p>
+              <button>Keşfet</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pf_card" data-process-flow-card>
+          <div class="card-checkout">
+            <div class="card-checkout-title">Rezervasyon özeti</div>
+            <div class="card-checkout-row"><span>Tur paketi</span><span>₺8.400</span></div>
+            <div class="card-checkout-row"><span>Ekipman</span><span>₺1.200</span></div>
+            <div class="card-checkout-row total"><span>Toplam</span><span>₺9.600</span></div>
+            <button>Satın al</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- GSAP core only — no Club plugins (draw uses native stroke-dashoffset) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="../../js/components/process-flow.js" defer></script>
+  <script>
+    /* file:// won't run deferred module order reliably — serve with
+       `python3 -m http.server` from the repo root and open /demo/process-flow/. */
+    document.addEventListener("DOMContentLoaded", function () {
+      Sestek.initProcessFlow();
+    });
+  </script>
+</body>
+</html>

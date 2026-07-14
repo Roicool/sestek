@@ -1,0 +1,70 @@
+/*!
+ * process-flow.css v1.0.0
+ * Structural hooks for the Auxia-style looping flow (process-flow.js).
+ * Only the mechanics live here — line-fill clipping, tag-wrap collapse, curve
+ * stroke, card track clipping. The visual skin (colours, card designs, spacing)
+ * is yours: swap the --pf-* tokens or restyle any element freely.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Colour tokens — process-flow.js reads these to keep the timeline synced ── */
+[data-process-flow] {
+  --pf-accent: #0b4fff;
+  --pf-muted: #c3c2b2;
+  --pf-tag-idle-bg: #f0efe3;
+  --pf-tag-active-bg: #d8dade;
+}
+
+/* ── Prompt — stacked lines, JS crossfades opacity ───────────────────────────
+   Wrap the prompts in a positioned box; each prompt overlaps for the crossfade. */
+[data-process-flow-prompt] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;                       /* JS sets prompt[0] to 1 */
+}
+
+/* ── Line — container clips, inner span is the animated fill ─────────────────
+   width 0% → 100% happens on the INNER span, never the container. */
+[data-process-flow-line] {
+  position: relative;
+  overflow: hidden;
+}
+[data-process-flow-fill] {
+  position: absolute;
+  inset: 0;
+  width: 0%;                        /* JS animates this */
+  display: block;
+  background: var(--pf-accent);
+}
+
+/* ── Curve — native "DrawSVG" via stroke-dashoffset (set in JS) ──────────────
+   stroke-linecap:round keeps the drawing tip soft as it advances. */
+[data-process-flow-draw] {
+  fill: none;
+  stroke: var(--pf-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ── Tag label — collapse the WRAPPER, not the text (avoids font clipping) ─── */
+[data-process-flow-tag-wrap] {
+  display: inline-block;
+  width: 0;                         /* JS animates to auto */
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ── Card track — viewport clips, track is a flex rail sized by JS ───────────
+   JS sets track width to N×100% and each card to 100/N%, then slides xPercent. */
+[data-process-flow-viewport] {
+  overflow: hidden;
+}
+[data-process-flow-track] {
+  display: flex;
+}
+[data-process-flow-card] {
+  flex: 0 0 auto;
+}
+
+/* ── Reduced motion — process-flow.js renders one static frame, no loop ────── */
