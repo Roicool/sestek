@@ -35,9 +35,12 @@
 }
 .pf_persona-name { font-weight: 600; }
 
-/* ── Rail (light track behind the drawn blue line) ────────────────────────── */
-.pf_rail { position: absolute; left: 0; right: 0; top: 5.75rem; height: 2.5rem; z-index: 1; }
-.pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* ── Rail (light track behind the drawn blue line) ─────────────────────────
+   Full-width, edge to edge. Height ≈ the SVG viewBox height (0 0 1231 71) so
+   preserveAspectRatio="none" does NOT squash the step-down. The flat-left line
+   is at the TOP of this box (persona level); the pill line is at the BOTTOM. */
+.pf_rail { position: absolute; left: 0; right: 0; top: 1.25rem; height: 4.4rem; z-index: 1; }
+.pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .pf_track { fill: none; stroke: var(--pf-tag-idle-bd); stroke-width: 2; }
 .pf_track.is-dash { stroke-dasharray: 4 5; opacity: 0.7; }
 /* .pf_draw stroke/fill handled in process-flow.css via [data-pf-draw] */
