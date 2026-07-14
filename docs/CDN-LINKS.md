@@ -1780,6 +1780,11 @@ DOM:
 - `prefers-reduced-motion`: reorder anında olur, açıklama crossfade yerine
   direkt değişir.
 - `Sestek.initBadgeSwap()` her kökteki tüm rozetleri tek çağrıda bağlar.
+- CSS v1.1.0 varsayılan bir **squircle tile stack** iskini içerir: beyaz
+  yuvarlak-köşe kare rozetler, hafif overlap (negatif margin), aktif
+  rozette tam renk + arkasında yumuşak glow, pasiflerde grayscale ikon.
+  İkon `<img>`/`<svg>` içine konur; renkler/radius'lar Designer token'larıyla
+  serbestçe değiştirilebilir.
 
 ---
 

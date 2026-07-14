@@ -1,47 +1,87 @@
 /*!
- * badge-swap.css v1.0.0
- * Clickable badge row — critical/behavioural styles only.
- * Colours, fonts and spacing come from the Webflow Designer + RC tokens;
- * this file only owns what badge-swap.js depends on to animate correctly.
+ * badge-swap.css v1.1.0
+ * Clickable badge row — squircle tile stack (white tile, soft shadow,
+ * overlapping, active tile full-colour + glow, inactive tiles grayscale).
+ * Swap colours/radii for Designer tokens as needed; layout + FLIP hooks stay.
  * https://github.com/roicool/sestek
  */
+
+/* ── Card — clips the trailing tile as it slides out past the edge ────────── */
+[data-badge-swap] {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius--3xl, 24px);
+  background: var(--surface--muted, #eef2ff);
+  padding: var(--spacing--3, 0.75rem);
+}
 
 /* ── Row — DOM order IS visual order; badge-swap.js reorders via transform ── */
 [data-badge-swap-list] {
   display: flex;
   align-items: center;
-  gap: var(--spacing--2, 0.5rem);
 }
 
-/* ── Badge — reset native button chrome so Designer styles win ────────────── */
+/* ── Badge tile — squircle, overlapping stack, reset native button chrome ─── */
 [data-badge-swap-item] {
+  position: relative;
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  background: none;
+  border-radius: var(--radius--2xl, 16px);
+  background: var(--surface--base, #fff);
+  box-shadow: 0 8px 20px -8px rgba(15, 23, 42, .18), 0 1px 2px rgba(15, 23, 42, .06);
   padding: 0;
   font: inherit;
   color: inherit;
   cursor: pointer;
+  margin-left: -0.9rem;               /* overlap onto the previous tile */
+  z-index: 1;
   /* FLIP moves items with `x`; keep the transform on its own layer */
   will-change: transform;
+  transition: box-shadow 0.3s ease;
 }
+[data-badge-swap-item]:first-child { margin-left: 0; }
 
 [data-badge-swap-item]:focus-visible {
   outline: 2px solid var(--brand-primary--500, #5983f8);
   outline-offset: 2px;
-  border-radius: var(--radius--md, 6px);
 }
 
-/* Dim inactive badges so the active one reads clearly — optional, easy to
-   override in the Designer by targeting .is-active directly. */
-[data-badge-swap-item]:not(.is-active) {
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
+[data-badge-swap-item] img,
+[data-badge-swap-item] svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  transition: filter 0.3s ease, opacity 0.3s ease;
 }
-[data-badge-swap-item]:not(.is-active):hover {
-  opacity: 0.8;
+
+/* Inactive tiles: muted/grayscale icon, sit behind the active one */
+[data-badge-swap-item]:not(.is-active) img,
+[data-badge-swap-item]:not(.is-active) svg {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+[data-badge-swap-item]:not(.is-active):hover img,
+[data-badge-swap-item]:not(.is-active):hover svg {
+  opacity: 0.7;
+}
+
+/* Active tile: full colour, in front of the stack, soft glow behind it */
+[data-badge-swap-item].is-active {
+  z-index: 2;
+  box-shadow: 0 10px 28px -6px rgba(15, 23, 42, .22), 0 2px 4px rgba(15, 23, 42, .08);
+}
+[data-badge-swap-item].is-active::before {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(circle, var(--brand-primary--100, #dbe6ff) 0%, transparent 70%);
+  filter: blur(4px);
 }
 
 /* ── Description — name + copy crossfade as separate inline nodes ─────────── */
