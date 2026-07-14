@@ -1,10 +1,10 @@
 /*!
- * logo-marquee.js v1.0.0
+ * logo-marquee.js v1.1.0
  * Step-advancing logo strip with a fixed centre "spotlight" frame — a calm,
  * premium catalogue: one logo at a time glides into a bordered box at the
- * middle of the strip, holds there (name label crossfades in below), then
- * slides out as the next one glides in. Loops forever, no clones drift out
- * of sync (a single duplicate pass is reused and silently re-centred).
+ * middle of the strip, holds there, then slides out as the next one glides
+ * in. Loops forever, no clones drift out of sync (a single duplicate pass
+ * is reused and silently re-centred).
  *
  * Requires : gsap (global), js/core/utils.js (Sestek.util) loaded first.
  * CSS      : css/components/logo-marquee.css
@@ -16,12 +16,12 @@
  *       [data-lm-track]                  the row; JS clones its children ONCE
  *                                         for a seamless loop (do not author
  *                                         duplicates yourself)
- *         [data-lm-item]                 one logo cell
- *           data-lm-name="Brand Name"    label shown while this cell is centred
- *           …logo markup (img/svg)…
+ *         [data-lm-item]                 one logo cell — just drop the logo
+ *                                         markup (img/svg) inside, no data
+ *                                         attributes needed per item
  *       [data-lm-frame]                  decorative bordered box, CSS-centred,
- *                                         never moves — the "spotlight"
- *     [data-lm-label]                    name text below the stage (JS fills it)
+ *                                         never moves, sits BEHIND the logos
+ *                                         — the "spotlight"
  *
  * Root attributes (all optional):
  *   data-lm-dwell           ms each logo holds centred        (default 1800)
@@ -42,8 +42,6 @@
 
     var stage = root.querySelector("[data-lm-stage]");
     var track = root.querySelector("[data-lm-track]");
-    var frame = root.querySelector("[data-lm-frame]");
-    var label = root.querySelector("[data-lm-label]");
     var items = track ? Array.prototype.slice.call(track.querySelectorAll("[data-lm-item]")) : [];
 
     if (!stage || !track || items.length < 2) {
@@ -58,24 +56,6 @@
     var ease = root.getAttribute("data-lm-ease") || "power3.inOut";
     var N = items.length;
 
-    /** Fill the label from an item's data-lm-name, with a small crossfade. */
-    function setLabel(item, animate) {
-      if (!label) return;
-      var name = item.getAttribute("data-lm-name") || "";
-      if (!animate || reduce || typeof gsap === "undefined") {
-        label.textContent = name;
-        return;
-      }
-      gsap.killTweensOf(label);
-      gsap.to(label, {
-        autoAlpha: 0, y: -4, duration: stepDur * 0.35, ease: "power1.in",
-        onComplete: function () {
-          label.textContent = name;
-          gsap.fromTo(label, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: stepDur * 0.5, ease: "power2.out" });
-        },
-      });
-    }
-
     function setActive(idx) {
       items.forEach(function (el, i) { el.classList.toggle("is-active", i === idx); });
     }
@@ -88,7 +68,6 @@
       track.style.transform = "translateX(" +
         (stage.clientWidth / 2 - firstRect.width / 2) + "px)";
       setActive(0);
-      setLabel(items[0], false);
       return { root: root, pause: function () {}, play: function () {} };
     }
 
@@ -106,8 +85,9 @@
     function measure() {
       var first = items[0];
       var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-      step = first.getBoundingClientRect().width + gap;
-      centerOffset = stage.clientWidth / 2 - first.getBoundingClientRect().width / 2;
+      var w = first.getBoundingClientRect().width;
+      step = w + gap;
+      centerOffset = stage.clientWidth / 2 - w / 2;
     }
 
     function targetX(idx) { return centerOffset - idx * step; }
@@ -115,7 +95,6 @@
     measure();
     gsap.set(track, { x: targetX(0) });
     setActive(0);
-    setLabel(items[0], false);
 
     // Re-measure on lazy image load (logos loaded async can shift widths).
     var lazyImgs = Array.prototype.slice.call(track.querySelectorAll("img")).filter(function (img) {
@@ -138,7 +117,7 @@
       rTimer = setTimeout(function () { measure(); gsap.set(track, { x: targetX(stepIndex) }); }, 150);
     });
 
-    // ── Step timer + pause conditions (hover / focus / off-screen / tab hidden) ──
+    // ── Step timer + pause conditions (hover / off-screen / tab hidden) ──
     var timer = null, hovering = false, offscreen = false, tween = null;
     function isPaused() { return hovering || offscreen; }
 
@@ -149,7 +128,6 @@
         x: targetX(stepIndex), duration: stepDur, ease: ease,
         onComplete: function () {
           setActive(activeIdx);
-          setLabel(items[activeIdx], true);
           // A full pass just completed (about to show the clone set again) —
           // snap invisibly back to the matching original so stepIndex + the
           // track's x never grow without bound. Both positions render the

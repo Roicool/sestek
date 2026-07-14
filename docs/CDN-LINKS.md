@@ -1789,9 +1789,9 @@ DOM:
 ### Logo Marquee
 
 Adım adım ilerleyen logo şeridi — ortadaki sabit, bordürlü bir "spotlight"
-kutusuna her seferinde bir logo girer, orada kısa bir süre durur (altındaki
-etiket crossfade ile o logonun ismine döner), sonra bir sonraki logo aynı
-kutuya kayar. Sonsuz döngü — tek bir klon seti kullanılır, dikişsiz sarılır.
+kutusuna her seferinde bir logo girer, orada kısa bir süre durur, sonra bir
+sonraki logo aynı kutuya kayar. Sonsuz döngü — tek bir klon seti kullanılır,
+dikişsiz sarılır.
 
 ```html
 <!-- in <head> -->
@@ -1824,30 +1824,25 @@ DOM:
 <div data-logo-marquee>
   <div data-lm-stage>
     <div data-lm-track>
-      <div data-lm-item data-lm-name="Anthropic">
-        <img src="anthropic.svg" alt="Anthropic">
-      </div>
-      <div data-lm-item data-lm-name="HubSpot">
-        <img src="hubspot.svg" alt="HubSpot">
-      </div>
-      <div data-lm-item data-lm-name="Webflow">
-        <img src="webflow.svg" alt="Webflow">
-      </div>
+      <div data-lm-item><img src="anthropic.svg" alt="Anthropic"></div>
+      <div data-lm-item><img src="hubspot.svg" alt="HubSpot"></div>
+      <div data-lm-item><img src="webflow.svg" alt="Webflow"></div>
     </div>
     <div data-lm-frame></div>
   </div>
-
-  <p data-lm-label></p>
 </div>
 ```
 
 **Notlar**
+- Her `[data-lm-item]`'a data-attribute yazmana gerek yok — sadece logo
+  markup'ını (`<img>`/`<svg>`) içine koy, gerisi otomatik.
 - `[data-lm-item]` genişliği CSS'te `--lm-item-w` değişkeniyle sabittir (default
   `5rem`) — her adımın eşit mesafe olması için tüm hücreler aynı genişlikte
   olmalı. `--lm-item-w`'yi Designer'dan değiştirebilirsin, JS otomatik uyum sağlar.
 - `[data-lm-frame]` JS tarafından hiç hareket ettirilmez — sadece CSS ile
-  ortalanmış sabit bir kutudur; kayan `[data-lm-track]` onun içinden/arkasından geçer.
-  `z-index` sırası logonun kutunun "içine girmiş" gibi görünmesini sağlar.
+  ortalanmış sabit bir kutudur; kayan `[data-lm-track]` onun ÖNÜNDEN geçer
+  (`[data-lm-stage]` üzerinde `isolation:isolate` + track `z-index:2` >
+  frame `z-index:1` — logolar frame'in arkasına düşmesi mümkün değil).
 - `[data-lm-item]` klonlama JS'de olur — kendin klon eklemene gerek yok.
 - Hover (fine pointer), klavye/focus'a gerek yok — ama görünürlük dışına
   çıkınca (`IntersectionObserver`) ve sekme arka plana geçince otomatik durur.

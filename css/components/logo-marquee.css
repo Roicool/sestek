@@ -1,5 +1,5 @@
 /*!
- * logo-marquee.css v1.0.0
+ * logo-marquee.css v1.1.0
  * Step-advancing logo strip — critical/behavioural styles only.
  * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens;
  * this file owns the layout logo-marquee.js depends on (fixed-width cells,
@@ -7,17 +7,24 @@
  * https://github.com/roicool/sestek
  */
 
-/* ── Stage — the viewport; frame and track share this coordinate space ────── */
+/* ── Stage — the viewport; frame and track share this coordinate space.
+   isolation:isolate pins stage as the ONE stacking context both the frame
+   and the track compare z-index against, so the frame can never leak on
+   top regardless of what surrounds this component in the page. ─────────── */
 [data-lm-stage] {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   display: flex;
   align-items: center;
   height: var(--lm-item-w, 5rem);
 }
 
-/* ── Track — JS drives its x transform; DOM order never changes ───────────── */
+/* ── Track — sits ABOVE the frame (own stacking context, z-index above it).
+   JS drives its x transform; DOM order never changes. ───────────────────── */
 [data-lm-track] {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--spacing--4, 1rem);
@@ -52,9 +59,11 @@
   transform: scale(1.08);
 }
 
-/* ── Frame — the "spotlight" box; CSS-centred, JS never touches it ────────── */
+/* ── Frame — the "spotlight" box; CSS-centred, JS never touches it, always
+   BEHIND the track (z-index 1 < track's 2, both inside the isolated stage). */
 [data-lm-frame] {
   position: absolute;
+  z-index: 1;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -65,15 +74,6 @@
   background: var(--surface--base, #fff);
   box-shadow: 0 12px 32px -12px rgba(15, 23, 42, .18);
   pointer-events: none;
-  z-index: 0;                          /* sits behind the logos, framing them */
-}
-[data-lm-item] { position: relative; z-index: 1; }
-
-/* ── Label — the active item's name below the stage, JS crossfades it ─────── */
-[data-lm-label] {
-  display: block;
-  text-align: center;
-  margin-top: var(--spacing--3, 0.75rem);
 }
 
 /* ── Reduced motion — no glide, no crossfade; static centred logo ─────────── */
