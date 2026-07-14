@@ -106,9 +106,10 @@
       box-shadow: 0 22px 40px -18px rgba(0,0,0,.45), 0 4px 10px rgba(0,0,0,.12);
     }
     .card-notif-icon {
-      width: 36px; height: 36px; border-radius: 10px; flex: none;
+      width: 36px; height: 36px; border-radius: 10px; flex: none; overflow: hidden;
       display: flex; align-items: center; justify-content: center; font-size: 19px;
     }
+    .card-notif-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .card-notif-head { display: flex; align-items: baseline; gap: 8px; }
     .card-notif-app { font-weight: 700; font-size: 13.5px; }
     .card-notif-time { font-size: 11px; color: #9a9a9a; margin-left: auto; }
@@ -118,9 +119,15 @@
     .card-media {
       position: relative; width: 236px; height: 300px;
       border-radius: 16px; overflow: hidden;
+      background: #23252a;   /* fallback while the video loads */
       box-shadow: 0 26px 46px -20px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.14);
     }
-    .card-media-img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    /* works for <video>, <img>, or a gradient fallback div */
+    .card-media-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      background-size: cover; background-position: center;
+    }
     .card-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,0) 58%); }
     .card-media-badge {
       position: absolute; top: 14px; left: 14px;
@@ -157,106 +164,125 @@
   </style>
 </head>
 <body>
+  <!-- NOTE: images/videos below are Auxia's own Webflow-CDN assets, used here
+       only to mirror the original. Swap them for your own Sestek assets. -->
   <section class="pf" data-process-flow lang="en">
     <div class="pf_inner">
 
-      <!-- ── Personas ── -->
+      <!-- ── Personas (order = phase order: 0 Adventure, 1 Luxury, 2 Family) ── -->
       <div class="pf_personas">
         <div class="pf_personas-clip" data-pf-personas>
-          <!-- persona 0 -->
           <div class="pf_persona" data-pf-persona>
-            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
-            <div>
-              <div class="pf_persona-name" data-pf-person-text>Luxury Traveler</div>
-              <div class="pf_persona-line" data-pf-person-text>3+ bookings in 12m</div>
-              <div class="pf_persona-line" data-pf-person-text>Logged into loyalty</div>
-            </div>
-          </div>
-          <!-- persona 1 -->
-          <div class="pf_persona" data-pf-persona>
-            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
-            <div>
-              <div class="pf_persona-name" data-pf-person-text>Family Planner</div>
-              <div class="pf_persona-line" data-pf-person-text>App installed</div>
-              <div class="pf_persona-line" data-pf-person-text>Reviewed past stay</div>
-            </div>
-          </div>
-          <!-- persona 2 -->
-          <div class="pf_persona" data-pf-persona>
-            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.3 2.7-6 6-6s6 2.7 6 6z"/></svg></span>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 12 12" fill="none"><path d="M7.80078 6.17773C9.10527 6.83667 10 8.18868 10 9.75V10.5H2V9.75C2 8.18875 2.89481 6.83668 4.19922 6.17773C4.70832 6.53748 5.32925 6.75 6 6.75C6.67065 6.75 7.29173 6.53733 7.80078 6.17773ZM6 1.25C7.3117 1.25 8.375 2.31333 8.375 3.625C8.375 4.93668 7.3117 6 6 6C4.68832 6 3.625 4.93668 3.625 3.625C3.625 2.31333 4.68832 1.25 6 1.25Z" fill="currentColor"/></svg></span>
             <div>
               <div class="pf_persona-name" data-pf-person-text>Adventure Seeker</div>
               <div class="pf_persona-line" data-pf-person-text>2+ friends referred</div>
               <div class="pf_persona-line" data-pf-person-text>Sorted by lowest price</div>
             </div>
           </div>
+          <div class="pf_persona" data-pf-persona>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 12 12" fill="none"><path d="M7.80078 6.17773C9.10527 6.83667 10 8.18868 10 9.75V10.5H2V9.75C2 8.18875 2.89481 6.83668 4.19922 6.17773C4.70832 6.53748 5.32925 6.75 6 6.75C6.67065 6.75 7.29173 6.53733 7.80078 6.17773ZM6 1.25C7.3117 1.25 8.375 2.31333 8.375 3.625C8.375 4.93668 7.3117 6 6 6C4.68832 6 3.625 4.93668 3.625 3.625C3.625 2.31333 4.68832 1.25 6 1.25Z" fill="currentColor"/></svg></span>
+            <div>
+              <div class="pf_persona-name" data-pf-person-text>Luxury Traveler</div>
+              <div class="pf_persona-line" data-pf-person-text>3+ bookings in 12m</div>
+              <div class="pf_persona-line" data-pf-person-text>Logged into loyalty</div>
+            </div>
+          </div>
+          <div class="pf_persona" data-pf-persona>
+            <span class="pf_persona-icon" data-pf-person><svg viewBox="0 0 12 12" fill="none"><path d="M7.80078 6.17773C9.10527 6.83667 10 8.18868 10 9.75V10.5H2V9.75C2 8.18875 2.89481 6.83668 4.19922 6.17773C4.70832 6.53748 5.32925 6.75 6 6.75C6.67065 6.75 7.29173 6.53733 7.80078 6.17773ZM6 1.25C7.3117 1.25 8.375 2.31333 8.375 3.625C8.375 4.93668 7.3117 6 6 6C4.68832 6 3.625 4.93668 3.625 3.625C3.625 2.31333 4.68832 1.25 6 1.25Z" fill="currentColor"/></svg></span>
+            <div>
+              <div class="pf_persona-name" data-pf-person-text>Family Planner</div>
+              <div class="pf_persona-line" data-pf-person-text>App installed</div>
+              <div class="pf_persona-line" data-pf-person-text>Reviewed past stay</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- ── Rail (light track + blue drawn line) ── -->
+      <!-- ── Rail (real Auxia path: light track + blue drawn line) ── -->
       <div class="pf_rail">
-        <svg viewBox="0 0 1120 40" preserveAspectRatio="none">
-          <!-- far-left dashed lead-in -->
-          <path class="pf_track is-dash" d="M0,10 H150"></path>
-          <!-- main track (light) -->
-          <path class="pf_track" d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
-          <!-- blue drawn line -->
-          <path class="pf_draw" id="pf-draw" data-pf-draw d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
+        <svg viewBox="0 0 1231 71" preserveAspectRatio="none">
+          <path class="pf_track" d="M0 1H248.5C261.755 1 272.5 11.7452 272.5 25V45.416C272.5 58.6708 283.245 69.416 296.5 69.416H1230.5"></path>
+          <path class="pf_draw" id="pf-draw" data-pf-draw d="M0 1H248.5C261.755 1 272.5 11.7452 272.5 25V45.416C272.5 58.6708 283.245 69.416 296.5 69.416H1230.5"></path>
         </svg>
       </div>
 
-      <!-- ── Pills + Cards (aligned in 3 columns) ── -->
+      <!-- ── Pills + Cards (3 columns) ── -->
       <div class="pf_columns">
 
-        <!-- Column 1: OFFER / notification -->
+        <!-- Column 1: notification -->
         <div class="pf_col">
           <span class="pf_pill" data-pf-pill>
-            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.86228 0.822223C6.21043 0.317344 7.00192 0.563411 7.00193 1.17672V3.99898H9.90036C10.4039 3.99898 10.7007 4.56388 10.415 4.97847L6.1406 11.1757C5.7924 11.6804 5.00212 11.4343 5.00193 10.8212V7.99898H2.10251C1.59908 7.99891 1.3024 7.43403 1.58786 7.01949L5.86228 0.822223Z" fill="currentColor"/></svg></span>
             <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
-              data-t0="Offer Discount" data-t1="SMS" data-t2="App Notification">Offer Discount</span></span>
+              data-t0="App Notification" data-t1="Offer Discount" data-t2="SMS">App Notification</span></span>
           </span>
           <div class="pf_stack" data-pf-col>
+            <!-- phase 0 · Alpined -->
             <div class="pf_card" data-pf-card>
               <div class="card-notif">
-                <div class="card-notif-icon" style="background:#12b4a6">🏖️</div>
+                <div class="card-notif-icon"><img src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79/6998ce2985e003cf4edc8b4e_alpined.png" alt="" loading="lazy"></div>
+                <div style="flex:1">
+                  <div class="card-notif-head"><span class="card-notif-app">Alpined</span><span class="card-notif-time">now</span></div>
+                  <div class="card-notif-body" data-pf-splittext>Your next summit window opens this weekend. Book your spot while you still have a chance!</div>
+                </div>
+              </div>
+            </div>
+            <!-- phase 1 · Vacay -->
+            <div class="pf_card" data-pf-card>
+              <div class="card-notif">
+                <div class="card-notif-icon"><img src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79/69ab1ce2c7a3252e0d93cf94_beach.svg" alt="" loading="lazy"></div>
                 <div style="flex:1">
                   <div class="card-notif-head"><span class="card-notif-app">Vacay</span><span class="card-notif-time">now</span></div>
-                  <div class="card-notif-body" data-pf-splittext>Your next beach vacation is calling you. Save 15% if you book this week — use code BEACH15.</div>
+                  <div class="card-notif-body" data-pf-splittext>Your next beach vacation is calling you. Save 15% if you book this week — use code BEACH15</div>
                 </div>
               </div>
             </div>
+            <!-- phase 2 · Climbify -->
             <div class="pf_card" data-pf-card>
               <div class="card-notif">
-                <div class="card-notif-icon" style="background:#5bd11e">🏔️</div>
+                <div class="card-notif-icon"><img src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79/69ab1ce2c7a3252e0d93cf91_mountain.svg" alt="" loading="lazy"></div>
                 <div style="flex:1">
                   <div class="card-notif-head"><span class="card-notif-app">Climbify</span><span class="card-notif-time">now</span></div>
-                  <div class="card-notif-body" data-pf-splittext>The Roof of Africa has a spot with your name on it. Kilimanjaro summit season opens next month.</div>
-                </div>
-              </div>
-            </div>
-            <div class="pf_card" data-pf-card>
-              <div class="card-notif">
-                <div class="card-notif-icon" style="background:#f0762b">🧭</div>
-                <div style="flex:1">
-                  <div class="card-notif-head"><span class="card-notif-app">Trailhead</span><span class="card-notif-time">now</span></div>
-                  <div class="card-notif-body" data-pf-splittext>New summit challenge unlocked — refer a friend and you both get 20% off your next trek.</div>
+                  <div class="card-notif-body" data-pf-splittext>The Roof of Africa has a spot with your name on it. Kilimanjaro summit season opens next month 🥾</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Column 2: NEW CREATIVE / media -->
+        <!-- Column 2: media (video) -->
         <div class="pf_col">
           <span class="pf_pill" data-pf-pill>
-            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.86228 0.822223C6.21043 0.317344 7.00192 0.563411 7.00193 1.17672V3.99898H9.90036C10.4039 3.99898 10.7007 4.56388 10.415 4.97847L6.1406 11.1757C5.7924 11.6804 5.00212 11.4343 5.00193 10.8212V7.99898H2.10251C1.59908 7.99891 1.3024 7.43403 1.58786 7.01949L5.86228 0.822223Z" fill="currentColor"/></svg></span>
             <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
-              data-t0="New Creative" data-t1="In-App Banner" data-t2="Rewards">New Creative</span></span>
+              data-t0="Rewrite Headline" data-t1="New Creative" data-t2="In-App Banner">Rewrite Headline</span></span>
           </span>
           <div class="pf_stack" data-pf-col>
+            <!-- phase 0 · Swiss Alps -->
             <div class="pf_card" data-pf-card>
               <div class="card-media">
-                <div class="card-media-img" style="background:linear-gradient(160deg,#7fb2d6,#1f5b7a 65%,#123047)"></div>
+                <video class="card-media-img" data-pf-media autoplay muted loop playsinline
+                  poster="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a75ad27c0884aed5f94cb4_Untitled_poster.0000000.jpg">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a75ad27c0884aed5f94cb4_Untitled_mp4.mp4" type="video/mp4">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a75ad27c0884aed5f94cb4_Untitled_webm.webm" type="video/webm">
+                </video>
+                <div class="card-media-overlay"></div>
+                <div class="card-media-info">
+                  <h4>Book Now and Conquer the Swiss Alps</h4>
+                  <p>Expert-guided ascents with all gear included. Limited spots for March expeditions.</p>
+                  <button>Claim my spot</button>
+                </div>
+              </div>
+            </div>
+            <!-- phase 1 · Beach -->
+            <div class="pf_card" data-pf-card>
+              <div class="card-media">
+                <video class="card-media-img" data-pf-media autoplay muted loop playsinline
+                  poster="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69ab1a697fd09b5e638a552d_3115738-uhd_3840_2160_24fps_poster.0000000.jpg">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69ab1a697fd09b5e638a552d_3115738-uhd_3840_2160_24fps_mp4.mp4" type="video/mp4">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69ab1a697fd09b5e638a552d_3115738-uhd_3840_2160_24fps_webm.webm" type="video/webm">
+                </video>
                 <div class="card-media-overlay"></div>
                 <span class="card-media-badge">15% Off</span>
                 <div class="card-media-info">
@@ -266,11 +292,15 @@
                 </div>
               </div>
             </div>
+            <!-- phase 2 · Kilimanjaro -->
             <div class="pf_card" data-pf-card>
               <div class="card-media">
-                <div class="card-media-img" style="background:linear-gradient(160deg,#c98f5a,#5a3d2b 60%,#241611)"></div>
+                <video class="card-media-img" data-pf-media autoplay muted loop playsinline
+                  poster="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a76130fc20fd554403757d_turbine22_poster.0000000.jpg">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a76130fc20fd554403757d_turbine22_mp4.mp4" type="video/mp4">
+                  <source src="https://cdn.prod.website-files.com/6998a7a4efcd66d9f2857e79%2F69a76130fc20fd554403757d_turbine22_webm.webm" type="video/webm">
+                </video>
                 <div class="card-media-overlay"></div>
-                <span class="card-media-badge">Guided</span>
                 <div class="card-media-info">
                   <h4>Climb Mount Kilimanjaro</h4>
                   <p>Budget-friendly ways to take on Africa's highest peak, still with expert guides.</p>
@@ -278,29 +308,27 @@
                 </div>
               </div>
             </div>
-            <div class="pf_card" data-pf-card>
-              <div class="card-media">
-                <div class="card-media-img" style="background:linear-gradient(160deg,#8fae63,#3f5a2c 60%,#20301a)"></div>
-                <div class="card-media-overlay"></div>
-                <span class="card-media-badge">-20%</span>
-                <div class="card-media-info">
-                  <h4>Trek the Inca Trail</h4>
-                  <p>Four-day guided trek to Machu Picchu at the lowest price we've ever offered.</p>
-                  <button>Book now</button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Column 3: CONVERSION / checkout -->
+        <!-- Column 3: checkout -->
         <div class="pf_col">
           <span class="pf_pill" data-pf-pill>
-            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.2 4.8L12 6l-4.8 1.2L6 12 4.8 7.2 0 6l4.8-1.2z"/></svg></span>
+            <span class="pf_pill-spark"><svg viewBox="0 0 12 12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.86228 0.822223C6.21043 0.317344 7.00192 0.563411 7.00193 1.17672V3.99898H9.90036C10.4039 3.99898 10.7007 4.56388 10.415 4.97847L6.1406 11.1757C5.7924 11.6804 5.00212 11.4343 5.00193 10.8212V7.99898H2.10251C1.59908 7.99891 1.3024 7.43403 1.58786 7.01949L5.86228 0.822223Z" fill="currentColor"/></svg></span>
             <span class="pf_pill-textwrap" data-pf-pill-wrap><span class="pf_pill-text" data-pf-pill-text
               data-t0="Conversion" data-t1="Conversion" data-t2="Conversion">Conversion</span></span>
           </span>
           <div class="pf_stack" data-pf-col>
+            <!-- phase 0 · Alps Trek -->
+            <div class="pf_card" data-pf-card>
+              <div class="card-checkout">
+                <div class="card-checkout-h">Checkout</div>
+                <div class="card-checkout-row"><span>Alps Trek</span><span>$5,534</span></div>
+                <div class="card-checkout-row total"><span>Total</span><span>$5,534</span></div>
+                <button>Checkout</button>
+              </div>
+            </div>
+            <!-- phase 1 -->
             <div class="pf_card" data-pf-card>
               <div class="card-checkout">
                 <div class="card-checkout-h">Checkout</div>
@@ -310,20 +338,12 @@
                 <button>Checkout</button>
               </div>
             </div>
+            <!-- phase 2 -->
             <div class="pf_card" data-pf-card>
               <div class="card-checkout">
                 <div class="card-checkout-h">Checkout</div>
                 <div class="card-checkout-row"><span>Subtotal</span><span>$4,800</span></div>
                 <div class="card-checkout-row total"><span>Total</span><span>$4,800</span></div>
-                <button>Checkout</button>
-              </div>
-            </div>
-            <div class="pf_card" data-pf-card>
-              <div class="card-checkout">
-                <div class="card-checkout-h">Checkout</div>
-                <div class="card-checkout-row"><span>Subtotal</span><span>$3,900</span></div>
-                <div class="card-checkout-row"><span>Referral credit</span><span>−$780</span></div>
-                <div class="card-checkout-row total"><span>Total</span><span>$3,120</span></div>
                 <button>Checkout</button>
               </div>
             </div>

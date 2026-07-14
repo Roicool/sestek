@@ -121,6 +121,8 @@
           { autoAlpha: 1, filter: "blur(0px)", duration: 1.4, ease: "power4.out" }, ci === 0 ? "<0.2" : "<");
         var lines = splitLines[ci][phase];
         if (lines) master.from(lines, { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.08, ease: "power4.out" }, "<0.25");
+        var media = card.querySelector("[data-pf-media]");   // img/video zoom-out on reveal
+        if (media) master.fromTo(media, { scale: 1.12 }, { scale: 1, duration: 1.5, ease: "power4.out" }, "<");
       });
     }
 
