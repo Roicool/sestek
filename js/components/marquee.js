@@ -1,10 +1,19 @@
 /*!
- * marquee.js v1.0.0
+ * marquee.js v1.1.0
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
+ *
+ * Root attributes (all optional):
+ *   data-marquee-speed      px/s scroll speed              (default 60)
+ *   data-marquee-direction  "left" (default) | "right"     — which way the
+ *                           track drifts; drag/momentum/hover-pause all
+ *                           respect it automatically
+ *
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.1.0 — data-marquee-direction ("left"/"right") for multi-row layouts
+ *          where alternating rows drift opposite ways
  * v1.0.0 — initial release
  */
 
@@ -44,7 +53,8 @@
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    var BASE_SPEED = parseFloat(root.dataset.marqueeSpeed) || 60; // px / s
+    var dir = (root.getAttribute("data-marquee-direction") || "left").toLowerCase();
+    var BASE_SPEED = (parseFloat(root.dataset.marqueeSpeed) || 60) * (dir === "right" ? -1 : 1); // px / s, signed
 
     // ── 1. Clone original items for seamless loop ─────────────
     //    aria-hidden keeps clones out of accessibility tree
@@ -173,11 +183,10 @@
       isDragging = false;
       root.classList.remove("is-dragging");
 
-      // Clamp momentum so it never feels violent
-      var momentum = Math.max(
-        -BASE_SPEED * 5,
-        Math.min(BASE_SPEED * 10, ptrVelocity)
-      );
+      // Clamp momentum so it never feels violent (magnitude-based — BASE_SPEED
+      // may be negative for data-marquee-direction="right").
+      var maxSpeed = Math.abs(BASE_SPEED);
+      var momentum = Math.max(-maxSpeed * 5, Math.min(maxSpeed * 10, ptrVelocity));
       sp.v = momentum;
 
       // If pointer is still inside the root settle to hover-pause (0),

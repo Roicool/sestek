@@ -971,6 +971,17 @@ Webflow `</body>` öncesi:
 **`data-marquee-speed`** — piksel/saniye cinsinden hız (varsayılan: `60`).
 Daha yavaş → daha premium, daha hızlı → daha enerjik.
 
+**`data-marquee-direction`** — `"left"` (varsayılan) | `"right"`. Alternatif
+sıralarda ters yönde akan grid'ler (ör. arka plan connector grid'i: satır 1
+sola, satır 2 sağa, satır 3 sola) için her `[data-marquee]` satırına ayrı ayrı
+ver — drag/momentum/hover-pause hepsi otomatik doğru yönü izler:
+
+```html
+<div data-marquee data-marquee-speed="24" data-marquee-direction="left">…</div>
+<div data-marquee data-marquee-speed="24" data-marquee-direction="right">…</div>
+<div data-marquee data-marquee-speed="24" data-marquee-direction="left">…</div>
+```
+
 ### Scroll Tabs
 
 Apollo tarzı pinli, scroll-driven sekme bölümü:
