@@ -1,0 +1,84 @@
+/*!
+ * logo-marquee.css v1.0.0
+ * Step-advancing logo strip — critical/behavioural styles only.
+ * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens;
+ * this file owns the layout logo-marquee.js depends on (fixed-width cells,
+ * a centred non-moving frame) plus a premium default skin you can restyle.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Stage — the viewport; frame and track share this coordinate space ────── */
+[data-lm-stage] {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  height: var(--lm-item-w, 5rem);
+}
+
+/* ── Track — JS drives its x transform; DOM order never changes ───────────── */
+[data-lm-track] {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--4, 1rem);
+  will-change: transform;
+}
+
+/* ── Item — fixed width so every step is an identical distance ────────────── */
+[data-lm-item] {
+  flex: 0 0 auto;
+  width: var(--lm-item-w, 5rem);
+  height: var(--lm-item-w, 5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-lm-item] img,
+[data-lm-item] svg {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+/* The item currently held inside the frame — full colour, slightly larger. */
+[data-lm-item].is-active img,
+[data-lm-item].is-active svg {
+  filter: grayscale(0);
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+/* ── Frame — the "spotlight" box; CSS-centred, JS never touches it ────────── */
+[data-lm-frame] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(var(--lm-item-w, 5rem) + var(--spacing--4, 1rem));
+  height: calc(var(--lm-item-w, 5rem) + var(--spacing--4, 1rem));
+  border: 1px solid var(--neutral--200, #e2e8f0);
+  border-radius: var(--radius--2xl, 16px);
+  background: var(--surface--base, #fff);
+  box-shadow: 0 12px 32px -12px rgba(15, 23, 42, .18);
+  pointer-events: none;
+  z-index: 0;                          /* sits behind the logos, framing them */
+}
+[data-lm-item] { position: relative; z-index: 1; }
+
+/* ── Label — the active item's name below the stage, JS crossfades it ─────── */
+[data-lm-label] {
+  display: block;
+  text-align: center;
+  margin-top: var(--spacing--3, 0.75rem);
+}
+
+/* ── Reduced motion — no glide, no crossfade; static centred logo ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-lm-track] { will-change: auto; }
+  [data-lm-item] img,
+  [data-lm-item] svg { transition: none !important; }
+}

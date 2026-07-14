@@ -25,14 +25,15 @@ sestek/
 │   │                #      video-modal.js, video-inline.js, webinar-player.js,
 │   │                #      card-marquee.js, section-title.js, text-rotator.js,
 │   │                #      story.js, accordion.js, blog-utils.js, site-utils.js,
-│   │                #      sticky-utms.js, search.js, badge-swap.js
+│   │                #      sticky-utms.js, search.js, badge-swap.js, logo-marquee.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js
 ├── css/
 │   ├── core/        # nav.css, nav-full.css
 │   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,
 │   │                #   video-modal, card-marquee, section-title, text-rotator,
-│   │                #   story, hero-slider, accordion, search, badge-swap)
+│   │                #   story, hero-slider, accordion, search, badge-swap,
+│   │                #   logo-marquee)
 │   ├── effects/     # grain.css, btn-glow.css
 │   └── animations/  # reveal.css
 └── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md,

@@ -1786,6 +1786,75 @@ DOM:
   İkon `<img>`/`<svg>` içine konur; renkler/radius'lar Designer token'larıyla
   serbestçe değiştirilebilir.
 
+### Logo Marquee
+
+Adım adım ilerleyen logo şeridi — ortadaki sabit, bordürlü bir "spotlight"
+kutusuna her seferinde bir logo girer, orada kısa bir süre durur (altındaki
+etiket crossfade ile o logonun ismine döner), sonra bir sonraki logo aynı
+kutuya kayar. Sonsuz döngü — tek bir klon seti kullanılır, dikişsiz sarılır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-marquee.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-marquee.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initLogoMarquee(); // tüm [data-logo-marquee] gruplarını başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök:
+    data-logo-marquee
+    data-lm-dwell="1800"            her logo kutuda kaç ms duracak
+    data-lm-step-duration="0.6"     iki logo arası kayma süresi (sn)
+    data-lm-ease="power3.inOut"     kayma ease'i
+-->
+<div data-logo-marquee>
+  <div data-lm-stage>
+    <div data-lm-track>
+      <div data-lm-item data-lm-name="Anthropic">
+        <img src="anthropic.svg" alt="Anthropic">
+      </div>
+      <div data-lm-item data-lm-name="HubSpot">
+        <img src="hubspot.svg" alt="HubSpot">
+      </div>
+      <div data-lm-item data-lm-name="Webflow">
+        <img src="webflow.svg" alt="Webflow">
+      </div>
+    </div>
+    <div data-lm-frame></div>
+  </div>
+
+  <p data-lm-label></p>
+</div>
+```
+
+**Notlar**
+- `[data-lm-item]` genişliği CSS'te `--lm-item-w` değişkeniyle sabittir (default
+  `5rem`) — her adımın eşit mesafe olması için tüm hücreler aynı genişlikte
+  olmalı. `--lm-item-w`'yi Designer'dan değiştirebilirsin, JS otomatik uyum sağlar.
+- `[data-lm-frame]` JS tarafından hiç hareket ettirilmez — sadece CSS ile
+  ortalanmış sabit bir kutudur; kayan `[data-lm-track]` onun içinden/arkasından geçer.
+  `z-index` sırası logonun kutunun "içine girmiş" gibi görünmesini sağlar.
+- `[data-lm-item]` klonlama JS'de olur — kendin klon eklemene gerek yok.
+- Hover (fine pointer), klavye/focus'a gerek yok — ama görünürlük dışına
+  çıkınca (`IntersectionObserver`) ve sekme arka plana geçince otomatik durur.
+- `prefers-reduced-motion` veya GSAP yoksa: ilk logo kutunun içinde sabit
+  kalır, kayma/otomatik ilerleme olmaz.
+- `Sestek.initLogoMarquee()` her kökteki şeridi tek çağrıda bağlar.
+
 ---
 
 ## Effects
