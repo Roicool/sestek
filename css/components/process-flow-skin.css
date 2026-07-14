@@ -3,8 +3,8 @@
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
- *   - process-flow.css  (structural hooks / --pf-* tokens)
- *   - process-flow.js   (the GSAP loop)
+ * - process-flow.css  (structural hooks / --pf-* tokens)
+ * - process-flow.js   (the GSAP loop)
  * Animated props (opacity, blur, transform, drawSVG, pill width, active colours)
  * are set by the JS — this file is layout + resting look only.
  * https://github.com/roicool/sestek
@@ -78,7 +78,6 @@
 /* .pf_pill-textwrap collapse handled in process-flow.css ([data-pf-pill-wrap]) */
 .pf_pill-text {
   display: inline-block;
-  font-family: var(--pf-mono);
   font-size: 0.625rem; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: inherit;
