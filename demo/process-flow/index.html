@@ -201,7 +201,7 @@
           <!-- main track (light) -->
           <path class="pf_track" d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
           <!-- blue drawn line -->
-          <path class="pf_draw" id="pf-draw" d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
+          <path class="pf_draw" id="pf-draw" data-pf-draw d="M158,10 H250 C286,10 286,30 322,30 H1120"></path>
         </svg>
       </div>
 
@@ -340,109 +340,15 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 
+  <!-- The component (relative for the demo; use the CDN in Webflow:
+       https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/process-flow.js) -->
+  <script src="../../js/components/process-flow.js"></script>
+
+  <!-- Init block -->
   <script>
-  window.addEventListener("load", function () {
-    gsap.registerPlugin(DrawSVGPlugin, SplitText);
-
-    var root = document.querySelector("[data-process-flow]");
-    var personas = gsap.utils.toArray("[data-pf-persona]");       // stacked rows
-    var pills = gsap.utils.toArray("[data-pf-pill]");
-    var cols = gsap.utils.toArray("[data-pf-col]");               // 3 card columns
-    var draw = "#pf-draw";
-    var PHASES = personas.length;                                 // 3
-
-    var ACTIVE_BLUE = "#0b4fff", INK = "#232323", MUTED = "#c3c2b2";
-    var TAG_ON = "#d8dade", TAG_OFF = "#f0efe3", TAG_BD_OFF = "#e2e1d3";
-
-    // cards[col][phase] — one card element per column per phase
-    var cards = cols.map(function (col) { return gsap.utils.toArray(col.querySelectorAll("[data-pf-card]")); });
-
-    // Build per-card intro timelines (blur reveal + inner stagger), like the real code
-    function cardIntro(cardEl) {
-      var tl = gsap.timeline({ paused: true });
-      tl.from(cardEl, { autoAlpha: 0, filter: "blur(10px)", duration: 1.4, ease: "power4.out" });
-      var body = cardEl.querySelector("[data-pf-splittext]");
-      if (body) {
-        var split = new SplitText(body, { type: "lines", mask: "lines", linesClass: "pf-line" });
-        tl.from(split.lines, { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.08, ease: "power4.out" }, "<0.25");
-      }
-      var info = cardEl.querySelectorAll(".card-media-info > *, .card-checkout-row, .card-checkout button, .card-notif-head > *");
-      if (info.length) tl.from(info, { y: 10, opacity: 0, duration: 0.8, stagger: 0.06, ease: "power4.out" }, "<0.15");
-      return tl;
-    }
-    var intros = cards.map(function (colCards) { return colCards.map(cardIntro); });
-
-    // ── Initial state ────────────────────────────────────────────────────────
-    gsap.set(draw, { drawSVG: "0% 0%" });
-    gsap.set(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
-    gsap.set("[data-pf-pill-wrap]", { width: 0 });
-    // stack all cards, hide them
-    cards.forEach(function (colCards) { colCards.forEach(function (c) { gsap.set(c, { autoAlpha: 0 }); }); });
-    personas.forEach(function (p) {
-      gsap.set(p.querySelectorAll("[data-pf-person-text]"), { color: MUTED });
-      gsap.set(p.querySelector("[data-pf-person]"), { color: MUTED });
+    window.addEventListener("load", function () {
+      Sestek.initProcessFlow();
     });
-
-    // ── Line draw / undraw ─────────────────────────────────────────────────
-    function drawLine() {
-      return gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" }, { drawSVG: "0% 100%", duration: 1.5, ease: "none" });
-    }
-    function undrawLine(nextPhase) {
-      return gsap.timeline().to(draw, {
-        drawSVG: "100% 100%", duration: 1.4, ease: "none",
-        onStart: function () {
-          gsap.to("[data-pf-pill-wrap]", { width: 0, duration: 0.9, stagger: 0.25, ease: "power4.out" });
-          gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.25, ease: "power4.out" });
-        },
-        onComplete: function () {
-          pills.forEach(function (pill) {
-            var t = pill.querySelector("[data-pf-pill-text]");
-            var v = t.getAttribute("data-t" + nextPhase);
-            if (v) t.textContent = v;
-          });
-        }
-      });
-    }
-
-    // ── Master loop ────────────────────────────────────────────────────────
-    var master = gsap.timeline({ repeat: -1 });
-
-    for (var p = 0; p < PHASES; p++) {
-      (function (phase) {
-        var persona = personas[phase];
-        // draw the line in
-        master.add(drawLine());
-        // highlight the active persona
-        master.to(persona.querySelector("[data-pf-person]"), { color: ACTIVE_BLUE, duration: 1.1, ease: "power4.out" }, "<0.9");
-        master.to(persona.querySelectorAll("[data-pf-person-text]"), { color: INK, duration: 1, ease: "power4.out" }, "<0.3");
-        // open + activate the pills
-        master.to("[data-pf-pill-wrap]", { width: "auto", duration: 1, stagger: 0.25, ease: "power4.out" }, "<0.1");
-        master.to(pills, { color: ACTIVE_BLUE, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.25, ease: "power4.out" }, "<");
-        // reveal this phase's cards (blur-in), one per column
-        intros.forEach(function (colIntros) { master.add(colIntros[phase].play(0), "<0.2"); });
-        // hold
-        master.to({}, { duration: 2 });
-
-        // transition out (unless it's the very last — reset handles that path too)
-        var next = (phase + 1) % PHASES;
-        master.add(undrawLine(next));
-        // shift persona stack up to the next one
-        master.to(personas, { yPercent: -100 * next, duration: 1, ease: "back.out(1.2)" }, "<30%");
-        // blur this phase's cards out
-        var outTargets = cards.map(function (c) { return c[phase]; });
-        master.to(outTargets, { autoAlpha: 0, filter: "blur(5px)", y: 32, duration: 1, stagger: 0.12, ease: "power4.out" }, "<");
-        // reset their y so the next intro starts clean
-        master.set(outTargets, { filter: "blur(0px)", y: 0 });
-        // fade the just-left persona back to muted (except on wrap, next phase re-highlights)
-        if (next !== 0) {
-          master.to(persona.querySelector("[data-pf-person]"), { color: MUTED, duration: 0.8 }, "<");
-          master.to(persona.querySelectorAll("[data-pf-person-text]"), { color: MUTED, duration: 0.8 }, "<");
-        } else {
-          master.to("[data-pf-person], [data-pf-person-text]", { color: MUTED, duration: 0.8 }, "<");
-        }
-      })(p);
-    }
-  });
   </script>
 </body>
 </html>

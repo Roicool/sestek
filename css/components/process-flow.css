@@ -1,70 +1,41 @@
 /*!
- * process-flow.css v1.0.0
- * Structural hooks for the Auxia-style looping flow (process-flow.js).
- * Only the mechanics live here — line-fill clipping, tag-wrap collapse, curve
- * stroke, card track clipping. The visual skin (colours, card designs, spacing)
- * is yours: swap the --pf-* tokens or restyle any element freely.
+ * process-flow.css v2.0.0
+ * Structural hooks for the Auxia-style journey loop (process-flow.js v2).
+ * Mechanics only — persona clip, line stroke, pill collapse, card stacking.
+ * The visual skin (colours, card designs, layout) is yours; swap the --pf-*
+ * tokens or restyle any element freely. See demo/process-flow/ for a full skin.
  * https://github.com/roicool/sestek
  */
 
-/* ── Colour tokens — process-flow.js reads these to keep the timeline synced ── */
+/* ── Colour tokens — process-flow.js reads these so the timeline stays synced ── */
 [data-process-flow] {
   --pf-accent: #0b4fff;
+  --pf-ink: #232323;
   --pf-muted: #c3c2b2;
   --pf-tag-idle-bg: #f0efe3;
+  --pf-tag-idle-bd: #e2e1d3;
   --pf-tag-active-bg: #d8dade;
 }
 
-/* ── Prompt — stacked lines, JS crossfades opacity ───────────────────────────
-   Wrap the prompts in a positioned box; each prompt overlaps for the crossfade. */
-[data-process-flow-prompt] {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;                       /* JS sets prompt[0] to 1 */
-}
+/* ── Personas — clip shows the active row; JS scrolls the stack yPercent ────── */
+[data-pf-personas] { overflow: hidden; }
 
-/* ── Line — container clips, inner span is the animated fill ─────────────────
-   width 0% → 100% happens on the INNER span, never the container. */
-[data-process-flow-line] {
-  position: relative;
-  overflow: hidden;
-}
-[data-process-flow-fill] {
-  position: absolute;
-  inset: 0;
-  width: 0%;                        /* JS animates this */
-  display: block;
-  background: var(--pf-accent);
-}
-
-/* ── Curve — native "DrawSVG" via stroke-dashoffset (set in JS) ──────────────
-   stroke-linecap:round keeps the drawing tip soft as it advances. */
-[data-process-flow-draw] {
+/* ── Line — the blue path is drawn with DrawSVGPlugin (JS sets drawSVG) ─────── */
+[data-pf-draw] {
   fill: none;
   stroke: var(--pf-accent);
-  stroke-width: 2;
-  stroke-linecap: round;
+  stroke-width: 1.75;
 }
 
-/* ── Tag label — collapse the WRAPPER, not the text (avoids font clipping) ─── */
-[data-process-flow-tag-wrap] {
+/* ── Pill label — collapse the WRAPPER, not the text (avoids font clipping) ─── */
+[data-pf-pill-wrap] {
   display: inline-block;
   width: 0;                         /* JS animates to auto */
   overflow: hidden;
   white-space: nowrap;
 }
 
-/* ── Card track — viewport clips, track is a flex rail sized by JS ───────────
-   JS sets track width to N×100% and each card to 100/N%, then slides xPercent. */
-[data-process-flow-viewport] {
-  overflow: hidden;
-}
-[data-process-flow-track] {
-  display: flex;
-}
-[data-process-flow-card] {
-  flex: 0 0 auto;
-}
+/* ── Cards — one column holds a card per phase, stacked; JS blur-dissolves ──── */
+[data-pf-card] { will-change: opacity, filter, transform; }
 
-/* ── Reduced motion — process-flow.js renders one static frame, no loop ────── */
+/* ── Reduced motion — process-flow.js renders phase 0 statically, no loop ───── */

@@ -1,40 +1,37 @@
 /*!
- * process-flow.js v1.0.0
- * Auxia-style looping "flow" animation: a prompt line crossfades, a straight
- * line fills, a curved SVG path draws itself (native stroke-dashoffset — no paid
- * DrawSVGPlugin), segment tags open/close one by one, and a card track slides to
- * the matching card. On loop it fades out and snaps back (never reverse-draws),
- * swaps to the next prompt, and repeats forever.
+ * process-flow.js v2.0.0
+ * Auxia-style looping journey hero: a left persona stack scrolls one row per
+ * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
+ * segment pills sit on the line and swap their labels per phase, and three
+ * cards (notification / media / checkout) blur-dissolve in and out. One
+ * repeat:-1 master timeline, N phases (= persona count).
  *
- * Requires : gsap (global). No Club plugins — draw = getTotalLength() + dashoffset.
- * CSS      : css/components/process-flow.css
+ * Requires : gsap (global) + DrawSVGPlugin + SplitText (both free since GSAP
+ *            3.13 — load from the CDN). ScrollSmoother is NOT used; smooth
+ *            scroll is Lenis at the site level.
  *
  * DOM contract (Webflow — only the attributes matter, design is yours):
  *   [data-process-flow]                     root
- *     [data-process-flow-prompt]            one prompt line per phase (stacked,
- *                                           crossfaded); count = number of phases
- *     [data-process-flow-avatar]            start node — colour shifts to accent
- *     [data-process-flow-line]              a line container (position:relative,
- *                                           overflow:hidden). First one fills
- *                                           before the curve, last one after the
- *                                           tags. Each holds:
- *       [data-process-flow-fill]            the fill span (width 0% → 100%)
- *     [data-process-flow-draw]              the drawn <path> (its real length is
- *                                           read with getTotalLength())
- *     [data-process-flow-tag]               one segment tag (count = # cards). Holds:
- *       [data-process-flow-tag-wrap]        width 0 → auto wrapper (NOT the text)
- *       [data-process-flow-tag-text]        the label (optional — colour shifts)
- *     [data-process-flow-viewport]          overflow:hidden clip
- *       [data-process-flow-track]           flex track (sized by JS to N×100%)
- *         [data-process-flow-card]          one card; its FIRST CHILD is animated
+ *     [data-pf-personas]                     clip that shows the active persona
+ *       [data-pf-persona]                    one persona row (count = # phases)
+ *         [data-pf-person]                   avatar/icon — colours to accent
+ *         [data-pf-person-text]              detail lines — colour to ink
+ *     [data-pf-draw]                         the blue <path> drawn with DrawSVG
+ *     [data-pf-pill]                         one segment pill (usually 3). Holds:
+ *       [data-pf-pill-wrap]                  width 0 -> auto wrapper (NOT text)
+ *       [data-pf-pill-text]                  label; data-t0/data-t1/... per phase
+ *     [data-pf-col]                          one card column (usually 3). Holds:
+ *       [data-pf-card]                       one card per phase (stacked, only
+ *                                            the active phase is shown)
+ *         [data-pf-splittext]                optional body for a line reveal
  *
  * Root attributes (all optional):
- *   data-process-flow-card-delay    pause after each card, seconds  (default 0.6)
- *   data-process-flow-phase-delay   pause at the end of a phase, s  (default 1.4)
+ *   data-pf-hold        seconds each phase holds before transitioning (default 2)
+ *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 1.5)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
- *   --pf-accent (#0b4fff) · --pf-muted (#c3c2b2)
- *   --pf-tag-active-bg (#d8dade) · --pf-tag-idle-bg (#f0efe3)
+ *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
+ *   --pf-tag-active-bg (#d8dade) · --pf-tag-idle-bg (#f0efe3) · --pf-tag-idle-bd (#e2e1d3)
  *
  * https://github.com/roicool/sestek
  */
@@ -52,155 +49,135 @@
     root._processFlowInit = true;
 
     var toArray = gsap.utils.toArray;
-    var prompts = toArray(root.querySelectorAll("[data-process-flow-prompt]"));
-    var avatar = root.querySelector("[data-process-flow-avatar]");
-    var fills = toArray(root.querySelectorAll("[data-process-flow-fill]"));
-    var draw = root.querySelector("[data-process-flow-draw]");
-    var tags = toArray(root.querySelectorAll("[data-process-flow-tag]"));
-    var track = root.querySelector("[data-process-flow-track]");
-    var cards = toArray(root.querySelectorAll("[data-process-flow-card]"));
+    var personas = toArray(root.querySelectorAll("[data-pf-persona]"));
+    var pills = toArray(root.querySelectorAll("[data-pf-pill]"));
+    var cols = toArray(root.querySelectorAll("[data-pf-col]"));
+    var draw = root.querySelector("[data-pf-draw]");
 
-    if (!draw || !track || !tags.length || !cards.length) {
-      console.warn("[Sestek ProcessFlow] Need [data-process-flow-draw], " +
-        "[data-process-flow-track], and matching [data-process-flow-tag]/" +
-        "[data-process-flow-card] elements.");
+    if (!draw || !personas.length || !cols.length) {
+      console.warn("[Sestek ProcessFlow] Need [data-pf-draw], [data-pf-persona] " +
+        "rows and [data-pf-col] card columns.");
       return;
     }
 
-    // Colours (design lives in CSS; JS only reads them so the timeline stays synced)
-    var accent = cssVar(root, "--pf-accent", "#0b4fff");
-    var muted = cssVar(root, "--pf-muted", "#c3c2b2");
-    var tagActiveBg = cssVar(root, "--pf-tag-active-bg", "#d8dade");
-    var tagIdleBg = cssVar(root, "--pf-tag-idle-bg", "#f0efe3");
+    var PHASES = personas.length;
+    var HOLD = parseFloat(root.getAttribute("data-pf-hold")) || 2;
+    var DRAW_DUR = parseFloat(root.getAttribute("data-pf-draw-dur")) || 1.5;
 
-    var CARD_DELAY = parseFloat(root.getAttribute("data-process-flow-card-delay")) || 0.6;
-    var PHASE_DELAY = parseFloat(root.getAttribute("data-process-flow-phase-delay")) || 1.4;
+    var ACCENT = cssVar(root, "--pf-accent", "#0b4fff");
+    var INK = cssVar(root, "--pf-ink", "#232323");
+    var MUTED = cssVar(root, "--pf-muted", "#c3c2b2");
+    var TAG_ON = cssVar(root, "--pf-tag-active-bg", "#d8dade");
+    var TAG_OFF = cssVar(root, "--pf-tag-idle-bg", "#f0efe3");
+    var TAG_BD_OFF = cssVar(root, "--pf-tag-idle-bd", "#e2e1d3");
 
-    var segCount = Math.min(tags.length, cards.length);
-    var stepPct = 100 / segCount;
-    var firstFill = fills[0] || null;
-    var lastFill = fills.length ? fills[fills.length - 1] : null;
+    // cards[col][phase] — one card per column per phase
+    var cards = cols.map(function (col) { return toArray(col.querySelectorAll("[data-pf-card]")); });
 
-    function wrapOf(tag) { return tag.querySelector("[data-process-flow-tag-wrap]"); }
-    function textOf(tag) { return tag.querySelector("[data-process-flow-tag-text]"); }
-    function contentOf(card) { return card.firstElementChild; }
+    function personLines(p) { return p.querySelectorAll("[data-pf-person-text]"); }
+    function personIcon(p) { return p.querySelector("[data-pf-person]"); }
 
-    // Manual "DrawSVG": animate stroke-dashoffset over the path's real length.
-    // offset = length → invisible (drawSVG 0%);  offset = 0 → fully drawn.
-    var drawLen = draw.getTotalLength();
-
-    // ── Layout the track from the real segment count ──────────────────────────
-    gsap.set(track, { width: segCount * 100 + "%" });
-    cards.slice(0, segCount).forEach(function (card) {
-      gsap.set(card, { width: stepPct + "%" });
+    // ── Static / initial state ────────────────────────────────────────────────
+    gsap.set(draw, { drawSVG: "0% 0%" });
+    gsap.set(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
+    gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0 });
+    cards.forEach(function (colCards) { colCards.forEach(function (c) { gsap.set(c, { autoAlpha: 0 }); }); });
+    personas.forEach(function (p) {
+      gsap.set(personLines(p), { color: MUTED });
+      var ic = personIcon(p); if (ic) gsap.set(ic, { color: MUTED });
     });
 
-    // ── Initial (hidden) state ────────────────────────────────────────────────
-    gsap.set(draw, { strokeDasharray: drawLen, strokeDashoffset: drawLen });
-    if (fills.length) gsap.set(fills, { width: "0%" });
-    tags.forEach(function (tag) {
-      var w = wrapOf(tag);
-      if (w) gsap.set(w, { width: 0 });
-    });
-    cards.forEach(function (card) {
-      var c = contentOf(card);
-      if (c) gsap.set(c, { opacity: 0, y: 12 });
-    });
-    if (avatar) gsap.set(avatar, { color: muted });
-    if (prompts.length) {
-      gsap.set(prompts, { opacity: 0 });
-      gsap.set(prompts[0], { opacity: 1 });
-    }
-
-    // ── Reduced motion: resolve one static frame, no loop ─────────────────────
+    // ── Reduced motion: resolve phase 0 statically, no loop ───────────────────
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      if (fills.length) gsap.set(fills, { width: "100%" });
-      gsap.set(draw, { strokeDashoffset: 0 });
-      if (avatar) gsap.set(avatar, { color: accent });
-      var t0 = tags[0], w0 = wrapOf(t0), x0 = textOf(t0), c0 = contentOf(cards[0]);
-      gsap.set(t0, { backgroundColor: tagActiveBg, color: accent });
-      if (w0) gsap.set(w0, { width: "auto" });
-      if (x0) gsap.set(x0, { color: accent });
-      if (c0) gsap.set(c0, { opacity: 1, y: 0 });
+      gsap.set(draw, { drawSVG: "0% 100%" });
+      gsap.set(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON });
+      gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto" });
+      var p0 = personas[0];
+      gsap.set(personLines(p0), { color: INK });
+      var ic0 = personIcon(p0); if (ic0) gsap.set(ic0, { color: ACCENT });
+      cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
       return;
     }
 
-    // ── Master infinite timeline ──────────────────────────────────────────────
-    var tl = gsap.timeline({ repeat: -1, defaults: { ease: "power4.out" } });
-
-    prompts.forEach(function (_, phaseIndex) {
-      addPhase();
-      addReset(phaseIndex);
-    });
-    // No prompts? still loop the flow once per cycle.
-    if (!prompts.length) { addPhase(); addReset(-1); }
-
-    function addPhase() {
-      // 1) first straight line fills
-      if (firstFill) tl.to(firstFill, { width: "100%", duration: 0.5 });
-      if (avatar) tl.to(avatar, { color: accent, duration: 0.5 }, "<50%");
-
-      // 2) curved SVG line draws itself (dashoffset → 0)
-      tl.to(draw, { strokeDashoffset: 0, duration: 0.6 }, "-=0.3");
-
-      // 3) walk the segment tags/cards
-      tags.slice(0, segCount).forEach(function (tag, i) {
-        var isFirst = i === 0;
-        var wrap = wrapOf(tag);
-        var text = textOf(tag);
-
-        tl.to(tag, { backgroundColor: tagActiveBg, color: accent, duration: 0.4 },
-          isFirst ? "-=0.1" : "<0.3");
-        if (wrap) tl.to(wrap, { width: "auto", duration: 0.6 }, "<");
-        if (text) tl.to(text, { color: accent, duration: 0.4 }, "<");
-
-        if (!isFirst) {
-          var prevWrap = wrapOf(tags[i - 1]);
-          if (prevWrap) tl.to(prevWrap, { width: 0, duration: 0.6 }, "<");
-          tl.to(track, { xPercent: -stepPct * i, duration: 0.8 }, "<");
-        }
-
-        var content = contentOf(cards[i]);
-        if (content) tl.to(content, { opacity: 1, y: 0, duration: isFirst ? 0.5 : 0.7 }, "<");
-        tl.to({}, { duration: CARD_DELAY });                // empty tween = pure wait
+    // Pre-split notification bodies once (SplitText mutates the DOM — do it a
+    // single time, then re-animate the same lines every loop).
+    var hasSplit = typeof SplitText !== "undefined";
+    var splitLines = cards.map(function (colCards) {
+      return colCards.map(function (card) {
+        var body = card.querySelector("[data-pf-splittext]");
+        if (body && hasSplit) return new SplitText(body, { type: "lines", mask: "lines" }).lines;
+        return null;
       });
+    });
 
-      // 4) second straight line fills to "close" the phase
-      if (lastFill && lastFill !== firstFill) {
-        tl.to(lastFill, { width: "100%", duration: 0.6 }, "<");
-      }
-      tl.to({}, { duration: PHASE_DELAY });
+    // Reveal one phase's cards straight into the master timeline (blur-dissolve +
+    // optional SplitText line reveal). fromTo — not from — so the explicit end
+    // state survives the initial autoAlpha:0 set and every repeat.
+    function revealCards(phase) {
+      cols.forEach(function (col, ci) {
+        var card = cards[ci][phase];
+        if (!card) return;
+        master.fromTo(card, { autoAlpha: 0, filter: "blur(10px)" },
+          { autoAlpha: 1, filter: "blur(0px)", duration: 1.4, ease: "power4.out" }, ci === 0 ? "<0.2" : "<");
+        var lines = splitLines[ci][phase];
+        if (lines) master.from(lines, { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.08, ease: "power4.out" }, "<0.25");
+      });
     }
 
-    function addReset(phaseIndex) {
-      var contents = cards.map(contentOf).filter(Boolean);
-      var wraps = tags.map(wrapOf).filter(Boolean);
-      var texts = tags.map(textOf).filter(Boolean);
-      var fadeTargets = fills.concat([draw]);
-
-      // 1) lines + curve FADE out (never reverse-drawn — matches Auxia)
-      tl.to(fadeTargets, { opacity: 0, duration: 0.6 });
-      if (contents.length) tl.to(contents, { opacity: 0, y: 12, duration: 0.6 }, "<");
-      if (wraps.length) tl.to(wraps, { width: 0, duration: 0.6 }, "<");
-      if (avatar) tl.to(avatar, { color: muted, duration: 0.4 }, "<");
-      tl.to(tags, { backgroundColor: tagIdleBg, color: muted, duration: 0.4 }, "<");
-      if (texts.length) tl.to(texts, { color: muted, duration: 0.4 }, "<");
-
-      // 2) crossfade prompt
-      if (prompts.length) {
-        var next = (phaseIndex + 1) % prompts.length;
-        tl.to(prompts[phaseIndex], { opacity: 0, duration: 0.6 }, "<");
-        tl.to(prompts[next], { opacity: 1, duration: 0.6 }, "<");
-      }
-
-      // 3) reset the card track, then SNAP everything back (no reverse anim)
-      tl.to(track, { xPercent: 0, duration: 0.6 }, "<");
-      if (fills.length) tl.set(fills, { width: "0%" });
-      tl.set(draw, { strokeDashoffset: drawLen });
-      tl.set(fadeTargets, { opacity: 1 });
+    function drawLine() {
+      return gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" },
+        { drawSVG: "0% 100%", duration: DRAW_DUR, ease: "none" });
+    }
+    function undrawLine(nextPhase) {
+      return gsap.timeline().to(draw, {
+        drawSVG: "100% 100%", duration: DRAW_DUR, ease: "none",
+        onStart: function () {
+          gsap.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0, duration: 0.9, stagger: 0.25, ease: "power4.out" });
+          gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.25, ease: "power4.out" });
+        },
+        onComplete: function () {
+          pills.forEach(function (pill) {
+            var t = pill.querySelector("[data-pf-pill-text]");
+            if (!t) return;
+            var v = t.getAttribute("data-t" + nextPhase);
+            if (v) t.textContent = v;
+          });
+        }
+      });
     }
 
-    root._processFlowTimeline = tl;                         // exposed for debugging
+    // ── Master loop ───────────────────────────────────────────────────────────
+    var master = gsap.timeline({ repeat: -1 });
+
+    for (var p = 0; p < PHASES; p++) {
+      (function (phase) {
+        var persona = personas[phase];
+        var next = (phase + 1) % PHASES;
+
+        master.add(drawLine());
+        var ic = personIcon(persona);
+        if (ic) master.to(ic, { color: ACCENT, duration: 1.1, ease: "power4.out" }, "<0.9");
+        master.to(personLines(persona), { color: INK, duration: 1, ease: "power4.out" }, "<0.3");
+        master.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto", duration: 1, stagger: 0.25, ease: "power4.out" }, "<0.1");
+        master.to(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.25, ease: "power4.out" }, "<");
+        revealCards(phase);
+        master.to({}, { duration: HOLD });
+
+        master.add(undrawLine(next));
+        master.to(personas, { yPercent: -100 * next, duration: 1, ease: "back.out(1.2)" }, "<30%");
+        var outTargets = cards.map(function (c) { return c[phase]; }).filter(Boolean);
+        master.to(outTargets, { autoAlpha: 0, filter: "blur(5px)", y: 32, duration: 1, stagger: 0.12, ease: "power4.out" }, "<");
+        master.set(outTargets, { filter: "blur(0px)", y: 0 });
+        if (next !== 0) {
+          if (ic) master.to(ic, { color: MUTED, duration: 0.8 }, "<");
+          master.to(personLines(persona), { color: MUTED, duration: 0.8 }, "<");
+        } else {
+          master.to([root.querySelectorAll("[data-pf-person]"), root.querySelectorAll("[data-pf-person-text]")], { color: MUTED, duration: 0.8 }, "<");
+        }
+      })(p);
+    }
+
+    root._processFlowTimeline = master;                     // exposed for debugging
   }
 
   /**
@@ -211,6 +188,10 @@
     if (typeof gsap === "undefined") {
       console.error("[Sestek ProcessFlow] GSAP required."); return;
     }
+    if (typeof DrawSVGPlugin !== "undefined") gsap.registerPlugin(DrawSVGPlugin);
+    else console.warn("[Sestek ProcessFlow] DrawSVGPlugin missing — the line won't draw.");
+    if (typeof SplitText !== "undefined") gsap.registerPlugin(SplitText);
+
     var roots = document.querySelectorAll(selector || "[data-process-flow]");
     if (!roots.length) { console.warn("[Sestek ProcessFlow] No [data-process-flow] found."); return; }
     roots.forEach(build);
