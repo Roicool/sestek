@@ -1711,6 +1711,76 @@ tarafından navigasyon anında atanır).
 **Demo:** `demo/view-transitions/` — üç his'i alttaki switcher'dan tek tek
 deneyebileceğin, kart → hero morph'lu çalışan örnek.
 
+### Badge Swap
+
+Tıklanabilir logo/ikon rozetleri (badge) satırı — tıklanan rozet **FLIP**
+tekniğiyle (rect-diff + `gsap.to`, plugin gerekmez) satırın en soluna fiziksel
+olarak kayar, diğerleri yana kayarak yer açar; altındaki açıklama cümlesi
+tıklanan rozetin verisine göre crossfade ile değişir.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/badge-swap.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/badge-swap.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initBadgeSwap(); // tüm [data-badge-swap] gruplarını başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök:
+    data-badge-swap
+    data-badge-swap-duration="0.5"    reorder + crossfade süresi (sn)
+    data-badge-swap-ease="power3.out" reorder ease
+-->
+<div data-badge-swap>
+  <div data-badge-swap-list>
+    <button type="button" data-badge-swap-item
+            data-badge-swap-name="Anthropic"
+            data-badge-swap-copy="3x'd their enrichment rate with Clay's data marketplace.">
+      <img src="anthropic.svg" alt="Anthropic" width="32" height="32">
+    </button>
+    <button type="button" data-badge-swap-item
+            data-badge-swap-name="HubSpot"
+            data-badge-swap-copy="cut lead research time by 80% with automated enrichment.">
+      <img src="hubspot.svg" alt="HubSpot" width="32" height="32">
+    </button>
+    <button type="button" data-badge-swap-item
+            data-badge-swap-name="Webflow"
+            data-badge-swap-copy="doubled outbound reply rates with personalised waterfalls.">
+      <img src="webflow.svg" alt="Webflow" width="32" height="32">
+    </button>
+  </div>
+
+  <p data-badge-swap-desc>
+    <strong data-badge-swap-desc-name></strong>
+    <span data-badge-swap-desc-copy></span>
+  </p>
+</div>
+```
+
+**Notlar**
+- Her `[data-badge-swap-item]` bir `<button>` (veya `<a>`) — klavye erişimi
+  bedavaya gelir (Tab + Enter/Space), ekstra ARIA gerekmez.
+- Tıklanan item zaten en soldaysa (`.is-active`) hiçbir şey olmaz — idempotent.
+- Reorder DOM'da gerçekten olur (`insertBefore`); sadece **görsel** kayma
+  FLIP ile (`x` transform) telafi edilir, yani ekran okuyucu / sekme sırası da
+  yeni düzeni yansıtır.
+- `prefers-reduced-motion`: reorder anında olur, açıklama crossfade yerine
+  direkt değişir.
+- `Sestek.initBadgeSwap()` her kökteki tüm rozetleri tek çağrıda bağlar.
+
 ---
 
 ## Effects

@@ -1,0 +1,59 @@
+/*!
+ * badge-swap.css v1.0.0
+ * Clickable badge row — critical/behavioural styles only.
+ * Colours, fonts and spacing come from the Webflow Designer + RC tokens;
+ * this file only owns what badge-swap.js depends on to animate correctly.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Row — DOM order IS visual order; badge-swap.js reorders via transform ── */
+[data-badge-swap-list] {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--2, 0.5rem);
+}
+
+/* ── Badge — reset native button chrome so Designer styles win ────────────── */
+[data-badge-swap-item] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  /* FLIP moves items with `x`; keep the transform on its own layer */
+  will-change: transform;
+}
+
+[data-badge-swap-item]:focus-visible {
+  outline: 2px solid var(--brand-primary--500, #5983f8);
+  outline-offset: 2px;
+  border-radius: var(--radius--md, 6px);
+}
+
+/* Dim inactive badges so the active one reads clearly — optional, easy to
+   override in the Designer by targeting .is-active directly. */
+[data-badge-swap-item]:not(.is-active) {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+[data-badge-swap-item]:not(.is-active):hover {
+  opacity: 0.8;
+}
+
+/* ── Description — name + copy crossfade as separate inline nodes ─────────── */
+[data-badge-swap-desc-name],
+[data-badge-swap-desc-copy] {
+  display: inline;
+}
+
+/* ── Reduced motion — no transform tween, no crossfade; instant swaps ─────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-badge-swap-item] {
+    will-change: auto;
+    transition: none !important;
+  }
+}
