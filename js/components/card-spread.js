@@ -6,8 +6,7 @@
  *      exactly Ramp's corporate-cards effect (clip inset + synced line).
  *   2. the virtual cards sit as a PERFECT deck (fully hidden behind the
  *      centre card) and SPREAD out from behind it to their natural grid
- *      positions — fanning open mid-flight and straightening with a soft
- *      back.out snap (FLIP-style: JS measures the real layout and animates
+ *      positions in a clean straight glide (no rotation)
  *      the delta, so any Webflow grid/flex layout works, any breakpoint,
  *      any card count).
  *   3. a description rises from under each card.
@@ -55,9 +54,6 @@
  *   data-csp-stagger      spread offset per depth level from the centre
  *                         card, in timeline units             (default 0.1)
  *   data-csp-stack-scale  scale falloff per depth while decked (default 0.06)
- *   data-csp-fan          deg of in-flight fan per depth; the card rotates
- *                         open then straightens with back.out (default 7;
- *                         "0" = straight slide, no fan)
  *
  * Reduced motion: no pin, no scrub — the section renders as its final frame
  * (hero wiped away, cards in place, descriptions visible, counters at their
@@ -127,7 +123,6 @@
     var SCRUB = attrNum(root, "data-csp-scrub", 0.8);
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
-    var FAN = attrNum(root, "data-csp-fan", 7);             // deg of in-flight fan per depth
 
     var tl = null;
 
@@ -203,21 +198,15 @@
         spreadAt = 0.4;                                     // cards emerge mid-wipe
       }
 
-      // Phase 2 — the deck spreads from BEHIND the centre card. Each card
-      // flies to its slot fanning open mid-flight (rotation out, then a
-      // back.out straighten = a soft snap into place). x and y run on
-      // different eases so the path bows slightly instead of a straight
-      // slide. Centre card only settles its scale.
+      // Phase 2 — the deck spreads from BEHIND the centre card: a clean,
+      // dead-straight slide (NO rotation, ever), power3.inOut so the cards
+      // ease out from behind and glide into their slots, growing from the
+      // decked scale to full size on the way. Centre card only settles scale.
       cards.forEach(function (card, i) {
         var depth = Math.abs(i - mid);
         var at = spreadAt + depth * STAGGER;
-        tl.to(card, { x: 0, duration: 1.1, ease: "power2.inOut" }, at);
-        tl.to(card, { y: 0, duration: 1.1, ease: "power3.inOut" }, at);
-        tl.to(card, { scale: 1, duration: 1.1, ease: "power2.inOut" }, at);
-        if (i !== mid && FAN) {
-          tl.to(card, { rotation: (i - mid) * FAN, duration: 0.5, ease: "power2.out" }, at);
-          tl.to(card, { rotation: 0, duration: 0.65, ease: "back.out(1.7)" }, at + 0.5);
-        }
+        tl.to(card, { x: 0, y: 0, duration: 1.2, ease: "power3.inOut" }, at);
+        tl.to(card, { scale: 1, duration: 1.2, ease: "power2.inOut" }, at);
       });
 
       // Phase 3 — descriptions rise + counters count, overlapping the settle.
