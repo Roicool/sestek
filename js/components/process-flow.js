@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.6.0
+ * process-flow.js v2.7.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,18 +30,16 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
- * Mobile & tablet (≤991px): Auxia's real mobile — a NODE ROW at the top (the
- * pills are moved into an injected [data-pf-noderow] at runtime; the active
- * one expands, completed ones stay blue, upcoming ones are faded circles)
- * with a [data-pf-hline] progress line filling up to the active node, and
- * below it the content as a full-width slider pushing left step by step.
- * No personas on mobile. Loops; viewport-gated.
+ * Mobile & tablet (≤991px): a simple SCROLL-driven vertical stack — one card
+ * per column (phase 0), personas hidden, and injected [data-pf-vline] grey
+ * connector lines between the cards that fill with the accent colour as you
+ * scroll (a pill turns active when its connector is full). No loop.
  *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
  *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
  *   data-pf-mobile      "static" = still frame · "loop" = desktop loop on mobile
- *                       (default = the horizontal step machine)
+ *                       (default = the scroll-filled vertical stack)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -112,93 +110,57 @@
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
     }
 
-    /** Mobile/tablet — Auxia's real mobile, exactly:
-     *  a NODE ROW at the top (all pills in one row on a track line; completed
-     *  nodes collapse but stay blue, upcoming ones are faded circles, the
-     *  active one expands and pushes its siblings) and below it the content
-     *  as a full-width slider whose track pushes left step by step.
-     *  The pills are relocated into an injected [data-pf-noderow] at runtime
-     *  (like SplitText, a runtime move — the authored DOM stays untouched). */
+    /** Mobile/tablet — simple SCROLL-driven vertical stack. No loop, no slider:
+     *  each column shows just its phase-0 card, personas stay hidden, and the
+     *  grey connector lines injected between the cards fill with the accent
+     *  colour as you scroll (and empty again when you scroll back). A pill
+     *  turns active the moment its connector is fully filled. */
     function buildMobile() {
-      var track = pills[0] && pills[0].parentNode ? pills[0].parentNode.parentNode : null; // .pf_columns
-      if (!track || !track.parentNode) { renderStaticPhase0(); return; }
-      var inner = track.parentNode;                                // .pf__inner
-      if (getComputedStyle(inner).position === "static") inner.style.position = "relative";
-
-      // Node row: created above the slider; the pills move into it.
-      var row = document.createElement("div");
-      row.className = "pf_noderow";
-      row.setAttribute("data-pf-noderow", "");
-      inner.insertBefore(row, track);
-      pills.forEach(function (pill) { row.appendChild(pill); });
-
-      // Progress line inside the row (fills up to the active node).
-      var hline = document.createElement("span");
-      hline.className = "pf_hline";
-      hline.setAttribute("data-pf-hline", "");
-      row.appendChild(hline);
-
-      // Each pill shows ITS own phase-0 label (not a shared default).
-      var wraps = [];
+      var vlines = [];
       pills.forEach(function (pill) {
         var t = pill.querySelector("[data-pf-pill-text]");
         if (t && t.getAttribute("data-t0")) t.textContent = t.getAttribute("data-t0");
-        var w = pill.querySelector("[data-pf-pill-wrap]");
-        if (w) wraps.push(w);
+
+        var line = document.createElement("span");
+        line.className = "pf_vline";
+        line.setAttribute("data-pf-vline", "");
+        var fill = document.createElement("span");
+        fill.className = "pf_vline-fill";
+        fill.setAttribute("data-pf-vline-fill", "");
+        line.appendChild(fill);
+        pill.parentNode.insertBefore(line, pill);        // connector above each pill
+        vlines.push({ line: line, fill: fill, pill: pill, done: false });
       });
 
-      var STEPS = Math.min(pills.length, cols.length);
-      var STEP_HOLD = HOLD * 0.8;
-
-      gsap.set(hline, { scaleX: 0, transformOrigin: "left center" });
-      gsap.set(pills, { opacity: 0.45 });
+      // Static content: one card per column, pills open with their own labels.
       cols.forEach(function (col, ci) { if (cards[ci][0]) gsap.set(cards[ci][0], { autoAlpha: 1 }); });
+      gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto" });
+      vlines.forEach(function (o) { gsap.set(o.fill, { scaleY: 0, transformOrigin: "top" }); });
 
-      /** Fill the line up to node i's centre — measured live, because the
-       *  expanding pill shifts the row. */
-      function drawTo(i) {
-        return function () {
-          var rw = row.offsetWidth || 1;
-          var target = Math.min((pills[i].offsetLeft + pills[i].offsetWidth * 0.6) / rw, 1);
-          gsap.to(hline, { scaleX: target, duration: 0.6, ease: "power1.inOut" });
-        };
-      }
-
-      var mtl = gsap.timeline({ repeat: -1, paused: true, defaults: { ease: "power3.out" } });
-
-      for (var i = 0; i < STEPS; i++) {
-        (function (si) {
-          var t0 = mtl.duration();
-          mtl.call(drawTo(si), null, t0);                          // line fills to this node
-          if (si > 0) mtl.to(track, { xPercent: -100 * si, duration: 0.85 }, t0 + 0.1); // content pushes left
-          var wrap = pills[si].querySelector("[data-pf-pill-wrap]");
-          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.3);
-          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.3);
-          if (si > 0) {                                            // completed node collapses but STAYS blue
-            var prevWrap = pills[si - 1].querySelector("[data-pf-pill-wrap]");
-            if (prevWrap) mtl.to(prevWrap, { width: 0, duration: 0.55 }, t0 + 0.3);
+      // Scroll-linked fill: progress = how far the line has passed 80% of the
+      // viewport. Works with native scroll and with Lenis (which drives it).
+      var ticking = false;
+      function update() {
+        ticking = false;
+        var trigger = (window.innerHeight || 1) * 0.8;
+        vlines.forEach(function (o) {
+          var r = o.line.getBoundingClientRect();
+          var p = (trigger - r.top) / (r.height || 1);
+          p = Math.max(0, Math.min(1, p));
+          gsap.set(o.fill, { scaleY: p });
+          if (p >= 1 && !o.done) {
+            o.done = true;
+            gsap.to(o.pill, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.4 });
+          } else if (p < 1 && o.done) {
+            o.done = false;
+            gsap.to(o.pill, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.3 });
           }
-          mtl.to({}, { duration: STEP_HOLD });
-        })(i);
+        });
       }
-
-      // Loop reset: quick fade, rewind, everything back to the idle state.
-      var tEnd = mtl.duration();
-      mtl.to(track, { autoAlpha: 0, duration: 0.45 }, tEnd);
-      mtl.to(hline, { scaleX: 0, duration: 0.45 }, tEnd);
-      mtl.set(track, { xPercent: 0 });
-      if (wraps.length) mtl.set(wraps, { width: 0 });
-      mtl.set(pills, { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
-      mtl.to(track, { autoAlpha: 1, duration: 0.45 });
-
-      if (typeof IntersectionObserver !== "undefined") {
-        var mio = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) { if (e.isIntersecting) mtl.play(); else mtl.pause(); });
-        }, { threshold: 0.15 });
-        mio.observe(root);
-      } else { mtl.play(); }
-
-      root._processFlowTimeline = mtl;
+      function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      update();
     }
 
     // ── Reduced motion: static phase 0, no loop ───────────────────────────────

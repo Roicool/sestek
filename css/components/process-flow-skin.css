@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.7.0
+ * process-flow-skin.css v1.8.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -179,50 +179,41 @@ section[data-process-flow] { overflow: hidden; }
   font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Node row + progress line (mobile/tablet only) — process-flow.js creates
-   [data-pf-noderow], moves the pills into it, and injects [data-pf-hline].
-   Both hidden on desktop. ──────────────────────────────────────────────────*/
-[data-pf-hline] { display: none; }
-[data-pf-noderow] { display: none; }
+/* ── Scroll connector (mobile/tablet only) — process-flow.js injects one grey
+   [data-pf-vline] above each pill; its [data-pf-vline-fill] fills with the
+   accent colour as you scroll. Hidden on desktop. ──────────────────────────*/
+[data-pf-vline] { display: none; }
 
-/* ── Mobile & tablet (≤991px, same breakpoint as the JS) — Auxia's mobile:
-   NODE ROW on a track line at the top (active pill expands and pushes its
-   siblings; completed nodes stay blue; upcoming ones faded) and below it the
-   content as a full-width slider. gap on .pf_columns MUST stay 0, otherwise
-   the -100% slide steps drift. ─────────────────────────────────────────────*/
+/* ── Mobile & tablet (≤991px, same breakpoint as the JS): simple vertical
+   stack — one card per column, personas hidden, no loop. The only motion is
+   the scroll-filled connector lines between the cards. ─────────────────────*/
 @media (max-width: 61.9375rem) {
-  .pf__inner { position: relative; min-height: 0; }
+  .pf__inner { min-height: 0; }
   .pf_rail { display: none; }                          /* desktop rail off */
-  .pf_personas { display: none; }                      /* no personas on mobile (Auxia) */
+  .pf_personas { display: none; }                      /* no personas on mobile */
 
-  /* the node row: pills side by side on a line */
-  [data-pf-noderow] {
-    display: flex; align-items: center; gap: 0.5rem;
-    position: relative;
-    margin-bottom: 1.6rem;
-  }
-  [data-pf-noderow]::before {                          /* faint idle track */
-    content: ""; position: absolute; top: calc(50% - 1px); left: 0; right: 0;
-    height: 2px; background: var(--pf-tag-idle-bd);
-  }
-  [data-pf-hline] {                                    /* the filled part, JS scaleX */
-    display: block; position: absolute; top: calc(50% - 1px); left: 0; right: 0;
-    height: 2px; background: var(--pf-accent);
-    transform: scaleX(0); transform-origin: left center;
-  }
-  [data-pf-noderow] .pf_pill { position: relative; z-index: 1; margin-bottom: 0; }
-
-  /* the content slider: slides side by side, JS pushes the track left */
   .pf_columns {
     margin-left: 0; padding-top: 0;
-    display: flex; flex-wrap: nowrap; gap: 0;          /* gap 0 is REQUIRED */
-    align-items: flex-start;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0;                                            /* the connectors provide the rhythm */
     min-height: 0;
   }
-  .pf_col {
-    flex: 0 0 100%; max-width: 100%;
-    display: flex; flex-direction: column; align-items: center;
+  .pf_col { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+  /* the grey line between cards + its scroll-driven accent fill */
+  [data-pf-vline] {
+    display: block; position: relative;
+    width: 2px; height: 3.5rem;
+    background: var(--pf-tag-idle-bd);
+    margin: 0 auto 1.1rem;
   }
+  [data-pf-vline-fill] {
+    position: absolute; inset: 0; display: block;
+    background: var(--pf-accent);
+    transform: scaleY(0); transform-origin: top;       /* JS drives scaleY by scroll */
+  }
+
+  .pf_pill { margin-bottom: 1.1rem; }
   .pf_stack {
     position: relative; top: auto; left: auto; right: auto;
     width: 100%; max-width: 100%;
