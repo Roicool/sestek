@@ -1,18 +1,20 @@
 /*!
- * step-scroll.js v1.1.0
+ * step-scroll.js v2.0.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
- *   3. At each window boundary: background image, step copy, and video
- *      cross-fade together — subtle zoom-in on incoming bg/video, slide-up
- *      on incoming step copy, softer "sine.inOut" easing (premium feel)
+ *   3. Step transitions are directional clip-path wipes (left→right), not
+ *      flat opacity cuts: the incoming bg/video is revealed by the wipe
+ *      while it settles from a 1.12 zoom; the outgoing layer fades late,
+ *      underneath the wipe. Step copy staggers: title leads, text follows.
  *   4. While inside a step's window, that step's video is scrubbed
  *      (currentTime) in lock-step with scroll — feels "played by scroll"
- *   5. A segmented progress bar — one line per step — fills 0→100% while
- *      its own step is the active dwell window
+ *   5. Segmented progress bar is BUILT BY JS inside [data-sscroll-progress]
+ *      (one glowing track+fill per step) — no per-segment DOM or CSS needed
+ *      in Webflow, only the empty container element.
  *
- * v1.1.0: segmented (per-step) progress bar, replaces single continuous
- *         fill; softer cross-fade with zoom/slide instead of plain opacity.
+ * v2.0.0: clip-path wipe transitions, zoom-settle, staggered copy;
+ *         JS-generated segmented progress bar (container-only contract).
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -39,15 +41,20 @@
    *   data-sscroll-scrub      scrub lag in seconds          (default 0.5)
    *   data-sscroll-dwell      per-step hold length, units   (default 1)
    *   data-sscroll-crossfade  fraction of dwell used for
-   *                           the cross-fade transition     (default 0.45)
-   *   data-sscroll-ease       ease for cross-fades           (default "sine.inOut")
+   *                           the wipe transition           (default 0.45)
+   *   data-sscroll-ease       ease for wipes/copy            (default "power2.inOut")
    *   data-sscroll-priority   ScrollTrigger refreshPriority  (default 0)
+   *   data-sscroll-bar-width  progress bar line width, px    (default 2)
+   *   data-sscroll-bar-gap    gap between segments, px       (default 12)
    *
    * Children:
-   *   [data-sscroll-bg-item="i"]        background layer for step i (0-based)
-   *   [data-sscroll-step="i"]           title+text block for step i
-   *   [data-sscroll-video="i"]          video for step i (scrubbed while active)
-   *   [data-sscroll-progress-fill="i"]  per-step progress-bar fill (0→100% during step i's window)
+   *   [data-sscroll-bg-item="i"]   background layer for step i (0-based)
+   *   [data-sscroll-step="i"]      title+text block for step i
+   *     [data-sscroll-title]         heading inside the step (staggered)
+   *     [data-sscroll-text]          paragraph inside the step (staggered)
+   *   [data-sscroll-video="i"]     video for step i (scrubbed while active)
+   *   [data-sscroll-progress]      EMPTY container — JS builds one
+   *                                track+fill segment per step inside it
    *
    * @param {string} [selector="[data-step-scroll]"]
    */
@@ -65,27 +72,57 @@
     var bgItems = Array.from(root.querySelectorAll("[data-sscroll-bg-item]"));
     var steps   = Array.from(root.querySelectorAll("[data-sscroll-step]"));
     var videos  = Array.from(root.querySelectorAll("[data-sscroll-video]"));
-    var fills   = Array.from(root.querySelectorAll("[data-sscroll-progress-fill]"));
+    var bar     = root.querySelector("[data-sscroll-progress]");
 
     var n = steps.length;
     if (!n || bgItems.length !== n || videos.length !== n) {
       console.warn("[Sestek StepScroll] Need matching [data-sscroll-bg-item], [data-sscroll-step] and [data-sscroll-video] counts.");
       return;
     }
-    if (fills.length && fills.length !== n) {
-      console.warn("[Sestek StepScroll] [data-sscroll-progress-fill] count doesn't match step count — progress bar skipped.");
-      fills = [];
-    }
 
     // ── Config from data-attributes ───────────────────────────────
-    var endDist    = root.getAttribute("data-sscroll-end") || "300%";
-    var scrub      = num(root, "data-sscroll-scrub", 0.5);
-    var dwell      = num(root, "data-sscroll-dwell", 1);
-    var crossFrac  = num(root, "data-sscroll-crossfade", 0.45);
-    var ease       = root.getAttribute("data-sscroll-ease") || "sine.inOut";
-    var priority   = num(root, "data-sscroll-priority", 0);
+    var endDist   = root.getAttribute("data-sscroll-end") || "300%";
+    var scrub     = num(root, "data-sscroll-scrub", 0.5);
+    var dwell     = num(root, "data-sscroll-dwell", 1);
+    var crossFrac = num(root, "data-sscroll-crossfade", 0.45);
+    var ease      = root.getAttribute("data-sscroll-ease") || "power2.inOut";
+    var priority  = num(root, "data-sscroll-priority", 0);
+    var barW      = num(root, "data-sscroll-bar-width", 2);
+    var barGap    = num(root, "data-sscroll-bar-gap", 12);
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── Build the segmented progress bar (JS owns look & structure) ──
+    // Container-only contract: whatever is inside [data-sscroll-progress]
+    // is replaced with N track+fill segments. Neutralize leftover container
+    // styling (background/opacity) so old CSS can't make it a solid line.
+    var fills = [];
+    if (bar) {
+      bar.innerHTML = "";
+      bar.style.background = "transparent";
+      bar.style.opacity = "1";
+      bar.style.width = "auto";
+      bar.style.display = "flex";
+      bar.style.flexDirection = "column";
+      bar.style.rowGap = barGap + "px";
+      bar.style.flexShrink = "0";
+      if (!bar.getBoundingClientRect().height) bar.style.height = "12rem";
+
+      for (var s = 0; s < n; s++) {
+        var track = document.createElement("div");
+        track.style.cssText =
+          "position:relative;flex:1 1 0%;width:" + barW + "px;" +
+          "border-radius:9999px;background:rgba(255,255,255,.16);overflow:hidden;";
+        var fill = document.createElement("div");
+        fill.style.cssText =
+          "position:absolute;left:0;top:0;width:100%;height:0%;" +
+          "border-radius:9999px;background:#fff;" +
+          "box-shadow:0 0 10px rgba(255,255,255,.55),0 0 22px rgba(255,255,255,.25);";
+        track.appendChild(fill);
+        bar.appendChild(track);
+        fills.push(fill);
+      }
+    }
 
     // Reduced-motion: show step 0 statically, no pin/scrub/video-play
     if (reduce) { buildStatic(); return; }
@@ -93,6 +130,9 @@
     var total        = n * dwell;
     var crossfadeDur = dwell * crossFrac;
     var activeST     = null;
+
+    var CLIP_HIDDEN = "inset(0% 100% 0% 0%)";  // fully clipped from the right → reveals left→right
+    var CLIP_SHOWN  = "inset(0% 0% 0% 0%)";
 
     /** Which step owns timeline-time t (in units). */
     function stepFromTime(t) {
@@ -113,23 +153,39 @@
       v.currentTime = v.duration * local;
     }
 
+    /** Title/text of a step, for staggered copy transitions. */
+    function copyParts(stepEl) {
+      var title = stepEl.querySelector("[data-sscroll-title]");
+      var text  = stepEl.querySelector("[data-sscroll-text]");
+      return { title: title, text: text, whole: !title && !text ? stepEl : null };
+    }
+
     function build() {
       if (activeST) { activeST.kill(); activeST = null; }
 
-      // ── Normalize resting state (mirrors the CSS defaults, GSAP now owns it) ──
+      // ── Resting state: step 0 fully shown, the rest clipped & primed ──
       bgItems.forEach(function (el, i) {
-        gsap.set(el, { opacity: i === 0 ? 1 : 0, scale: i === 0 ? 1 : 1.06 });
+        gsap.set(el, {
+          autoAlpha: 1,
+          clipPath: i === 0 ? CLIP_SHOWN : CLIP_HIDDEN,
+          scale: i === 0 ? 1 : 1.12,
+          transformOrigin: "50% 50%",
+        });
       });
       videos.forEach(function (el, i) {
-        gsap.set(el, { opacity: i === 0 ? 1 : 0, scale: i === 0 ? 1 : 1.06 });
+        gsap.set(el, {
+          autoAlpha: 1,
+          clipPath: i === 0 ? CLIP_SHOWN : CLIP_HIDDEN,
+          scale: i === 0 ? 1 : 1.12,
+          transformOrigin: "50% 50%",
+        });
         if (el.pause) el.pause();
       });
       steps.forEach(function (el, i) {
-        gsap.set(el, {
-          opacity: i === 0 ? 1 : 0,
-          position: i === 0 ? "relative" : "absolute",
-          y: i === 0 ? 0 : 14,
-        });
+        gsap.set(el, { position: i === 0 ? "relative" : "absolute", top: i === 0 ? "auto" : 0, left: i === 0 ? "auto" : 0 });
+        var p = copyParts(el);
+        var targets = p.whole ? [el] : [p.title, p.text].filter(Boolean);
+        gsap.set(targets, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 28 });
       });
       if (fills.length) gsap.set(fills, { height: "0%" });
 
@@ -152,33 +208,55 @@
         },
       });
 
-      // Segmented progress bar: each step's fill runs 0→100% only across its own window.
+      // Segmented progress bar: each fill runs 0→100% across its own window only.
       if (fills.length) {
         for (var f = 0; f < n; f++) {
           tl.fromTo(fills[f], { height: "0%" }, { height: "100%", duration: dwell }, f * dwell);
         }
       }
 
-      // Cross-fade at each step boundary: bg, step copy, and video together —
-      // incoming layers ease down from a slight zoom/slide for a softer, more
-      // "played" transition instead of a flat opacity cut.
+      // ── Step boundaries: directional wipe + zoom-settle + staggered copy ──
       for (var i = 0; i < n - 1; i++) {
         var boundary = (i + 1) * dwell;
         var t0 = boundary - crossfadeDur;
+        var d  = crossfadeDur;
 
-        tl.set(steps[i + 1], { position: "absolute" }, t0);
+        // Incoming bg: left→right wipe reveal while the zoom settles 1.12→1.
+        // Later siblings sit above earlier ones in DOM order — no z-index juggling.
+        tl.fromTo(bgItems[i + 1],
+          { clipPath: CLIP_HIDDEN, scale: 1.12 },
+          { clipPath: CLIP_SHOWN, scale: 1, ease: ease, duration: d }, t0);
+        // Outgoing bg: fades late, underneath the wipe (prevents a visible pop).
+        tl.to(bgItems[i], { autoAlpha: 0, ease: "power1.in", duration: d * 0.5 }, t0 + d * 0.5);
+        tl.set(bgItems[i], { autoAlpha: 1, clipPath: CLIP_HIDDEN, scale: 1.12 }, t0 + d);
 
-        tl.to(bgItems[i],     { opacity: 0, ease: ease, duration: crossfadeDur }, t0);
-        tl.to(bgItems[i + 1], { opacity: 1, scale: 1, ease: ease, duration: crossfadeDur }, t0);
+        // Incoming video: same wipe treatment.
+        tl.fromTo(videos[i + 1],
+          { clipPath: CLIP_HIDDEN, scale: 1.12 },
+          { clipPath: CLIP_SHOWN, scale: 1, ease: ease, duration: d }, t0);
+        tl.to(videos[i], { autoAlpha: 0, ease: "power1.in", duration: d * 0.5 }, t0 + d * 0.5);
+        tl.set(videos[i], { autoAlpha: 1, clipPath: CLIP_HIDDEN, scale: 1.12 }, t0 + d);
 
-        tl.to(steps[i],     { opacity: 0, y: -14, ease: ease, duration: crossfadeDur }, t0);
-        tl.to(steps[i + 1], { opacity: 1, y: 0, ease: ease, duration: crossfadeDur }, t0);
+        // Copy: outgoing lifts away first; incoming title leads, text follows.
+        var out = copyParts(steps[i]);
+        var inc = copyParts(steps[i + 1]);
+        var outTargets = out.whole ? [steps[i]] : [out.title, out.text].filter(Boolean);
 
-        tl.to(videos[i],     { opacity: 0, ease: ease, duration: crossfadeDur }, t0);
-        tl.to(videos[i + 1], { opacity: 1, scale: 1, ease: ease, duration: crossfadeDur }, t0);
+        tl.set(steps[i + 1], { position: "absolute", top: 0, left: 0 }, t0);
+        tl.to(outTargets, { autoAlpha: 0, y: -24, ease: "power2.in", duration: d * 0.4, stagger: d * 0.06 }, t0);
 
-        tl.set(steps[i], { position: "absolute" }, t0 + crossfadeDur);
-        tl.set(steps[i + 1], { position: "relative" }, t0 + crossfadeDur);
+        if (inc.whole) {
+          tl.fromTo(steps[i + 1], { autoAlpha: 0, y: 28 },
+            { autoAlpha: 1, y: 0, ease: "power3.out", duration: d * 0.6 }, t0 + d * 0.35);
+        } else {
+          if (inc.title) tl.fromTo(inc.title, { autoAlpha: 0, y: 28 },
+            { autoAlpha: 1, y: 0, ease: "power3.out", duration: d * 0.55 }, t0 + d * 0.35);
+          if (inc.text) tl.fromTo(inc.text, { autoAlpha: 0, y: 22 },
+            { autoAlpha: 1, y: 0, ease: "power3.out", duration: d * 0.55 }, t0 + d * 0.5);
+        }
+
+        tl.set(steps[i], { position: "absolute", top: 0, left: 0 }, t0 + d);
+        tl.set(steps[i + 1], { position: "relative", top: "auto", left: "auto" }, t0 + d);
       }
 
       activeST = tl.scrollTrigger;
@@ -186,11 +264,15 @@
 
     // ── prefers-reduced-motion fallback ───────────────────────────
     function buildStatic() {
-      bgItems.forEach(function (el, i) { gsap.set(el, { opacity: i === 0 ? 1 : 0, scale: 1 }); });
-      steps.forEach(function (el, i) {
-        gsap.set(el, { opacity: i === 0 ? 1 : 0, position: i === 0 ? "relative" : "absolute", y: 0 });
+      bgItems.forEach(function (el, i) {
+        gsap.set(el, { autoAlpha: i === 0 ? 1 : 0, clipPath: "none", scale: 1 });
       });
-      videos.forEach(function (el, i) { gsap.set(el, { opacity: i === 0 ? 1 : 0, scale: 1 }); });
+      steps.forEach(function (el, i) {
+        gsap.set(el, { autoAlpha: i === 0 ? 1 : 0, position: i === 0 ? "relative" : "absolute", y: 0 });
+      });
+      videos.forEach(function (el, i) {
+        gsap.set(el, { autoAlpha: i === 0 ? 1 : 0, clipPath: "none", scale: 1 });
+      });
       if (fills.length) gsap.set(fills, { height: "0%" });
     }
 
