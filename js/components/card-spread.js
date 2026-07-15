@@ -1,5 +1,5 @@
 /*!
- * card-spread.js v1.1.0
+ * card-spread.js v1.5.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -45,6 +45,9 @@
  *               data-csp-sep="."          thousands separator (default none)
  *               data-csp-prefix="$"       text before         (default "")
  *               data-csp-suffix=" TL"]    text after          (default "")
+ *             [data-csp-bar              a progress-bar FILL element (inside a
+ *               data-csp-bar-to="83"       track with overflow hidden); scales
+ *               data-csp-bar-from="0"]     from → to percent with the counters
  *           [data-csp-desc]             the description under the card
  *
  * Root attributes (all optional):
@@ -87,6 +90,16 @@
       return;
     }
 
+    // ── Bars: [data-csp-bar] is the FILL element inside a track; it scales
+    // from data-csp-bar-from % to data-csp-bar-to % in sync with the counters.
+    var bars = toArray(root.querySelectorAll("[data-csp-bar]")).map(function (el) {
+      return {
+        el: el,
+        from: attrNum(el, "data-csp-bar-from", 0),
+        to: attrNum(el, "data-csp-bar-to", 100)
+      };
+    });
+
     // ── Counters ─────────────────────────────────────────────────────────────
     var counters = toArray(root.querySelectorAll("[data-csp-count]")).map(function (el) {
       return {
@@ -115,6 +128,7 @@
       if (heroVisual) gsap.set(heroVisual, { clipPath: "inset(0% 0% 100% 0%)" });
       if (line) gsap.set(line, { autoAlpha: 0 });
       counters.forEach(function (c) { renderCount(c, c.to); });
+      bars.forEach(function (b) { gsap.set(b.el, { scaleX: b.to / 100, transformOrigin: "left center" }); });
       return;                                               // cards + descs stay as laid out
     }
 
@@ -170,6 +184,7 @@
         });
       });
       gsap.set(descs, { autoAlpha: 0, y: 28 });
+      bars.forEach(function (b) { gsap.set(b.el, { scaleX: b.from / 100, transformOrigin: "left center" }); });
       if (header) gsap.set(header, { clearProps: "transform,opacity,visibility" });
       var heroH = heroVisual ? heroVisual.getBoundingClientRect().height : 0;
       if (line) gsap.set(line, { y: heroH });
@@ -214,6 +229,9 @@
       if (descs.length) {
         tl.to(descs, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.12 }, "reveal");
       }
+      bars.forEach(function (b) {
+        tl.to(b.el, { scaleX: b.to / 100, duration: 1.1, ease: "power1.out" }, "reveal");
+      });
       counters.forEach(function (c) {
         var proxy = { v: c.from };
         tl.to(proxy, {
