@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.3.2
+ * process-flow-skin.css v1.4.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -179,19 +179,38 @@ section[data-process-flow] { overflow: hidden; }
   font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Mobile (vertical rhythm: personas left, pill+card centred, no rail) ──*/
+/* ── Vertical connector (mobile only) — JS injects one above each pill and
+   draws it (scaleY) as the journey flows down. Hidden on desktop. ─────────*/
+[data-pf-vline] { display: none; }
+
+/* ── Mobile: vertical journey, everything stacked & centred, drawn line ──*/
 @media (max-width: 56.25rem) {
   .pf__inner { min-height: 0; }
-  .pf_rail { display: none; }
-  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 2rem; }
-  .pf_personas-clip { height: auto; }                  /* static phase 0: show all personas */
+  .pf_rail { display: none; }                          /* horizontal rail is desktop-only */
+
+  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 0.5rem; }
+  .pf_personas-clip { height: auto; }                  /* show all personas, no clip */
+
   .pf_columns {
-    margin-left: 0; padding-top: 0;                    /* no rail to align to */
+    margin-left: 0; padding-top: 0;                    /* no horizontal rail to clear */
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 0;                                            /* the connectors provide the rhythm */
     justify-items: center;
   }
-  .pf_col { align-items: center; }                     /* pill centred over its card */
-  .pf_pill { margin-bottom: 1.25rem; }                 /* tighter pill->card on mobile */
-  .pf_stack { width: auto; }                           /* stack hugs the card, variants stay aligned */
+  .pf_col { align-items: center; width: 100%; }
+
+  /* the drawn connector between nodes */
+  [data-pf-vline] {
+    display: block; width: 2px; height: 2.6rem;
+    background: var(--pf-accent);
+    margin: 0 auto;
+    transform: scaleY(0); transform-origin: top;       /* JS animates scaleY 0 -> 1 */
+  }
+
+  .pf_pill { margin-bottom: 1.1rem; }                  /* pill -> its card */
+
+  /* cards never overflow the viewport */
+  .card-notif, .card-media, .card-checkout { max-width: 100%; }
+  .card-notif { width: 100%; }                         /* notif was the widest (20rem) */
+  .pf_stack { width: auto; max-width: 100%; }
 }
