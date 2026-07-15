@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.1.0
+ * process-flow-skin.css v1.2.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -11,7 +11,6 @@
  */
 
 [data-process-flow] {
-  --pf-mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
   --pf-card-dark: #232323;
   --pf-card-white: #ffffff;
 }
@@ -27,17 +26,24 @@
    .pf_personas-clip also gets overflow:hidden from process-flow.css. */
 .pf_personas { position: absolute; left: 0; top: 4px; width: 13rem; z-index: 3; }
 .pf_personas-clip { height: 5.75rem; }                 /* ~1.4 rows visible */
-.pf_persona { display: flex; gap: 0.5rem; align-items: flex-start; height: 4rem; }
+.pf_persona {
+  display: flex; gap: 0.5rem; align-items: flex-start;
+  height: 4rem;
+  overflow: hidden;              /* long/wrapping text must NOT bleed onto the next row */
+}
 .pf_persona-icon { flex: none; width: 0.8rem; height: 0.8rem; margin-top: 1px; color: var(--pf-muted); }
 .pf_persona-icon svg { display: block; width: 100%; height: 100%; }
-.pf_persona-wrap { display: block; }
+.pf_persona-wrap { display: block; min-width: 0; }
 .pf_persona-name,
 .pf_persona-line {
-  font-family: var(--pf-mono);
-  font-size: 0.66rem;
+  /* font-family intentionally NOT set — inherits the site's own font */
+  font-size: 0.7rem;
   letter-spacing: 0.06em;
   line-height: 1.55;
   text-transform: uppercase;
+  white-space: nowrap;           /* one line per row, like Auxia — no wrapping overlap */
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--pf-muted);
 }
 .pf_persona-name { font-weight: 600; }
@@ -76,12 +82,13 @@
   white-space: nowrap;
   font-size: 0;                                        /* swallow the stray "✦" text node */
 }
-.pf_pill-spark { flex: none; width: 0.6rem; height: 0.6rem; font-size: 0; }
+.pf_pill-spark { flex: none; width: 0.6rem; height: 0.6rem; font-size: 0; order: -1; } /* order:-1 = lightning ALWAYS left of the label, whatever the DOM order */
 .pf_pill-spark svg { display: block; width: 100%; height: 100%; }
 /* .pf_pill-textwrap collapse handled in process-flow.css ([data-pf-pill-wrap]) */
+.pf_pill-textwrap { order: 1; }
 .pf_pill-text {
   display: inline-block;
-  font-family: var(--pf-mono);
+  /* font-family intentionally NOT set — inherits the site's own font */
   font-size: 0.625rem; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: inherit;
