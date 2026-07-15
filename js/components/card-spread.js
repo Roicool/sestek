@@ -228,8 +228,23 @@
    * @param {string} [selector="[data-card-spread]"] narrow the scope if needed
    */
   function initCardSpread(selector) {
+    // Tolerate late-loading libraries (async/defer script order): poll for
+    // gsap + ScrollTrigger for up to ~4s before giving up.
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-      console.error("[Sestek CardSpread] gsap + ScrollTrigger required."); return;
+      var waited = 0;
+      var poll = setInterval(function () {
+        if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+          clearInterval(poll);
+          initCardSpread(selector);
+        } else if ((waited += 100) >= 4000) {
+          clearInterval(poll);
+          console.error("[Sestek CardSpread] gsap + ScrollTrigger required — " +
+            "load gsap.min.js AND ScrollTrigger.min.js before this script. Missing: " +
+            (typeof gsap === "undefined" ? "gsap " : "") +
+            (typeof ScrollTrigger === "undefined" ? "ScrollTrigger" : ""));
+        }
+      }, 100);
+      return;
     }
     if (!(global.Sestek && global.Sestek.util)) {
       console.error("[Sestek CardSpread] Sestek.util (js/core/utils.js) required."); return;
