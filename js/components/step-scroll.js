@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.4.0
+ * step-scroll.js v2.5.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -44,6 +44,10 @@
  *         step's clip restarts from 0 and plays; the others pause. All
  *         playback stops when the pinned section leaves the viewport.
  *         Always smooth regardless of the clip's keyframe encoding.
+ * v2.5.0: progress segments are CLICKABLE — each line sits in a wider
+ *         invisible hit area (cursor:pointer, hover brightens the track);
+ *         clicking smooth-scrolls (Lenis when available) to that step's
+ *         window inside the pin.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -199,19 +203,39 @@
       bar.style.flexShrink = "0";
       if (!bar.getBoundingClientRect().height) bar.style.height = "12rem";
 
+      var hitW = Math.max(barW, 16);   // 2px line is unclickable — pad the hit area
       for (var s = 0; s < n; s++) {
+        // seg = invisible, wide, clickable hit area; track = the visible line.
+        var seg = document.createElement("div");
+        seg.style.cssText =
+          "position:relative;flex:1 1 0%;width:" + hitW + "px;" +
+          "display:flex;justify-content:flex-start;cursor:pointer;";
+        seg.setAttribute("role", "button");
+        seg.setAttribute("aria-label", "Step " + (s + 1));
         var track = document.createElement("div");
         track.style.cssText =
-          "position:relative;flex:1 1 0%;width:" + barW + "px;" +
-          "border-radius:9999px;background:rgba(255,255,255,.16);overflow:hidden;";
+          "position:relative;height:100%;width:" + barW + "px;" +
+          "border-radius:9999px;background:rgba(255,255,255,.16);overflow:hidden;" +
+          "transition:background .25s ease;";
         var fill = document.createElement("div");
         fill.style.cssText =
           "position:absolute;left:0;top:0;width:100%;height:0%;" +
           "border-radius:9999px;background:#fff;" +
           "box-shadow:0 0 10px rgba(255,255,255,.55),0 0 22px rgba(255,255,255,.25);";
         track.appendChild(fill);
-        bar.appendChild(track);
+        seg.appendChild(track);
+        bar.appendChild(seg);
         fills.push(fill);
+
+        (function (idx, trackEl) {
+          seg.addEventListener("click", function () { jumpTo(idx); });
+          seg.addEventListener("mouseenter", function () {
+            trackEl.style.background = "rgba(255,255,255,.38)";
+          });
+          seg.addEventListener("mouseleave", function () {
+            trackEl.style.background = "rgba(255,255,255,.16)";
+          });
+        })(s, track);
       }
     }
 
@@ -259,6 +283,23 @@
       media.forEach(function (m) {
         if (m) { try { m.pause(); } catch (e) {} }
       });
+    }
+
+    /** Click a progress segment → smooth-scroll to that step's window. */
+    function jumpTo(idx) {
+      if (!activeST) return;
+      var st = activeST;
+      // Land just inside the step's window — its wipe-in has fully completed.
+      var progress = (idx * dwell + dwell * 0.05) / total;
+      var y = st.start + (st.end - st.start) * progress;
+      if (global.Sestek && typeof global.Sestek.scrollTo === "function" && global.lenisInstance) {
+        global.Sestek.scrollTo(y, {
+          duration: 1.0,
+          easing: function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; },
+        });
+      } else {
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
     }
 
     /** Title/text of a step, for staggered copy transitions. */
