@@ -1,5 +1,5 @@
 /*!
- * eye-reveal.js v1.0.1
+ * eye-reveal.js v1.1.0
  * Pinned "eye opening" image reveal with copy + notification toasts:
  *   1. As the section approaches, a vertical progress line fills (scrubbed)
  *   2. The section pins; a clip-path "eye" reveal opens the image from its
@@ -16,6 +16,11 @@
  *
  * v1.0.1: progress line fades out as the reveal starts (it used to linger
  *         on top of the opened image).
+ * v1.1.0: NO MORE SNAP — leaving the pin used to hard-set the reveal to
+ *         100%, which visibly snapped when the user out-scrolled the
+ *         catch-up tween. onLeave now finishes the remainder smoothly
+ *         (0.45s power2.out) and only then arms the pin-kill. Default pin
+ *         distance raised to 150% for breathing room.
  *
  * Requires : gsap + ScrollTrigger. Lenis optional (window.lenisInstance).
  *
@@ -77,7 +82,7 @@
       console.warn("[Sestek EyeReveal] [data-eye-frame] and [data-eye-img] required."); return;
     }
 
-    var endDist   = root.getAttribute("data-eye-end") || "100%";
+    var endDist   = root.getAttribute("data-eye-end") || "150%";
     var complete  = num(root, "data-eye-complete", 0.7);
     var catchup   = num(root, "data-eye-catchup", 1.2);
     var priority  = num(root, "data-eye-priority", 0);
@@ -228,13 +233,22 @@
         },
         onLeave: function () {
           if (killed || pendingKill) return;
+          // Finish the remainder SMOOTHLY — hard-setting progress(1) here
+          // snapped visibly whenever the user out-scrolled the catch-up.
           gsap.killTweensOf(proxy);
-          proxy.p = 1;
-          tlReveal.progress(1);
-          if (once) {
-            pendingKill = true;
-            setTimeout(killNow, 150);
-          }
+          gsap.to(proxy, {
+            p: 1,
+            duration: 0.45,
+            ease: "power2.out",
+            overwrite: true,
+            onUpdate: applyProxy,
+            onComplete: function () {
+              if (once && !killed && !pendingKill) {
+                pendingKill = true;
+                setTimeout(killNow, 150);
+              }
+            },
+          });
         },
       });
 
