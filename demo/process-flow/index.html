@@ -99,6 +99,7 @@
     .pf_card  { position: absolute; top: 0; left: 0; }
     .pf_card:first-child { position: relative; }
     [data-pf-hline] { display: none; }
+    [data-pf-noderow] { display: none; }
 
     /* ── Notification card (dark) ──────────────────────────────────────────── */
     .card-notif {
@@ -161,22 +162,26 @@
       .pf_inner { position: relative; min-height: 0; }
       .pf_rail { display: none; }
       .pf_personas { display: none; }
-      .pf_inner::before {
-        content: ""; position: absolute; top: 0; left: 0; right: 0;
+      [data-pf-noderow] {
+        display: flex; align-items: center; gap: 8px;
+        position: relative; margin-bottom: 26px;
+      }
+      [data-pf-noderow]::before {
+        content: ""; position: absolute; top: calc(50% - 1px); left: 0; right: 0;
         height: 2px; background: var(--tag-idle-bd);
       }
       [data-pf-hline] {
-        display: block; position: absolute; top: 0; left: 0; right: 0;
+        display: block; position: absolute; top: calc(50% - 1px); left: 0; right: 0;
         height: 2px; background: var(--blue);
-        transform: scaleX(0); transform-origin: left center; z-index: 1;
+        transform: scaleX(0); transform-origin: left center;
       }
+      [data-pf-noderow] .pf_pill { position: relative; z-index: 1; margin-bottom: 0; }
       .pf_columns {
-        margin-left: 0;
+        margin-left: 0; padding-top: 0;
         display: flex; flex-wrap: nowrap; gap: 0;
-        align-items: flex-start; padding-top: 26px; min-height: 0;
+        align-items: flex-start; min-height: 0;
       }
       .pf_col { flex: 0 0 100%; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
-      .pf_pill { margin-bottom: 18px; }
       .pf_stack {
         position: relative; top: auto; left: auto; right: auto;
         width: 100%; max-width: 100%;

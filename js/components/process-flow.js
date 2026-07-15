@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.5.0
+ * process-flow.js v2.6.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,11 +30,12 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
- * Mobile & tablet (≤991px): a FULL-BLEED SLIDER — the columns sit side by
- * side as full-width slides and the track pushes left step by step; each
- * slide's pill opens as it arrives, and an injected [data-pf-hline] progress
- * line above the track fills 1/N per step. No personas on mobile. Loops;
- * viewport-gated.
+ * Mobile & tablet (≤991px): Auxia's real mobile — a NODE ROW at the top (the
+ * pills are moved into an injected [data-pf-noderow] at runtime; the active
+ * one expands, completed ones stay blue, upcoming ones are faded circles)
+ * with a [data-pf-hline] progress line filling up to the active node, and
+ * below it the content as a full-width slider pushing left step by step.
+ * No personas on mobile. Loops; viewport-gated.
  *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
@@ -111,22 +112,31 @@
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
     }
 
-    /** Mobile/tablet: a FULL-BLEED slider. The three columns sit side by side
-     *  as full-width slides (plain flex row — no absolute stacking, so the
-     *  Webflow Designer canvas stays sane) and the track pushes left step by
-     *  step. Each slide's pill opens as it arrives; an injected progress line
-     *  above the track fills 1/N per step. Loops; viewport-gated. */
+    /** Mobile/tablet — Auxia's real mobile, exactly:
+     *  a NODE ROW at the top (all pills in one row on a track line; completed
+     *  nodes collapse but stay blue, upcoming ones are faded circles, the
+     *  active one expands and pushes its siblings) and below it the content
+     *  as a full-width slider whose track pushes left step by step.
+     *  The pills are relocated into an injected [data-pf-noderow] at runtime
+     *  (like SplitText, a runtime move — the authored DOM stays untouched). */
     function buildMobile() {
       var track = pills[0] && pills[0].parentNode ? pills[0].parentNode.parentNode : null; // .pf_columns
       if (!track || !track.parentNode) { renderStaticPhase0(); return; }
       var inner = track.parentNode;                                // .pf__inner
       if (getComputedStyle(inner).position === "static") inner.style.position = "relative";
 
-      // Injected progress line (fills step by step above the slider).
+      // Node row: created above the slider; the pills move into it.
+      var row = document.createElement("div");
+      row.className = "pf_noderow";
+      row.setAttribute("data-pf-noderow", "");
+      inner.insertBefore(row, track);
+      pills.forEach(function (pill) { row.appendChild(pill); });
+
+      // Progress line inside the row (fills up to the active node).
       var hline = document.createElement("span");
       hline.className = "pf_hline";
       hline.setAttribute("data-pf-hline", "");
-      inner.insertBefore(hline, track);
+      row.appendChild(hline);
 
       // Each pill shows ITS own phase-0 label (not a shared default).
       var wraps = [];
@@ -141,30 +151,44 @@
       var STEP_HOLD = HOLD * 0.8;
 
       gsap.set(hline, { scaleX: 0, transformOrigin: "left center" });
-      gsap.set(pills, { opacity: 0.55 });
+      gsap.set(pills, { opacity: 0.45 });
       cols.forEach(function (col, ci) { if (cards[ci][0]) gsap.set(cards[ci][0], { autoAlpha: 1 }); });
+
+      /** Fill the line up to node i's centre — measured live, because the
+       *  expanding pill shifts the row. */
+      function drawTo(i) {
+        return function () {
+          var rw = row.offsetWidth || 1;
+          var target = Math.min((pills[i].offsetLeft + pills[i].offsetWidth * 0.6) / rw, 1);
+          gsap.to(hline, { scaleX: target, duration: 0.6, ease: "power1.inOut" });
+        };
+      }
 
       var mtl = gsap.timeline({ repeat: -1, paused: true, defaults: { ease: "power3.out" } });
 
       for (var i = 0; i < STEPS; i++) {
         (function (si) {
           var t0 = mtl.duration();
-          if (si > 0) mtl.to(track, { xPercent: -100 * si, duration: 0.85 }, t0);   // push to the next slide
-          mtl.to(hline, { scaleX: (si + 1) / STEPS, duration: 0.6, ease: "power1.inOut" }, t0);
+          mtl.call(drawTo(si), null, t0);                          // line fills to this node
+          if (si > 0) mtl.to(track, { xPercent: -100 * si, duration: 0.85 }, t0 + 0.1); // content pushes left
           var wrap = pills[si].querySelector("[data-pf-pill-wrap]");
-          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.35);
-          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.35);
+          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.3);
+          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.3);
+          if (si > 0) {                                            // completed node collapses but STAYS blue
+            var prevWrap = pills[si - 1].querySelector("[data-pf-pill-wrap]");
+            if (prevWrap) mtl.to(prevWrap, { width: 0, duration: 0.55 }, t0 + 0.3);
+          }
           mtl.to({}, { duration: STEP_HOLD });
         })(i);
       }
 
-      // Loop reset: quick fade, rewind the track, fade back for step 0.
+      // Loop reset: quick fade, rewind, everything back to the idle state.
       var tEnd = mtl.duration();
       mtl.to(track, { autoAlpha: 0, duration: 0.45 }, tEnd);
       mtl.to(hline, { scaleX: 0, duration: 0.45 }, tEnd);
       mtl.set(track, { xPercent: 0 });
       if (wraps.length) mtl.set(wraps, { width: 0 });
-      mtl.set(pills, { opacity: 0.55, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
+      mtl.set(pills, { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
       mtl.to(track, { autoAlpha: 1, duration: 0.45 });
 
       if (typeof IntersectionObserver !== "undefined") {
