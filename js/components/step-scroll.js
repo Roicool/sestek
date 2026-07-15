@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.0.0
+ * step-scroll.js v2.0.1
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -15,6 +15,9 @@
  *
  * v2.0.0: clip-path wipe transitions, zoom-settle, staggered copy;
  *         JS-generated segmented progress bar (container-only contract).
+ * v2.0.1: step containers forced visible (autoAlpha:1) — copy animates on
+ *         the title/text inside, so leftover `opacity:0` CSS on the step
+ *         class no longer hides all content.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -182,7 +185,9 @@
         if (el.pause) el.pause();
       });
       steps.forEach(function (el, i) {
-        gsap.set(el, { position: i === 0 ? "relative" : "absolute", top: i === 0 ? "auto" : 0, left: i === 0 ? "auto" : 0 });
+        // autoAlpha:1 on the container overrides any leftover `opacity:0`
+        // CSS on the step class — visibility is animated on the copy inside.
+        gsap.set(el, { autoAlpha: 1, position: i === 0 ? "relative" : "absolute", top: i === 0 ? "auto" : 0, left: i === 0 ? "auto" : 0 });
         var p = copyParts(el);
         var targets = p.whole ? [el] : [p.title, p.text].filter(Boolean);
         gsap.set(targets, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 28 });
