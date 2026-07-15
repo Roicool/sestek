@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.2.0
+ * process-flow.js v2.3.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,14 +30,16 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
- * Mobile (≤991px, Auxia's own isMobile breakpoint): the loop is skipped and a
- * static phase 0 is rendered instead, exactly like the original. Set
- * data-pf-mobile="loop" on the root to run the full loop on mobile anyway.
+ * Mobile (≤991px): a VERTICAL journey — a connector line draws down into each
+ * node, the spark pills open, and the phase-0 cards reveal top to bottom, when
+ * the section scrolls into view. A [data-pf-vline] connector span is injected
+ * above each pill (style it in CSS; hidden on desktop).
  *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
  *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
- *   data-pf-mobile      "loop" runs the animation on ≤991px too      (default static)
+ *   data-pf-mobile      "static" = still frame · "loop" = desktop loop on mobile
+ *                       (default = the vertical mobile journey)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -108,18 +110,64 @@
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
     }
 
+    /** Mobile: a VERTICAL journey — a connector line draws down into each node,
+     *  the spark pills open, and the phase-0 cards reveal, top to bottom.
+     *  Plays when the section scrolls into view (pauses when it leaves). */
+    function buildMobile() {
+      // Inject a vertical connector just above each pill (the "drawn" line).
+      var vlines = pills.map(function (pill) {
+        var v = document.createElement("span");
+        v.className = "pf_vline";
+        v.setAttribute("data-pf-vline", "");
+        pill.parentNode.insertBefore(v, pill);
+        return v;
+      });
+      // Make sure each pill shows ITS own phase-0 label (not a shared default).
+      pills.forEach(function (pill) {
+        var t = pill.querySelector("[data-pf-pill-text]");
+        if (t && t.getAttribute("data-t0")) t.textContent = t.getAttribute("data-t0");
+      });
+
+      gsap.set(vlines, { scaleY: 0, transformOrigin: "top" });
+      var p0 = personas[0];
+      var ic0 = personIcon(p0);
+
+      var mtl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+      if (ic0) mtl.to(ic0, { color: ACCENT, duration: 0.5 }, 0);
+      mtl.to(personLines(p0), { color: INK, duration: 0.5 }, 0);
+
+      cols.forEach(function (col, ci) {
+        mtl.to(vlines[ci], { scaleY: 1, duration: 0.45, ease: "none" }, ci === 0 ? "<0.2" : ">-0.05");
+        var wrap = pills[ci].querySelector("[data-pf-pill-wrap]");
+        if (wrap) mtl.to(wrap, { width: "auto", duration: 0.5 }, "<0.15");
+        mtl.to(pills[ci], { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, "<");
+        var card = cards[ci][0];
+        if (card) mtl.fromTo(card, { autoAlpha: 0, filter: "blur(10px)", y: 18 },
+          { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.7 }, "<0.05");
+      });
+
+      if (typeof IntersectionObserver !== "undefined") {
+        var mio = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) mtl.play(); else mtl.pause(); });
+        }, { threshold: 0.15 });
+        mio.observe(root);
+      } else { mtl.play(); }
+
+      root._processFlowTimeline = mtl;
+    }
+
     // ── Reduced motion: static phase 0, no loop ───────────────────────────────
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       renderStaticPhase0();
       return;
     }
 
-    // ── Mobile (≤991px, same breakpoint as Auxia's isMobile): the original
-    // skips the whole animation on mobile — we do the same and show static
-    // phase 0. Opt back in with data-pf-mobile="loop" on the root. ───────────
-    if (window.matchMedia("(max-width: 991px)").matches &&
-        root.getAttribute("data-pf-mobile") !== "loop") {
-      renderStaticPhase0();
+    // ── Mobile (≤991px): vertical animated journey by default.
+    //    data-pf-mobile="static" → still frame · "loop" → run the desktop loop ─
+    var mobileMode = root.getAttribute("data-pf-mobile");
+    if (window.matchMedia("(max-width: 991px)").matches && mobileMode !== "loop") {
+      if (mobileMode === "static") renderStaticPhase0();
+      else buildMobile();
       return;
     }
 
