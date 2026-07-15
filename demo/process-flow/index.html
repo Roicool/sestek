@@ -70,7 +70,7 @@
       align-items: start;
       padding-top: 62px;                /* pill centre lands ON the rail's bottom line */
     }
-    .pf_col { display: flex; flex-direction: column; align-items: center; }
+    .pf_col { display: flex; flex-direction: column; align-items: flex-start; }
 
     .pf_pill {
       display: inline-flex; align-items: center; gap: 6px;
@@ -94,10 +94,10 @@
     }
 
     /* card stack: 3 phase-variants share one slot; only the active is shown */
-    .pf_stack { position: relative; width: 100%; display: flex; justify-content: center; }
+    .pf_stack { position: relative; width: 100%; display: flex; }
     .pf_slot  { grid-row: 2; }
-    .pf_card  { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
-    .pf_card:first-child { position: relative; left: auto; transform: none; }
+    .pf_card  { position: absolute; top: 0; left: 0; }
+    .pf_card:first-child { position: relative; }
 
     /* ── Notification card (dark) ──────────────────────────────────────────── */
     .card-notif {
