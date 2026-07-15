@@ -1,13 +1,15 @@
 /*!
- * card-spread.js v1.0.0
+ * card-spread.js v1.1.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
  *      exactly Ramp's corporate-cards effect (clip inset + synced line).
- *   2. the virtual cards, stacked behind the hero, SPREAD out to their
- *      natural grid positions (FLIP-style: JS measures the real layout and
- *      animates the delta, so any Webflow grid/flex layout works, any
- *      breakpoint, any card count).
+ *   2. the virtual cards sit as a PERFECT deck (fully hidden behind the
+ *      centre card) and SPREAD out from behind it to their natural grid
+ *      positions — fanning open mid-flight and straightening with a soft
+ *      back.out snap (FLIP-style: JS measures the real layout and animates
+ *      the delta, so any Webflow grid/flex layout works, any breakpoint,
+ *      any card count).
  *   3. a description rises from under each card.
  *   4. numbers inside the cards count up to their set values.
  * Then the pin releases and the page scrolls on normally — there is no
@@ -47,10 +49,12 @@
  *   data-csp-start        ScrollTrigger start            (default "top top")
  *   data-csp-end          pin scroll distance            (default "+=160%")
  *   data-csp-scrub        scrub lag in seconds           (default 0.8)
- *   data-csp-stagger      per-card spread offset, units  (default 0.07)
- *   data-csp-stack-y      px each stacked card peeks down     (default 14)
- *   data-csp-stack-scale  scale falloff per stacked depth     (default 0.04)
- *   data-csp-stack-tilt   deg fan rotation per card from mid  (default 3)
+ *   data-csp-stagger      spread offset per depth level from the centre
+ *                         card, in timeline units             (default 0.1)
+ *   data-csp-stack-scale  scale falloff per depth while decked (default 0.06)
+ *   data-csp-fan          deg of in-flight fan per depth; the card rotates
+ *                         open then straightens with back.out (default 7;
+ *                         "0" = straight slide, no fan)
  *
  * Reduced motion: no pin, no scrub — the section renders as its final frame
  * (hero wiped away, cards in place, descriptions visible, counters at their
@@ -117,10 +121,9 @@
     var START = root.getAttribute("data-csp-start") || "top top";
     var END = root.getAttribute("data-csp-end") || "+=160%";
     var SCRUB = attrNum(root, "data-csp-scrub", 0.8);
-    var STAGGER = attrNum(root, "data-csp-stagger", 0.07);
-    var STACK_Y = attrNum(root, "data-csp-stack-y", 14);
-    var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.04);
-    var TILT = attrNum(root, "data-csp-stack-tilt", 3);
+    var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
+    var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
+    var FAN = attrNum(root, "data-csp-fan", 7);             // deg of in-flight fan per depth
 
     var tl = null;
 
@@ -147,14 +150,19 @@
       var oy = oR.top + oR.height / 2;
       var mid = (cards.length - 1) / 2;
 
+      // Perfect deck: every card dead-centre on the origin, no offset, no
+      // tilt — the back cards are completely HIDDEN behind the centre card
+      // (centre = highest z, receding by distance). They only appear when
+      // the spread pulls them out.
       cards.forEach(function (card, i) {
         var r = card.getBoundingClientRect();
+        var depth = Math.abs(i - mid);
         gsap.set(card, {
           x: ox - (r.left + r.width / 2),
-          y: oy - (r.top + r.height / 2) + i * STACK_Y,
-          rotation: (i - mid) * TILT,
-          scale: 1 - i * STACK_SC,
-          zIndex: cards.length - i,
+          y: oy - (r.top + r.height / 2),
+          rotation: 0,
+          scale: 1 - depth * STACK_SC,
+          zIndex: 20 - depth,
           transformOrigin: "50% 50%"
         });
       });
@@ -186,14 +194,25 @@
         spreadAt = 0.4;                                     // cards emerge mid-wipe
       }
 
-      // Phase 2 — the stack spreads to the real grid positions.
-      tl.to(cards, {
-        x: 0, y: 0, rotation: 0, scale: 1,
-        duration: 1.1, ease: "power2.inOut", stagger: STAGGER
-      }, spreadAt);
+      // Phase 2 — the deck spreads from BEHIND the centre card. Each card
+      // flies to its slot fanning open mid-flight (rotation out, then a
+      // back.out straighten = a soft snap into place). x and y run on
+      // different eases so the path bows slightly instead of a straight
+      // slide. Centre card only settles its scale.
+      cards.forEach(function (card, i) {
+        var depth = Math.abs(i - mid);
+        var at = spreadAt + depth * STAGGER;
+        tl.to(card, { x: 0, duration: 1.1, ease: "power2.inOut" }, at);
+        tl.to(card, { y: 0, duration: 1.1, ease: "power3.inOut" }, at);
+        tl.to(card, { scale: 1, duration: 1.1, ease: "power2.inOut" }, at);
+        if (i !== mid && FAN) {
+          tl.to(card, { rotation: (i - mid) * FAN, duration: 0.5, ease: "power2.out" }, at);
+          tl.to(card, { rotation: 0, duration: 0.65, ease: "back.out(1.7)" }, at + 0.5);
+        }
+      });
 
       // Phase 3 — descriptions rise + counters count, overlapping the settle.
-      tl.addLabel("reveal", spreadAt + 0.9);
+      tl.addLabel("reveal", spreadAt + 1.0);
       if (descs.length) {
         tl.to(descs, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.12 }, "reveal");
       }
