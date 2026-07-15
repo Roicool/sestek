@@ -142,7 +142,7 @@
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
     var LIFT = attrNum(root, "data-csp-lift", 48);          // px the grid drifts up as the header exits
-    var MOBILE_MAX = attrNum(root, "data-csp-mobile-max", 767); // ≤ this width: no desc reveal
+    var MOBILE_MAX = attrNum(root, "data-csp-mobile-max", 991); // ≤ this width (tablet & below): no desc reveal
 
     var tl = null;
 
