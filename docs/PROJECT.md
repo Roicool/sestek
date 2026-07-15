@@ -28,7 +28,7 @@ sestek/
 │   │                #      sticky-utms.js, search.js, badge-swap.js, logo-marquee.js,
 │   │                #      process-flow.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
-│   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js
+│   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/
 │   ├── core/        # nav.css, nav-full.css
 │   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,

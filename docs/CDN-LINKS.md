@@ -47,7 +47,7 @@ js/
                text-rotator.js, story.js, accordion.js, blog-utils.js, site-utils.js,
                sticky-utms.js
   effects/     grain.js, btn-glow.js
-  animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js
+  animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
@@ -355,7 +355,76 @@ Webflow `</body>` öncesi:
 | `js/animations/height-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/height-reveal.js` |
 | `js/animations/reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/reveal.js` |
 | `js/animations/color-shift.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/color-shift.js` |
+| `js/animations/count-up.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/count-up.js` |
 | `css/animations/reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/animations/reveal.css` |
+
+### Count Up
+
+Viewport sayaç animasyonu — element ekrana girince sayı, belirlediğin değere
+premium bir "roll" ile yükselir (hızlı tırmanır, `expo.out` ile yumuşakça oturur).
+İstatistik / metrik bölümleri için: `12,500+`, `%98.6`, `1.250.000` gibi
+prefix, suffix, binlik ayracı ve ondalıklar otomatik algılanıp korunur.
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/animations/count-up.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initCountUp(); // tüm [data-count] elementlerini başlatır
+  });
+</script>
+```
+
+DOM (Webflow — nihai değeri HTML'e yaz, attribute'u ekle):
+
+```html
+<!--
+  data-count            hedef sayı. BOŞ bırak → elementin metninden okunur
+                        (önerilen: gerçek değer HTML'de kalır, SEO / no-JS safe)
+  data-count-from       sayacın başladığı değer                (default 0)
+  data-count-duration   roll süresi sn                         (default 2)
+  data-count-delay      başlama gecikmesi sn                   (default 0)
+  data-count-ease       GSAP ease                              (default "expo.out")
+  data-count-decimals   ondalık basamak. Boş → metinden çıkarılır
+  data-count-separator  binlik ayracı, örn "," veya "."  Boş → metindeki korunur
+  data-count-locale     Intl locale, örn "tr-TR" → 1.250.000   (ayracı override eder)
+  data-count-prefix     sayıdan önceki metin. Boş → metinden okunur ("%", "$"…)
+  data-count-suffix     sayıdan sonraki metin. Boş → metinden okunur ("+", " dil"…)
+  data-count-start      ScrollTrigger tetik noktası            (default "top 85%")
+  data-count-once       default true: bir kez sayar, kalır. "false" → ekrana
+                        her girişte yeniden sayar (yukarı çıkınca sıfırlanır)
+-->
+<div class="stat_number" data-count>12,500+</div>
+
+<!-- yüzde, prefix'li — %0.0 → %98.6 -->
+<div class="stat_number" data-count data-count-duration="2.4">%98.6</div>
+
+<!-- Türkçe binlik ayracı, stagger hissi için artan delay -->
+<div class="stat_number" data-count data-count-delay="0.15">1.250.000</div>
+
+<!-- hedefi attribute ile ver (HTML'de 0 dursun istiyorsan) -->
+<div class="stat_number" data-count="750" data-count-suffix=" ms">0</div>
+```
+
+**Notlar**
+- Sayı **kendi yerinde** döner: `tabular-nums` + nihai metnin ölçülmüş genişliği
+  kadar `min-width` uygulanır → roll sırasında komşular asla zıplamaz (CLS 0).
+- Metin sadece `textContent` ile güncellenir — layout thrash yok, paint-only.
+- Stagger için karttaki her sayaca artan `data-count-delay` ver (0 / 0.15 / 0.3).
+- Programatik: `Sestek.countUp(el, { value: 42000, duration: 2.5, delay: 0.2 })`
+  — GSAP tween döner (`pause()`, `kill()` vb. kullanılabilir).
+- `prefers-reduced-motion`: animasyon yapılmaz, nihai değer anında yazılır.
+- `refreshPriority: -1` — reveal.js ile aynı katman; pinli bölümlerden sonra
+  refresh eder, pin sıraları bozulmaz.
 
 ### Color Shift
 
