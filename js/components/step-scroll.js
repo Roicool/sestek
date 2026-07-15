@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.2.0
+ * step-scroll.js v2.3.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -32,6 +32,13 @@
  *         so they stack instead of flowing, the video wrap is forced
  *         visible (kills leftover `opacity-0`), and autoplay is stripped
  *         from inner videos (scroll owns playback).
+ * v2.3.0: SMOOTH video scrub — currentTime is now tweened INSIDE the
+ *         scrubbed timeline (canonical GSAP technique) instead of being
+ *         hard-set per scroll event, so the scrub-lag smoothing (and the
+ *         Lenis glide feeding it) applies to video playback too. Videos
+ *         whose metadata arrives late trigger one debounced rebuild.
+ *         Default scroll distance per step raised to 250% viewport,
+ *         tuned so a ~5s clip plays through at a natural pace.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -55,7 +62,8 @@
    *
    * Root element  [data-step-scroll] supports:
    *   data-sscroll-step-vh    scroll distance PER STEP, in % of viewport
-   *                           height (default 150 → 3 steps = "450%")
+   *                           height (default 250 → 3 steps = "750%";
+   *                           sized so a ~5s clip plays at a natural pace)
    *   data-sscroll-end        pin scroll distance — explicit override;
    *                           omit it to let step-vh decide  (default: computed)
    *   data-sscroll-scrub      scrub lag in seconds          (default 0.5)
@@ -101,7 +109,7 @@
     }
 
     // ── Config from data-attributes ───────────────────────────────
-    var stepVh    = num(root, "data-sscroll-step-vh", 150);
+    var stepVh    = num(root, "data-sscroll-step-vh", 250);
     var endDist   = root.getAttribute("data-sscroll-end") || (n * stepVh) + "%";
     var scrub     = num(root, "data-sscroll-scrub", 0.5);
     var dwell     = num(root, "data-sscroll-dwell", 1);
@@ -211,30 +219,22 @@
     var CLIP_HIDDEN = "inset(0% 100% 0% 0%)";  // fully clipped from the right → reveals left→right
     var CLIP_SHOWN  = "inset(0% 0% 0% 0%)";
 
-    /** Which step owns timeline-time t (in units). */
-    function stepFromTime(t) {
-      var idx = Math.floor(t / dwell);
-      if (idx < 0) idx = 0;
-      if (idx > n - 1) idx = n - 1;
-      return idx;
-    }
-
     /**
-     * Scrub the active video's currentTime across its CLEAN window: from the
-     * moment its wipe-in completes (= its window start) to the moment the
-     * NEXT wipe begins — so the clip plays start-to-finish while fully
-     * visible instead of losing its tail under the outgoing transition.
+     * Videos whose metadata (duration) isn't known at build time can't get a
+     * currentTime tween yet — when it arrives, rebuild ONCE (debounced) so
+     * the tween is added. Usually resolves long before the user scrolls here.
      */
-    function scrubVideo(idx, t) {
-      var v = media[idx];
-      if (!v || !isFinite(v.duration) || !v.duration) return;
-      var start = idx * dwell;
-      var end   = idx === n - 1 ? total : (idx + 1) * dwell - crossfadeDur;
-      var local = (t - start) / (end - start);         // 0..1 within the clean window
-      if (local < 0) local = 0;
-      if (local > 1) local = 1;
-      v.currentTime = v.duration * local;
-    }
+    var metaTimer = null;
+    media.forEach(function (m) {
+      if (!m || (isFinite(m.duration) && m.duration)) return;
+      m.addEventListener("loadedmetadata", function () {
+        clearTimeout(metaTimer);
+        metaTimer = setTimeout(function () {
+          build();
+          ScrollTrigger.refresh();
+        }, 100);
+      }, { once: true });
+    });
 
     /** Title/text of a step, for staggered copy transitions. */
     function copyParts(stepEl) {
@@ -286,11 +286,21 @@
           // See PROJECT.md "ScrollTrigger — Pinli Bölüm Kuralları": priority is
           // driven by data-sscroll-priority, set per the page's pin stacking order.
           refreshPriority: priority,
-          onUpdate: function (self) {
-            var t = self.progress * total;
-            scrubVideo(stepFromTime(t), t);
-          },
         },
+      });
+
+      // ── Smooth video scrub: currentTime tweened INSIDE the timeline ──
+      // Because it's a timeline tween, ScrollTrigger's scrub-lag smoothing
+      // (fed by Lenis' glide) interpolates the seek — far smoother than
+      // hard-setting currentTime per scroll event. Each clip plays across
+      // its CLEAN window: from its wipe-in completing to the next wipe
+      // starting, so the tail never dies under the outgoing transition.
+      media.forEach(function (m, i) {
+        if (!m || !isFinite(m.duration) || !m.duration) return;
+        var start = i * dwell;
+        var end   = i === n - 1 ? total : (i + 1) * dwell - crossfadeDur;
+        tl.fromTo(m, { currentTime: 0 },
+          { currentTime: m.duration, ease: "none", duration: end - start }, start);
       });
 
       // Segmented progress bar: each fill runs 0→100% across its own window only.
