@@ -1,5 +1,5 @@
 /*!
- * card-spread.js v1.6.0
+ * card-spread.js v1.7.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -177,6 +177,8 @@
       // tilt — the back cards are completely HIDDEN behind the centre card
       // (centre = highest z, receding by distance). They only appear when
       // the spread pulls them out.
+      // Back cards are invisible outright (autoAlpha 0) — no reliance on the
+      // front card's background covering them. The centre card never moves.
       cards.forEach(function (card, i) {
         var r = card.getBoundingClientRect();
         var depth = Math.abs(i - mid);
@@ -185,6 +187,7 @@
           y: oy - (r.top + r.height / 2),
           rotation: 0,
           scale: 1 - depth * STACK_SC,
+          autoAlpha: depth ? 0 : 1,
           zIndex: 20 - depth,
           transformOrigin: "50% 50%"
         });
@@ -238,7 +241,9 @@
       // decked scale to full size on the way. Centre card only settles scale.
       cards.forEach(function (card, i) {
         var depth = Math.abs(i - mid);
+        if (!depth) return;                                 // centre card never moves
         var at = spreadAt + depth * STAGGER;
+        tl.to(card, { autoAlpha: 1, duration: 0.3, ease: "power1.in" }, at);
         tl.to(card, { x: 0, y: 0, duration: 1.2, ease: "power3.inOut" }, at);
         tl.to(card, { scale: 1, duration: 1.2, ease: "power2.inOut" }, at);
       });
