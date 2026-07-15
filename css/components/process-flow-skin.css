@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.3.0
+ * process-flow-skin.css v1.3.1
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -76,7 +76,7 @@ section[data-process-flow] { overflow: hidden; }
   align-items: start;
   padding-top: 4rem;                                   /* pill centre lands ON the rail's bottom line */
 }
-.pf_col { display: flex; flex-direction: column; align-items: center; }
+.pf_col { display: flex; flex-direction: column; align-items: flex-start; } /* Auxia: pill's LEFT edge aligns with the card's LEFT edge */
 
 /* ── Pill (sits on the rail line) ─────────────────────────────────────────*/
 .pf_pill {
@@ -101,13 +101,14 @@ section[data-process-flow] { overflow: hidden; }
   color: inherit;
 }
 
-/* ── Card stack (variants overlap; JS shows one) ──────────────────────────*/
+/* ── Card stack (variants overlap; JS shows one) ──────────────────────────
+   Left-aligned like Auxia — stacked variants pin to the column's left edge. */
 .pf_stack { position: relative; width: 100%; display: flex; }
-.pf_card { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
-.pf_card:first-child { position: relative; left: auto; transform: none; }
+.pf_card { position: absolute; top: 0; left: 0; }
+.pf_card:first-child { position: relative; }
 /* checkout column stacks card-checkout directly */
-.pf_stack > .card-checkout { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
-.pf_stack > .card-checkout:first-child { position: relative; left: auto; transform: none; }
+.pf_stack > .card-checkout { position: absolute; top: 0; left: 0; }
+.pf_stack > .card-checkout:first-child { position: relative; }
 
 /* ── Notification card (dark) ─────────────────────────────────────────────*/
 .card-notif {
