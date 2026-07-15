@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.3.0
+ * step-scroll.js v2.4.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -39,6 +39,11 @@
  *         whose metadata arrives late trigger one debounced rebuild.
  *         Default scroll distance per step raised to 250% viewport,
  *         tuned so a ~5s clip plays through at a natural pace.
+ * v2.4.0: AUTOPLAY mode — videos play in real time (looping) while their
+ *         step is active instead of being scroll-scrubbed. The active
+ *         step's clip restarts from 0 and plays; the others pause. All
+ *         playback stops when the pinned section leaves the viewport.
+ *         Always smooth regardless of the clip's keyframe encoding.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -135,8 +140,9 @@
       }
       m.muted = true;
       m.playsInline = true;
-      m.autoplay = false;                       // scroll owns playback, not autoplay
+      m.autoplay = false;                       // the component decides when to play
       m.removeAttribute("autoplay");
+      m.loop = true;                            // short clips keep looping while their step is active
       m.setAttribute("muted", "");
       m.setAttribute("playsinline", "");
       m.preload = "auto";
@@ -219,22 +225,41 @@
     var CLIP_HIDDEN = "inset(0% 100% 0% 0%)";  // fully clipped from the right → reveals left→right
     var CLIP_SHOWN  = "inset(0% 0% 0% 0%)";
 
-    /**
-     * Videos whose metadata (duration) isn't known at build time can't get a
-     * currentTime tween yet — when it arrives, rebuild ONCE (debounced) so
-     * the tween is added. Usually resolves long before the user scrolls here.
-     */
-    var metaTimer = null;
-    media.forEach(function (m) {
-      if (!m || (isFinite(m.duration) && m.duration)) return;
-      m.addEventListener("loadedmetadata", function () {
-        clearTimeout(metaTimer);
-        metaTimer = setTimeout(function () {
-          build();
-          ScrollTrigger.refresh();
-        }, 100);
-      }, { once: true });
-    });
+    /** Which step owns timeline-time t (in units). */
+    function stepFromTime(t) {
+      var idx = Math.floor(t / dwell);
+      if (idx < 0) idx = 0;
+      if (idx > n - 1) idx = n - 1;
+      return idx;
+    }
+
+    var curVideo = -1;
+
+    /** Play the active step's clip (from the start), pause the rest. */
+    function setActiveVideo(idx) {
+      if (idx === curVideo) return;
+      curVideo = idx;
+      media.forEach(function (m, i) {
+        if (!m) return;
+        if (i === idx) {
+          try {
+            m.currentTime = 0;
+            var p = m.play();
+            if (p && p.catch) p.catch(function () {});
+          } catch (e) {}
+        } else {
+          try { m.pause(); } catch (e) {}
+        }
+      });
+    }
+
+    /** Pause everything (section left the viewport). */
+    function pauseAllVideos() {
+      curVideo = -1;
+      media.forEach(function (m) {
+        if (m) { try { m.pause(); } catch (e) {} }
+      });
+    }
 
     /** Title/text of a step, for staggered copy transitions. */
     function copyParts(stepEl) {
@@ -245,6 +270,7 @@
 
     function build() {
       if (activeST) { activeST.kill(); activeST = null; }
+      curVideo = -1;
 
       // ── Resting state: step 0 fully shown, the rest clipped & primed ──
       bgItems.forEach(function (el, i) {
@@ -286,21 +312,16 @@
           // See PROJECT.md "ScrollTrigger — Pinli Bölüm Kuralları": priority is
           // driven by data-sscroll-priority, set per the page's pin stacking order.
           refreshPriority: priority,
+          // Autoplay mode: the active step's clip plays in real time (looping);
+          // the others pause. Everything pauses when the pin leaves the viewport.
+          onUpdate: function (self) {
+            setActiveVideo(stepFromTime(self.progress * total));
+          },
+          onEnter: function (self) { setActiveVideo(stepFromTime(self.progress * total)); },
+          onEnterBack: function (self) { setActiveVideo(stepFromTime(self.progress * total)); },
+          onLeave: pauseAllVideos,
+          onLeaveBack: pauseAllVideos,
         },
-      });
-
-      // ── Smooth video scrub: currentTime tweened INSIDE the timeline ──
-      // Because it's a timeline tween, ScrollTrigger's scrub-lag smoothing
-      // (fed by Lenis' glide) interpolates the seek — far smoother than
-      // hard-setting currentTime per scroll event. Each clip plays across
-      // its CLEAN window: from its wipe-in completing to the next wipe
-      // starting, so the tail never dies under the outgoing transition.
-      media.forEach(function (m, i) {
-        if (!m || !isFinite(m.duration) || !m.duration) return;
-        var start = i * dwell;
-        var end   = i === n - 1 ? total : (i + 1) * dwell - crossfadeDur;
-        tl.fromTo(m, { currentTime: 0 },
-          { currentTime: m.duration, ease: "none", duration: end - start }, start);
       });
 
       // Segmented progress bar: each fill runs 0→100% across its own window only.
