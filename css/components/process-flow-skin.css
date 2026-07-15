@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.4.0
+ * process-flow-skin.css v1.5.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -179,38 +179,51 @@ section[data-process-flow] { overflow: hidden; }
   font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Vertical connector (mobile only) — JS injects one above each pill and
-   draws it (scaleY) as the journey flows down. Hidden on desktop. ─────────*/
-[data-pf-vline] { display: none; }
+/* ── Progress line (mobile/tablet only) — injected by process-flow.js and
+   filled step by step (scaleX). Hidden on desktop. ─────────────────────────*/
+[data-pf-hline] { display: none; }
 
-/* ── Mobile: vertical journey, everything stacked & centred, drawn line ──*/
-@media (max-width: 56.25rem) {
+/* ── Mobile & tablet (≤991px, same breakpoint as the JS): horizontal step
+   machine — pill nodes in one row on a track line, cards slide in from the
+   right pushing the previous one out left. DOM untouched: .pf_col uses
+   display:contents so pills form the row and stacks overlap below. ────────*/
+@media (max-width: 61.9375rem) {
   .pf__inner { min-height: 0; }
-  .pf_rail { display: none; }                          /* horizontal rail is desktop-only */
+  .pf_rail { display: none; }                          /* desktop rail off */
 
-  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 0.5rem; }
-  .pf_personas-clip { height: auto; }                  /* show all personas, no clip */
+  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 1.25rem; }
+  .pf_personas-clip { height: auto; }                  /* all personas visible */
 
   .pf_columns {
-    margin-left: 0; padding-top: 0;                    /* no horizontal rail to clear */
-    grid-template-columns: 1fr;
-    gap: 0;                                            /* the connectors provide the rhythm */
-    justify-items: center;
+    position: relative;
+    margin-left: 0;
+    display: flex; align-items: flex-start; gap: 0.5rem; /* the pill node row, pinned to the track at top */
+    padding-top: 0.4rem;
+    min-height: 23.5rem;                               /* room for the absolute card area */
   }
-  .pf_col { align-items: center; width: 100%; }
+  .pf_col { display: contents; }                       /* pills + stacks become row items */
 
-  /* the drawn connector between nodes */
-  [data-pf-vline] {
-    display: block; width: 2px; height: 2.6rem;
-    background: var(--pf-accent);
-    margin: 0 auto;
-    transform: scaleY(0); transform-origin: top;       /* JS animates scaleY 0 -> 1 */
+  /* idle track behind the pill nodes */
+  .pf_columns::before {
+    content: ""; position: absolute; top: 1.15rem; left: 0; right: 0;
+    height: 2px; background: var(--pf-tag-idle-bd);
+  }
+  /* the filled (drawn) part — JS animates scaleX to the active node */
+  [data-pf-hline] {
+    display: block; position: absolute; top: 1.15rem; left: 0; right: 0;
+    height: 2px; background: var(--pf-accent);
+    transform: scaleX(0); transform-origin: left center;
+    z-index: 1;
   }
 
-  .pf_pill { margin-bottom: 1.1rem; }                  /* pill -> its card */
+  .pf_pill { position: relative; z-index: 2; margin-bottom: 0; }
 
-  /* cards never overflow the viewport */
+  /* card area: all three stacks overlap; JS slides them (xPercent 110 -> 0 -> -110) */
+  .pf_stack {
+    position: absolute; left: 0; right: 0; top: 3.4rem;
+    display: flex; justify-content: center;
+    width: auto; max-width: none;
+  }
   .card-notif, .card-media, .card-checkout { max-width: 100%; }
-  .card-notif { width: 100%; }                         /* notif was the widest (20rem) */
-  .pf_stack { width: auto; max-width: 100%; }
+  .card-notif { width: 100%; }
 }

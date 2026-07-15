@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.3.0
+ * process-flow.js v2.4.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,16 +30,17 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
- * Mobile (≤991px): a VERTICAL journey — a connector line draws down into each
- * node, the spark pills open, and the phase-0 cards reveal top to bottom, when
- * the section scrolls into view. A [data-pf-vline] connector span is injected
- * above each pill (style it in CSS; hidden on desktop).
+ * Mobile & tablet (≤991px): a HORIZONTAL step machine, like Auxia's real
+ * mobile — the pills sit in one row as nodes (inactive = collapsed spark
+ * circle at low opacity, active = expanded), an injected [data-pf-hline]
+ * progress line fills step by step, and each step's card slides in from the
+ * right pushing the previous card out to the left. Loops; viewport-gated.
  *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
  *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
  *   data-pf-mobile      "static" = still frame · "loop" = desktop loop on mobile
- *                       (default = the vertical mobile journey)
+ *                       (default = the horizontal step machine)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -110,41 +111,79 @@
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
     }
 
-    /** Mobile: a VERTICAL journey — a connector line draws down into each node,
-     *  the spark pills open, and the phase-0 cards reveal, top to bottom.
-     *  Plays when the section scrolls into view (pauses when it leaves). */
+    /** Mobile/tablet: a HORIZONTAL step machine (Auxia's real mobile).
+     *  The pills sit in one row as nodes — inactive ones are collapsed spark
+     *  circles at low opacity, the active one expands. A progress line fills
+     *  step by step up to the active pill, and each step's card slides in
+     *  from the right, pushing the previous card out to the left. Loops. */
     function buildMobile() {
-      // Inject a vertical connector just above each pill (the "drawn" line).
-      var vlines = pills.map(function (pill) {
-        var v = document.createElement("span");
-        v.className = "pf_vline";
-        v.setAttribute("data-pf-vline", "");
-        pill.parentNode.insertBefore(v, pill);
-        return v;
-      });
-      // Make sure each pill shows ITS own phase-0 label (not a shared default).
+      var columnsEl = pills[0] && pills[0].parentNode ? pills[0].parentNode.parentNode : root;
+
+      // Injected progress line (the "drawn" blue line under the pill row).
+      var hline = document.createElement("span");
+      hline.className = "pf_hline";
+      hline.setAttribute("data-pf-hline", "");
+      columnsEl.appendChild(hline);
+
+      // Each pill shows ITS own phase-0 label (not a shared default).
       pills.forEach(function (pill) {
         var t = pill.querySelector("[data-pf-pill-text]");
         if (t && t.getAttribute("data-t0")) t.textContent = t.getAttribute("data-t0");
       });
 
-      gsap.set(vlines, { scaleY: 0, transformOrigin: "top" });
+      var STEPS = Math.min(pills.length, cols.length);
+      var STEP_HOLD = HOLD * 0.8;
+
+      // Initial: collapsed faded pills, all card stacks parked off-screen right,
+      // each stack's phase-0 card visible (the stack position does the hiding).
+      gsap.set(hline, { scaleX: 0, transformOrigin: "left center" });
+      gsap.set(pills, { opacity: 0.45 });
+      gsap.set(cols, { xPercent: 110 });
+      cols.forEach(function (col, ci) { if (cards[ci][0]) gsap.set(cards[ci][0], { autoAlpha: 1 }); });
+
+      /** Side-tween the progress line up to pill i's centre (measured live,
+       *  because expanding pills shift the row). */
+      function drawTo(i) {
+        return function () {
+          var cw = columnsEl.offsetWidth || 1;
+          var target = Math.min((pills[i].offsetLeft + pills[i].offsetWidth * 0.6) / cw, 1);
+          gsap.to(hline, { scaleX: target, duration: 0.6, ease: "power1.inOut" });
+        };
+      }
+
+      var mtl = gsap.timeline({ repeat: -1, paused: true, defaults: { ease: "power3.out" } });
       var p0 = personas[0];
       var ic0 = personIcon(p0);
-
-      var mtl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
       if (ic0) mtl.to(ic0, { color: ACCENT, duration: 0.5 }, 0);
       mtl.to(personLines(p0), { color: INK, duration: 0.5 }, 0);
 
-      cols.forEach(function (col, ci) {
-        mtl.to(vlines[ci], { scaleY: 1, duration: 0.45, ease: "none" }, ci === 0 ? "<0.2" : ">-0.05");
-        var wrap = pills[ci].querySelector("[data-pf-pill-wrap]");
-        if (wrap) mtl.to(wrap, { width: "auto", duration: 0.5 }, "<0.15");
-        mtl.to(pills[ci], { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, "<");
-        var card = cards[ci][0];
-        if (card) mtl.fromTo(card, { autoAlpha: 0, filter: "blur(10px)", y: 18 },
-          { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.7 }, "<0.05");
-      });
+      for (var i = 0; i < STEPS; i++) {
+        (function (si) {
+          var t0 = mtl.duration();
+          mtl.call(drawTo(si), null, t0);                          // line fills to this node
+          var wrap = pills[si].querySelector("[data-pf-pill-wrap]");
+          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.3);
+          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.3);
+          if (si > 0) {                                            // previous node collapses + fades
+            var prevWrap = pills[si - 1].querySelector("[data-pf-pill-wrap]");
+            if (prevWrap) mtl.to(prevWrap, { width: 0, duration: 0.55 }, t0 + 0.3);
+            mtl.to(pills[si - 1], { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, t0 + 0.3);
+          }
+          // the card slides in from the right and pushes the previous one out left
+          mtl.to(cols[si], { xPercent: 0, duration: 0.85 }, t0 + 0.45);
+          if (si > 0) mtl.to(cols[si - 1], { xPercent: -110, duration: 0.85 }, "<");
+          mtl.to({}, { duration: STEP_HOLD });
+        })(i);
+      }
+
+      // Wrap-around: last card keeps pushing left, everything resets for the loop.
+      var tEnd = mtl.duration();
+      mtl.to(cols[STEPS - 1], { xPercent: -110, duration: 0.7, ease: "power2.in" }, tEnd);
+      var lastWrap = pills[STEPS - 1].querySelector("[data-pf-pill-wrap]");
+      if (lastWrap) mtl.to(lastWrap, { width: 0, duration: 0.5 }, tEnd);
+      mtl.to(pills[STEPS - 1], { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, tEnd);
+      mtl.to(hline, { scaleX: 0, duration: 0.5, ease: "power1.in" }, tEnd);
+      mtl.set(cols, { xPercent: 110 });
 
       if (typeof IntersectionObserver !== "undefined") {
         var mio = new IntersectionObserver(function (entries) {
