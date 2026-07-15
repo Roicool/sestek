@@ -1,5 +1,5 @@
 /*!
- * card-spread.js v1.5.0
+ * card-spread.js v1.6.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -48,6 +48,8 @@
  *             [data-csp-bar              a progress-bar FILL element (inside a
  *               data-csp-bar-to="83"       track with overflow hidden); scales
  *               data-csp-bar-from="0"]     from → to percent with the counters
+ *           [data-csp-desc-title]       optional title above the description —
+ *                                       rises first, the description follows
  *           [data-csp-desc]             the description under the card
  *
  * Root attributes (all optional):
@@ -78,8 +80,10 @@
     var toArray = gsap.utils.toArray;
 
     var stage = root.querySelector("[data-csp-stage]") || root;
+    var grid = root.querySelector("[data-csp-grid]");
     var cards = toArray(root.querySelectorAll("[data-csp-card]"));
     var descs = toArray(root.querySelectorAll("[data-csp-desc]"));
+    var descTitles = toArray(root.querySelectorAll("[data-csp-desc-title]"));
     var header = root.querySelector("[data-csp-header]");
     var hero = root.querySelector("[data-csp-hero]");
     var heroVisual = hero ? (hero.querySelector("[data-csp-hero-visual]") || hero.querySelector("img")) : null;
@@ -137,6 +141,7 @@
     var SCRUB = attrNum(root, "data-csp-scrub", 0.8);
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
+    var LIFT = attrNum(root, "data-csp-lift", 48);          // px the grid drifts up as the header exits
 
     var tl = null;
 
@@ -154,6 +159,7 @@
       // Measure the REAL layout first (transforms cleared), then stack the
       // cards on the origin by delta — FLIP, so any layout/breakpoint works.
       gsap.set(cards, { clearProps: "transform" });
+      if (grid) gsap.set(grid, { clearProps: "transform" });
       if (heroVisual) gsap.set(heroVisual, { clearProps: "clipPath" });
       if (line) gsap.set(line, { clearProps: "transform,opacity,visibility" });
 
@@ -184,11 +190,19 @@
         });
       });
       gsap.set(descs, { autoAlpha: 0, y: 28 });
-      bars.forEach(function (b) { gsap.set(b.el, { scaleX: b.from / 100, transformOrigin: "left center" }); });
+      gsap.set(descTitles, { autoAlpha: 0, y: 24 });
       if (header) gsap.set(header, { clearProps: "transform,opacity,visibility" });
       var heroH = heroVisual ? heroVisual.getBoundingClientRect().height : 0;
       if (line) gsap.set(line, { y: heroH });
-      counters.forEach(function (c) { renderCount(c, c.from); });
+
+      // The FRONT (centre) card is visible from t0, so its stats arrive
+      // PRE-LOADED — counter at target, bar filled — and are excluded from
+      // the reveal tweens. Only the side cards' stats animate in.
+      function inFront(el) { return cards[midIdx].contains(el); }
+      counters.forEach(function (c) { renderCount(c, inFront(c.el) ? c.to : c.from); });
+      bars.forEach(function (b) {
+        gsap.set(b.el, { scaleX: (inFront(b.el) ? b.to : b.from) / 100, transformOrigin: "left center" });
+      });
 
       tl = gsap.timeline({
         scrollTrigger: {
@@ -213,6 +227,11 @@
         spreadAt = 0.4;                                     // cards emerge mid-wipe
       }
 
+      // The grid drifts gently up into the space the header leaves behind.
+      if (grid && LIFT) {
+        tl.to(grid, { y: -LIFT, duration: 0.8, ease: "power2.inOut" }, 0);
+      }
+
       // Phase 2 — the deck spreads from BEHIND the centre card: a clean,
       // dead-straight slide (NO rotation, ever), power3.inOut so the cards
       // ease out from behind and glide into their slots, growing from the
@@ -224,15 +243,21 @@
         tl.to(card, { scale: 1, duration: 1.2, ease: "power2.inOut" }, at);
       });
 
-      // Phase 3 — descriptions rise + counters count, overlapping the settle.
+      // Phase 3 — desc titles rise first, descriptions right behind them;
+      // side-card counters + bars run alongside (front card is pre-loaded).
       tl.addLabel("reveal", spreadAt + 1.0);
+      if (descTitles.length) {
+        tl.to(descTitles, { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out", stagger: 0.12 }, "reveal");
+      }
       if (descs.length) {
-        tl.to(descs, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.12 }, "reveal");
+        tl.to(descs, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.12 }, "reveal+=0.18");
       }
       bars.forEach(function (b) {
+        if (inFront(b.el)) return;
         tl.to(b.el, { scaleX: b.to / 100, duration: 1.1, ease: "power1.out" }, "reveal");
       });
       counters.forEach(function (c) {
+        if (inFront(c.el)) return;
         var proxy = { v: c.from };
         tl.to(proxy, {
           v: c.to, duration: 1.1, ease: "power1.out",
