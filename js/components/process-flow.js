@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.0.0
+ * process-flow.js v2.1.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -25,9 +25,14 @@
  *                                            the active phase is shown)
  *         [data-pf-splittext]                optional body for a line reveal
  *
+ * Playback: the loop starts PAUSED and an IntersectionObserver plays it when
+ * the section enters the viewport (20% visible) and pauses it when it leaves.
+ * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
+ * sparks/pills open -> cards dissolve in.
+ *
  * Root attributes (all optional):
- *   data-pf-hold        seconds each phase holds before transitioning (default 2)
- *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 1.5)
+ *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
+ *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -61,8 +66,8 @@
     }
 
     var PHASES = personas.length;
-    var HOLD = parseFloat(root.getAttribute("data-pf-hold")) || 2;
-    var DRAW_DUR = parseFloat(root.getAttribute("data-pf-draw-dur")) || 1.5;
+    var HOLD = parseFloat(root.getAttribute("data-pf-hold")) || 3.5;
+    var DRAW_DUR = parseFloat(root.getAttribute("data-pf-draw-dur")) || 2.2;
 
     var ACCENT = cssVar(root, "--pf-accent", "#0b4fff");
     var INK = cssVar(root, "--pf-ink", "#232323");
@@ -113,12 +118,12 @@
     // Reveal one phase's cards straight into the master timeline (blur-dissolve +
     // optional SplitText line reveal). fromTo — not from — so the explicit end
     // state survives the initial autoAlpha:0 set and every repeat.
-    function revealCards(phase) {
+    function revealCards(phase, at) {
       cols.forEach(function (col, ci) {
         var card = cards[ci][phase];
         if (!card) return;
         master.fromTo(card, { autoAlpha: 0, filter: "blur(10px)" },
-          { autoAlpha: 1, filter: "blur(0px)", duration: 1.4, ease: "power4.out" }, ci === 0 ? "<0.2" : "<");
+          { autoAlpha: 1, filter: "blur(0px)", duration: 1.4, ease: "power4.out" }, ci === 0 ? at : "<0.3");
         var lines = splitLines[ci][phase];
         if (lines && lines.length) master.from(lines, { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.08, ease: "power4.out" }, "<0.25");
         var media = card.querySelector("[data-pf-media]");   // img/video zoom-out on reveal
@@ -134,8 +139,8 @@
       return gsap.timeline().to(draw, {
         drawSVG: "100% 100%", duration: DRAW_DUR, ease: "none",
         onStart: function () {
-          gsap.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0, duration: 0.9, stagger: 0.25, ease: "power4.out" });
-          gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.25, ease: "power4.out" });
+          gsap.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0, duration: 0.9, stagger: 0.35, ease: "power4.out" });
+          gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.35, ease: "power4.out" });
         },
         onComplete: function () {
           pills.forEach(function (pill) {
@@ -149,20 +154,26 @@
     }
 
     // ── Master loop ───────────────────────────────────────────────────────────
-    var master = gsap.timeline({ repeat: -1 });
+    // Starts PAUSED — an IntersectionObserver below plays it when the section
+    // enters the viewport and pauses it again when it leaves.
+    var master = gsap.timeline({ repeat: -1, paused: true });
 
     for (var p = 0; p < PHASES; p++) {
       (function (phase) {
         var persona = personas[phase];
         var next = (phase + 1) % PHASES;
 
-        master.add(drawLine());
+        // ~4s staged prep: 1) the line draws fully, 2) short beat, 3) the
+        // sparks/pills open, 4) then the cards dissolve in.
+        var pStart = master.duration();
+        master.add(drawLine(), pStart);
         var ic = personIcon(persona);
-        if (ic) master.to(ic, { color: ACCENT, duration: 1.1, ease: "power4.out" }, "<0.9");
-        master.to(personLines(persona), { color: INK, duration: 1, ease: "power4.out" }, "<0.3");
-        master.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto", duration: 1, stagger: 0.25, ease: "power4.out" }, "<0.1");
-        master.to(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.25, ease: "power4.out" }, "<");
-        revealCards(phase);
+        if (ic) master.to(ic, { color: ACCENT, duration: 1.1, ease: "power4.out" }, pStart + DRAW_DUR * 0.45);
+        master.to(personLines(persona), { color: INK, duration: 1, ease: "power4.out" }, pStart + DRAW_DUR * 0.6);
+        var sparkAt = pStart + DRAW_DUR + 0.25;              // sparks only AFTER the line is drawn
+        master.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto", duration: 1, stagger: 0.35, ease: "power4.out" }, sparkAt);
+        master.to(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.35, ease: "power4.out" }, sparkAt);
+        revealCards(phase, sparkAt + 0.5);
         master.to({}, { duration: HOLD });
 
         master.add(undrawLine(next));
@@ -177,6 +188,19 @@
           master.to([root.querySelectorAll("[data-pf-person]"), root.querySelectorAll("[data-pf-person-text]")], { color: MUTED, duration: 0.8 }, "<");
         }
       })(p);
+    }
+
+    // ── Viewport control: play in view, pause out of view ────────────────────
+    if (typeof IntersectionObserver !== "undefined") {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) master.play();
+          else master.pause();
+        });
+      }, { threshold: 0.2 });
+      io.observe(root);
+    } else {
+      master.play();                                        // ancient browsers: just run
     }
 
     root._processFlowTimeline = master;                     // exposed for debugging
