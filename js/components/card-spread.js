@@ -27,6 +27,8 @@
  *   [data-card-spread]                  root — THIS is pinned; give it the
  *                                       section height (e.g. min-height:100svh)
  *     [data-csp-stage]                  layout wrapper (defaults to root)
+ *       [data-csp-header]               optional heading wrapper — drifts up
+ *                                       and fades out as the sequence starts
  *       [data-csp-hero]                 optional wrapper for the physical card
  *                                       (position:relative in CSS)
  *         [data-csp-hero-visual]        the visual that gets wiped (falls back
@@ -78,6 +80,7 @@
     var stage = root.querySelector("[data-csp-stage]") || root;
     var cards = toArray(root.querySelectorAll("[data-csp-card]"));
     var descs = toArray(root.querySelectorAll("[data-csp-desc]"));
+    var header = root.querySelector("[data-csp-header]");
     var hero = root.querySelector("[data-csp-hero]");
     var heroVisual = hero ? (hero.querySelector("[data-csp-hero-visual]") || hero.querySelector("img")) : null;
     var line = hero ? hero.querySelector("[data-csp-line]") : null;
@@ -167,6 +170,7 @@
         });
       });
       gsap.set(descs, { autoAlpha: 0, y: 28 });
+      if (header) gsap.set(header, { clearProps: "transform,opacity,visibility" });
       var heroH = heroVisual ? heroVisual.getBoundingClientRect().height : 0;
       if (line) gsap.set(line, { y: heroH });
       counters.forEach(function (c) { renderCount(c, c.from); });
@@ -181,6 +185,12 @@
           anticipatePin: 1
         }
       });
+
+      // Phase 0 — the heading drifts up and out as the sequence starts
+      // (Ramp's t0 → t1: title exits before/while the card is scanned).
+      if (header) {
+        tl.to(header, { autoAlpha: 0, y: -48, duration: 0.5, ease: "power2.in" }, 0);
+      }
 
       // Phase 1 — the physical card is scanned away (only if a hero exists).
       var spreadAt = 0;
