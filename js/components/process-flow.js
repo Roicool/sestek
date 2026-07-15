@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.4.0
+ * process-flow.js v2.4.1
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -152,10 +152,6 @@
       }
 
       var mtl = gsap.timeline({ repeat: -1, paused: true, defaults: { ease: "power3.out" } });
-      var p0 = personas[0];
-      var ic0 = personIcon(p0);
-      if (ic0) mtl.to(ic0, { color: ACCENT, duration: 0.5 }, 0);
-      mtl.to(personLines(p0), { color: INK, duration: 0.5 }, 0);
 
       for (var i = 0; i < STEPS; i++) {
         (function (si) {
@@ -164,10 +160,9 @@
           var wrap = pills[si].querySelector("[data-pf-pill-wrap]");
           if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.3);
           mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.3);
-          if (si > 0) {                                            // previous node collapses + fades
+          if (si > 0) {                                            // completed node collapses but STAYS blue (Auxia)
             var prevWrap = pills[si - 1].querySelector("[data-pf-pill-wrap]");
             if (prevWrap) mtl.to(prevWrap, { width: 0, duration: 0.55 }, t0 + 0.3);
-            mtl.to(pills[si - 1], { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, t0 + 0.3);
           }
           // the card slides in from the right and pushes the previous one out left
           mtl.to(cols[si], { xPercent: 0, duration: 0.85 }, t0 + 0.45);
@@ -181,7 +176,7 @@
       mtl.to(cols[STEPS - 1], { xPercent: -110, duration: 0.7, ease: "power2.in" }, tEnd);
       var lastWrap = pills[STEPS - 1].querySelector("[data-pf-pill-wrap]");
       if (lastWrap) mtl.to(lastWrap, { width: 0, duration: 0.5 }, tEnd);
-      mtl.to(pills[STEPS - 1], { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, tEnd);
+      mtl.to(pills, { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, tEnd);
       mtl.to(hline, { scaleX: 0, duration: 0.5, ease: "power1.in" }, tEnd);
       mtl.set(cols, { xPercent: 110 });
 
