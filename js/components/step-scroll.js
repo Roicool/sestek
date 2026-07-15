@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.0.1
+ * step-scroll.js v2.1.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -18,6 +18,14 @@
  * v2.0.1: step containers forced visible (autoAlpha:1) — copy animates on
  *         the title/text inside, so leftover `opacity:0` CSS on the step
  *         class no longer hides all content.
+ * v2.1.0: video hardening — muted/playsinline forced from JS, load() kicked
+ *         when metadata is missing, console warning on empty src, video-wrap
+ *         gets an aspect-ratio fallback if its height collapsed. Video scrub
+ *         now maps to the step's CLEAN window (after its wipe-in completes,
+ *         before the next wipe starts) so the clip plays start-to-finish
+ *         while fully visible. Pin distance defaults to steps × 150% of the
+ *         viewport (data-sscroll-step-vh) — tuned for ~5s clips — unless
+ *         data-sscroll-end explicitly overrides it.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -40,7 +48,10 @@
    * Initializes a pinned step-scroll section.
    *
    * Root element  [data-step-scroll] supports:
-   *   data-sscroll-end        pin scroll distance          (default "300%")
+   *   data-sscroll-step-vh    scroll distance PER STEP, in % of viewport
+   *                           height (default 150 → 3 steps = "450%")
+   *   data-sscroll-end        pin scroll distance — explicit override;
+   *                           omit it to let step-vh decide  (default: computed)
    *   data-sscroll-scrub      scrub lag in seconds          (default 0.5)
    *   data-sscroll-dwell      per-step hold length, units   (default 1)
    *   data-sscroll-crossfade  fraction of dwell used for
@@ -84,7 +95,8 @@
     }
 
     // ── Config from data-attributes ───────────────────────────────
-    var endDist   = root.getAttribute("data-sscroll-end") || "300%";
+    var stepVh    = num(root, "data-sscroll-step-vh", 150);
+    var endDist   = root.getAttribute("data-sscroll-end") || (n * stepVh) + "%";
     var scrub     = num(root, "data-sscroll-scrub", 0.5);
     var dwell     = num(root, "data-sscroll-dwell", 1);
     var crossFrac = num(root, "data-sscroll-crossfade", 0.45);
@@ -94,6 +106,35 @@
     var barGap    = num(root, "data-sscroll-bar-gap", 12);
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── Video hardening ───────────────────────────────────────────
+    // Force the attributes scroll-scrubbing depends on (Webflow/DOM embeds
+    // can lose them), kick metadata loading, and complain loudly when a
+    // video has no source at all — the #1 reason "videos don't show".
+    videos.forEach(function (v, i) {
+      v.muted = true;
+      v.playsInline = true;
+      v.setAttribute("muted", "");
+      v.setAttribute("playsinline", "");
+      v.setAttribute("preload", "auto");
+      var hasSrc = v.currentSrc || v.getAttribute("src") || v.querySelector("source");
+      if (!hasSrc) {
+        console.warn("[Sestek StepScroll] [data-sscroll-video=\"" + i + "\"] has no src — set the video URL in Webflow.");
+      } else if (v.readyState < 1) {
+        try { v.load(); } catch (e) {}
+      }
+    });
+
+    // If the video wrap's height collapsed (missing CSS), give it a sane
+    // inline fallback so the absolutely-positioned videos have a box to fill.
+    var videoWrap = root.querySelector("[data-sscroll-video-wrap]");
+    if (videoWrap && videoWrap.getBoundingClientRect().height < 2) {
+      videoWrap.style.position = "relative";
+      videoWrap.style.width = "100%";
+      videoWrap.style.aspectRatio = "16 / 9";
+      videoWrap.style.overflow = "hidden";
+      videoWrap.style.borderRadius = "1rem";
+    }
 
     // ── Build the segmented progress bar (JS owns look & structure) ──
     // Container-only contract: whatever is inside [data-sscroll-progress]
@@ -145,12 +186,18 @@
       return idx;
     }
 
-    /** Scrub the active video's currentTime to match progress through its own dwell window. */
+    /**
+     * Scrub the active video's currentTime across its CLEAN window: from the
+     * moment its wipe-in completes (= its window start) to the moment the
+     * NEXT wipe begins — so the clip plays start-to-finish while fully
+     * visible instead of losing its tail under the outgoing transition.
+     */
     function scrubVideo(idx, t) {
       var v = videos[idx];
       if (!v || !isFinite(v.duration) || !v.duration) return;
-      var windowStart = idx * dwell;
-      var local = (t - windowStart) / dwell;           // 0..1 within this step's window
+      var start = idx * dwell;
+      var end   = idx === n - 1 ? total : (idx + 1) * dwell - crossfadeDur;
+      var local = (t - start) / (end - start);         // 0..1 within the clean window
       if (local < 0) local = 0;
       if (local > 1) local = 1;
       v.currentTime = v.duration * local;
