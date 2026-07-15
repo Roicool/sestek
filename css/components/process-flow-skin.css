@@ -3,8 +3,8 @@
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
- *   - process-flow.css  (structural hooks / --pf-* tokens)
- *   - process-flow.js   (the GSAP loop)
+ * - process-flow.css  (structural hooks / --pf-* tokens)
+ * - process-flow.js   (the GSAP loop)
  * Animated props (opacity, blur, transform, drawSVG, pill width, active colours)
  * are set by the JS — this file is layout + resting look only.
  * https://github.com/roicool/sestek
@@ -24,24 +24,23 @@
 
 /* ── Personas (absolute left; JS scrolls the clip) ────────────────────────
    .pf_personas-clip also gets overflow:hidden from process-flow.css. */
-.pf_personas { position: absolute; left: 0; top: 4px; width: 13rem; z-index: 3; }
+.pf_personas { position: absolute; left: 0; z-index: 3; }
 .pf_personas-clip { height: 5.75rem; }                 /* ~1.4 rows visible */
 .pf_persona {
   display: flex; gap: 0.5rem; align-items: flex-start;
   height: 4rem;
-  overflow: hidden;              /* long/wrapping text must NOT bleed onto the next row */
+  overflow: hidden;              /* long text must NOT bleed onto (duplicate over) the next row */
 }
 .pf_persona-icon { flex: none; width: 0.8rem; height: 0.8rem; margin-top: 1px; color: var(--pf-muted); }
 .pf_persona-icon svg { display: block; width: 100%; height: 100%; }
-.pf_persona-wrap { display: block; min-width: 0; }
+.pf_persona-wrap { display: block; }
 .pf_persona-name,
 .pf_persona-line {
-  /* font-family intentionally NOT set — inherits the site's own font */
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   letter-spacing: 0.06em;
   line-height: 1.55;
   text-transform: uppercase;
-  white-space: nowrap;           /* one line per row, like Auxia — no wrapping overlap */
+  white-space: nowrap;           /* one line per row, like Auxia — wrapping caused the overlap */
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--pf-muted);
@@ -61,14 +60,13 @@
 /* ── Columns: pill above its card stack, 3 aligned tracks ─────────────────*/
 .pf_columns {
   position: relative; z-index: 2;
-  margin-left: 15.5rem;                                /* clear the personas */
+  margin-left: 20.5rem;                                /* clear the personas */
   display: grid;
   grid-template-columns: 1.35fr 1fr 0.95fr;
   gap: 1.6rem;
   align-items: start;
   padding-top: 4.9rem;                                 /* drop the pills onto the rail's bottom line */
 }
-.pf_col { display: flex; flex-direction: column; align-items: center; }
 
 /* ── Pill (sits on the rail line) ─────────────────────────────────────────*/
 .pf_pill {
@@ -82,20 +80,19 @@
   white-space: nowrap;
   font-size: 0;                                        /* swallow the stray "✦" text node */
 }
-.pf_pill-spark { flex: none; width: 0.6rem; height: 0.6rem; font-size: 0; order: -1; } /* order:-1 = lightning ALWAYS left of the label, whatever the DOM order */
+.pf_pill-spark { flex: none; width: 1rem; height: 1rem; font-size: 0; order: -1; } /* order:-1 = lightning ALWAYS left of the label, whatever the DOM order */
 .pf_pill-spark svg { display: block; width: 100%; height: 100%; }
 /* .pf_pill-textwrap collapse handled in process-flow.css ([data-pf-pill-wrap]) */
 .pf_pill-textwrap { order: 1; }
 .pf_pill-text {
   display: inline-block;
-  /* font-family intentionally NOT set — inherits the site's own font */
   font-size: 0.625rem; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: inherit;
 }
 
 /* ── Card stack (variants overlap; JS shows one) ──────────────────────────*/
-.pf_stack { position: relative; width: 100%; display: flex; justify-content: center; }
+.pf_stack { position: relative; width: 100%; display: flex; }
 .pf_card { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
 .pf_card:first-child { position: relative; left: auto; transform: none; }
 /* checkout column stacks card-checkout directly */
@@ -104,7 +101,7 @@
 
 /* ── Notification card (dark) ─────────────────────────────────────────────*/
 .card-notif {
-  width: 20rem; display: flex; gap: 0.75rem;
+  width: 20rem; gap: 0.75rem;
   background: var(--pf-card-dark); color: #fff;
   border-radius: 0.95rem; padding: 0.95rem 1.05rem;
   box-shadow: 0 22px 40px -18px rgba(0,0,0,.45), 0 4px 10px rgba(0,0,0,.12);
