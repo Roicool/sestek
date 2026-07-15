@@ -1,19 +1,25 @@
 /*!
- * circle-diagram.js v1.0.0
+ * circle-diagram.js v1.1.0
  * Planhat-style circular diagram: N items (dot + label) sit evenly on a ring,
  * one item is active at a time, and a detail card (small tag + body text)
  * mirrors the active item. Desktop: hover activates. Mobile / touch: tap
- * activates (hover listeners are only wired when the device really hovers).
- * Optional autoplay steps through the items until the user interacts.
+ * activates. Optional autoplay steps through the items until the user
+ * interacts.
+ *
+ * v1.1.0 — the ring is now an injected SVG (faint base circle + a bright arc
+ *          segment that TRAVELS clockwise to the active item, like the
+ *          reference); hover switching rewired to pointerenter (pointerType
+ *          "mouse") so it works regardless of matchMedia hover quirks.
+ *          The old [data-cd-ring] div is no longer needed — remove it.
  *
  * Requires : nothing hard — works standalone. If gsap (global) is present the
- *            card swap gets a blur-dissolve; otherwise it swaps instantly.
- *            prefers-reduced-motion always forces the instant swap.
+ *            card swap gets a blur-dissolve and the arc travel is tweened;
+ *            otherwise both swap instantly. prefers-reduced-motion always
+ *            forces the instant swap.
  *
  * DOM contract (Webflow — only the attributes matter, design is yours):
  *   [data-circle-diagram]                    root
  *     [data-cd-stage]                        square area holding the ring
- *       [data-cd-ring]                       the circle itself (styled in CSS)
  *       [data-cd-item]                       one node (ideally a <button>).
  *                                            data-cd-title="Input"   card tag
  *                                            data-cd-text="..."      card body
@@ -26,25 +32,33 @@
  *       [data-cd-card-title]                 gets the active item's title
  *       [data-cd-card-text]                  gets the active item's text
  *
- * JS positions each item on the ring (evenly, starting at the top, or per
- * data-cd-angle) and stamps data-cd-side="top|right|bottom|left" on it so CSS
- * can put the label above / right / below / left of the dot like the design.
- * Active item gets the class `is-active` (+ aria-current).
+ * JS injects the ring SVG into the stage, positions each item on it (evenly,
+ * starting at the top, or per data-cd-angle) and stamps
+ * data-cd-side="top|right|bottom|left" on it so CSS can put the label on the
+ * outside of the ring. Active item gets the class `is-active` (+ aria-current).
  *
  * Root attributes (all optional):
  *   data-cd-start      index of the initially active item        (default 0)
+ *   data-cd-arc        arc segment length in % of the circle     (default 10)
  *   data-cd-autoplay   seconds per step; steps through the items while the
  *                      section is in view and STOPS for good on first user
  *                      interaction. Omit = no autoplay.
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
- *   --cd-ink (#fff) · --cd-muted (rgba(255,255,255,.55)) · --cd-line (rgba(255,255,255,.25))
+ *   --cd-ink (#fff) · --cd-muted (rgba(255,255,255,.55)) · --cd-line (rgba(255,255,255,.18))
  *
  * https://github.com/roicool/sestek
  */
 
 (function (global) {
   "use strict";
+
+  var SVG_NS = "http://www.w3.org/2000/svg";
+
+  function cssVar(root, name, fallback) {
+    var v = getComputedStyle(root).getPropertyValue(name);
+    return (v && v.trim()) || fallback;
+  }
 
   function build(root) {
     if (root._circleDiagramInit) return;                    // idempotent
@@ -62,13 +76,57 @@
     }
 
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     var hasGsap = typeof gsap !== "undefined";
+    var INK = cssVar(root, "--cd-ink", "#fff");
+    var LINE = cssVar(root, "--cd-line", "rgba(255,255,255,.18)");
+    var ARC = Math.min(Math.max(parseFloat(root.getAttribute("data-cd-arc")) || 10, 2), 40);
+
+    // ── Injected ring: faint base circle + bright travelling arc ─────────────
+    // pathLength=100 normalizes the circumference so dash math is in %.
+    // The arc segment ends at 0° (3 o'clock) at rotation 0; rotating the
+    // element by the active item's angle parks the arc's tip on its dot.
+    var svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.setAttribute("class", "cd_svg");
+    svg.setAttribute("aria-hidden", "true");
+
+    function ring(stroke, width) {
+      var c = document.createElementNS(SVG_NS, "circle");
+      c.setAttribute("cx", "50"); c.setAttribute("cy", "50"); c.setAttribute("r", "49.5");
+      c.setAttribute("fill", "none");
+      c.setAttribute("stroke", stroke);
+      c.setAttribute("stroke-width", width);
+      c.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(c);
+      return c;
+    }
+    ring(LINE, "1");
+    var arc = ring(INK, "1");
+    arc.setAttribute("pathLength", "100");
+    arc.setAttribute("stroke-linecap", "round");
+    arc.setAttribute("stroke-dasharray", ARC + " " + (100 - ARC));
+    arc.setAttribute("stroke-dashoffset", String(ARC));     // segment ends at 0°
+    arc.setAttribute("opacity", "0.9");
+    stage.insertBefore(svg, stage.firstChild);
+
+    var arcRot = 0;                                         // current rotation (deg)
+    function moveArc(deg, animate) {
+      var delta = (((deg - arcRot) % 360) + 360) % 360;     // always clockwise
+      if (delta === 0 && animate) delta = 360;              // full lap on repeat
+      var target = arcRot + delta;
+      if (animate && !reduced && hasGsap) {
+        gsap.to(arc, { rotation: target, svgOrigin: "50 50", duration: 1.1, ease: "power3.inOut" });
+      } else {
+        if (hasGsap) gsap.set(arc, { rotation: target, svgOrigin: "50 50" });
+        else arc.setAttribute("transform", "rotate(" + target + " 50 50)");
+      }
+      arcRot = target;
+    }
 
     // ── Place every item on the ring ─────────────────────────────────────────
     // Even distribution starting at the top (-90°), or data-cd-angle override.
     // data-cd-side lets CSS flip the label to the outside of the ring.
-    items.forEach(function (item, i) {
+    var angles = items.map(function (item, i) {
       var deg = parseFloat(item.getAttribute("data-cd-angle"));
       if (isNaN(deg)) deg = -90 + (360 / items.length) * i;
       var rad = deg * Math.PI / 180;
@@ -83,6 +141,7 @@
       item.setAttribute("data-cd-side", side);
 
       if (item.tagName !== "BUTTON" && item.tagName !== "A") item.setAttribute("tabindex", "0");
+      return deg;
     });
 
     // ── Active state + card swap ─────────────────────────────────────────────
@@ -105,6 +164,8 @@
         else item.removeAttribute("aria-current");
       });
 
+      moveArc(angles[i], animate);
+
       if (!card) return;
       if (animate && !reduced && hasGsap) {
         gsap.killTweensOf(card);
@@ -120,7 +181,10 @@
       }
     }
 
-    // ── Interaction: hover on real-hover devices, tap/click everywhere ──────
+    // ── Interaction: mouse hover switches, tap/click everywhere ─────────────
+    // pointerenter + pointerType check instead of a matchMedia(hover) gate:
+    // touch taps never fire a "mouse" pointerenter, so iOS's sticky-hover
+    // problem can't happen, and hybrid (touchscreen laptop) mice still hover.
     var interacted = false;
     function userPick(i) {
       interacted = true;                                    // kills autoplay for good
@@ -129,7 +193,9 @@
 
     items.forEach(function (item, i) {
       item.addEventListener("click", function () { userPick(i); });
-      if (canHover) item.addEventListener("mouseenter", function () { userPick(i); });
+      item.addEventListener("pointerenter", function (e) {
+        if (e.pointerType === "mouse") userPick(i);
+      });
       item.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); userPick(i); }
       });
