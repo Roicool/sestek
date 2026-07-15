@@ -1,5 +1,5 @@
 /*!
- * step-scroll.js v2.1.0
+ * step-scroll.js v2.2.0
  * Pinned, scroll-driven 3(+)-step section:
  *   1. Section pins for the whole scroll distance
  *   2. Scroll splits into N equal dwell windows, one per step
@@ -26,6 +26,12 @@
  *         while fully visible. Pin distance defaults to steps × 150% of the
  *         viewport (data-sscroll-step-vh) — tuned for ~5s clips — unless
  *         data-sscroll-end explicitly overrides it.
+ * v2.2.0: [data-sscroll-video] may now be a WRAPPER (e.g. Webflow HTML
+ *         Embed) with the real <video> nested inside — scrubbing targets
+ *         the inner element. Video layers are forced to absolute+inset:0
+ *         so they stack instead of flowing, the video wrap is forced
+ *         visible (kills leftover `opacity-0`), and autoplay is stripped
+ *         from inner videos (scroll owns playback).
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -108,32 +114,59 @@
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // ── Video hardening ───────────────────────────────────────────
-    // Force the attributes scroll-scrubbing depends on (Webflow/DOM embeds
-    // can lose them), kick metadata loading, and complain loudly when a
-    // video has no source at all — the #1 reason "videos don't show".
-    videos.forEach(function (v, i) {
-      v.muted = true;
-      v.playsInline = true;
-      v.setAttribute("muted", "");
-      v.setAttribute("playsinline", "");
-      v.setAttribute("preload", "auto");
-      var hasSrc = v.currentSrc || v.getAttribute("src") || v.querySelector("source");
+    // [data-sscroll-video] can be the <video> itself OR a wrapper (Webflow
+    // HTML Embed div) with the real <video> nested inside. Tweens (clip/
+    // scale/fade) run on the LAYER element; scrubbing runs on the inner
+    // media element. Layers are forced to absolute+inset:0 so they stack
+    // on top of each other instead of flowing/overflowing the wrap.
+    var media = videos.map(function (v, i) {
+      var m = v.tagName === "VIDEO" ? v : v.querySelector("video");
+      if (!m) {
+        console.warn("[Sestek StepScroll] [data-sscroll-video=\"" + i + "\"] contains no <video> element.");
+        return null;
+      }
+      m.muted = true;
+      m.playsInline = true;
+      m.autoplay = false;                       // scroll owns playback, not autoplay
+      m.removeAttribute("autoplay");
+      m.setAttribute("muted", "");
+      m.setAttribute("playsinline", "");
+      m.preload = "auto";
+      m.setAttribute("preload", "auto");
+      try { m.pause(); } catch (e) {}
+      var hasSrc = m.currentSrc || m.getAttribute("src") || m.querySelector("source");
       if (!hasSrc) {
         console.warn("[Sestek StepScroll] [data-sscroll-video=\"" + i + "\"] has no src — set the video URL in Webflow.");
-      } else if (v.readyState < 1) {
-        try { v.load(); } catch (e) {}
+      } else if (m.readyState < 1) {
+        try { m.load(); } catch (e) {}
       }
+      return m;
     });
 
-    // If the video wrap's height collapsed (missing CSS), give it a sane
-    // inline fallback so the absolutely-positioned videos have a box to fill.
+    // Layers must stack inside the wrap regardless of their Webflow classes.
+    videos.forEach(function (v) {
+      v.style.position = "absolute";
+      v.style.top = "0";
+      v.style.left = "0";
+      v.style.width = "100%";
+      v.style.height = "100%";
+    });
+
+    // The wrap must be visible (kills a leftover `opacity-0` utility class)
+    // and, if its height collapsed entirely (missing CSS), get a sane box.
     var videoWrap = root.querySelector("[data-sscroll-video-wrap]");
-    if (videoWrap && videoWrap.getBoundingClientRect().height < 2) {
-      videoWrap.style.position = "relative";
-      videoWrap.style.width = "100%";
-      videoWrap.style.aspectRatio = "16 / 9";
-      videoWrap.style.overflow = "hidden";
-      videoWrap.style.borderRadius = "1rem";
+    if (videoWrap) {
+      videoWrap.style.opacity = "1";
+      videoWrap.style.visibility = "visible";
+      if (getComputedStyle(videoWrap).position === "static") {
+        videoWrap.style.position = "relative";
+      }
+      if (videoWrap.getBoundingClientRect().height < 2) {
+        videoWrap.style.width = "100%";
+        videoWrap.style.aspectRatio = "16 / 9";
+        videoWrap.style.overflow = "hidden";
+        videoWrap.style.borderRadius = "1rem";
+      }
     }
 
     // ── Build the segmented progress bar (JS owns look & structure) ──
@@ -193,7 +226,7 @@
      * visible instead of losing its tail under the outgoing transition.
      */
     function scrubVideo(idx, t) {
-      var v = videos[idx];
+      var v = media[idx];
       if (!v || !isFinite(v.duration) || !v.duration) return;
       var start = idx * dwell;
       var end   = idx === n - 1 ? total : (idx + 1) * dwell - crossfadeDur;
@@ -229,7 +262,7 @@
           scale: i === 0 ? 1 : 1.12,
           transformOrigin: "50% 50%",
         });
-        if (el.pause) el.pause();
+        if (media[i] && media[i].pause) { try { media[i].pause(); } catch (e) {} }
       });
       steps.forEach(function (el, i) {
         // autoAlpha:1 on the container overrides any leftover `opacity:0`
