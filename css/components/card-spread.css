@@ -113,11 +113,18 @@
 }
 .csp_desc strong { color: var(--csp-ink); }
 
-/* ── Mobile: single column; the FLIP spread adapts automatically ── */
-@media (max-width: 767px) {
-  .csp_grid { grid-template-columns: 1fr; gap: 1rem; }
+/* ── Tablet & below (≤991px, matches the JS data-csp-mobile-max default):
+   single column → the deck opens vertically (FLIP adapts by itself);
+   descriptions leave the sequence entirely, so hide them outright. ── */
+@media (max-width: 991px) {
+  .csp_grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 1rem;
+  }
   .csp_hero { width: min(20rem, 86vw); }
-  .csp_card { min-height: 12rem; }
+  .csp_desc,
+  .csp_desc-title { display: none; }
 }
 
 /* Reduced motion: JS renders the final frame; nothing to hide here,
