@@ -1,0 +1,127 @@
+/*!
+ * card-spread.css v1.0.0
+ * Skin for js/components/card-spread.js — Ramp-style pinned card spread.
+ * Only the layout + scan-line pieces the JS depends on are load-bearing;
+ * everything visual maps to the Sestek token palette (same family as
+ * process-flow: ink #232323 · muted #c3c2b2 · accent #0b4fff · paper #f0efe3).
+ * Override the --csp-* tokens on [data-card-spread] to restyle.
+ */
+
+[data-card-spread] {
+  --csp-accent: var(--interactive--color-primary-base, #0b4fff);
+  --csp-ink: #232323;
+  --csp-muted: #7d7c70;
+  --csp-card-bg: #f0efe3;
+  --csp-card-bd: #e2e1d3;
+  --csp-radius: 1rem;
+
+  /* pinned frame: one viewport tall, content centred */
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: clip;                /* stacked cards must not spill while pinned */
+  padding: 4rem 1.5rem;
+}
+
+.csp_stage {
+  position: relative;
+  width: 100%;
+  max-width: 64rem;
+}
+
+/* ── Hero (physical card) — floats above the stack origin ──────── */
+.csp_hero {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -58%);
+  width: min(27rem, 80vw);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.csp_hero-visual {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Scan line — JS parks it at the hero's bottom and drives it to top:0 */
+.csp_line {
+  position: absolute;
+  top: 0;
+  left: -6%;
+  right: -6%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--csp-accent) 20%,
+    var(--csp-accent) 80%,
+    transparent);
+  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--csp-accent) 55%, transparent);
+}
+
+/* ── Final card layout — JS measures THIS, then stacks & spreads ── */
+.csp_grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.csp_card {
+  background: var(--csp-card-bg);
+  border: 1px solid var(--csp-card-bd);
+  border-radius: var(--csp-radius);
+  padding: 1.75rem 1.5rem;
+  min-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  will-change: transform;
+}
+
+.csp_card-title {
+  color: var(--csp-ink);
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
+/* Counter — tabular digits so the count-up never wobbles the layout */
+.csp_count {
+  color: var(--csp-ink);
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+
+.csp_count-cap {                 /* the "/$3000" style cap next to the number */
+  color: var(--csp-muted);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Description under each card (JS hides/reveals it) ────────── */
+.csp_desc {
+  margin-top: 1.25rem;
+  color: var(--csp-muted);
+  font-size: .9375rem;
+  line-height: 1.6;
+}
+.csp_desc strong { color: var(--csp-ink); }
+
+/* ── Mobile: single column; the FLIP spread adapts automatically ── */
+@media (max-width: 767px) {
+  .csp_grid { grid-template-columns: 1fr; gap: 1rem; }
+  .csp_hero { width: min(20rem, 86vw); }
+  .csp_card { min-height: 12rem; }
+}
+
+/* Reduced motion: JS renders the final frame; nothing to hide here,
+   but kill any leftover will-change hint. */
+@media (prefers-reduced-motion: reduce) {
+  .csp_card { will-change: auto; }
+}
