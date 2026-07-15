@@ -1,5 +1,5 @@
 /*!
- * card-spread.js v1.7.0
+ * card-spread.js v1.8.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -142,6 +142,7 @@
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
     var LIFT = attrNum(root, "data-csp-lift", 48);          // px the grid drifts up as the header exits
+    var MOBILE_MAX = attrNum(root, "data-csp-mobile-max", 767); // ≤ this width: no desc reveal
 
     var tl = null;
 
@@ -192,8 +193,15 @@
           transformOrigin: "50% 50%"
         });
       });
-      gsap.set(descs, { autoAlpha: 0, y: 28 });
-      gsap.set(descTitles, { autoAlpha: 0, y: 24 });
+      // Mobile (single-column layout): the deck opens vertically by itself —
+      // the FLIP deltas come from the layout. Descriptions are excluded from
+      // the sequence entirely (hide them with CSS; JS won't touch them).
+      var mobile = window.matchMedia("(max-width: " + MOBILE_MAX + "px)").matches;
+      gsap.set(descs.concat(descTitles), { clearProps: "transform,opacity,visibility" });
+      if (!mobile) {
+        gsap.set(descs, { autoAlpha: 0, y: 28 });
+        gsap.set(descTitles, { autoAlpha: 0, y: 24 });
+      }
       if (header) gsap.set(header, { clearProps: "transform,opacity,visibility" });
       var heroH = heroVisual ? heroVisual.getBoundingClientRect().height : 0;
       if (line) gsap.set(line, { y: heroH });
@@ -251,10 +259,10 @@
       // Phase 3 — desc titles rise first, descriptions right behind them;
       // side-card counters + bars run alongside (front card is pre-loaded).
       tl.addLabel("reveal", spreadAt + 1.0);
-      if (descTitles.length) {
+      if (!mobile && descTitles.length) {
         tl.to(descTitles, { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out", stagger: 0.12 }, "reveal");
       }
-      if (descs.length) {
+      if (!mobile && descs.length) {
         tl.to(descs, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.12 }, "reveal+=0.18");
       }
       bars.forEach(function (b) {
