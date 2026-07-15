@@ -1,11 +1,16 @@
 /*!
- * circle-diagram.js v1.2.0
+ * circle-diagram.js v1.3.0
  * Planhat-style circular diagram: N items (dot + label) sit evenly on a ring,
  * one item is active at a time, and a detail card (small tag + body text)
  * mirrors the active item. Desktop: hover activates. Mobile / touch: tap
  * activates. Optional autoplay steps through the items until the user
  * interacts.
  *
+ * v1.3.0 — idle spin: the connector rotates continuously (slow, linear) while
+ *          the section is in view; on hover/tap/autoplay it sweeps to the
+ *          active item, then resumes spinning from there. data-cd-spin sets
+ *          seconds per revolution (default 14, "0" disables). Needs gsap;
+ *          without it the connector only moves on activation (CSS transition).
  * v1.2.0 — ring rebuilt the way the Framer reference actually does it: ONE
  *          injected div ([data-cd-connector]) whose background is a
  *          conic-gradient (faint line most of the way, blending to ink over
@@ -45,6 +50,8 @@
  *
  * Root attributes (all optional):
  *   data-cd-start      index of the initially active item        (default 0)
+ *   data-cd-spin       seconds per idle revolution of the connector
+ *                      (default 14; "0" disables the idle spin)
  *   data-cd-autoplay   seconds per step; steps through the items while the
  *                      section is in view and STOPS for good on first user
  *                      interaction. Omit = no autoplay.
@@ -88,22 +95,54 @@
     connector.setAttribute("aria-hidden", "true");
     stage.insertBefore(connector, stage.firstChild);
 
-    var arcRot = 0;                                         // current rotation (deg)
+    // Idle spin: slow endless clockwise rotation while nothing is happening.
+    // Activation kills it, sweeps to the item, then hands back to the spin.
+    var spinAttr = root.getAttribute("data-cd-spin");
+    var SPIN = spinAttr === null ? 14 : parseFloat(spinAttr) || 0;
+    var spinning = false;                                   // wants-to-spin flag (viewport)
+    var spinTween = null;
+
+    function startSpin() {
+      if (!spinning || spinTween || reduced || !hasGsap || SPIN <= 0) return;
+      if (gsap.isTweening(connector)) return;               // a sweep is running; it restarts us
+      spinTween = gsap.to(connector, { rotation: "+=360", duration: SPIN, ease: "none", repeat: -1 });
+    }
+    function stopSpin() {
+      if (spinTween) { spinTween.kill(); spinTween = null; }
+    }
+
+    var arcRot = 0;                                         // rotation fallback tracker (deg)
     function moveArc(deg, animate) {
+      var cur = hasGsap ? (parseFloat(gsap.getProperty(connector, "rotation")) || 0) : arcRot;
       var tip = deg + 90;                                   // gradient tip sits at -90° (top)
-      var delta = (((tip - arcRot) % 360) + 360) % 360;     // always clockwise
+      var delta = (((tip - cur) % 360) + 360) % 360;        // always clockwise
       if (delta === 0 && animate) delta = 360;              // full lap on repeat
-      var target = arcRot + delta;
+      var target = cur + delta;
+      stopSpin();
       if (animate && !reduced && hasGsap) {
-        gsap.to(connector, { rotation: target, duration: 1.2, ease: "power3.inOut" });
+        gsap.killTweensOf(connector);
+        gsap.to(connector, { rotation: target, duration: 1.2, ease: "power3.inOut", onComplete: startSpin });
       } else if (hasGsap) {
         gsap.set(connector, { rotation: target });
+        startSpin();
       } else {
         // no gsap: the CSS transition on .cd_connector animates this
         connector.style.transform = "rotate(" + target + "deg)";
       }
       arcRot = target;
     }
+
+    // Spin only while the section is actually on screen.
+    if (typeof IntersectionObserver !== "undefined") {
+      var spinIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          spinning = e.isIntersecting;
+          if (spinning) { if (spinTween) spinTween.play(); else startSpin(); }
+          else if (spinTween) spinTween.pause();
+        });
+      }, { threshold: 0.15 });
+      spinIo.observe(root);
+    } else { spinning = true; }
 
     // ── Place every item on the ring ─────────────────────────────────────────
     // Even distribution starting at the top (-90°), or data-cd-angle override.
