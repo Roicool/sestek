@@ -27,8 +27,9 @@
  *   [data-card-spread]                  root — THIS is pinned; give it the
  *                                       section height (e.g. min-height:100svh)
  *     [data-csp-stage]                  layout wrapper (defaults to root)
- *       [data-csp-header]               optional heading wrapper — drifts up
- *                                       and fades out as the sequence starts
+ *       [data-csp-header]               optional heading wrapper — translates
+ *                                       up at native scroll speed (no fade),
+ *                                       as if it simply weren't pinned
  *       [data-csp-hero]                 optional wrapper for the physical card
  *                                       (position:relative in CSS)
  *         [data-csp-hero-visual]        the visual that gets wiped (falls back
@@ -147,11 +148,15 @@
       if (heroVisual) gsap.set(heroVisual, { clearProps: "clipPath" });
       if (line) gsap.set(line, { clearProps: "transform,opacity,visibility" });
 
-      var originEl = heroVisual || stage;
-      var oR = originEl.getBoundingClientRect();
+      // Stack origin = the CENTRE CARD's own position (not the hero) — the
+      // side cards hide behind it and split left/right from there, no matter
+      // where the hero sits in the layout. With a single-row grid the split
+      // is purely horizontal.
+      var mid = (cards.length - 1) / 2;
+      var midIdx = Math.floor(mid);
+      var oR = cards[midIdx].getBoundingClientRect();
       var ox = oR.left + oR.width / 2;
       var oy = oR.top + oR.height / 2;
-      var mid = (cards.length - 1) / 2;
 
       // Perfect deck: every card dead-centre on the origin, no offset, no
       // tilt — the back cards are completely HIDDEN behind the centre card
@@ -185,12 +190,6 @@
           anticipatePin: 1
         }
       });
-
-      // Phase 0 — the heading drifts up and out as the sequence starts
-      // (Ramp's t0 → t1: title exits before/while the card is scanned).
-      if (header) {
-        tl.to(header, { autoAlpha: 0, y: -48, duration: 0.5, ease: "power2.in" }, 0);
-      }
 
       // Phase 1 — the physical card is scanned away (only if a hero exists).
       var spreadAt = 0;
@@ -235,6 +234,24 @@
       });
 
       tl.to({}, { duration: 0.35 });                        // settle before unpin
+
+      // Header exit — NO fade: it translates up at exactly native scroll
+      // speed, as if the header simply weren't pinned. Speed match: the
+      // timeline's `total` units map to `pinDist` px of scroll, so a linear
+      // tween of (total * exitDist / pinDist) units moving exitDist px is 1:1.
+      if (header) {
+        var rRect = root.getBoundingClientRect();
+        var hRect = header.getBoundingClientRect();
+        var exitDist = Math.max(hRect.bottom - rRect.top, 1);
+        var m = /\+=\s*([\d.]+)\s*(%|px)?/.exec(END);
+        var pinDist = m ? parseFloat(m[1]) * (m[2] === "%" ? window.innerHeight / 100 : 1)
+                        : window.innerHeight * 1.8;
+        var total = tl.duration();
+        tl.to(header, {
+          y: -exitDist, ease: "none",
+          duration: Math.min(total * exitDist / pinDist, total)
+        }, 0);
+      }
     }
 
     build();
