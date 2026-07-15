@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.5.0
+ * process-flow-skin.css v1.5.1
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -191,8 +191,7 @@ section[data-process-flow] { overflow: hidden; }
   .pf__inner { min-height: 0; }
   .pf_rail { display: none; }                          /* desktop rail off */
 
-  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 1.25rem; }
-  .pf_personas-clip { height: auto; }                  /* all personas visible */
+  .pf_personas { display: none; }                      /* no personas on mobile (Auxia) */
 
   .pf_columns {
     position: relative;
