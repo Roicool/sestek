@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.5.1
+ * process-flow-skin.css v1.6.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -179,49 +179,49 @@ section[data-process-flow] { overflow: hidden; }
   font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Progress line (mobile/tablet only) — injected by process-flow.js and
-   filled step by step (scaleX). Hidden on desktop. ─────────────────────────*/
+/* ── Progress line (mobile/tablet only) — injected by process-flow.js above
+   the slider and filled step by step (scaleX). Hidden on desktop. ──────────*/
 [data-pf-hline] { display: none; }
 
-/* ── Mobile & tablet (≤991px, same breakpoint as the JS): horizontal step
-   machine — pill nodes in one row on a track line, cards slide in from the
-   right pushing the previous one out left. DOM untouched: .pf_col uses
-   display:contents so pills form the row and stacks overlap below. ────────*/
+/* ── Mobile & tablet (≤991px, same breakpoint as the JS): FULL-BLEED SLIDER.
+   The three columns sit side by side as full-width slides in a plain flex
+   row (no absolute stacking — the Webflow Designer canvas stays sane) and
+   the JS pushes the track left step by step. gap MUST stay 0, otherwise the
+   -100% steps drift. ───────────────────────────────────────────────────────*/
 @media (max-width: 61.9375rem) {
-  .pf__inner { min-height: 0; }
+  .pf__inner { position: relative; min-height: 0; }
   .pf_rail { display: none; }                          /* desktop rail off */
-
   .pf_personas { display: none; }                      /* no personas on mobile (Auxia) */
 
-  .pf_columns {
-    position: relative;
-    margin-left: 0;
-    display: flex; align-items: flex-start; gap: 0.5rem; /* the pill node row, pinned to the track at top */
-    padding-top: 0.4rem;
-    min-height: 23.5rem;                               /* room for the absolute card area */
-  }
-  .pf_col { display: contents; }                       /* pills + stacks become row items */
-
-  /* idle track behind the pill nodes */
-  .pf_columns::before {
-    content: ""; position: absolute; top: 1.15rem; left: 0; right: 0;
+  /* faint idle track + the filled progress line at the very top */
+  .pf__inner::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0;
     height: 2px; background: var(--pf-tag-idle-bd);
   }
-  /* the filled (drawn) part — JS animates scaleX to the active node */
   [data-pf-hline] {
-    display: block; position: absolute; top: 1.15rem; left: 0; right: 0;
+    display: block; position: absolute; top: 0; left: 0; right: 0;
     height: 2px; background: var(--pf-accent);
     transform: scaleX(0); transform-origin: left center;
     z-index: 1;
   }
 
-  .pf_pill { position: relative; z-index: 2; margin-bottom: 0; }
-
-  /* card area: all three stacks overlap; JS slides them (xPercent 110 -> 0 -> -110) */
+  /* the slider track: slides side by side, JS animates xPercent */
+  .pf_columns {
+    margin-left: 0;
+    display: flex; flex-wrap: nowrap; gap: 0;          /* gap 0 is REQUIRED */
+    align-items: flex-start;
+    padding-top: 1.6rem;                               /* air under the progress line */
+    min-height: 0;
+  }
+  .pf_col {
+    flex: 0 0 100%; max-width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .pf_pill { margin-bottom: 1.1rem; }
   .pf_stack {
-    position: absolute; left: 0; right: 0; top: 3.4rem;
+    position: relative; top: auto; left: auto; right: auto;
+    width: 100%; max-width: 100%;
     display: flex; justify-content: center;
-    width: auto; max-width: none;
   }
   .card-notif, .card-media, .card-checkout { max-width: 100%; }
   .card-notif { width: 100%; }
