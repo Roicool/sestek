@@ -123,8 +123,17 @@
     gap: 1rem;
   }
   .csp_hero { width: min(20rem, 86vw); }
+  /* Cards grow to the viewport instead of keeping their desktop width —
+     the aspect ratio still sets the height. */
+  .csp_card { width: min(26rem, 88vw); }
   .csp_desc,
   .csp_desc-title { display: none; }
+}
+
+/* Phones: three stacked cards must fit one viewport with the header —
+   cap the width a bit tighter so the column stays comfortably inside. */
+@media (max-width: 479px) {
+  .csp_card { width: min(22rem, 90vw); }
 }
 
 /* Reduced motion: JS renders the final frame; nothing to hide here,
