@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.4.1
+ * process-flow.js v2.5.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,11 +30,11 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
- * Mobile & tablet (≤991px): a HORIZONTAL step machine, like Auxia's real
- * mobile — the pills sit in one row as nodes (inactive = collapsed spark
- * circle at low opacity, active = expanded), an injected [data-pf-hline]
- * progress line fills step by step, and each step's card slides in from the
- * right pushing the previous card out to the left. Loops; viewport-gated.
+ * Mobile & tablet (≤991px): a FULL-BLEED SLIDER — the columns sit side by
+ * side as full-width slides and the track pushes left step by step; each
+ * slide's pill opens as it arrives, and an injected [data-pf-hline] progress
+ * line above the track fills 1/N per step. No personas on mobile. Loops;
+ * viewport-gated.
  *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
@@ -111,74 +111,61 @@
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
     }
 
-    /** Mobile/tablet: a HORIZONTAL step machine (Auxia's real mobile).
-     *  The pills sit in one row as nodes — inactive ones are collapsed spark
-     *  circles at low opacity, the active one expands. A progress line fills
-     *  step by step up to the active pill, and each step's card slides in
-     *  from the right, pushing the previous card out to the left. Loops. */
+    /** Mobile/tablet: a FULL-BLEED slider. The three columns sit side by side
+     *  as full-width slides (plain flex row — no absolute stacking, so the
+     *  Webflow Designer canvas stays sane) and the track pushes left step by
+     *  step. Each slide's pill opens as it arrives; an injected progress line
+     *  above the track fills 1/N per step. Loops; viewport-gated. */
     function buildMobile() {
-      var columnsEl = pills[0] && pills[0].parentNode ? pills[0].parentNode.parentNode : root;
+      var track = pills[0] && pills[0].parentNode ? pills[0].parentNode.parentNode : null; // .pf_columns
+      if (!track || !track.parentNode) { renderStaticPhase0(); return; }
+      var inner = track.parentNode;                                // .pf__inner
+      if (getComputedStyle(inner).position === "static") inner.style.position = "relative";
 
-      // Injected progress line (the "drawn" blue line under the pill row).
+      // Injected progress line (fills step by step above the slider).
       var hline = document.createElement("span");
       hline.className = "pf_hline";
       hline.setAttribute("data-pf-hline", "");
-      columnsEl.appendChild(hline);
+      inner.insertBefore(hline, track);
 
       // Each pill shows ITS own phase-0 label (not a shared default).
+      var wraps = [];
       pills.forEach(function (pill) {
         var t = pill.querySelector("[data-pf-pill-text]");
         if (t && t.getAttribute("data-t0")) t.textContent = t.getAttribute("data-t0");
+        var w = pill.querySelector("[data-pf-pill-wrap]");
+        if (w) wraps.push(w);
       });
 
       var STEPS = Math.min(pills.length, cols.length);
       var STEP_HOLD = HOLD * 0.8;
 
-      // Initial: collapsed faded pills, all card stacks parked off-screen right,
-      // each stack's phase-0 card visible (the stack position does the hiding).
       gsap.set(hline, { scaleX: 0, transformOrigin: "left center" });
-      gsap.set(pills, { opacity: 0.45 });
-      gsap.set(cols, { xPercent: 110 });
+      gsap.set(pills, { opacity: 0.55 });
       cols.forEach(function (col, ci) { if (cards[ci][0]) gsap.set(cards[ci][0], { autoAlpha: 1 }); });
-
-      /** Side-tween the progress line up to pill i's centre (measured live,
-       *  because expanding pills shift the row). */
-      function drawTo(i) {
-        return function () {
-          var cw = columnsEl.offsetWidth || 1;
-          var target = Math.min((pills[i].offsetLeft + pills[i].offsetWidth * 0.6) / cw, 1);
-          gsap.to(hline, { scaleX: target, duration: 0.6, ease: "power1.inOut" });
-        };
-      }
 
       var mtl = gsap.timeline({ repeat: -1, paused: true, defaults: { ease: "power3.out" } });
 
       for (var i = 0; i < STEPS; i++) {
         (function (si) {
           var t0 = mtl.duration();
-          mtl.call(drawTo(si), null, t0);                          // line fills to this node
+          if (si > 0) mtl.to(track, { xPercent: -100 * si, duration: 0.85 }, t0);   // push to the next slide
+          mtl.to(hline, { scaleX: (si + 1) / STEPS, duration: 0.6, ease: "power1.inOut" }, t0);
           var wrap = pills[si].querySelector("[data-pf-pill-wrap]");
-          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.3);
-          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.3);
-          if (si > 0) {                                            // completed node collapses but STAYS blue (Auxia)
-            var prevWrap = pills[si - 1].querySelector("[data-pf-pill-wrap]");
-            if (prevWrap) mtl.to(prevWrap, { width: 0, duration: 0.55 }, t0 + 0.3);
-          }
-          // the card slides in from the right and pushes the previous one out left
-          mtl.to(cols[si], { xPercent: 0, duration: 0.85 }, t0 + 0.45);
-          if (si > 0) mtl.to(cols[si - 1], { xPercent: -110, duration: 0.85 }, "<");
+          if (wrap) mtl.to(wrap, { width: "auto", duration: 0.55 }, t0 + 0.35);
+          mtl.to(pills[si], { opacity: 1, color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 0.5 }, t0 + 0.35);
           mtl.to({}, { duration: STEP_HOLD });
         })(i);
       }
 
-      // Wrap-around: last card keeps pushing left, everything resets for the loop.
+      // Loop reset: quick fade, rewind the track, fade back for step 0.
       var tEnd = mtl.duration();
-      mtl.to(cols[STEPS - 1], { xPercent: -110, duration: 0.7, ease: "power2.in" }, tEnd);
-      var lastWrap = pills[STEPS - 1].querySelector("[data-pf-pill-wrap]");
-      if (lastWrap) mtl.to(lastWrap, { width: 0, duration: 0.5 }, tEnd);
-      mtl.to(pills, { opacity: 0.45, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 0.5 }, tEnd);
-      mtl.to(hline, { scaleX: 0, duration: 0.5, ease: "power1.in" }, tEnd);
-      mtl.set(cols, { xPercent: 110 });
+      mtl.to(track, { autoAlpha: 0, duration: 0.45 }, tEnd);
+      mtl.to(hline, { scaleX: 0, duration: 0.45 }, tEnd);
+      mtl.set(track, { xPercent: 0 });
+      if (wraps.length) mtl.set(wraps, { width: 0 });
+      mtl.set(pills, { opacity: 0.55, color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
+      mtl.to(track, { autoAlpha: 1, duration: 0.45 });
 
       if (typeof IntersectionObserver !== "undefined") {
         var mio = new IntersectionObserver(function (entries) {
