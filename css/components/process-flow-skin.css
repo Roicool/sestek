@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.3.1
+ * process-flow-skin.css v1.3.2
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -179,11 +179,19 @@ section[data-process-flow] { overflow: hidden; }
   font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
 
-/* ── Mobile (stack columns, hide the rail) ────────────────────────────────*/
+/* ── Mobile (vertical rhythm: personas left, pill+card centred, no rail) ──*/
 @media (max-width: 56.25rem) {
-  .pf_columns { margin-left: 0; grid-template-columns: 1fr; gap: 1.1rem; justify-items: center; padding-top: 0; }
-  .pf_personas { position: relative; width: auto; margin-bottom: 1.5rem; }
+  .pf__inner { min-height: 0; }
   .pf_rail { display: none; }
-  .pf_card,
-  .pf_stack > .card-checkout { position: relative; left: auto; transform: none; }
+  .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 2rem; }
+  .pf_personas-clip { height: auto; }                  /* static phase 0: show all personas */
+  .pf_columns {
+    margin-left: 0; padding-top: 0;                    /* no rail to align to */
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    justify-items: center;
+  }
+  .pf_col { align-items: center; }                     /* pill centred over its card */
+  .pf_pill { margin-bottom: 1.25rem; }                 /* tighter pill->card on mobile */
+  .pf_stack { width: auto; }                           /* stack hugs the card, variants stay aligned */
 }
