@@ -1,0 +1,90 @@
+/*!
+ * steps-scroll.css v1.0.0
+ * Choreography for js/components/steps-scroll.js — the sticky-image step
+ * list. Only the load-bearing pieces live here (stacking, the enter/exit
+ * keyframes, dimming); sizes, colours and layout are yours in Webflow.
+ *
+ * Tokens (override on [data-steps-scroll]):
+ *   --stsc-dur          transition length            (default 800ms)
+ *   --stsc-ease         easing                       (default the Ramp curve)
+ *   --stsc-prev-shift   how far the outgoing image pushes (default 11rem)
+ *   --stsc-prev-dim     outgoing image brightness    (default 0.5)
+ *   --stsc-radius       image frame corner radius    (default .75rem)
+ */
+
+[data-steps-scroll] {
+  --stsc-dur: 800ms;
+  --stsc-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --stsc-prev-shift: 11rem;
+  --stsc-prev-dim: 0.5;
+  --stsc-radius: .75rem;
+}
+
+/* The sticky frame — position:sticky + top offset are set in Webflow;
+   the clipping is load-bearing. */
+[data-stsc-image-wrap] {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--stsc-radius);
+}
+
+/* Image layers stack in the same spot and start hidden. */
+[data-stsc-image] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  visibility: hidden;
+  will-change: transform;
+}
+
+/* ── Choreography ─────────────────────────────────────────────── */
+@keyframes stsc-enter {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes stsc-prev {
+  from { transform: translateY(0); }
+  to   { transform: translateY(calc(var(--stsc-prev-shift) * -1)); }
+}
+@keyframes stsc-enter-reverse {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes stsc-prev-reverse {
+  from { transform: translateY(0); }
+  to   { transform: translateY(var(--stsc-prev-shift)); }
+}
+
+[data-stsc-image].is-active {
+  visibility: visible;
+  z-index: 2;
+  animation: stsc-enter var(--stsc-dur) var(--stsc-ease) both;
+}
+
+[data-stsc-image].is-prev {
+  visibility: visible;
+  z-index: 1;
+  animation: stsc-prev var(--stsc-dur) var(--stsc-ease) both;
+  filter: brightness(var(--stsc-prev-dim));
+  transition: filter var(--stsc-dur) var(--stsc-ease);
+}
+
+/* Scrolling back up: same moves, mirrored downward. */
+[data-steps-scroll].is-reverse [data-stsc-image].is-active {
+  animation: stsc-enter-reverse var(--stsc-dur) var(--stsc-ease) both;
+}
+[data-steps-scroll].is-reverse [data-stsc-image].is-prev {
+  animation: stsc-prev-reverse var(--stsc-dur) var(--stsc-ease) both;
+}
+
+/* Reduced motion: instant cuts, no sliding, no dim transition. */
+@media (prefers-reduced-motion: reduce) {
+  [data-stsc-image].is-active,
+  [data-stsc-image].is-prev {
+    animation: none;
+    transition: none;
+  }
+  [data-stsc-image] { will-change: auto; }
+}
