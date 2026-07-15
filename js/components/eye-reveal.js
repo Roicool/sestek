@@ -1,5 +1,5 @@
 /*!
- * eye-reveal.js v1.0.0
+ * eye-reveal.js v1.0.1
  * Pinned "eye opening" image reveal with copy + notification toasts:
  *   1. As the section approaches, a vertical progress line fills (scrubbed)
  *   2. The section pins; a clip-path "eye" reveal opens the image from its
@@ -13,6 +13,9 @@
  *   5. Once complete and left behind, the pin KILLS ITSELF: the pin-spacer
  *      height is removed and the scroll position compensated (via Lenis
  *      when available) — the section becomes static, one-shot
+ *
+ * v1.0.1: progress line fades out as the reveal starts (it used to linger
+ *         on top of the opened image).
  *
  * Requires : gsap + ScrollTrigger. Lenis optional (window.lenisInstance).
  *
@@ -62,9 +65,10 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    var frame    = root.querySelector("[data-eye-frame]");
-    var img      = root.querySelector("[data-eye-img]");
-    var progress = root.querySelector("[data-eye-progress]");
+    var frame        = root.querySelector("[data-eye-frame]");
+    var img          = root.querySelector("[data-eye-img]");
+    var progress     = root.querySelector("[data-eye-progress]");
+    var progressWrap = root.querySelector("[data-eye-progress-wrap]");
     var copy     = root.querySelector("[data-eye-copy]");
     var toasts   = Array.from(root.querySelectorAll("[data-eye-toast]"));
     var copyKids = copy ? Array.from(copy.children) : [];
@@ -87,6 +91,7 @@
       if (copyKids.length) gsap.set(copyKids, { autoAlpha: 1, y: 0 });
       if (toasts.length) gsap.set(toasts, { autoAlpha: 1, y: 0, scale: 1 });
       if (progress) gsap.set(progress, { scaleY: 1 });
+      if (progressWrap) gsap.set(progressWrap, { autoAlpha: 0 });
     }
 
     if (reduce) { showStatic(); return; }
@@ -143,6 +148,12 @@
       tlReveal.fromTo(img,
         { "--eye-img-scale": 1.3 },
         { "--eye-img-scale": 1, duration: 0.7, ease: "power3.out" }, 0);
+
+      // The progress line has done its job once the reveal starts — fade it
+      // away instead of leaving it parked on top of the opened image.
+      if (progressWrap) {
+        tlReveal.to(progressWrap, { autoAlpha: 0, duration: 0.3, ease: "power1.out" }, 0.05);
+      }
 
       // Left copy: eyebrow → title → text → button, staggered.
       if (copyKids.length) {
