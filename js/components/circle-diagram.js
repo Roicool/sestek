@@ -1,20 +1,26 @@
 /*!
- * circle-diagram.js v1.1.0
+ * circle-diagram.js v1.2.0
  * Planhat-style circular diagram: N items (dot + label) sit evenly on a ring,
  * one item is active at a time, and a detail card (small tag + body text)
  * mirrors the active item. Desktop: hover activates. Mobile / touch: tap
  * activates. Optional autoplay steps through the items until the user
  * interacts.
  *
- * v1.1.0 — the ring is now an injected SVG (faint base circle + a bright arc
- *          segment that TRAVELS clockwise to the active item, like the
- *          reference); hover switching rewired to pointerenter (pointerType
- *          "mouse") so it works regardless of matchMedia hover quirks.
+ * v1.2.0 — ring rebuilt the way the Framer reference actually does it: ONE
+ *          injected div ([data-cd-connector]) whose background is a
+ *          conic-gradient (faint line most of the way, blending to ink over
+ *          the last degrees = the comet tail), hollowed into a 1px ring by a
+ *          CSS radial mask, and simply ROTATED so the bright tip parks on the
+ *          active item. Transform-only → GPU-cheap. The gradient/mask/thickness
+ *          all live in CSS (.cd_connector) — JS only rotates it.
+ * v1.1.0 — hover switching rewired to pointerenter (pointerType "mouse") so
+ *          it works regardless of matchMedia hover quirks.
  *          The old [data-cd-ring] div is no longer needed — remove it.
  *
  * Requires : nothing hard — works standalone. If gsap (global) is present the
- *            card swap gets a blur-dissolve and the arc travel is tweened;
- *            otherwise both swap instantly. prefers-reduced-motion always
+ *            card swap gets a blur-dissolve and the connector rotation is
+ *            tweened; without gsap the rotation falls back to the CSS
+ *            transition on .cd_connector. prefers-reduced-motion always
  *            forces the instant swap.
  *
  * DOM contract (Webflow — only the attributes matter, design is yours):
@@ -32,14 +38,13 @@
  *       [data-cd-card-title]                 gets the active item's title
  *       [data-cd-card-text]                  gets the active item's text
  *
- * JS injects the ring SVG into the stage, positions each item on it (evenly,
+ * JS injects the connector ring into the stage, positions each item on it (evenly,
  * starting at the top, or per data-cd-angle) and stamps
  * data-cd-side="top|right|bottom|left" on it so CSS can put the label on the
  * outside of the ring. Active item gets the class `is-active` (+ aria-current).
  *
  * Root attributes (all optional):
  *   data-cd-start      index of the initially active item        (default 0)
- *   data-cd-arc        arc segment length in % of the circle     (default 10)
  *   data-cd-autoplay   seconds per step; steps through the items while the
  *                      section is in view and STOPS for good on first user
  *                      interaction. Omit = no autoplay.
@@ -52,13 +57,6 @@
 
 (function (global) {
   "use strict";
-
-  var SVG_NS = "http://www.w3.org/2000/svg";
-
-  function cssVar(root, name, fallback) {
-    var v = getComputedStyle(root).getPropertyValue(name);
-    return (v && v.trim()) || fallback;
-  }
 
   function build(root) {
     if (root._circleDiagramInit) return;                    // idempotent
@@ -77,48 +75,32 @@
 
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var hasGsap = typeof gsap !== "undefined";
-    var INK = cssVar(root, "--cd-ink", "#fff");
-    var LINE = cssVar(root, "--cd-line", "rgba(255,255,255,.18)");
-    var ARC = Math.min(Math.max(parseFloat(root.getAttribute("data-cd-arc")) || 10, 2), 40);
 
-    // ── Injected ring: faint base circle + bright travelling arc ─────────────
-    // pathLength=100 normalizes the circumference so dash math is in %.
-    // The arc segment ends at 0° (3 o'clock) at rotation 0; rotating the
-    // element by the active item's angle parks the arc's tip on its dot.
-    var svg = document.createElementNS(SVG_NS, "svg");
-    svg.setAttribute("viewBox", "0 0 100 100");
-    svg.setAttribute("class", "cd_svg");
-    svg.setAttribute("aria-hidden", "true");
-
-    function ring(stroke, width) {
-      var c = document.createElementNS(SVG_NS, "circle");
-      c.setAttribute("cx", "50"); c.setAttribute("cy", "50"); c.setAttribute("r", "49.5");
-      c.setAttribute("fill", "none");
-      c.setAttribute("stroke", stroke);
-      c.setAttribute("stroke-width", width);
-      c.setAttribute("vector-effect", "non-scaling-stroke");
-      svg.appendChild(c);
-      return c;
-    }
-    ring(LINE, "1");
-    var arc = ring(INK, "1");
-    arc.setAttribute("pathLength", "100");
-    arc.setAttribute("stroke-linecap", "round");
-    arc.setAttribute("stroke-dasharray", ARC + " " + (100 - ARC));
-    arc.setAttribute("stroke-dashoffset", String(ARC));     // segment ends at 0°
-    arc.setAttribute("opacity", "0.9");
-    stage.insertBefore(svg, stage.firstChild);
+    // ── Injected ring: ONE conic-gradient connector, hollowed by a CSS mask ──
+    // Exactly the Framer reference's technique: the gradient is the faint base
+    // line most of the way round, blending to ink over the last degrees (the
+    // comet tail, tip at 12 o'clock at rotation 0). Rotating the div parks the
+    // tip on the active item — transform-only, so it never repaints.
+    // Gradient / mask / thickness live in CSS (.cd_connector).
+    var connector = document.createElement("div");
+    connector.className = "cd_connector";
+    connector.setAttribute("data-cd-connector", "");
+    connector.setAttribute("aria-hidden", "true");
+    stage.insertBefore(connector, stage.firstChild);
 
     var arcRot = 0;                                         // current rotation (deg)
     function moveArc(deg, animate) {
-      var delta = (((deg - arcRot) % 360) + 360) % 360;     // always clockwise
+      var tip = deg + 90;                                   // gradient tip sits at -90° (top)
+      var delta = (((tip - arcRot) % 360) + 360) % 360;     // always clockwise
       if (delta === 0 && animate) delta = 360;              // full lap on repeat
       var target = arcRot + delta;
       if (animate && !reduced && hasGsap) {
-        gsap.to(arc, { rotation: target, svgOrigin: "50 50", duration: 1.1, ease: "power3.inOut" });
+        gsap.to(connector, { rotation: target, duration: 1.2, ease: "power3.inOut" });
+      } else if (hasGsap) {
+        gsap.set(connector, { rotation: target });
       } else {
-        if (hasGsap) gsap.set(arc, { rotation: target, svgOrigin: "50 50" });
-        else arc.setAttribute("transform", "rotate(" + target + " 50 50)");
+        // no gsap: the CSS transition on .cd_connector animates this
+        connector.style.transform = "rotate(" + target + "deg)";
       }
       arcRot = target;
     }
