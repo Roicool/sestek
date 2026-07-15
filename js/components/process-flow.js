@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.1.0
+ * process-flow.js v2.2.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -30,9 +30,14 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
+ * Mobile (≤991px, Auxia's own isMobile breakpoint): the loop is skipped and a
+ * static phase 0 is rendered instead, exactly like the original. Set
+ * data-pf-mobile="loop" on the root to run the full loop on mobile anyway.
+ *
  * Root attributes (all optional):
  *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
  *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
+ *   data-pf-mobile      "loop" runs the animation on ≤991px too      (default static)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -92,8 +97,8 @@
       var ic = personIcon(p); if (ic) gsap.set(ic, { color: MUTED });
     });
 
-    // ── Reduced motion: resolve phase 0 statically, no loop ───────────────────
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    /** Resolve phase 0 as a static frame (line drawn, pills open, first cards). */
+    function renderStaticPhase0() {
       gsap.set(draw, { drawSVG: "0% 100%" });
       gsap.set(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON });
       gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto" });
@@ -101,6 +106,20 @@
       gsap.set(personLines(p0), { color: INK });
       var ic0 = personIcon(p0); if (ic0) gsap.set(ic0, { color: ACCENT });
       cards.forEach(function (colCards) { if (colCards[0]) gsap.set(colCards[0], { autoAlpha: 1 }); });
+    }
+
+    // ── Reduced motion: static phase 0, no loop ───────────────────────────────
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      renderStaticPhase0();
+      return;
+    }
+
+    // ── Mobile (≤991px, same breakpoint as Auxia's isMobile): the original
+    // skips the whole animation on mobile — we do the same and show static
+    // phase 0. Opt back in with data-pf-mobile="loop" on the root. ───────────
+    if (window.matchMedia("(max-width: 991px)").matches &&
+        root.getAttribute("data-pf-mobile") !== "loop") {
+      renderStaticPhase0();
       return;
     }
 
