@@ -98,7 +98,7 @@
     .pf_slot  { grid-row: 2; }
     .pf_card  { position: absolute; top: 0; left: 0; }
     .pf_card:first-child { position: relative; }
-    [data-pf-vline] { display: none; }
+    [data-pf-hline] { display: none; }
 
     /* ── Notification card (dark) ──────────────────────────────────────────── */
     .card-notif {
@@ -157,21 +157,34 @@
       border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 991px) {
       .pf_inner { min-height: 0; }
       .pf_rail { display: none; }
-      .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 8px; }
+      .pf_personas { position: relative; left: 0; width: auto; margin-bottom: 20px; }
       .pf_personas-clip { height: auto; }
-      .pf_columns { margin-left: 0; padding-top: 0; grid-template-columns: 1fr; gap: 0; justify-items: center; }
-      .pf_col { align-items: center; width: 100%; }
-      [data-pf-vline] {
-        display: block; width: 2px; height: 42px; background: var(--blue);
-        margin: 0 auto; transform: scaleY(0); transform-origin: top;
+      .pf_columns {
+        position: relative; margin-left: 0;
+        display: flex; align-items: flex-start; gap: 8px;
+        padding-top: 6px; min-height: 376px;
       }
-      .pf_pill { margin-bottom: 18px; }
+      .pf_col { display: contents; }
+      .pf_columns::before {
+        content: ""; position: absolute; top: 18px; left: 0; right: 0;
+        height: 2px; background: var(--tag-idle-bd);
+      }
+      [data-pf-hline] {
+        display: block; position: absolute; top: 18px; left: 0; right: 0;
+        height: 2px; background: var(--blue);
+        transform: scaleX(0); transform-origin: left center; z-index: 1;
+      }
+      .pf_pill { position: relative; z-index: 2; margin-bottom: 0; }
+      .pf_stack {
+        position: absolute; left: 0; right: 0; top: 54px;
+        display: flex; justify-content: center;
+        width: auto; max-width: none;
+      }
       .card-notif, .card-media, .card-checkout { max-width: 100%; }
       .card-notif { width: 100%; }
-      .pf_stack { width: auto; max-width: 100%; }
     }
   </style>
 </head>
