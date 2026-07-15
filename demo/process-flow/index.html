@@ -34,8 +34,8 @@
     .pf_inner { position: relative; min-height: 300px; }
 
     /* ── Personas (left, vertical stack, active one dark) ──────────────────── */
-    .pf_personas { position: absolute; left: 0; top: 4px; width: 210px; z-index: 3; }
-    .pf_personas-clip { height: 92px; overflow: hidden; }
+    .pf_personas { position: absolute; left: 55px; top: 4px; width: 210px; z-index: 3; }
+    .pf_personas-clip { height: 184px; overflow: hidden; }
     .pf_persona {
       display: flex; gap: 8px; align-items: flex-start;
       height: 64px;
@@ -54,7 +54,7 @@
     .pf_persona-icon { color: var(--muted); }
 
     /* ── Rail: the light track + the blue drawn line ───────────────────────── */
-    .pf_rail { position: absolute; left: 0; right: 0; top: 92px; height: 40px; z-index: 1; }
+    .pf_rail { position: absolute; left: 0; right: 0; top: 7px; height: 70px; z-index: 1; pointer-events: none; }
     .pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
     .pf_track { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: 0.5; }
     .pf_track.is-dash { stroke-dasharray: 4 5; }
@@ -63,11 +63,12 @@
     /* ── Pills row (sits ON the rail line) + cards, aligned in 3 columns ────── */
     .pf_columns {
       position: relative; z-index: 2;
-      margin-left: 250px;
+      margin-left: 270px;
       display: grid;
-      grid-template-columns: 1.35fr 1fr 0.95fr;
-      gap: 26px;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 36px;
       align-items: start;
+      padding-top: 62px;                /* pill centre lands ON the rail's bottom line */
     }
     .pf_col { display: flex; flex-direction: column; align-items: center; }
 
@@ -78,7 +79,7 @@
       background: var(--tag-idle-bg);
       border: 1px solid var(--tag-idle-bd);
       color: var(--muted);
-      margin-bottom: 22px;
+      margin-bottom: 54px;
       white-space: nowrap;
     }
     .pf_pill-spark { flex: none; width: 9px; height: 9px; }
@@ -202,8 +203,8 @@
       <!-- ── Rail (real Auxia path: light track + blue drawn line) ── -->
       <div class="pf_rail">
         <svg viewBox="0 0 1231 71" preserveAspectRatio="none">
-          <path class="pf_track" d="M0 1H248.5C261.755 1 272.5 11.7452 272.5 25V45.416C272.5 58.6708 283.245 69.416 296.5 69.416H1230.5"></path>
-          <path class="pf_draw" id="pf-draw" data-pf-draw d="M0 1H248.5C261.755 1 272.5 11.7452 272.5 25V45.416C272.5 58.6708 283.245 69.416 296.5 69.416H1230.5"></path>
+          <path class="pf_track" d="M0 1H68M300 1C313.255 1 324 11.7452 324 25V45.416C324 58.6708 334.745 69.416 348 69.416H1231"></path>
+          <path class="pf_draw" id="pf-draw" data-pf-draw d="M0 1H68M300 1C313.255 1 324 11.7452 324 25V45.416C324 58.6708 334.745 69.416 348 69.416H1231"></path>
         </svg>
       </div>
 
