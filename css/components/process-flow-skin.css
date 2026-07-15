@@ -1,5 +1,5 @@
 /*!
- * process-flow-skin.css v1.2.0
+ * process-flow-skin.css v1.3.0
  * Full VISUAL skin for the Auxia-style process-flow, keyed to the exact Webflow
  * class names used in the Sestek build (section__process, pf__inner, pf_persona,
  * pf_pill, pf_stack, card-notif/media/checkout …). Pairs with:
@@ -15,6 +15,10 @@
   --pf-card-white: #ffffff;
 }
 
+/* The rail breaks out to 100vw (full-bleed lines, like Auxia) — clip the
+   section so that can never cause a horizontal scrollbar. */
+section[data-process-flow] { overflow: hidden; }
+
 /* ── Scene wrapper (= Auxia .hero_visual) ─────────────────────────────────
    MUST be relative — personas, rail and columns position against it. */
 .pf__inner {
@@ -24,16 +28,16 @@
 
 /* ── Personas (absolute left; JS scrolls the clip) ────────────────────────
    .pf_personas-clip also gets overflow:hidden from process-flow.css. */
-.pf_personas { position: absolute; left: 0; z-index: 3; }
-.pf_personas-clip { height: 5.75rem; }                 /* ~1.4 rows visible */
+.pf_personas { position: absolute; left: 0; top: 0; width: 15rem; z-index: 3; }
+.pf_personas-clip { height: 11.5rem; }                 /* 2 rows: active + next (faded), like Auxia */
 .pf_persona {
   display: flex; gap: 0.5rem; align-items: flex-start;
-  height: 4rem;
+  height: 5.75rem;               /* 3 text lines + breathing room — the gap between personas */
   overflow: hidden;              /* long text must NOT bleed onto (duplicate over) the next row */
 }
 .pf_persona-icon { flex: none; width: 0.8rem; height: 0.8rem; margin-top: 1px; color: var(--pf-muted); }
 .pf_persona-icon svg { display: block; width: 100%; height: 100%; }
-.pf_persona-wrap { display: block; }
+.pf_persona-wrap { display: block; min-width: 0; }     /* min-width:0 lets ellipsis work in flex */
 .pf_persona-name,
 .pf_persona-line {
   font-size: 0.66rem;
@@ -47,11 +51,16 @@
 }
 .pf_persona-name { font-weight: 600; }
 
-/* ── Rail: full width, edge to edge ───────────────────────────────────────
-   Height ≈ the SVG viewBox height (0 0 1231 71) so preserveAspectRatio="none"
-   does NOT squash the step-down. Flat-left line sits at the TOP of this box
-   (persona level); the pill line sits at the BOTTOM. */
-.pf_rail { position: absolute; left: 0; right: 0; top: 1.25rem; height: 4.4rem; z-index: 1; pointer-events: none; }
+/* ── Rail: FULL-BLEED, viewport edge to viewport edge (like Auxia) ────────
+   Breaks out of the container with the 100vw trick. Height ≈ the SVG viewBox
+   height (0 0 1231 71) so preserveAspectRatio="none" does NOT squash the
+   step-down. Top segment sits at persona-icon level; the long bottom line
+   (pill level) sits at the BOTTOM of this box. */
+.pf_rail {
+  position: absolute; top: 0.45rem; height: 4.4rem; z-index: 1;
+  left: 50%; width: 100vw; transform: translateX(-50%);
+  pointer-events: none;
+}
 .pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .pf_track { fill: none; stroke: var(--pf-tag-idle-bd); stroke-width: 2; }
 .pf_track.is-dash { stroke-dasharray: 4 5; opacity: 0.7; }
@@ -60,13 +69,14 @@
 /* ── Columns: pill above its card stack, 3 aligned tracks ─────────────────*/
 .pf_columns {
   position: relative; z-index: 2;
-  margin-left: 20.5rem;                                /* clear the personas */
+  margin-left: 20.5rem;                                /* clear the personas + curve */
   display: grid;
-  grid-template-columns: 1.35fr 1fr 0.95fr;
-  gap: 1.6rem;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 3rem;                                           /* generous spread, not squeezed centre */
   align-items: start;
-  padding-top: 4.9rem;                                 /* drop the pills onto the rail's bottom line */
+  padding-top: 4rem;                                   /* pill centre lands ON the rail's bottom line */
 }
+.pf_col { display: flex; flex-direction: column; align-items: center; }
 
 /* ── Pill (sits on the rail line) ─────────────────────────────────────────*/
 .pf_pill {
@@ -76,7 +86,7 @@
   background: var(--pf-tag-idle-bg);
   border: 1px solid var(--pf-tag-idle-bd);
   color: var(--pf-muted);
-  margin-bottom: 1.4rem;
+  margin-bottom: 3.4rem;                               /* real air between pill and card, like Auxia */
   white-space: nowrap;
   font-size: 0;                                        /* swallow the stray "✦" text node */
 }
