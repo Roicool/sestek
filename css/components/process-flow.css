@@ -1,6 +1,6 @@
 /*!
- * process-flow.css v2.0.0
- * Structural hooks for the Auxia-style journey loop (process-flow.js v2).
+ * process-flow.css v2.1.0
+ * Structural hooks for the Auxia-style journey loop (process-flow.js v2.8+).
  * Mechanics only — persona clip, line stroke, pill collapse, card stacking.
  * The visual skin (colours, card designs, layout) is yours; swap the --pf-*
  * tokens or restyle any element freely. See demo/process-flow/ for a full skin.
@@ -21,7 +21,13 @@
 /* ── Personas — clip shows the active row; JS scrolls the stack yPercent ────── */
 [data-pf-personas] { overflow: hidden; }
 
-/* ── Line — the blue path is drawn with DrawSVGPlugin (JS sets drawSVG) ─────── */
+/* ── Line — the blue path is drawn with DrawSVGPlugin (JS sets drawSVG).
+   Since v2.8 the JS also GENERATES the path `d` by measuring the personas
+   and the pill row (recomputed on resize), so the line stays glued to the
+   layout at every viewport width. Optional geometry tokens on the root
+   (px numbers): --pf-rail-gap-in (14) gap before the personas ·
+   --pf-rail-gap-out (28) gap after them · --pf-rail-radius (24) corner
+   radius of the step-down. ─────────────────────────────────────────────── */
 [data-pf-draw] {
   fill: none;
   stroke: var(--pf-accent);

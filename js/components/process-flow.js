@@ -1,10 +1,18 @@
 /*!
- * process-flow.js v2.7.0
+ * process-flow.js v2.8.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
  * cards (notification / media / checkout) blur-dissolve in and out. One
  * repeat:-1 master timeline, N phases (= persona count).
+ *
+ * v2.8 — RESPONSIVE RAIL. The line's path is no longer a fixed `d` stretched
+ * with preserveAspectRatio="none"; the JS now MEASURES the personas block and
+ * the pill row and generates the path from those positions (top segment runs
+ * into the active persona row, steps down, then runs through the pill centres
+ * to the right edge). Recomputed on resize and after fonts load, so personas
+ * can sit statically in the layout flow and the line follows them at every
+ * viewport width. Any hardcoded `d`/viewBox on the SVG is just a fallback.
  *
  * Requires : gsap (global) + DrawSVGPlugin + SplitText (both free since GSAP
  *            3.13 — load from the CDN). ScrollSmoother is NOT used; smooth
@@ -44,6 +52,11 @@
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
  *   --pf-tag-active-bg (#d8dade) · --pf-tag-idle-bg (#f0efe3) · --pf-tag-idle-bd (#e2e1d3)
+ *
+ * Rail geometry tokens (optional, px numbers on the root):
+ *   --pf-rail-gap-in  (14) gap between the incoming line and the personas
+ *   --pf-rail-gap-out (28) gap between the personas and the step-down curve
+ *   --pf-rail-radius  (24) corner radius of the step-down
  *
  * https://github.com/roicool/sestek
  */
@@ -89,6 +102,87 @@
     function personLines(p) { return p.querySelectorAll("[data-pf-person-text]"); }
     function personIcon(p) { return p.querySelector("[data-pf-person]"); }
 
+    // ── Rail: the path is GENERATED from the real layout ─────────────────────
+    // Personas sit statically in the flow; we measure them + the pill row and
+    // build the stepped path in px (top segment → gap over the personas →
+    // quarter-arc step-down → long line through the pill centres). The same
+    // `d` goes on every <path> in the rail SVG (grey track(s) + blue draw).
+    var svg = draw.ownerSVGElement;
+    var drawTweens = [];                      // every DrawSVG tween — invalidated on resize
+    var lineFrac = { a: 0, b: 0 };            // currently drawn fraction of the line
+
+    function railNum(name, fallback) {
+      var v = parseFloat(cssVar(root, name, ""));
+      return isNaN(v) ? fallback : v;
+    }
+
+    function layoutRail() {
+      if (!svg) return false;
+      var box = svg.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) return false;   // hidden (mobile) / not laid out
+
+      var clip = root.querySelector("[data-pf-personas]") || personas[0].parentNode;
+      var clipR = clip.getBoundingClientRect();
+      var rowR = personas[0].getBoundingClientRect();
+      var icR = (personIcon(personas[0]) || personas[0]).getBoundingClientRect();
+
+      // y1 = the ACTIVE persona row's icon centre. Measured as an offset within
+      // the row, anchored to the clip — the personas' yPercent scroll can never
+      // skew it. y2 = the pill row's centre, so pills always sit ON the line.
+      var y1 = (clipR.top - box.top) + (icR.top - rowR.top) + icR.height / 2;
+      var pillR = (pills[0] || cols[0]).getBoundingClientRect();
+      var y2 = pillR.top + pillR.height / 2 - box.top;
+
+      var w = box.width;
+      var n = function (v) { return Math.round(v * 100) / 100; };
+      var d;
+
+      if (y2 - y1 < 14 || !clipR.width) {                  // degenerate: flat line
+        d = "M0 " + n(y2) + "H" + n(w);
+      } else {
+        var gapIn = railNum("--pf-rail-gap-in", 14);
+        var gapOut = railNum("--pf-rail-gap-out", 28);
+        var r = Math.max(6, Math.min(railNum("--pf-rail-radius", 24), (y2 - y1) / 2));
+        var x1 = Math.max(0, clipR.left - box.left - gapIn);
+        var x2 = clipR.right - box.left + gapOut;
+        d = "M0 " + n(y1) + "H" + n(x1) +
+            "M" + n(x2) + " " + n(y1) +
+            "A" + n(r) + " " + n(r) + " 0 0 1 " + n(x2 + r) + " " + n(y1 + r) +
+            "V" + n(y2 - r) +
+            "A" + n(r) + " " + n(r) + " 0 0 0 " + n(x2 + 2 * r) + " " + n(y2) +
+            "H" + n(w);
+      }
+
+      svg.setAttribute("viewBox", "0 0 " + n(w) + " " + n(box.height));
+      svg.removeAttribute("preserveAspectRatio");          // 1:1 px — no stretching
+      toArray(svg.querySelectorAll("path")).forEach(function (p) { p.setAttribute("d", d); });
+      return true;
+    }
+
+    function applyLineFrac() {
+      gsap.set(draw, { drawSVG: (lineFrac.a * 100) + "% " + (lineFrac.b * 100) + "%" });
+    }
+
+    /** Re-measure the rail; DrawSVG caches path lengths per tween, so every
+     *  draw tween is invalidated (it re-measures on its next play) and the
+     *  current drawn fraction is re-applied against the new length. */
+    function relayout() {
+      if (!layoutRail()) return;
+      drawTweens.forEach(function (t) { t.invalidate(); });
+      applyLineFrac();
+    }
+
+    layoutRail();
+
+    var resizeT = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(relayout, 150);
+    });
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(relayout);                 // metrics move once fonts land
+    }
+
     // ── Static / initial state ────────────────────────────────────────────────
     gsap.set(draw, { drawSVG: "0% 0%" });
     gsap.set(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF });
@@ -101,6 +195,7 @@
 
     /** Resolve phase 0 as a static frame (line drawn, pills open, first cards). */
     function renderStaticPhase0() {
+      lineFrac.a = 0; lineFrac.b = 1;
       gsap.set(draw, { drawSVG: "0% 100%" });
       gsap.set(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON });
       gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto" });
@@ -206,12 +301,17 @@
     }
 
     function drawLine() {
-      return gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" },
-        { drawSVG: "0% 100%", duration: DRAW_DUR, ease: "none" });
+      var tl = gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" }, {
+        drawSVG: "0% 100%", duration: DRAW_DUR, ease: "none",
+        onUpdate: function () { lineFrac.a = 0; lineFrac.b = this.ratio; }
+      });
+      drawTweens.push(tl);
+      return tl;
     }
     function undrawLine(nextPhase) {
-      return gsap.timeline().to(draw, {
+      var tl = gsap.timeline().to(draw, {
         drawSVG: "100% 100%", duration: DRAW_DUR, ease: "none",
+        onUpdate: function () { lineFrac.a = this.ratio; lineFrac.b = 1; },
         onStart: function () {
           gsap.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0, duration: 0.9, stagger: 0.35, ease: "power4.out" });
           gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.35, ease: "power4.out" });
@@ -225,6 +325,8 @@
           });
         }
       });
+      drawTweens.push(tl);
+      return tl;
     }
 
     // ── Master loop ───────────────────────────────────────────────────────────

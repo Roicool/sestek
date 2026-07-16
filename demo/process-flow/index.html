@@ -30,11 +30,24 @@
     }
 
     /* ── Scene ─────────────────────────────────────────────────────────────── */
-    .pf { position: relative; width: 100%; max-width: 1120px; overflow: hidden; }
-    .pf_inner { position: relative; min-height: 300px; }
+    /* The section is full-bleed (the rail clips against it); the inner scene is
+       a capped, centred flex ROW: personas in flow + the card columns. The JS
+       measures these elements to draw the rail, so the layout is the single
+       source of truth — no magic offsets. */
+    .pf { position: relative; width: 100%; overflow: hidden; }
+    .pf_inner {
+      position: relative; max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: flex-start;
+      gap: clamp(28px, 4vw, 80px);
+      min-height: 300px;
+    }
 
-    /* ── Personas (left, vertical stack, active one dark) ──────────────────── */
-    .pf_personas { position: absolute; left: 55px; top: 4px; width: 210px; z-index: 3; }
+    /* ── Personas (in flow, left column, active one dark) ──────────────────── */
+    .pf_personas {
+      position: relative; z-index: 3;
+      flex: 0 1 210px; width: 210px; min-width: 150px;
+      padding-top: 4px;
+    }
     .pf_personas-clip { height: 184px; overflow: hidden; }
     .pf_persona {
       display: flex; gap: 8px; align-items: flex-start;
@@ -53,22 +66,34 @@
     .pf_persona-name { font-weight: 600; }
     .pf_persona-icon { color: var(--muted); }
 
-    /* ── Rail: the light track + the blue drawn line ───────────────────────── */
-    .pf_rail { position: absolute; left: 0; right: 0; top: 7px; height: 70px; z-index: 1; pointer-events: none; }
+    /* ── Rail: the light track + the blue drawn line ─────────────────────────
+       Full-bleed box (clipped by the section). Only a coordinate anchor: the
+       JS generates the path in px relative to it (overflow:visible lets the
+       line extend below) and recomputes on resize. */
+    .pf_rail {
+      position: absolute; top: 7px; height: 70px; z-index: 1;
+      left: 50%; width: 100vw; transform: translateX(-50%);
+      pointer-events: none;
+    }
     .pf_rail svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
     .pf_track { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: 0.5; }
     .pf_track.is-dash { stroke-dasharray: 4 5; }
     .pf_draw  { fill: none; stroke: var(--blue); stroke-width: 1.75; }
 
-    /* ── Pills row (sits ON the rail line) + cards, aligned in 3 columns ────── */
+    /* ── Pills row (the rail line follows them) + cards, 3 columns ──────────
+       Each track caps at its card's design width and the leftover spreads
+       BETWEEN the columns, so the rhythm scales with the viewport;
+       minmax(0, …) lets the cards compress on narrow desktops instead of
+       overflowing. */
     .pf_columns {
       position: relative; z-index: 2;
-      margin-left: 270px;
+      flex: 1 1 auto; min-width: 0;
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
-      gap: 36px;
+      grid-template-columns: minmax(0, 322px) minmax(0, 236px) minmax(0, 200px);
+      justify-content: space-between;
+      column-gap: clamp(20px, 2vw, 44px);
       align-items: start;
-      padding-top: 62px;                /* pill centre lands ON the rail's bottom line */
+      padding-top: 62px;                /* persona row ↔ pill row rhythm */
     }
     .pf_col { display: flex; flex-direction: column; align-items: flex-start; }
 
@@ -93,16 +118,18 @@
       color: inherit;
     }
 
-    /* card stack: 3 phase-variants share one slot; only the active is shown */
+    /* card stack: 3 phase-variants share one slot; only the active is shown.
+       .pf_card spans the stack so the cards' min(width, 100%) has a definite
+       base to resolve against. */
     .pf_stack { position: relative; width: 100%; display: flex; }
     .pf_slot  { grid-row: 2; }
-    .pf_card  { position: absolute; top: 0; left: 0; }
+    .pf_card  { position: absolute; top: 0; left: 0; width: 100%; }
     .pf_card:first-child { position: relative; }
     [data-pf-vline] { display: none; }
 
     /* ── Notification card (dark) ──────────────────────────────────────────── */
     .card-notif {
-      width: 322px; display: flex; gap: 12px;
+      width: min(322px, 100%); display: flex; gap: 12px;
       background: #232323; color: #fff;
       border-radius: 15px; padding: 15px 17px;
       box-shadow: 0 22px 40px -18px rgba(0,0,0,.45), 0 4px 10px rgba(0,0,0,.12);
@@ -119,7 +146,7 @@
 
     /* ── Media card (photo) ────────────────────────────────────────────────── */
     .card-media {
-      position: relative; width: 236px; height: 300px;
+      position: relative; width: min(236px, 100%); height: 300px;
       border-radius: 16px; overflow: hidden;
       background: #23252a;   /* fallback while the video loads */
       box-shadow: 0 26px 46px -20px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.14);
@@ -146,7 +173,7 @@
 
     /* ── Checkout card (white) ─────────────────────────────────────────────── */
     .card-checkout {
-      width: 200px; background: #fff; border-radius: 14px; padding: 16px;
+      width: min(200px, 100%); background: #fff; border-radius: 14px; padding: 16px;
       box-shadow: 0 22px 44px -20px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.06);
     }
     .card-checkout-h { font-weight: 700; font-size: 14px; margin-bottom: 12px; }
@@ -158,11 +185,11 @@
     }
 
     @media (max-width: 991px) {
-      .pf_inner { min-height: 0; }
+      .pf_inner { display: block; min-height: 0; }
       .pf_rail { display: none; }
       .pf_personas { display: none; }
       .pf_columns {
-        margin-left: 0; padding-top: 0;
+        padding-top: 0;
         display: flex; flex-direction: column; align-items: center;
         gap: 0; min-height: 0;
       }
@@ -225,7 +252,9 @@
         </div>
       </div>
 
-      <!-- ── Rail (real Auxia path: light track + blue drawn line) ── -->
+      <!-- ── Rail (light track + blue drawn line). The path `d` and the viewBox
+           are GENERATED by process-flow.js from the measured layout (and kept in
+           sync on resize) — the hardcoded ones below are only a pre-init fallback. -->
       <div class="pf_rail">
         <svg viewBox="0 0 1231 71" preserveAspectRatio="none">
           <path class="pf_track" d="M0 1H68M300 1C313.255 1 324 11.7452 324 25V45.416C324 58.6708 334.745 69.416 348 69.416H1231"></path>
@@ -390,9 +419,10 @@
        https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/process-flow.js) -->
   <script src="../../js/components/process-flow.js"></script>
 
-  <!-- Init block -->
+  <!-- Init block — DOMContentLoaded is enough (scripts above are synchronous);
+       the component re-measures the rail itself once fonts/late layout land. -->
   <script>
-    window.addEventListener("load", function () {
+    document.addEventListener("DOMContentLoaded", function () {
       Sestek.initProcessFlow();
     });
   </script>
