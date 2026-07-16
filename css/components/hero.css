@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.6.0
+ * hero.css v1.7.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -172,33 +172,19 @@
   transition: color 0.35s ease;
 }
 
-/* ── Stat card hover reveal (curtain sweep) ─────────────────── */
-/* Anti-flash: media + overlay stay hidden until the hover timeline
-   reveals them (JS animates opacity / transform). */
+/* ── Stat card hover reveal (cursor-origin bloom) ───────────── */
+/* Anti-flash: media starts clipped to a zero-radius circle, overlay
+   invisible — the hover timeline blooms them open (JS animates
+   clip-path / opacity). */
 [data-hero-stat-media] {
-  opacity: 0;
-  will-change: transform, opacity;
+  clip-path: circle(0% at 50% 100%);
+  will-change: clip-path, transform;
   pointer-events: none;
 }
 
 [data-hero-stat-overlay] {
   opacity: 0;
   will-change: opacity;
-  pointer-events: none;
-}
-
-/*
- * The gradient curtain that sweeps across the card during the reveal.
- * Created by hero.js at runtime; JS drives its yPercent. Sits above the
- * card's text (z-index 3) so the sweep covers everything for one beat.
- */
-.hero__stat-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  background: linear-gradient(135deg, #ec008c 0%, #7f81ae 50%, #00ffeb 100%);
-  transform: translateY(101%); /* parked below until JS takes over */
-  will-change: transform;
   pointer-events: none;
 }
 
@@ -210,19 +196,29 @@
 
 /* ── Scene mood: any card hovered → dark stage ──────────────── */
 /*
- * hero.js toggles .is-dark on [data-hero-s2]: on while any stat card is
- * hovered, off 6s after the mouse leaves the whole stats row.
+ * hero.js creates .hero__stage (a black composited layer behind the
+ * scene content) and crossfades its opacity with GSAP — smoother than
+ * transitioning background-color. .is-dark on [data-hero-s2] restyles
+ * texts and card surfaces; it lifts 6s after the mouse leaves the row.
  */
-.hero__scene--2 {
-  transition: background-color 0.6s ease;
+.hero__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--neutral--950);
+  opacity: 0;
+  will-change: opacity;
+  pointer-events: none;
 }
 
-.hero__scene--2.is-dark {
-  background-color: var(--neutral--950);
+/* Scene content rides above the stage layer */
+.hero__scene--2 > :not(.hero__stage) {
+  position: relative;
+  z-index: 1;
 }
 
 .hero__phrase {
-  transition: color 0.6s ease;
+  transition: color 0.8s ease;
 }
 
 .hero__scene--2.is-dark .hero__phrase {
@@ -230,14 +226,22 @@
 }
 
 .hero__desc {
-  transition: color 0.6s ease;
+  transition: color 0.8s ease;
 }
 
 .hero__scene--2.is-dark .hero__desc {
   color: var(--neutral--400);
 }
 
-/* Non-hovered cards must stay readable on the dark stage */
+/* Cards adapt to the dark stage: surface → neutral-800, text → light */
+.hero__stat {
+  transition: background-color 0.8s ease;
+}
+
+.hero__scene--2.is-dark .hero__stat {
+  background-color: var(--neutral--800);
+}
+
 .hero__scene--2.is-dark .hero__stat-number {
   color: var(--neutral--0);
 }

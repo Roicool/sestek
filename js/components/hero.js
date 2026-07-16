@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.6.0
+ * hero.js v1.7.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -14,14 +14,14 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * Cards with [data-hero-stat-media] get a curtain-sweep hover reveal: a
- * gradient panel (created at runtime) sweeps up over the card, the image
- * appears behind it settling from a 1.25 zoom (expo.out), the curtain exits
- * top and the overlay fades in. The card gets .is-hover (text → white via
- * CSS). Mouse out rewinds the same timeline slightly faster.
- * While ANY card is hovered, [data-hero-s2] gets .is-dark (background →
- * black, headline words → white via CSS); it reverts only 6s after the
- * mouse leaves the whole stats row.
+ * Cards with [data-hero-stat-media] get a cursor-origin reveal: the image
+ * blooms out of the exact point where the pointer entered the card
+ * (clip-path circle) while settling from a slow zoom; on leave it drains
+ * back into the exit point. The card gets .is-hover (text → white via CSS).
+ * While ANY card is hovered the scene goes dark: a runtime "stage" layer
+ * fades in over [data-hero-s2] (GSAP opacity — smoother than a CSS
+ * background-color flip) and .is-dark restyles texts/cards via CSS. The
+ * stage only lifts 6s after the mouse leaves the whole stats row.
  * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
@@ -69,100 +69,122 @@
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /*
-     * Stat-card hover reveal — curtain sweep. For cards carrying an
+     * Stat-card hover reveal — cursor-origin bloom. For cards carrying an
      * absolute background image ([data-hero-stat-media]) and an optional
-     * overlay ([data-hero-stat-overlay]). On hover:
-     *   1. a gradient curtain (runtime-created) sweeps UP over the whole
-     *      card, briefly covering it — text included
-     *   2. at the covered moment the image switches on behind the curtain
-     *   3. the curtain keeps travelling and exits through the top while
-     *      the image settles from a 1.25 zoom + slight pan (expo.out) —
-     *      the classic GSAP-showcase uncover
-     *   4. the overlay fades in as the curtain clears
-     *   5. .is-hover on the card flips its text to white via CSS
-     * One paused timeline per card, played on enter and reversed (1.6×)
-     * on leave — the reverse plays the same curtain sweep backwards, so
-     * rapid hovers stay perfectly in sync with no competing tweens.
+     * overlay ([data-hero-stat-overlay]). The image is clipped to a
+     * zero-radius circle; on hover the circle blooms open FROM THE EXACT
+     * POINT the pointer entered the card while the image settles from a
+     * slow zoom (expo.out). On leave it drains back into the exit point.
+     * Because the reveal literally grows out of your own gesture, every
+     * hover feels bespoke — no two entries look the same.
      *
-     * Scene mood: while ANY card is hovered, [data-hero-s2] carries
-     * .is-dark (CSS: background → black token, headline → white). The
-     * class is only removed 6 seconds AFTER the mouse has left the whole
-     * stats row — re-entering any card within those 6s cancels the revert.
+     * Scene mood: while ANY card is hovered the scene goes dark — a
+     * runtime stage layer fades in behind the content (GSAP opacity on a
+     * composited layer: one smooth crossfade instead of a repainting CSS
+     * background-color) and .is-dark on [data-hero-s2] restyles texts and
+     * card surfaces via CSS. The stage lifts only 6 seconds AFTER the
+     * mouse leaves the whole stats row — re-entering within that window
+     * cancels the revert.
      */
     var darkTimer = null;
+    var stage = null;
+
+    function setSceneDark(on) {
+      el.scene2.classList.toggle("is-dark", on);
+      if (!stage) return;
+      if (reduceMotion) {
+        gsap.set(stage, { opacity: on ? 1 : 0 });
+      } else {
+        gsap.to(stage, {
+          opacity: on ? 1 : 0,
+          duration: 0.9,
+          ease: "power2.inOut",
+          overwrite: "auto",
+        });
+      }
+    }
+
+    /** % point where the pointer crossed the card's edge, clamped to it */
+    function pointerPct(stat, e) {
+      var r = stat.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)),
+        y: Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100)),
+      };
+    }
 
     function setupStatCards() {
+      // Darkness lives on its own composited layer behind the content
+      stage = document.createElement("div");
+      stage.className = "hero__stage";
+      stage.setAttribute("aria-hidden", "true");
+      el.scene2.insertBefore(stage, el.scene2.firstChild);
+
       el.stats.forEach(function (stat) {
         var media = stat.querySelector("[data-hero-stat-media]");
         if (!media || stat._cardInit) return;
         stat._cardInit = true;
         var overlay = stat.querySelector("[data-hero-stat-overlay]");
 
-        function enterMood() {
+        stat.addEventListener("mouseenter", function (e) {
           if (darkTimer) { darkTimer.kill(); darkTimer = null; }
-          el.scene2.classList.add("is-dark");
+          setSceneDark(true);
           stat.classList.add("is-hover");
-        }
-        function leaveCard() {
-          stat.classList.remove("is-hover");
-        }
 
-        if (reduceMotion) {
-          // No motion: hover still works, but as instant states
-          stat.addEventListener("mouseenter", function () {
-            enterMood();
-            gsap.set(media, { opacity: 1, scale: 1, yPercent: 0 });
+          if (reduceMotion) {
+            gsap.set(media, { clipPath: "circle(142% at 50% 50%)", scale: 1 });
             if (overlay) gsap.set(overlay, { opacity: 1 });
-          });
-          stat.addEventListener("mouseleave", function () {
-            leaveCard();
-            gsap.set(media, { opacity: 0 });
-            if (overlay) gsap.set(overlay, { opacity: 0 });
-          });
-          return;
-        }
+            return;
+          }
 
-        var curtain = document.createElement("div");
-        curtain.className = "hero__stat-curtain";
-        curtain.setAttribute("aria-hidden", "true");
-        stat.appendChild(curtain);
-
-        var tl = gsap.timeline({ paused: true });
-        tl
-          // 1. curtain sweeps up from below and covers the card
-          .fromTo(curtain,
-            { yPercent: 101 },
-            { yPercent: 0, duration: 0.3, ease: "power3.in" }, 0)
-          // 2. image switches on while hidden behind the curtain
-          .set(media, { opacity: 1 }, 0.3)
-          // 3. curtain exits top / image settles from a zoomed, panned start
-          .to(curtain,
-            { yPercent: -101, duration: 0.5, ease: "power3.out" }, 0.32)
-          .fromTo(media,
-            { scale: 1.25, yPercent: 8 },
-            { scale: 1, yPercent: 0, duration: 0.9, ease: "expo.out" }, 0.32);
-        // 4. overlay fades in as the curtain clears
-        if (overlay) {
-          tl.fromTo(overlay,
-            { opacity: 0 },
-            { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.5);
-        }
-
-        stat.addEventListener("mouseenter", function () {
-          enterMood();
-          tl.timeScale(1).play();
+          var p = pointerPct(stat, e);
+          if (stat._reveal) stat._reveal.kill();
+          var tl = gsap.timeline();
+          tl.fromTo(media,
+            { clipPath: "circle(0% at " + p.x + "% " + p.y + "%)", scale: 1.18 },
+            {
+              clipPath: "circle(142% at " + p.x + "% " + p.y + "%)",
+              duration: 0.75,
+              ease: "power2.out",
+            }, 0)
+            .to(media, { scale: 1, duration: 1.1, ease: "expo.out" }, 0);
+          if (overlay) {
+            tl.fromTo(overlay,
+              { opacity: 0 },
+              { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.2);
+          }
+          stat._reveal = tl;
         });
-        stat.addEventListener("mouseleave", function () {
-          leaveCard();
-          tl.timeScale(1.6).reverse();
+
+        stat.addEventListener("mouseleave", function (e) {
+          stat.classList.remove("is-hover");
+
+          if (reduceMotion) {
+            gsap.set(media, { clipPath: "circle(0% at 50% 50%)" });
+            if (overlay) gsap.set(overlay, { opacity: 0 });
+            return;
+          }
+
+          var p = pointerPct(stat, e);
+          if (stat._reveal) stat._reveal.kill();
+          var tl = gsap.timeline();
+          tl.to(media, {
+            clipPath: "circle(0% at " + p.x + "% " + p.y + "%)",
+            duration: 0.45,
+            ease: "power2.in",
+          }, 0);
+          if (overlay) {
+            tl.to(overlay, { opacity: 0, duration: 0.3 }, 0);
+          }
+          stat._reveal = tl;
         });
       });
 
-      // Scene mood reverts 6s after the mouse leaves the entire stats row
+      // The dark stage lifts 6s after the mouse leaves the entire stats row
       el.statsWrap.addEventListener("mouseleave", function () {
         if (darkTimer) darkTimer.kill();
         darkTimer = gsap.delayedCall(6, function () {
-          el.scene2.classList.remove("is-dark");
+          setSceneDark(false);
           darkTimer = null;
         });
       });
