@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.5.0
+ * hero.css v1.6.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -172,12 +172,12 @@
   transition: color 0.35s ease;
 }
 
-/* ── Stat card hover reveal ─────────────────────────────────── */
+/* ── Stat card hover reveal (curtain sweep) ─────────────────── */
 /* Anti-flash: media + overlay stay hidden until the hover timeline
-   reveals them (JS animates clip-path / opacity). */
+   reveals them (JS animates opacity / transform). */
 [data-hero-stat-media] {
-  clip-path: inset(100% 0 0 0);
-  will-change: clip-path, transform;
+  opacity: 0;
+  will-change: transform, opacity;
   pointer-events: none;
 }
 
@@ -187,10 +187,63 @@
   pointer-events: none;
 }
 
+/*
+ * The gradient curtain that sweeps across the card during the reveal.
+ * Created by hero.js at runtime; JS drives its yPercent. Sits above the
+ * card's text (z-index 3) so the sweep covers everything for one beat.
+ */
+.hero__stat-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(135deg, #ec008c 0%, #7f81ae 50%, #00ffeb 100%);
+  transform: translateY(101%); /* parked below until JS takes over */
+  will-change: transform;
+  pointer-events: none;
+}
+
 /* Hover: text flips to white over the revealed image */
 .hero__stat.is-hover .hero__stat-number,
 .hero__stat.is-hover .hero__stat-label {
   color: var(--neutral--0);
+}
+
+/* ── Scene mood: any card hovered → dark stage ──────────────── */
+/*
+ * hero.js toggles .is-dark on [data-hero-s2]: on while any stat card is
+ * hovered, off 6s after the mouse leaves the whole stats row.
+ */
+.hero__scene--2 {
+  transition: background-color 0.6s ease;
+}
+
+.hero__scene--2.is-dark {
+  background-color: var(--neutral--950);
+}
+
+.hero__phrase {
+  transition: color 0.6s ease;
+}
+
+.hero__scene--2.is-dark .hero__phrase {
+  color: var(--neutral--0);
+}
+
+.hero__desc {
+  transition: color 0.6s ease;
+}
+
+.hero__scene--2.is-dark .hero__desc {
+  color: var(--neutral--400);
+}
+
+/* Non-hovered cards must stay readable on the dark stage */
+.hero__scene--2.is-dark .hero__stat-number {
+  color: var(--neutral--0);
+}
+
+.hero__scene--2.is-dark .hero__stat-label {
+  color: var(--neutral--400);
 }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
