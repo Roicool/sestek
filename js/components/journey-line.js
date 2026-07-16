@@ -1,7 +1,10 @@
 /*!
- * journey-line.js v1.1.0
+ * journey-line.js v1.2.0
  * v1.1.0: badge reveals are a pure opacity fade — the scale + back.out pop
  *         read badly when the scrub rewinds. Media/copy choreography unchanged.
+ * v1.2.0: the fill starts AT badge 1 (step 1 is already open when the pin
+ *         catches, so drawing the empty stretch before it was wasted scroll).
+ *         Reveal timings re-map to the remaining badge-1 → end range.
  * Superpower-style pinned journey steps: the section pins for the whole
  * scroll distance, a full-bleed horizontal line fills with the accent colour
  * (scaleX — no SVG, no path measuring) and each step's badge/media/copy
@@ -117,9 +120,10 @@
     }
 
     // ── States ────────────────────────────────────────────────────────────────
-    /** Step 0 open, the rest primed for their reveal. */
+    /** Step 0 open, the rest primed for their reveal. The fill rests at
+     *  badge 1 — step 1 is open from the start, so the line owns that much. */
     function primeStates() {
-      gsap.set(fill, { scaleX: 0, transformOrigin: "left center" });
+      gsap.set(fill, { scaleX: fracs[0] || 0, transformOrigin: "left center" });
       steps.forEach(function (s, i) {
         var open = i === 0;
         if (badges[i]) gsap.set(badges[i], { autoAlpha: open ? 1 : 0 });
@@ -200,13 +204,17 @@
         },
       });
 
-      // The line fills linearly across the whole scroll; each step opens the
-      // moment the fill crosses its badge. Ease stays "none" on the fill so
-      // the badge-arrival timing maps 1:1 to the measured fractions.
-      master.fromTo(fill, { scaleX: 0 }, { scaleX: 1, duration: FILL_DUR }, 0);
+      // The line starts already filled to badge 1 (no scroll wasted on the
+      // empty stretch before the open step) and runs linearly to the end;
+      // each later step opens the moment the fill crosses its badge. Ease
+      // stays "none" on the fill so badge-arrival maps 1:1 to the measured
+      // fractions, re-based onto the badge-1 → end range.
+      var from = Math.min(fracs[0] || 0, 0.9);
+      var span = 1 - from;
+      master.fromTo(fill, { scaleX: from }, { scaleX: 1, duration: FILL_DUR }, 0);
       for (var i = 1; i < n; i++) {
-        var at = Math.min(fracs[i] * FILL_DUR, FILL_DUR - REVEAL);
-        addReveal(master, i, at, REVEAL, REVEAL * 0.15);
+        var at = Math.min(((fracs[i] - from) / span) * FILL_DUR, FILL_DUR - REVEAL);
+        addReveal(master, i, Math.max(0, at), REVEAL, REVEAL * 0.15);
       }
       master.to({}, { duration: SETTLE });                  // hold on the finished frame
     }
