@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.8.0
+ * process-flow.js v2.8.1
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -79,6 +79,15 @@
     var cols = toArray(root.querySelectorAll("[data-pf-col]"));
     var draw = root.querySelector("[data-pf-draw]");
 
+    // Recover from a common Webflow-build miss: [data-pf-pill] forgotten on the
+    // chip. The wrap's parent IS the chip, so the rail measurement, colours and
+    // label swaps keep working — but fix the attribute, this is a fallback.
+    if (!pills.length) {
+      pills = toArray(root.querySelectorAll("[data-pf-pill-wrap]")).map(function (w) { return w.parentElement; });
+      if (pills.length) console.warn("[Sestek ProcessFlow] [data-pf-pill] missing on the pill chips — " +
+        "recovered them via [data-pf-pill-wrap]. Add data-pf-pill in Webflow.");
+    }
+
     if (!draw || !personas.length || !cols.length) {
       console.warn("[Sestek ProcessFlow] Need [data-pf-draw], [data-pf-persona] " +
         "rows and [data-pf-col] card columns.");
@@ -100,7 +109,11 @@
     var cards = cols.map(function (col) { return toArray(col.querySelectorAll("[data-pf-card]")); });
 
     function personLines(p) { return p.querySelectorAll("[data-pf-person-text]"); }
-    function personIcon(p) { return p.querySelector("[data-pf-person]"); }
+    function personIcon(p) { return p.querySelector("[data-pf-person]") || p.querySelector(".pf_persona-icon"); }
+    if (personas.length && !personas[0].querySelector("[data-pf-person]") && personIcon(personas[0])) {
+      console.warn("[Sestek ProcessFlow] [data-pf-person] missing on the persona icons — " +
+        "falling back to .pf_persona-icon. Add data-pf-person in Webflow.");
+    }
 
     // ── Rail: the path is GENERATED from the real layout ─────────────────────
     // Personas sit statically in the flow; we measure them + the pill row and
@@ -124,7 +137,9 @@
       var clip = root.querySelector("[data-pf-personas]") || personas[0].parentNode;
       var clipR = clip.getBoundingClientRect();
       var rowR = personas[0].getBoundingClientRect();
-      var icR = (personIcon(personas[0]) || personas[0]).getBoundingClientRect();
+      // anchor: icon → first text line → the whole row (worst case)
+      var anchor = personIcon(personas[0]) || personas[0].querySelector("[data-pf-person-text]") || personas[0];
+      var icR = anchor.getBoundingClientRect();
 
       // y1 = the ACTIVE persona row's icon centre. Measured as an offset within
       // the row, anchored to the clip — the personas' yPercent scroll can never
