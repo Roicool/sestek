@@ -6,6 +6,7 @@ Bu dosya temizlik bitince silinecek.
 ## Merge edildi
 - [x] claude/kind-sagan-42ag6c (process-flow v2.9.0 → main 366a0d9)
 - [x] claude/branch-sync-main-1pjo40 (demo-form)
+- [x] claude/lottie-color-palette-7f81ae-tbj82r (Lottie #7F81AE JSON'ları)
 
 ## Sıfır önde (merge gerekmez, direkt sil)
 - [ ] claude/gifted-brahmagupta-Zr6EK
