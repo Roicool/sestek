@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.1.1
+ * hero.js v1.2.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -12,8 +12,11 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * A floating "pill" background glides to the hovered stat and stays there
- * (sticky active state). The pill element is created at runtime.
+ * The active stat is circled by a hand-drawn "scribble" ellipse (SVG stroke,
+ * created at runtime). On hover the scribble erases itself, jumps to the new
+ * stat and redraws around it — sticky: it stays on the last hovered stat.
+ * Uses DrawSVGPlugin (gsap 3.13+) when present; falls back to a simple
+ * fade + glide when it isn't.
  * https://github.com/roicool/sestek
  */
 
@@ -34,6 +37,11 @@
     }
 
     gsap.registerPlugin(ScrollTrigger);
+
+    // DrawSVG is optional — without it the scribble skips the draw/erase
+    // trick and simply fades + glides like a regular pill.
+    var canDraw = typeof DrawSVGPlugin !== "undefined";
+    if (canDraw) gsap.registerPlugin(DrawSVGPlugin);
 
     var el = {
       videoWrap : hero.querySelector("[data-hero-video-wrap]"),
@@ -59,13 +67,26 @@
     var hasStats = !!(el.statsWrap && el.stats.length);
 
     /*
-     * Stats "active" pill — a single floating background element that glides
-     * to whichever stat is hovered and stays there (sticky). One stat is
-     * always active (index 0 initially); active state is mirrored with the
-     * house .is-active class for CSS styling.
+     * Stats "active" scribble — a floating container holding a hand-drawn
+     * SVG ellipse that circles whichever stat is active. Hover erases the
+     * stroke, jumps the container to the new stat and redraws it (sticky:
+     * it stays on the last hovered stat). One stat is always active
+     * (index 0 initially); active state is mirrored with the house
+     * .is-active class for CSS styling.
      */
     var pill = null;
+    var scribble = null; // the <path> inside the pill
+    var moveTl = null;   // in-flight erase→jump→redraw sequence
     var activeIndex = 0; // sticky: keeps the last hovered stat active
+
+    /*
+     * Hand-drawn ellipse: starts top-right, sweeps around and overshoots
+     * its own start — like someone circled the stat with a pen. Stretched
+     * onto each stat via preserveAspectRatio="none"; the stroke keeps its
+     * width thanks to vector-effect="non-scaling-stroke".
+     */
+    var SCRIBBLE_D = "M162,12 C193,22 204,48 168,64 C126,82 44,81 15,59 " +
+                     "C-9,39 20,10 88,4 C128,0.5 164,5 174,17";
 
     function movePill(index, immediate) {
       if (!pill) return;
@@ -81,8 +102,22 @@
         width : stat.offsetWidth,
         height: stat.offsetHeight,
       };
+      if (moveTl) { moveTl.kill(); moveTl = null; }
       if (immediate) {
+        // Layout re-syncs (resize, count-up reflow): snap, fully drawn
         gsap.set(pill, props);
+        if (canDraw) gsap.set(scribble, { drawSVG: "0% 100%" });
+        return;
+      }
+      if (canDraw) {
+        // Erase the pen stroke → jump to the new stat → redraw around it
+        moveTl = gsap.timeline();
+        moveTl
+          .to(scribble, { drawSVG: "100% 100%", duration: 0.22, ease: "power1.in", overwrite: "auto" })
+          .set(pill, props)
+          .fromTo(scribble,
+            { drawSVG: "0% 0%" },
+            { drawSVG: "0% 100%", duration: 0.5, ease: "power2.out" });
       } else {
         props.duration = 0.45;
         props.ease = "power3.out";
@@ -98,13 +133,21 @@
       pill = document.createElement("div");
       pill.className = "hero__stat-pill";
       pill.setAttribute("aria-hidden", "true");
+      pill.innerHTML =
+        '<svg class="hero__stat-scribble" viewBox="0 0 200 80" ' +
+        'preserveAspectRatio="none" fill="none">' +
+        '<path d="' + SCRIBBLE_D + '" vector-effect="non-scaling-stroke" ' +
+        'stroke-linecap="round"/></svg>';
+      scribble = pill.querySelector("path");
       el.statsWrap.insertBefore(pill, el.statsWrap.firstChild);
 
       el.stats.forEach(function (stat, i) {
-        stat.addEventListener("mouseenter", function () { movePill(i); });
+        stat.addEventListener("mouseenter", function () {
+          if (i !== activeIndex) movePill(i); // re-hovering the active stat is a no-op
+        });
       });
       // Active state is sticky: it stays on the last hovered stat, so no
-      // mouseleave handler — the pill only moves on the next hover.
+      // mouseleave handler — the scribble only moves on the next hover.
 
       /*
        * The stats row reflows for reasons the pill can't see coming: the
@@ -343,16 +386,24 @@
                 movePill(activeIndex, true);
                 // min-width only stops the row from SHRINKING; intermediate
                 // roll values can be wider than the final text, so the row
-                // settles once more when the roll lands. Glide the pill back.
-                if (roll) roll.then(function () { movePill(activeIndex); });
+                // settles once more when the roll lands. Snap-sync so the
+                // scribble doesn't erase/redraw on every roll landing.
+                if (roll) roll.then(function () { movePill(activeIndex, true); });
               }
             },
           }, sStart + i * sSpace);
         });
 
-        // Pill fades in together with the first (default-active) stat
+        // Scribble appears together with the first (default-active) stat —
+        // the ellipse draws itself around it as the user keeps scrolling.
         if (pill) {
           tl.to(pill, { opacity: 1, duration: sDur }, sStart);
+          if (canDraw) {
+            tl.fromTo(scribble,
+              { drawSVG: "0% 0%" },
+              { drawSVG: "0% 100%", duration: 0.16, ease: "none" },
+              sStart);
+          }
         }
       }
 

@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.1.0
+ * hero.css v1.2.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -178,21 +178,38 @@
 }
 
 /*
- * The floating active-state background. Created by hero.js at runtime and
- * moved with GSAP (x/y/width/height), so it only needs its resting look here.
+ * The floating active-state marker. Created by hero.js at runtime and moved
+ * with GSAP (x/y/width/height). It's an invisible box tracking the active
+ * stat; the visible part is the hand-drawn scribble ellipse inside it.
  */
 .hero__stat-pill {
   position: absolute;
   top: 0;
   left: 0;
-  background: var(--neutral--0);
-  border: 1px solid var(--border--color-border-muted);
-  border-radius: var(--radius--xl);
-  box-shadow: 0 8px 24px oklch(14% 0 0 / 0.06);
   z-index: 0;
   opacity: 0; /* fades in with the first stat at the end of the timeline */
   will-change: transform, width, height, opacity;
   pointer-events: none;
+}
+
+/*
+ * The scribble spills slightly past the stat's box (like a real pen circle)
+ * and leans a touch — the SVG stretches with the pill, the stroke width
+ * stays constant via vector-effect: non-scaling-stroke.
+ */
+.hero__stat-scribble {
+  position: absolute;
+  top: -8px;
+  left: -14px;
+  width: calc(100% + 28px);
+  height: calc(100% + 16px);
+  overflow: visible;
+  transform: rotate(-1.5deg);
+}
+
+.hero__stat-scribble path {
+  stroke: var(--color-text--accent);
+  stroke-width: 2px;
 }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
