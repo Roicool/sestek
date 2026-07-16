@@ -1,0 +1,66 @@
+/*!
+ * journey-line.css v1.0.0
+ * Structural hooks for the Superpower-style pinned journey steps
+ * (journey-line.js v1.0+). Mechanics only — the full-bleed track line, its
+ * scaleX fill and the will-change hints for the blur reveals. The visual skin
+ * (badge design, card layout, typography) is yours; steps live inside a
+ * .container-2xl grid while the line spans the whole section.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Colour tokens — bound to RC Structure tokens with hex fallbacks ───────── */
+[data-journey-line] {
+  --jl-track:  var(--border--color-border-muted, #e2e1d3);  /* neutral--100 */
+  --jl-accent: var(--color-text--accent, #0b4fff);          /* brand-primary--600 */
+  --jl-line-w: 2px;
+
+  position: relative;   /* the line positions against the section */
+}
+
+/* ── Track line — full bleed, ignores the container. JS aligns `top` to the
+   badge row's centre (top:50% is only the pre-JS fallback) and never touches
+   width: the fill is a transform, so resizing costs nothing. ──────────────── */
+[data-jl-line] {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: var(--jl-line-w);
+  background: var(--jl-track);
+  pointer-events: none;
+}
+
+/* ── Fill — scaleX 0 → 1, driven by the scrubbed timeline. scaleX(0) here too
+   so the accent can never flash full-width before the JS takes over. ───────── */
+[data-jl-line-fill] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--jl-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* ── Badges sit ON the line — lift them above it ───────────────────────────── */
+[data-jl-badge] {
+  position: relative;
+  z-index: 1;
+  will-change: opacity, transform;
+}
+
+/* ── Reveal targets — blur is the expensive part; keep hints on these only ─── */
+[data-jl-media],
+[data-jl-copy] {
+  will-change: opacity, filter, transform;
+}
+
+/* ── Mobile & tablet — no pin, steps stack; the horizontal line makes no
+   sense vertically, journey-line.js reveals each step on its own trigger ──── */
+@media (max-width: 991px) {
+  [data-jl-line] { display: none; }
+}
+
+/* ── Reduced motion — journey-line.js renders everything visible, no pin ───── */
+@media (prefers-reduced-motion: reduce) {
+  [data-jl-line-fill] { transform: none; }
+}
