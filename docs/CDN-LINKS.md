@@ -44,15 +44,15 @@ js/
   core/        utils.js, lenis-init.js, nav.js
   components/  hero.js, hero-slider.js, marquee.js, scroll-tabs.js, video-modal.js,
                video-inline.js, webinar-player.js, card-marquee.js, section-title.js,
-               text-rotator.js, story.js, accordion.js, blog-utils.js, site-utils.js,
-               sticky-utms.js
+               text-rotator.js, story.js, accordion.js, demo-form.js, blog-utils.js,
+               site-utils.js, sticky-utms.js
   effects/     grain.js, btn-glow.js
   animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
                card-marquee.css, section-title.css, text-rotator.css, story.css,
-               accordion.css
+               accordion.css, demo-form.css
   effects/     grain.css, btn-glow.css
   animations/  reveal.css
 ```
@@ -730,6 +730,8 @@ DOM yapısı:
 | `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
 | `js/components/logo-slider.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js` |
 | `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
+| `js/components/demo-form.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/demo-form.js` |
+| `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
 
 ### Accordion
 
@@ -796,6 +798,118 @@ DOM:
 - Açık item'a ve trigger'ına `is-open` class'ı eklenir — Designer'dan aktif stil verebilirsin.
 - `prefers-reduced-motion`: animasyon yerine anında açılır/kapanır.
 - `Sestek.initAccordion()` her gruba bir controller döndürür.
+
+### Demo Form ("Try Live Demo")
+
+"Try Live Demo" bölümünü yöneten controller. Üç bağımsız, opt-in davranış —
+görsel tasarım (gradient panel, kartlar, `<form>`) Designer'da kalır, script
+sadece dinamikleri bağlar:
+
+1. **Industry switcher** — sol kolon bir akordeon (accordion.js); hangi item
+   açıksa sağ paneldeki başlık + açıklama o industry'nin metnine güncellenir.
+2. **KVKK (IP geo)** — KVKK checkbox bloğu varsayılan gizli. Yüklenince
+   ziyaretçinin ülkesi IP'den (client-side) bakılır; ülke `data-demo-form-country`
+   (varsayılan `TR`) ile eşleşirse blok gösterilir ve checkbox `required` yapılır
+   → Webflow'un native doğrulaması işaretlenene kadar submit'i engeller. Diğer
+   ülkeler hiç görmez ve **engellenmez**. Geo isteği başarısız olursa
+   `<html lang>` (`tr`) fallback'i devreye girer.
+3. **Submit reveal** — form **native Webflow form** olarak kalır (submit +
+   başarı mesajını Webflow yönetir). Script, başarı mesajı görünür olunca
+   başlıktaki Lottie'yi teşekkür mesajının içindeki placeholder'a **FLIP** ile
+   yumuşakça taşır ve mesajı smooth scroll ile görünüme getirir.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/accordion.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/demo-form.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initAccordion();  // sol kolon akordeonu
+    Sestek.initDemoForm();   // sağ panel senkronu + KVKK + submit animasyonu
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök ([data-demo-form]) attribute'ları:
+    data-demo-form-geo            ülke kodu döndüren geo endpoint
+                                  (varsayılan https://ipapi.co/country/)
+    data-demo-form-country        KVKK'yı gösteren ülke kodu (varsayılan "TR")
+    data-demo-form-scroll-offset  submit sonrası scroll için px ofset (varsayılan 80)
+    data-demo-form-duration       Lottie FLIP süresi sn (varsayılan 0.8)
+-->
+<section data-demo-form>
+
+  <!-- SOL: akordeon (accordion.js) + her item bir demo-form item -->
+  <div data-accordion data-accordion-multiple="false">
+    <div data-accordion-item data-demo-form-item data-demo-form-active
+         data-demo-form-title="Banking Assistant"
+         data-demo-form-text="Control the look and feel of your portal…">
+      <button data-accordion-trigger>Banking Assistant</button>
+      <div data-accordion-panel><div data-accordion-content>Kısa açıklama…</div></div>
+    </div>
+    <!-- başka industry'ler… -->
+  </div>
+
+  <!-- başlığın yanındaki, submit'te yolculuk edecek Lottie -->
+  <div data-demo-form-lottie> … (Webflow Lottie) … </div>
+
+  <!-- SAĞ: dinamik metin + native Webflow form -->
+  <h3 data-demo-form-heading>This is some text inside of a div block.</h3>
+  <p  data-demo-form-body>This is some text inside of a div block.</p>
+
+  <div class="w-form">
+    <form>
+      <!-- Name, Phone Number alanları… -->
+
+      <!-- KVKK: varsayılan gizli; demo-form.js TR ise gösterir + required yapar.
+           Designer'da required İŞARETLEME — script yönetiyor. -->
+      <label data-demo-form-kvkk>
+        <input type="checkbox"> KVKK Aydınlatma Metni'ni okudum, onaylıyorum.
+      </label>
+    </form>
+
+    <!-- Webflow success mesajı; içine boş bir placeholder div koy -->
+    <div class="w-form-done" data-demo-form-done>
+      Teşekkürler! En kısa sürede sizi arayacağız.
+      <div data-demo-form-lottie-target></div>
+    </div>
+    <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+  </div>
+
+</section>
+```
+
+**Notlar**
+- Item attribute'ları: `data-demo-form-title` (sağ başlık), `data-demo-form-text`
+  (sağ açıklama), `data-demo-form-active` (seçili başlasın). Açılan item'a
+  `is-active` class'ı eklenir — Designer'dan aktif stil verebilirsin.
+- **Dil (TR/EN):** `data-demo-form-title-<lang>` / `data-demo-form-text-<lang>`
+  ile `<html lang>`'e göre metin. Örn. `data-demo-form-title-tr` Türkçe sayfada
+  kazanır; yoksa baz `data-demo-form-title`'a düşer. (blog-utils / ask-ai ile
+  aynı pattern.)
+- KVKK kontrolü **checkbox veya tek radio** olabilir; ikisi de `required` ile
+  doğrulanır. (İki seçenekli "evet/hayır" radio grubu native validation ile
+  "evet"e zorlanamaz — tekil onay input'u kullan.) Designer'da **required
+  işaretleme**; script TR'de ekler, diğer ülkelerde kaldırır.
+- Geo varsayılanı `ipapi.co` — kendi endpoint'ini `data-demo-form-geo` ile
+  verebilirsin (plain-text ülke kodu döndürmeli, örn. `TR`).
+- Submit'i **hijack etmez** — form native Webflow submit'iyle çalışır; script
+  yalnızca `[data-demo-form-done]` görünür olunca Lottie FLIP + scroll yapar.
+- GSAP yalnızca sol akordeon ve Lottie FLIP için gerekli; yoksa Lottie anında
+  taşınır. Smooth scroll Lenis varsa `Sestek.scrollTo`, yoksa native.
+- `prefers-reduced-motion`: metin fade'i ve Lottie tween'i atlanır.
 
 ### Site Utils
 
