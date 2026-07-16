@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Savings Calculator — Ramp-style live demo</title>
+  <link rel="stylesheet" href="../../css/components/savings-calculator.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #fff;
+      color: #232323;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .sv-calc__head h2 {
+      margin: 0;
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    .sv-calc__head p {
+      max-width: 40ch;
+      margin: 1.25rem auto 0;
+      font-size: 1.125rem;
+      line-height: 1.5;
+      color: #4b4f58;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="sv-calc" data-savings-calc>
+    <div class="sv-calc__head">
+      <h2>See what your team could save</h2>
+      <p>Automation frees real budget. Move the slider to your monthly
+        inquiry volume and watch the savings update live.</p>
+    </div>
+
+    <div class="sv-calc__slider">
+      <div class="sv-calc__bubble" data-sv-bubble>50K</div>
+      <input type="range" data-sv-range aria-label="Total inquiries per month">
+      <div class="sv-calc__slider-label">Total Inquiries (monthly)</div>
+    </div>
+
+    <div class="sv-calc__inputs">
+      <label>Cost per agent ($/month)
+        <input type="number" data-sv-cost min="0" step="50">
+      </label>
+      <label>Number of agents
+        <input type="number" data-sv-agents min="0" step="1">
+      </label>
+    </div>
+
+    <div class="sv-calc__result">
+      <span data-sv-total>$0</span>
+      <span class="sv-calc__per">/Year</span>
+    </div>
+
+    <p class="sv-calc__disclaimer">
+      For illustrative purposes only. Estimated savings assume the Virtual Agent
+      handles 70% of inquiries, with one agent handling ~600 inquiries per month.
+      This is not a prediction, target, or guarantee.
+    </p>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+  <script src="../../js/components/savings-calculator.js" defer></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      Sestek.initSavingsCalc();
+    });
+  </script>
+</body>
+</html>
