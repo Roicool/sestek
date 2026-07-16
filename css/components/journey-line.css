@@ -1,5 +1,6 @@
 /*!
- * journey-line.css v1.0.0
+ * journey-line.css v1.0.1
+ * v1.0.1: badge will-change narrowed to opacity (reveal is a pure fade now).
  * Structural hooks for the Superpower-style pinned journey steps
  * (journey-line.js v1.0+). Mechanics only — the full-bleed track line, its
  * scaleX fill and the will-change hints for the blur reveals. The visual skin
@@ -45,7 +46,7 @@
 [data-jl-badge] {
   position: relative;
   z-index: 1;
-  will-change: opacity, transform;
+  will-change: opacity;
 }
 
 /* ── Reveal targets — blur is the expensive part; keep hints on these only ─── */
