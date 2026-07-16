@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.2.0
+ * hero.js v1.3.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -12,11 +12,11 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * The active stat is circled by a hand-drawn "scribble" ellipse (SVG stroke,
- * created at runtime). On hover the scribble erases itself, jumps to the new
- * stat and redraws around it — sticky: it stays on the last hovered stat.
- * Uses DrawSVGPlugin (gsap 3.13+) when present; falls back to a simple
- * fade + glide when it isn't.
+ * The active stat is framed by four corner brackets (focus-frame style,
+ * created at runtime). On hover the brackets release outward, the frame
+ * glides to the new stat and the brackets lock back in with a slight
+ * overshoot — sticky: the frame stays on the last hovered stat.
+ * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
 
@@ -37,11 +37,6 @@
     }
 
     gsap.registerPlugin(ScrollTrigger);
-
-    // DrawSVG is optional — without it the scribble skips the draw/erase
-    // trick and simply fades + glides like a regular pill.
-    var canDraw = typeof DrawSVGPlugin !== "undefined";
-    if (canDraw) gsap.registerPlugin(DrawSVGPlugin);
 
     var el = {
       videoWrap : hero.querySelector("[data-hero-video-wrap]"),
@@ -67,26 +62,21 @@
     var hasStats = !!(el.statsWrap && el.stats.length);
 
     /*
-     * Stats "active" scribble — a floating container holding a hand-drawn
-     * SVG ellipse that circles whichever stat is active. Hover erases the
-     * stroke, jumps the container to the new stat and redraws it (sticky:
-     * it stays on the last hovered stat). One stat is always active
-     * (index 0 initially); active state is mirrored with the house
-     * .is-active class for CSS styling.
+     * Stats "active" frame — a floating container holding four corner
+     * brackets (photo-camera focus-frame style) that frame whichever stat
+     * is active. On hover the brackets release outward, the frame glides
+     * to the new stat and the brackets lock back in with a slight
+     * overshoot (sticky: the frame stays on the last hovered stat). One
+     * stat is always active (index 0 initially); active state is mirrored
+     * with the house .is-active class for CSS styling.
      */
     var pill = null;
-    var scribble = null; // the <path> inside the pill
-    var moveTl = null;   // in-flight erase→jump→redraw sequence
+    var corners = null;  // the four bracket elements [tl, tr, bl, br]
+    var moveTl = null;   // in-flight release→glide→lock-in sequence
     var activeIndex = 0; // sticky: keeps the last hovered stat active
 
-    /*
-     * Hand-drawn ellipse: starts top-right, sweeps around and overshoots
-     * its own start — like someone circled the stat with a pen. Stretched
-     * onto each stat via preserveAspectRatio="none"; the stroke keeps its
-     * width thanks to vector-effect="non-scaling-stroke".
-     */
-    var SCRIBBLE_D = "M162,12 C193,22 204,48 168,64 C126,82 44,81 15,59 " +
-                     "C-9,39 20,10 88,4 C128,0.5 164,5 174,17";
+    // Outward release direction per corner (matches the order above)
+    var CORNER_OUT = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
 
     function movePill(index, immediate) {
       if (!pill) return;
@@ -104,26 +94,37 @@
       };
       if (moveTl) { moveTl.kill(); moveTl = null; }
       if (immediate) {
-        // Layout re-syncs (resize, count-up reflow): snap, fully drawn
+        // Layout re-syncs (resize, count-up reflow): snap, brackets at rest
         gsap.set(pill, props);
-        if (canDraw) gsap.set(scribble, { drawSVG: "0% 100%" });
+        gsap.set(corners, { x: 0, y: 0, opacity: 1 });
         return;
       }
-      if (canDraw) {
-        // Erase the pen stroke → jump to the new stat → redraw around it
-        moveTl = gsap.timeline();
-        moveTl
-          .to(scribble, { drawSVG: "100% 100%", duration: 0.22, ease: "power1.in", overwrite: "auto" })
-          .set(pill, props)
-          .fromTo(scribble,
-            { drawSVG: "0% 0%" },
-            { drawSVG: "0% 100%", duration: 0.5, ease: "power2.out" });
-      } else {
-        props.duration = 0.45;
-        props.ease = "power3.out";
-        props.overwrite = "auto"; // rapid hovers retarget mid-flight cleanly
-        gsap.to(pill, props);
-      }
+      // Release the brackets → glide the frame → lock back in (overshoot)
+      moveTl = gsap.timeline();
+      moveTl
+        .to(corners, {
+          x: function (i) { return CORNER_OUT[i][0] * 10; },
+          y: function (i) { return CORNER_OUT[i][1] * 10; },
+          opacity  : 0.25,
+          duration : 0.16,
+          ease     : "power2.in",
+          overwrite: "auto",
+        })
+        .to(pill, {
+          x       : props.x,
+          y       : props.y,
+          width   : props.width,
+          height  : props.height,
+          duration: 0.38,
+          ease    : "power3.inOut",
+        }, 0.10)
+        .to(corners, {
+          x       : 0,
+          y       : 0,
+          opacity : 1,
+          duration: 0.34,
+          ease    : "back.out(2.4)",
+        }, 0.30);
     }
 
     function setupStatsPill() {
@@ -134,11 +135,11 @@
       pill.className = "hero__stat-pill";
       pill.setAttribute("aria-hidden", "true");
       pill.innerHTML =
-        '<svg class="hero__stat-scribble" viewBox="0 0 200 80" ' +
-        'preserveAspectRatio="none" fill="none">' +
-        '<path d="' + SCRIBBLE_D + '" vector-effect="non-scaling-stroke" ' +
-        'stroke-linecap="round"/></svg>';
-      scribble = pill.querySelector("path");
+        '<i class="hero__stat-corner hero__stat-corner--tl"></i>' +
+        '<i class="hero__stat-corner hero__stat-corner--tr"></i>' +
+        '<i class="hero__stat-corner hero__stat-corner--bl"></i>' +
+        '<i class="hero__stat-corner hero__stat-corner--br"></i>';
+      corners = Array.from(pill.children);
       el.statsWrap.insertBefore(pill, el.statsWrap.firstChild);
 
       el.stats.forEach(function (stat, i) {
@@ -147,7 +148,7 @@
         });
       });
       // Active state is sticky: it stays on the last hovered stat, so no
-      // mouseleave handler — the scribble only moves on the next hover.
+      // mouseleave handler — the frame only moves on the next hover.
 
       /*
        * The stats row reflows for reasons the pill can't see coming: the
@@ -387,23 +388,26 @@
                 // min-width only stops the row from SHRINKING; intermediate
                 // roll values can be wider than the final text, so the row
                 // settles once more when the roll lands. Snap-sync so the
-                // scribble doesn't erase/redraw on every roll landing.
+                // frame doesn't release/lock on every roll landing.
                 if (roll) roll.then(function () { movePill(activeIndex, true); });
               }
             },
           }, sStart + i * sSpace);
         });
 
-        // Scribble appears together with the first (default-active) stat —
-        // the ellipse draws itself around it as the user keeps scrolling.
+        // Frame appears together with the first (default-active) stat —
+        // the brackets converge onto its corners as the user keeps scrolling.
         if (pill) {
           tl.to(pill, { opacity: 1, duration: sDur }, sStart);
-          if (canDraw) {
-            tl.fromTo(scribble,
-              { drawSVG: "0% 0%" },
-              { drawSVG: "0% 100%", duration: 0.16, ease: "none" },
-              sStart);
-          }
+          tl.fromTo(corners, {
+            x: function (i) { return CORNER_OUT[i][0] * 18; },
+            y: function (i) { return CORNER_OUT[i][1] * 18; },
+            opacity: 0,
+          }, {
+            x: 0, y: 0, opacity: 1,
+            duration: 0.14,
+            ease: "power2.out",
+          }, sStart);
         }
       }
 

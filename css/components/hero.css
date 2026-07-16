@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.2.0
+ * hero.css v1.3.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -180,7 +180,7 @@
 /*
  * The floating active-state marker. Created by hero.js at runtime and moved
  * with GSAP (x/y/width/height). It's an invisible box tracking the active
- * stat; the visible part is the hand-drawn scribble ellipse inside it.
+ * stat; the visible part is the four focus-frame corner brackets inside it.
  */
 .hero__stat-pill {
   position: absolute;
@@ -193,24 +193,22 @@
 }
 
 /*
- * The scribble spills slightly past the stat's box (like a real pen circle)
- * and leans a touch — the SVG stretches with the pill, the stroke width
- * stays constant via vector-effect: non-scaling-stroke.
+ * Focus-frame corner brackets — thin L shapes hugging the stat's corners,
+ * sitting slightly outside its box. GSAP animates their x/y (release /
+ * lock-in), the container carries them between stats.
  */
-.hero__stat-scribble {
+.hero__stat-corner {
   position: absolute;
-  top: -8px;
-  left: -14px;
-  width: calc(100% + 28px);
-  height: calc(100% + 16px);
-  overflow: visible;
-  transform: rotate(-1.5deg);
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--color-text--accent);
+  will-change: transform, opacity;
 }
 
-.hero__stat-scribble path {
-  stroke: var(--color-text--accent);
-  stroke-width: 2px;
-}
+.hero__stat-corner--tl { top: -3px;    left: -3px;  border-top-width: 2px;    border-left-width: 2px; }
+.hero__stat-corner--tr { top: -3px;    right: -3px; border-top-width: 2px;    border-right-width: 2px; }
+.hero__stat-corner--bl { bottom: -3px; left: -3px;  border-bottom-width: 2px; border-left-width: 2px; }
+.hero__stat-corner--br { bottom: -3px; right: -3px; border-bottom-width: 2px; border-right-width: 2px; }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
