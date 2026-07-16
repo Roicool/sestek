@@ -1,10 +1,18 @@
 /*!
- * process-flow.js v2.7.0
+ * process-flow.js v2.9.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
  * cards (notification / media / checkout) blur-dissolve in and out. One
  * repeat:-1 master timeline, N phases (= persona count).
+ *
+ * v2.8 — RESPONSIVE RAIL. The line's path is no longer a fixed `d` stretched
+ * with preserveAspectRatio="none"; the JS now MEASURES the personas block and
+ * the pill row and generates the path from those positions (top segment runs
+ * into the active persona row, steps down, then runs through the pill centres
+ * to the right edge). Recomputed on resize and after fonts load, so personas
+ * can sit statically in the layout flow and the line follows them at every
+ * viewport width. Any hardcoded `d`/viewBox on the SVG is just a fallback.
  *
  * Requires : gsap (global) + DrawSVGPlugin + SplitText (both free since GSAP
  *            3.13 — load from the CDN). ScrollSmoother is NOT used; smooth
@@ -30,20 +38,38 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
+ * FIRST-PASS INTRO: on the very first viewport entry the grey track paths
+ * DRAW in too (slightly ahead of the accent line) and the whole phase-0
+ * opening runs data-pf-intro-speed× faster (default 1.6). When phase 0
+ * reaches its hold, the loop settles to normal speed — later cycles are
+ * untouched. Dashed tracks (.is-dash) fade in instead of drawing, so their
+ * dash pattern survives.
+ *
+ * Pinned-section safety: if ScrollTrigger is present, every refresh (pins
+ * being measured, images/fonts landing, resizes) re-measures the rail, so
+ * pin-spacer layout shifts can never leave the line misaligned.
+ *
  * Mobile & tablet (≤991px): a simple SCROLL-driven vertical stack — one card
  * per column (phase 0), personas hidden, and injected [data-pf-vline] grey
  * connector lines between the cards that fill with the accent colour as you
  * scroll (a pill turns active when its connector is full). No loop.
  *
  * Root attributes (all optional):
- *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
- *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
- *   data-pf-mobile      "static" = still frame · "loop" = desktop loop on mobile
- *                       (default = the scroll-filled vertical stack)
+ *   data-pf-hold         seconds each phase holds before transitioning (default 3.5)
+ *   data-pf-draw-dur     line draw / undraw duration in seconds       (default 2.2)
+ *   data-pf-intro-speed  first-pass speed multiplier for the phase-0
+ *                        opening + track assembly (default 1.6)
+ *   data-pf-mobile       "static" = still frame · "loop" = desktop loop on mobile
+ *                        (default = the scroll-filled vertical stack)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
  *   --pf-tag-active-bg (#d8dade) · --pf-tag-idle-bg (#f0efe3) · --pf-tag-idle-bd (#e2e1d3)
+ *
+ * Rail geometry tokens (optional, px numbers on the root):
+ *   --pf-rail-gap-in  (14) gap between the incoming line and the personas
+ *   --pf-rail-gap-out (28) gap between the personas and the step-down curve
+ *   --pf-rail-radius  (24) corner radius of the step-down
  *
  * https://github.com/roicool/sestek
  */
@@ -66,6 +92,15 @@
     var cols = toArray(root.querySelectorAll("[data-pf-col]"));
     var draw = root.querySelector("[data-pf-draw]");
 
+    // Recover from a common Webflow-build miss: [data-pf-pill] forgotten on the
+    // chip. The wrap's parent IS the chip, so the rail measurement, colours and
+    // label swaps keep working — but fix the attribute, this is a fallback.
+    if (!pills.length) {
+      pills = toArray(root.querySelectorAll("[data-pf-pill-wrap]")).map(function (w) { return w.parentElement; });
+      if (pills.length) console.warn("[Sestek ProcessFlow] [data-pf-pill] missing on the pill chips — " +
+        "recovered them via [data-pf-pill-wrap]. Add data-pf-pill in Webflow.");
+    }
+
     if (!draw || !personas.length || !cols.length) {
       console.warn("[Sestek ProcessFlow] Need [data-pf-draw], [data-pf-persona] " +
         "rows and [data-pf-col] card columns.");
@@ -87,7 +122,123 @@
     var cards = cols.map(function (col) { return toArray(col.querySelectorAll("[data-pf-card]")); });
 
     function personLines(p) { return p.querySelectorAll("[data-pf-person-text]"); }
-    function personIcon(p) { return p.querySelector("[data-pf-person]"); }
+    function personIcon(p) { return p.querySelector("[data-pf-person]") || p.querySelector(".pf_persona-icon"); }
+    if (personas.length && !personas[0].querySelector("[data-pf-person]") && personIcon(personas[0])) {
+      console.warn("[Sestek ProcessFlow] [data-pf-person] missing on the persona icons — " +
+        "falling back to .pf_persona-icon. Add data-pf-person in Webflow.");
+    }
+
+    // ── Rail: the path is GENERATED from the real layout ─────────────────────
+    // Personas sit statically in the flow; we measure them + the pill row and
+    // build the stepped path in px (top segment → gap over the personas →
+    // quarter-arc step-down → long line through the pill centres). The same
+    // `d` goes on every <path> in the rail SVG (grey track(s) + blue draw).
+    var svg = draw.ownerSVGElement;
+    var drawTweens = [];                      // every DrawSVG tween — invalidated on resize
+    var lineFrac = { a: 0, b: 0 };            // currently drawn fraction of the line
+
+    // Grey track paths — drawn in on the first-pass intro (loop mode only).
+    // Dashed variants keep their stroke-dasharray, so they fade instead.
+    var tracks = [], dashTracks = [];
+    if (svg) {
+      toArray(svg.querySelectorAll("path")).forEach(function (p) {
+        if (p === draw) return;
+        if (p.classList.contains("is-dash")) dashTracks.push(p);
+        else tracks.push(p);
+      });
+    }
+    var introManaged = false;                 // loop mode hides/draws the tracks
+    var introStarted = false;
+    var introTrackTween = null;
+
+    /** Track state survives re-measures: an active intro draw is invalidated
+     *  (re-inits against the new length); otherwise snap to the logical state. */
+    function applyTrackState() {
+      if (!introManaged || !tracks.length) return;
+      if (introTrackTween && introTrackTween.isActive()) introTrackTween.invalidate();
+      else gsap.set(tracks, { drawSVG: introStarted ? "0% 100%" : "0% 0%" });
+    }
+
+    function railNum(name, fallback) {
+      var v = parseFloat(cssVar(root, name, ""));
+      return isNaN(v) ? fallback : v;
+    }
+
+    function layoutRail() {
+      if (!svg) return false;
+      var box = svg.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) return false;   // hidden (mobile) / not laid out
+
+      var clip = root.querySelector("[data-pf-personas]") || personas[0].parentNode;
+      var clipR = clip.getBoundingClientRect();
+      var rowR = personas[0].getBoundingClientRect();
+      // anchor: icon → first text line → the whole row (worst case)
+      var anchor = personIcon(personas[0]) || personas[0].querySelector("[data-pf-person-text]") || personas[0];
+      var icR = anchor.getBoundingClientRect();
+
+      // y1 = the ACTIVE persona row's icon centre. Measured as an offset within
+      // the row, anchored to the clip — the personas' yPercent scroll can never
+      // skew it. y2 = the pill row's centre, so pills always sit ON the line.
+      var y1 = (clipR.top - box.top) + (icR.top - rowR.top) + icR.height / 2;
+      var pillR = (pills[0] || cols[0]).getBoundingClientRect();
+      var y2 = pillR.top + pillR.height / 2 - box.top;
+
+      var w = box.width;
+      var n = function (v) { return Math.round(v * 100) / 100; };
+      var d;
+
+      if (y2 - y1 < 14 || !clipR.width) {                  // degenerate: flat line
+        d = "M0 " + n(y2) + "H" + n(w);
+      } else {
+        var gapIn = railNum("--pf-rail-gap-in", 14);
+        var gapOut = railNum("--pf-rail-gap-out", 28);
+        var r = Math.max(6, Math.min(railNum("--pf-rail-radius", 24), (y2 - y1) / 2));
+        var x1 = Math.max(0, clipR.left - box.left - gapIn);
+        var x2 = clipR.right - box.left + gapOut;
+        d = "M0 " + n(y1) + "H" + n(x1) +
+            "M" + n(x2) + " " + n(y1) +
+            "A" + n(r) + " " + n(r) + " 0 0 1 " + n(x2 + r) + " " + n(y1 + r) +
+            "V" + n(y2 - r) +
+            "A" + n(r) + " " + n(r) + " 0 0 0 " + n(x2 + 2 * r) + " " + n(y2) +
+            "H" + n(w);
+      }
+
+      svg.setAttribute("viewBox", "0 0 " + n(w) + " " + n(box.height));
+      svg.removeAttribute("preserveAspectRatio");          // 1:1 px — no stretching
+      toArray(svg.querySelectorAll("path")).forEach(function (p) { p.setAttribute("d", d); });
+      return true;
+    }
+
+    function applyLineFrac() {
+      gsap.set(draw, { drawSVG: (lineFrac.a * 100) + "% " + (lineFrac.b * 100) + "%" });
+    }
+
+    /** Re-measure the rail; DrawSVG caches path lengths per tween, so every
+     *  draw tween is invalidated (it re-measures on its next play) and the
+     *  current drawn fraction is re-applied against the new length. */
+    function relayout() {
+      if (!layoutRail()) return;
+      drawTweens.forEach(function (t) { t.invalidate(); });
+      applyLineFrac();
+      applyTrackState();
+    }
+
+    layoutRail();
+
+    var resizeT = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(relayout, 150);
+    });
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(relayout);                 // metrics move once fonts land
+    }
+    // Pinned-section safety: ScrollTrigger pins insert spacers and re-measure
+    // the page (on init, image loads, resizes …). Re-measure the rail after
+    // every refresh so those layout shifts can never desync the line.
+    if (typeof ScrollTrigger !== "undefined" && ScrollTrigger.addEventListener) {
+      ScrollTrigger.addEventListener("refresh", relayout);
+    }
 
     // ── Static / initial state ────────────────────────────────────────────────
     gsap.set(draw, { drawSVG: "0% 0%" });
@@ -101,6 +252,7 @@
 
     /** Resolve phase 0 as a static frame (line drawn, pills open, first cards). */
     function renderStaticPhase0() {
+      lineFrac.a = 0; lineFrac.b = 1;
       gsap.set(draw, { drawSVG: "0% 100%" });
       gsap.set(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON });
       gsap.set(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto" });
@@ -206,12 +358,17 @@
     }
 
     function drawLine() {
-      return gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" },
-        { drawSVG: "0% 100%", duration: DRAW_DUR, ease: "none" });
+      var tl = gsap.timeline().fromTo(draw, { drawSVG: "0% 0%" }, {
+        drawSVG: "0% 100%", duration: DRAW_DUR, ease: "none",
+        onUpdate: function () { lineFrac.a = 0; lineFrac.b = this.ratio; }
+      });
+      drawTweens.push(tl);
+      return tl;
     }
     function undrawLine(nextPhase) {
-      return gsap.timeline().to(draw, {
+      var tl = gsap.timeline().to(draw, {
         drawSVG: "100% 100%", duration: DRAW_DUR, ease: "none",
+        onUpdate: function () { lineFrac.a = this.ratio; lineFrac.b = 1; },
         onStart: function () {
           gsap.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: 0, duration: 0.9, stagger: 0.35, ease: "power4.out" });
           gsap.to(pills, { color: MUTED, backgroundColor: TAG_OFF, borderColor: TAG_BD_OFF, duration: 1.1, stagger: 0.35, ease: "power4.out" });
@@ -225,6 +382,34 @@
           });
         }
       });
+      drawTweens.push(tl);
+      return tl;
+    }
+
+    // ── First-pass intro ──────────────────────────────────────────────────────
+    // The grey tracks start undrawn and assemble on the first viewport entry,
+    // slightly ahead of the accent line; the whole phase-0 opening runs
+    // INTRO_SPEED× and the loop settles to 1× when phase 0 reaches its hold.
+    var INTRO_SPEED = parseFloat(root.getAttribute("data-pf-intro-speed")) || 1.6;
+    introManaged = true;
+    if (tracks.length) gsap.set(tracks, { drawSVG: "0% 0%" });
+    if (dashTracks.length) gsap.set(dashTracks, { autoAlpha: 0 });
+
+    function startIntro() {
+      introStarted = true;
+      master.timeScale(INTRO_SPEED);
+      var trackDur = (DRAW_DUR / INTRO_SPEED) * 0.8;       // grey leads the accent line
+      if (tracks.length) {
+        introTrackTween = gsap.fromTo(tracks, { drawSVG: "0% 0%" },
+          { drawSVG: "0% 100%", duration: trackDur, ease: "none" });
+      }
+      if (dashTracks.length) {
+        gsap.to(dashTracks, {
+          autoAlpha: 1, duration: trackDur, ease: "none",
+          onComplete: function () { gsap.set(dashTracks, { clearProps: "opacity,visibility" }); }
+        });
+      }
+      master.play();
     }
 
     // ── Master loop ───────────────────────────────────────────────────────────
@@ -248,6 +433,9 @@
         master.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto", duration: 1, stagger: 0.35, ease: "power4.out" }, sparkAt);
         master.to(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.35, ease: "power4.out" }, sparkAt);
         revealCards(phase, sparkAt + 0.5);
+        // First pass ran INTRO_SPEED× — settle to normal speed as the hold
+        // begins. Fires every loop; timeScale(1) is idempotent after the intro.
+        if (phase === 0) master.add(function () { master.timeScale(1); }, master.duration());
         master.to({}, { duration: HOLD });
 
         master.add(undrawLine(next));
@@ -268,13 +456,15 @@
     if (typeof IntersectionObserver !== "undefined") {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) master.play();
-          else master.pause();
+          if (entry.isIntersecting) {
+            if (introStarted) master.play();
+            else startIntro();                              // first entry: tracks + fast open
+          } else master.pause();
         });
       }, { threshold: 0.2 });
       io.observe(root);
     } else {
-      master.play();                                        // ancient browsers: just run
+      startIntro();                                         // ancient browsers: just run
     }
 
     root._processFlowTimeline = master;                     // exposed for debugging
