@@ -101,10 +101,26 @@
      rolls (CSS transition on transform) to the new digit. Columns are
      aligned from the RIGHT so units keep their identity as the number
      grows/shrinks. */
-  function createRoller(host, reduceMotion) {
+  function createRoller(host, reduceMotion, durationSec) {
     host.textContent = "";
     host.classList.add("sv-num");
     var cols = [];                       // left → right
+
+    // Hidden measurer: non-digit chars ($ , .) get their real width in em,
+    // so column widths can transition smoothly when the number grows/shrinks.
+    var measure = document.createElement("span");
+    measure.className = "sv-num__measure";
+    measure.setAttribute("aria-hidden", "true");
+    host.appendChild(measure);
+    var emCache = {};
+    function charEm(ch) {
+      if (emCache[ch] == null) {
+        measure.textContent = ch;
+        var fs = parseFloat(getComputedStyle(host).fontSize) || 16;
+        emCache[ch] = measure.getBoundingClientRect().width / fs;
+      }
+      return emCache[ch];
+    }
 
     function makeCol() {
       var col = document.createElement("span");
@@ -133,12 +149,28 @@
           if (!reduceMotion) void c.el.offsetWidth;   // flush → first roll animates
         }
         c.strip.style.transform = "translateY(" + (-(+ch) * 10) + "%)";
+        c.el.style.width = "1ch";
       } else {
         if (c.strip) { c.el.removeChild(c.strip); c.strip = null; }
         c.el.classList.remove("sv-num__col--digit");
         if (c.el.textContent !== ch) c.el.textContent = ch;
+        c.el.style.width = charEm(ch) + "em";
       }
       c.ch = ch;
+    }
+
+    /* Leaving columns collapse (width → 0, fade) then get removed —
+       no more snap when the number loses a digit. */
+    function retire(c) {
+      if (reduceMotion) {
+        if (c.el.parentNode) c.el.parentNode.removeChild(c.el);
+        return;
+      }
+      c.el.style.width = "0px";
+      c.el.style.opacity = "0";
+      setTimeout(function () {
+        if (c.el.parentNode) c.el.parentNode.removeChild(c.el);
+      }, durationSec * 1000 + 50);
     }
 
     return function set(str) {
@@ -146,12 +178,14 @@
       var chars = str.split("");
       while (cols.length < chars.length) {            // grow at the LEFT
         var col = makeCol();
+        col.style.width = "0px";                      // expands to its width
+        col.style.opacity = "0";
         host.insertBefore(col, host.firstChild);
+        if (!reduceMotion) void col.offsetWidth;      // flush → width animates
+        col.style.opacity = "1";
         cols.unshift({ el: col, strip: null, ch: null });
       }
-      while (cols.length > chars.length) {            // shrink at the LEFT
-        host.removeChild(cols.shift().el);
-      }
+      while (cols.length > chars.length) retire(cols.shift());  // shrink at LEFT
       for (var i = 0; i < chars.length; i++) setCol(cols[i], chars[i]);
     };
   }
@@ -202,7 +236,7 @@
 
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     root.style.setProperty("--sv-num-dur", (reduceMotion ? 0 : o.duration) + "s");
-    var setNumber = createRoller(el.total, reduceMotion);
+    var setNumber = createRoller(el.total, reduceMotion, o.duration);
 
     function currentInquiries() { return tToValue(t, o.min, o.max); }
 

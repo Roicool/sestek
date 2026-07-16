@@ -207,8 +207,18 @@
   overflow: hidden;
   clip-path: inset(0);   /* forces the clip even on composited layers */
   contain: paint;
+  /* width animates when the number gains/loses a digit — no snap */
+  transition:
+    width   var(--sv-num-dur) cubic-bezier(0.23, 1, 0.32, 1),
+    opacity var(--sv-num-dur) cubic-bezier(0.23, 1, 0.32, 1);
 }
 .sv-num__col--digit { width: 1ch; }
+.sv-num__measure {
+  position: absolute;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
+}
 .sv-num__strip {
   display: block;
   will-change: transform;
@@ -229,7 +239,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sv-num__strip { transition: none; }
+  .sv-num__strip, .sv-num__col { transition: none; }
 }
 .sv-calc__per {
   font-size: clamp(1rem, 2vw, 1.5rem);
