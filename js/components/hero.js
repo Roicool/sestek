@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.1.0
+ * hero.js v1.1.1
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -12,8 +12,8 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * A floating "pill" background glides to the hovered stat and returns to the
- * first one on mouseleave. The pill element is created at runtime.
+ * A floating "pill" background glides to the hovered stat and stays there
+ * (sticky active state). The pill element is created at runtime.
  * https://github.com/roicool/sestek
  */
 
@@ -60,12 +60,12 @@
 
     /*
      * Stats "active" pill — a single floating background element that glides
-     * to whichever stat is hovered and slides back to the first stat on
-     * mouseleave. One stat is always active (index 0 by default); active
-     * state is mirrored with the house .is-active class for CSS styling.
+     * to whichever stat is hovered and stays there (sticky). One stat is
+     * always active (index 0 initially); active state is mirrored with the
+     * house .is-active class for CSS styling.
      */
     var pill = null;
-    var activeIndex = 0;
+    var activeIndex = 0; // sticky: keeps the last hovered stat active
 
     function movePill(index, immediate) {
       if (!pill) return;
@@ -103,8 +103,8 @@
       el.stats.forEach(function (stat, i) {
         stat.addEventListener("mouseenter", function () { movePill(i); });
       });
-      // Mouse left the whole stats row — glide back home to the first stat
-      el.statsWrap.addEventListener("mouseleave", function () { movePill(0); });
+      // Active state is sticky: it stays on the last hovered stat, so no
+      // mouseleave handler — the pill only moves on the next hover.
 
       /*
        * The stats row reflows for reasons the pill can't see coming: the
