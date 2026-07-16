@@ -1,5 +1,5 @@
 /*!
- * journey-line.js v1.3.0
+ * journey-line.js v1.4.0
  * v1.1.0: badge reveals are a pure opacity fade — the scale + back.out pop
  *         read badly when the scrub rewinds. Media/copy choreography unchanged.
  * v1.2.0: the fill starts AT badge 1 (step 1 is already open when the pin
@@ -13,6 +13,15 @@
  *         grow the box on viewport entry (the CLS source), and every late
  *         image load re-seats the line immediately instead of waiting for
  *         the next global refresh.
+ * v1.4.0: fast-scroll ghost fix. anticipatePin restored — v1.3.0 removed it
+ *         blaming it for the slow-entry settle, but that was the lazy images
+ *         (fixed since); without it a violent scroll crosses the pin start in
+ *         one frame and the section paints un-pinned for a beat, reading as a
+ *         DUPLICATE of itself. anticipatePin scales with velocity, so slow
+ *         entries stay untouched. Permanent will-change hints dropped from
+ *         the CSS for the same reason — long-lived compositor layers can
+ *         paint one stale frame at the old position when the pin flips to
+ *         fixed; GSAP promotes layers during tweens anyway.
  * Superpower-style pinned journey steps: the section pins for the whole
  * scroll distance, a full-bleed horizontal line fills with the accent colour
  * (scaleX — no SVG, no path measuring) and each step's badge/media/copy
@@ -218,10 +227,12 @@
           end: "+=" + (n * STEP_VH) + "%",
           pin: true,
           scrub: SCRUB,
-          // NO anticipatePin: it flips the pin slightly BEFORE the section
-          // reaches the top — a visible jump-then-settle under Lenis. The
-          // native fast-scroll flash it guards against can't happen when
-          // Lenis drives the scroll (see step-scroll.js, same decision).
+          // anticipatePin is VELOCITY-PROPORTIONAL: at violent scroll speeds
+          // it applies the pin the frame the start is crossed (without it the
+          // section paints un-pinned for a beat — looks like a duplicate of
+          // itself); at slow speeds its offset rounds to nothing, so it can't
+          // reintroduce a slow-entry jump.
+          anticipatePin: 1,
           // See PROJECT.md "ScrollTrigger — Pinli Bölüm Kuralları": priority is
           // driven by data-jl-priority, set per the page's pin stacking order.
           refreshPriority: PRIORITY,
