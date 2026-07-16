@@ -1,0 +1,83 @@
+/*!
+ * product-hover.css v1.0.0
+ * Hover blur + "Learn more" overlay for product grid cards.
+ *
+ * DOM contract (class-based):
+ *   .products-item              the card (hover trigger)
+ *     .products-media             wrapper around the image (position context)
+ *       img                        the product image
+ *       .products-overlay          hidden overlay, revealed on hover
+ *         .products-cta            "Learn more" label inside the overlay
+ *
+ * No JS required.
+ * https://github.com/roicool/sestek
+ */
+
+.products-media {
+  position: relative;
+  overflow: hidden;          /* blur'un kenar taşmasını kırpar */
+  border-radius: 0.5rem;
+}
+
+.products-media img {
+  display: block;
+  width: 100%;
+  transition: filter 0.45s ease, transform 0.45s ease;
+}
+
+.products-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.products-cta {
+  color: #fff;
+  font-weight: 500;
+  transform: translateY(8px);
+  transition: transform 0.35s ease;
+}
+
+/* Kartın üstüne gelince */
+.products-item:hover .products-media img {
+  filter: blur(14px);
+  transform: scale(1.06);    /* blur'un kenar halkasını örter */
+}
+
+.products-item:hover .products-overlay {
+  opacity: 1;
+}
+
+.products-item:hover .products-cta {
+  transform: translateY(0);
+}
+
+/* Klavye erişilebilirliği: kart Link Block ise focus da hover gibi davranır */
+.products-item:focus-visible .products-media img {
+  filter: blur(14px);
+  transform: scale(1.06);
+}
+
+.products-item:focus-visible .products-overlay {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .products-media img,
+  .products-overlay,
+  .products-cta {
+    transition: none;
+  }
+
+  .products-item:hover .products-media img {
+    transform: none;
+  }
+}
