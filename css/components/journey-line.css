@@ -1,9 +1,14 @@
 /*!
- * journey-line.css v1.1.0
+ * journey-line.css v1.2.0
  * v1.0.1: badge will-change narrowed to opacity (reveal is a pure fade now).
  * v1.1.0: zero-CLS hardening — images always fill their media box, so a
  *         lazy-loading image can never grow the box (the JS adds an
  *         aspect-ratio fallback when no height is reserved).
+ * v1.2.0: permanent will-change hints REMOVED. Long-lived compositor layers
+ *         inside a pinned section can paint one stale frame at their old
+ *         position when the pin flips to fixed under a violent scroll — the
+ *         "duplicate section" ghost. GSAP creates transient layers during
+ *         the reveals anyway; the standing hint bought nothing.
  * Structural hooks for the Superpower-style pinned journey steps
  * (journey-line.js v1.0+). Mechanics only — the full-bleed track line, its
  * scaleX fill and the will-change hints for the blur reveals. The visual skin
@@ -45,17 +50,12 @@
   transform-origin: left center;
 }
 
-/* ── Badges sit ON the line — lift them above it ───────────────────────────── */
+/* ── Badges sit ON the line — lift them above it. No standing will-change
+   anywhere in this component: permanent compositor layers inside a pinned
+   section can ghost a stale frame when the pin engages at speed. ─────────── */
 [data-jl-badge] {
   position: relative;
   z-index: 1;
-  will-change: opacity;
-}
-
-/* ── Reveal targets — blur is the expensive part; keep hints on these only ─── */
-[data-jl-media],
-[data-jl-copy] {
-  will-change: opacity, filter, transform;
 }
 
 /* ── CLS armour — an image can never resize its media box. The box's height
