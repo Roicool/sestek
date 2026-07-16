@@ -8,15 +8,18 @@
  */
 
 [data-savings-calc] {
-  /* ── Theme knobs (defaults = Ramp's exact colours) ────────── */
-  --sv-accent: #5683d2;          /* big number                            */
-  --sv-bubble: #5b7fde;          /* value bubble + its arrow              */
-  --sv-track-rest: #e4ebf6;      /* track background (unfilled)           */
-  --sv-grad-a: #e4ebf6;          /* fill gradient start                   */
-  --sv-grad-b: #5683d2;          /* fill gradient middle                  */
-  --sv-grad-c: #001b4a;          /* fill gradient end (at the thumb)      */
-  --sv-thumb-color: #001b4a;     /* thumb dot ("midnight")                */
+  /* ── Theme knobs — base #7F81AE, mapped with Ramp's logic ───
+     (accent = base, bubble = slightly brighter, track = pale tint,
+      gradient runs pale tint → base → near-black of the same hue) */
+  --sv-accent: #7f81ae;          /* big number                            */
+  --sv-bubble: #8b8dbd;          /* value bubble + its arrow              */
+  --sv-track-rest: #e9e9f3;      /* track background (unfilled)           */
+  --sv-grad-a: #e9e9f3;          /* fill gradient start                   */
+  --sv-grad-b: #7f81ae;          /* fill gradient middle                  */
+  --sv-grad-c: #16183c;          /* fill gradient end (at the thumb)      */
+  --sv-thumb-color: #16183c;     /* thumb dot ("midnight" of the hue)     */
   --sv-thumb-size: 16px;
+  --sv-num-dur: 0.9s;            /* set live by JS from data-sv-duration  */
   --sv-fill: 50%;                /* ┐ set live by JS                      */
   --sv-left: 50%;                /* ┘ thumb centre position               */
 
@@ -113,6 +116,11 @@
   outline: 1px solid var(--sv-accent);
   outline-offset: 3px;
 }
+/* Defensive: if the thumb was nested INSIDE the fill (easy to do in the
+   Webflow navigator), its % would resolve against the fill, not the track,
+   and it would lag behind the gradient. Pin it to the fill's end instead —
+   correct position either way. */
+[data-sv-fill] [data-sv-thumb] { left: 100%; }
 
 /* Label — rides below the thumb, same --sv-left as the bubble */
 .sv-calc__slider-label {
@@ -177,10 +185,51 @@
   font-variant-numeric: tabular-nums;  /* no jitter while counting */
 }
 [data-sv-total] {
-  font-size: clamp(64px, 15vw, 220px); /* Ramp: 64 → 220px responsive */
+  position: relative;
+  display: inline-flex;                /* digit columns sit side by side */
+  align-items: center;
+  font-size: clamp(48px, 9vw, 140px);  /* fits 7-digit totals on wide screens */
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
+}
+
+/* ── NumberFlow-style rolling digits ─────────────────────────── */
+/* Window = 1em of content + 0.125em runway top/bottom: neighbouring
+   digits peek into the runway mid-roll and the mask fades them out,
+   while resting glyphs stay untouched. (Clip happens at the padding
+   box, so the runway is visible — that's intentional.) */
+.sv-num__col {
+  display: inline-block;
+  box-sizing: border-box;
+  height: 1.25em;
+  padding: 0.125em 0;
+  overflow: hidden;
+  clip-path: inset(0);   /* forces the clip even on composited layers */
+  contain: paint;
+}
+.sv-num__col--digit { width: 1ch; }
+.sv-num__strip {
+  display: block;
+  will-change: transform;
+  transition: transform var(--sv-num-dur) cubic-bezier(0.23, 1, 0.32, 1);
+}
+.sv-num__strip span {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+/* Soft fade at top & bottom — mask-based, so it melts into ANY page
+   background (no bg-colour matching needed). The premium touch. */
+[data-sv-total] {
+  -webkit-mask-image: linear-gradient(
+    transparent 0, #000 0.22em, #000 calc(100% - 0.22em), transparent 100%);
+  mask-image: linear-gradient(
+    transparent 0, #000 0.22em, #000 calc(100% - 0.22em), transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-num__strip { transition: none; }
 }
 .sv-calc__per {
   font-size: clamp(1rem, 2vw, 1.5rem);

@@ -1,10 +1,10 @@
 /*!
- * savings-calculator.js v2.0.0
+ * savings-calculator.js v2.1.0
  * Ramp-style live savings calculator — custom div-based slider (Radix-like
- * structure, no native <input type=range>, so Webflow CSS can't break it).
- * Drag/click/keyboard handled with pointer events; GSAP animates the counter
- * (built-in rAF tween fallback when gsap is absent). Fully data-attribute
- * driven — configure everything from Webflow, no JS options.
+ * structure, no native <input type=range>, so Webflow CSS can't break it)
+ * and a NumberFlow-style rolling counter: every digit is a vertical strip
+ * that rolls to its new value (CSS transitions — works with or without gsap).
+ * Fully data-attribute driven — configure everything from Webflow.
  *
  * Formula (annual saving):
  *   costPerInquiry = costPerAgent / capacity        (capacity: inquiries one
@@ -37,9 +37,9 @@
  *   data-sv-capacity   inquiries one human agent handles per month  (default 600)
  *   data-sv-min        slider minimum, monthly inquiries          (default 1000)
  *   data-sv-max        slider maximum, monthly inquiries        (default 500000)
- *   data-sv-start      slider starting value                     (default 50000)
+ *   data-sv-start      slider starting value — omit to start at the middle
  *   data-sv-currency   currency prefix on the big number            (default "$")
- *   data-sv-duration   count animation duration in seconds        (default 0.6)
+ *   data-sv-duration   digit roll duration in seconds             (default 0.9)
  *
  * Input defaults: put value="" on the [data-sv-cost] / [data-sv-agents]
  * inputs in the HTML (fallbacks: 1500 / 250).
@@ -57,9 +57,8 @@
     capacity: 600,
     min: 1000,
     max: 500000,
-    start: 50000,
     currency: "$",
-    duration: 0.6,
+    duration: 0.9,
     cost: 1500,
     agents: 250,
   };
@@ -97,6 +96,66 @@
     return currency + Math.round(n).toLocaleString("en-US");
   }
 
+  /* ── NumberFlow-style rolling counter ─────────────────────────
+     Each character is a column; digit columns hold a 0-9 strip that
+     rolls (CSS transition on transform) to the new digit. Columns are
+     aligned from the RIGHT so units keep their identity as the number
+     grows/shrinks. */
+  function createRoller(host, reduceMotion) {
+    host.textContent = "";
+    host.classList.add("sv-num");
+    var cols = [];                       // left → right
+
+    function makeCol() {
+      var col = document.createElement("span");
+      col.className = "sv-num__col";
+      col.setAttribute("aria-hidden", "true");
+      return col;
+    }
+    function makeStrip() {
+      var strip = document.createElement("span");
+      strip.className = "sv-num__strip";
+      for (var d = 0; d <= 9; d++) {
+        var s = document.createElement("span");
+        s.textContent = d;
+        strip.appendChild(s);
+      }
+      return strip;
+    }
+    function setCol(c, ch) {
+      var isDigit = ch >= "0" && ch <= "9";
+      if (isDigit) {
+        if (!c.strip) {
+          c.el.textContent = "";
+          c.el.classList.add("sv-num__col--digit");
+          c.strip = makeStrip();
+          c.el.appendChild(c.strip);
+          if (!reduceMotion) void c.el.offsetWidth;   // flush → first roll animates
+        }
+        c.strip.style.transform = "translateY(" + (-(+ch) * 10) + "%)";
+      } else {
+        if (c.strip) { c.el.removeChild(c.strip); c.strip = null; }
+        c.el.classList.remove("sv-num__col--digit");
+        if (c.el.textContent !== ch) c.el.textContent = ch;
+      }
+      c.ch = ch;
+    }
+
+    return function set(str) {
+      host.setAttribute("aria-label", str);
+      var chars = str.split("");
+      while (cols.length < chars.length) {            // grow at the LEFT
+        var col = makeCol();
+        host.insertBefore(col, host.firstChild);
+        cols.unshift({ el: col, strip: null, ch: null });
+      }
+      while (cols.length > chars.length) {            // shrink at the LEFT
+        host.removeChild(cols.shift().el);
+      }
+      for (var i = 0; i < chars.length; i++) setCol(cols[i], chars[i]);
+    };
+  }
+
   /**
    * Initializes every savings calculator on the page.
    * @param {string} [selector="[data-savings-calc]"]
@@ -117,7 +176,6 @@
       capacity: num(a("capacity"), DEFAULTS.capacity),
       min:      num(a("min"),      DEFAULTS.min),
       max:      num(a("max"),      DEFAULTS.max),
-      start:    num(a("start"),    DEFAULTS.start),
       currency: a("currency") != null ? a("currency") : DEFAULTS.currency,
       duration: num(a("duration"), DEFAULTS.duration),
     };
@@ -135,35 +193,18 @@
       console.warn("[Sestek SavingsCalc] Missing elements:", missing.join(", ")); return;
     }
 
-    // ── State ──────────────────────────────────────────────────
-    var t = clamp01(Math.log(o.start / o.min) / Math.log(o.max / o.min));
+    // ── State — no data-sv-start → start dead centre ───────────
+    var t = a("start") != null
+      ? clamp01(Math.log(num(a("start"), o.min) / o.min) / Math.log(o.max / o.min))
+      : 0.5;
     if (!el.cost.value)   el.cost.value   = DEFAULTS.cost;   // or value="" in HTML
     if (!el.agents.value) el.agents.value = DEFAULTS.agents;
 
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var shown = { val: 0 };                             // tweened display value
-    var rafId = null;
-
-    /* rAF fallback tween (power3.out) for pages without gsap */
-    function rafTween(target) {
-      if (rafId) cancelAnimationFrame(rafId);
-      var from = shown.val, start = null, DUR = o.duration * 1000;
-      function step(ts) {
-        if (start === null) start = ts;
-        var p = Math.min((ts - start) / DUR, 1);
-        var e = 1 - Math.pow(1 - p, 3);
-        shown.val = from + (target - from) * e;
-        render();
-        if (p < 1) rafId = requestAnimationFrame(step);
-      }
-      rafId = requestAnimationFrame(step);
-    }
+    root.style.setProperty("--sv-num-dur", (reduceMotion ? 0 : o.duration) + "s");
+    var setNumber = createRoller(el.total, reduceMotion);
 
     function currentInquiries() { return tToValue(t, o.min, o.max); }
-
-    function render() {
-      el.total.textContent = formatMoney(shown.val, o.currency);
-    }
 
     function paintSlider() {
       var inquiries = currentInquiries();
@@ -176,28 +217,12 @@
       el.thumb.setAttribute("aria-valuetext", abbreviate(inquiries) + " inquiries per month");
     }
 
-    function update(instant) {
+    function update() {
       var inquiries = currentInquiries();
       var cost   = Math.max(0, num(el.cost.value, 0));
       var agents = Math.max(0, num(el.agents.value, 0));
-      var target = computeAnnualSaving(inquiries, cost, agents, o);
-
       paintSlider();
-
-      if (instant || reduceMotion) {
-        shown.val = target; render(); return;
-      }
-      if (typeof gsap !== "undefined") {
-        gsap.to(shown, {
-          val: target,
-          duration: o.duration,
-          ease: "power3.out",
-          overwrite: true,
-          onUpdate: render,
-        });
-      } else {
-        rafTween(target);
-      }
+      setNumber(formatMoney(computeAnnualSaving(inquiries, cost, agents, o), o.currency));
     }
 
     // ── Drag / click (pointer events on the whole track) ───────
@@ -209,11 +234,11 @@
       e.preventDefault();
       el.track.setPointerCapture(e.pointerId);
       el.thumb.focus({ preventScroll: true });
-      t = tFromEvent(e); update(false);
+      t = tFromEvent(e); update();
     });
     el.track.addEventListener("pointermove", function (e) {
       if (!el.track.hasPointerCapture || !el.track.hasPointerCapture(e.pointerId)) return;
-      t = tFromEvent(e); update(false);
+      t = tFromEvent(e); update();
     });
 
     // ── Keyboard (arrows / Home / End / PageUp / PageDown) ─────
@@ -233,14 +258,14 @@
         default: return;
       }
       e.preventDefault();
-      if (t !== was) update(false);
+      if (t !== was) update();
     });
 
     // ── Number inputs ──────────────────────────────────────────
-    el.cost.addEventListener("input", function () { update(false); });
-    el.agents.addEventListener("input", function () { update(false); });
+    el.cost.addEventListener("input", update);
+    el.agents.addEventListener("input", update);
 
-    update(true);                                       // first paint: no tween
+    update();
   }
 
   global.Sestek = global.Sestek || {};
