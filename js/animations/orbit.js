@@ -1,8 +1,14 @@
 /*!
- * orbit.js v1.1.0
+ * orbit.js v1.2.0
  * Decorative orbital-ring animation for line-art SVGs.
  *
  * Changelog
+ * v1.2.0 — 3D depth illusion: the comet shrinks and dims as it swings around
+ *          the visually higher (far) side of its ring, like a satellite
+ *          passing behind a planet. Disable with data-orbit-depth="false".
+ *          Also: if the [data-orbit-track] ring never crosses the viewBox
+ *          (fully off-canvas in a slice-clipped svg), the comet falls back
+ *          to the most-visible ring instead of orbiting invisibly.
  * v1.1.0 — respects prefers-reduced-motion (skips draw-in + comet); pauses the
  *          endless comet/pulse loops while off-screen; shared helpers moved to
  *          js/core/utils.js (Sestek.util).
@@ -38,6 +44,9 @@
  *                                    CSS var token or raw colour
  *   data-orbit-dot-size="3"          core radius (SVG user units)
  *   data-orbit-speed="9"             seconds per full loop
+ *   data-orbit-depth                 default ON: comet shrinks/dims on the
+ *                                    far (upper) side of the ring for a 3D
+ *                                    feel; data-orbit-depth="false" disables
  *
  * https://github.com/roicool/sestek
  */
@@ -56,6 +65,32 @@
   function num(v, fallback) {
     var n = parseFloat(v);
     return isNaN(n) ? fallback : n;
+  }
+
+  /**
+   * Share of a ring's circumference that renders inside the svg's viewBox
+   * (0..1). Points are mapped through the ring's own transform; slice-
+   * clipped svgs never paint outside the viewBox, so this is what decides
+   * whether a comet on this ring can ever be seen.
+   */
+  function visibleShare(svg, ring) {
+    try {
+      var vb = svg.viewBox.baseVal;
+      var m = svg.getScreenCTM().inverse().multiply(ring.getScreenCTM());
+      var L = ring.getTotalLength();
+      var N = 96;
+      var c = 0;
+      for (var i = 0; i < N; i++) {
+        var p = ring.getPointAtLength((i / N) * L);
+        var x = m.a * p.x + m.c * p.y + m.e;
+        var y = m.b * p.x + m.d * p.y + m.f;
+        if (x >= vb.x && x <= vb.x + vb.width &&
+            y >= vb.y && y <= vb.y + vb.height) c++;
+      }
+      return c / N;
+    } catch (e) {
+      return 0;
+    }
   }
 
   function wireOrbit(svg) {
@@ -104,6 +139,24 @@
     /* Pick the track ring; default to the first ring */
     var track = svg.querySelector("[data-orbit-track]") || rings[0];
 
+    /* A ring that never crosses the viewBox would host an eternally
+     * invisible comet. Fall back to the most-visible ring. */
+    if (visibleShare(svg, track) === 0) {
+      var best = track, bestShare = 0;
+      for (var r = 0; r < rings.length; r++) {
+        var share = visibleShare(svg, rings[r]);
+        if (share > bestShare) { bestShare = share; best = rings[r]; }
+      }
+      if (best !== track) {
+        console.warn(
+          "[Sestek Orbit] [data-orbit-track] ring is fully outside the viewBox — " +
+          "the comet would never be visible. Falling back to the most-visible ring. " +
+          "Move data-orbit-track to a ring that crosses the canvas to silence this."
+        );
+        track = best;
+      }
+    }
+
     /* Clone it, strip its look, convert the clone to a path so the original
      * ring is untouched (it still draws + stays an <ellipse>). */
     var clone = track.cloneNode(false);
@@ -133,15 +186,81 @@
     dot.appendChild(core);
     svg.appendChild(dot);
 
-    /* Endless travel along the track. The two infinite loops are paused while
-     * the SVG is off-screen (perf: no compositor/main-thread work when not
-     * visible) and resumed when it scrolls back into view — visible behaviour
-     * is unchanged. Pause-by-default only when ScrollTrigger is present to
-     * drive the resume; otherwise they run as before. */
-    var hasST = typeof ScrollTrigger !== "undefined";
+    /* Endless travel along the track. The two infinite loops are paused
+     * while the SVG is off-screen (perf: no compositor/main-thread work
+     * when not visible) and resumed when it comes back — visible behaviour
+     * is unchanged. IntersectionObserver (not ScrollTrigger) drives this:
+     * it sees the REAL rendered position, so an svg inside a pinned
+     * section (e.g. the hero) stays correctly "on screen" for the whole
+     * pin, where scroll-offset math would wrongly pause it mid-pin. */
+    var hasIO = typeof IntersectionObserver !== "undefined";
+
+    /* ── Depth illusion ─────────────────────────────────────────────
+     * The visually higher part of the ring reads as the FAR side of the
+     * orbit. Sample the track once to learn its vertical extent in svg
+     * user space (the clone carries the ring's transform, so points must
+     * be mapped through it), then scale/dim the comet by how "front" its
+     * current y is: full size at the lowest point, half-size and faint at
+     * the top — a satellite swinging behind the planet. */
+    var depthAttr = svg.getAttribute("data-orbit-depth");
+    var depth = null;
+    if (depthAttr === null || flag(depthAttr)) {
+      try {
+        var vb = svg.viewBox.baseVal;
+        var dm = svg.getScreenCTM().inverse().multiply(trackPath.getScreenCTM());
+        var dTotal = trackPath.getTotalLength();
+        /* Normalise against the VISIBLE segment of the ring when there is
+         * one — on huge slice-cropped rings the on-canvas sweep covers only
+         * a slice of the full y-extent, and full-extent normalisation would
+         * pin the comet at its minimum for the whole visible pass. */
+        var yMin = Infinity, yMax = -Infinity;
+        var vMin = Infinity, vMax = -Infinity, vCount = 0;
+        for (var i = 0; i < 96; i++) {
+          var pt = trackPath.getPointAtLength((i / 96) * dTotal);
+          var tx = dm.a * pt.x + dm.c * pt.y + dm.e;
+          var ty = dm.b * pt.x + dm.d * pt.y + dm.f;
+          if (ty < yMin) yMin = ty;
+          if (ty > yMax) yMax = ty;
+          if (tx >= vb.x && tx <= vb.x + vb.width &&
+              ty >= vb.y && ty <= vb.y + vb.height) {
+            if (ty < vMin) vMin = ty;
+            if (ty > vMax) vMax = ty;
+            vCount++;
+          }
+        }
+        if (vCount >= 8 && vMax - vMin > 1) {
+          depth = { min: vMin, span: vMax - vMin };
+        } else if (yMax - yMin > 1) {
+          depth = { min: yMin, span: yMax - yMin };
+        }
+      } catch (e) { /* svg not measurable — comet still runs, flat */ }
+    }
+
+    /* Comet look = intro fade × depth factor, recomputed every frame the
+     * comet moves (and while the intro fade runs) so the two never fight
+     * over the dot's opacity. */
+    var intro = { value: 0 };
+
+    function applyLook() {
+      if (!depth) {
+        gsap.set(dot, { opacity: intro.value });
+        return;
+      }
+      var front = (gsap.getProperty(dot, "y") - depth.min) / depth.span;
+      front = Math.max(0, Math.min(1, front));
+      gsap.set(dot, {
+        opacity: intro.value * (0.3 + 0.7 * front),
+        scale  : 0.5 + 0.5 * front,
+      });
+    }
 
     gsap.set(dot, { opacity: 0 });
-    gsap.to(dot, { opacity: 1, duration: 0.6, delay: drawDur * 0.5 });
+    gsap.to(intro, {
+      value: 1,
+      duration: 0.6,
+      delay: drawDur * 0.5,
+      onUpdate: applyLook,
+    });
 
     var cometTween = gsap.to(dot, {
       motionPath: {
@@ -152,7 +271,8 @@
       duration: speed,
       ease: "none",
       repeat: -1,
-      paused: hasST,
+      paused: hasIO,
+      onUpdate: applyLook,
     });
 
     /* Subtle pulse on the core */
@@ -163,19 +283,15 @@
       ease: "sine.inOut",
       repeat: -1,
       yoyo: true,
-      paused: hasST,
+      paused: hasIO,
     });
 
-    if (hasST) {
-      ScrollTrigger.create({
-        trigger: svg,
-        start: "top bottom",
-        end: "bottom top",
-        onToggle: function (self) {
-          if (self.isActive) { cometTween.play();  pulseTween.play(); }
-          else               { cometTween.pause(); pulseTween.pause(); }
-        },
-      });
+    if (hasIO) {
+      new IntersectionObserver(function (entries) {
+        var onScreen = entries[0].isIntersecting;
+        if (onScreen) { cometTween.play();  pulseTween.play(); }
+        else          { cometTween.pause(); pulseTween.pause(); }
+      }).observe(svg);
     }
   }
 
