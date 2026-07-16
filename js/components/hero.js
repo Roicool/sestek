@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.8.0
+ * hero.js v1.8.1
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -89,6 +89,31 @@
      */
     var darkTimer = null;
     var stage = null;
+    var cardsArmed = false; // true while any hover side-effect is applied
+
+    /*
+     * Nuclear reset for every hover side-effect: dark stage, pending 6s
+     * revert, .is-hover, in-flight reveals, media/overlay visibility.
+     * Called whenever the cards stop being interactive (scrub back below
+     * the stats phase, leave-back above the hero, rebuild on resize) so
+     * NO state can leak out of the hover system — browsers fire
+     * mouseenter for elements that merely scroll under a parked cursor,
+     * and a missed mouseleave must never strand the scene in dark mode.
+     */
+    function resetCardStates() {
+      if (!hasStats) return;
+      if (darkTimer) { darkTimer.kill(); darkTimer = null; }
+      if (el.scene2.classList.contains("is-dark")) setSceneDark(false);
+      el.stats.forEach(function (stat) {
+        stat.classList.remove("is-hover");
+        if (stat._reveal) { stat._reveal.kill(); stat._reveal = null; }
+        var media = stat.querySelector("[data-hero-stat-media]");
+        var overlay = stat.querySelector("[data-hero-stat-overlay]");
+        if (media) gsap.set(media, { opacity: 0 });
+        if (overlay) gsap.set(overlay, { opacity: 0 });
+      });
+      cardsArmed = false;
+    }
 
     function setSceneDark(on) {
       el.scene2.classList.toggle("is-dark", on);
@@ -120,6 +145,7 @@
 
         stat.addEventListener("mouseenter", function () {
           if (darkTimer) { darkTimer.kill(); darkTimer = null; }
+          cardsArmed = true;
           setSceneDark(true);
           stat.classList.add("is-hover");
 
@@ -239,7 +265,12 @@
       el.scene2.style.pointerEvents = "none";
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
-      if (hasStats) gsap.set(el.stats, { opacity: 0, y: 24 });
+      if (hasStats) {
+        gsap.set(el.stats, { opacity: 0, y: 24 });
+        // Rebuild (resize) must not carry hover state or clickability over
+        el.statsWrap.style.pointerEvents = "none";
+        resetCardStates();
+      }
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
       var navEl = document.querySelector("[data-nav]");
@@ -268,12 +299,29 @@
             // clicked or tabbed into while off-screen.
             el.s1Content.style.pointerEvents = inScene2 ? "none" : "auto";
             el.scene2.style.pointerEvents    = inScene2 ? "auto" : "none";
+            /*
+             * Card hovers arm only once every stat has fully staggered in
+             * (phase 9 ends at 0.92). Browsers fire mouseenter for
+             * elements that scroll under a parked cursor, so without this
+             * gate an INVISIBLE card passing under the pointer mid-morph
+             * would trigger the reveal + dark stage. Scrubbing back below
+             * the gate force-clears any hover state that got applied.
+             */
+            if (hasStats) {
+              var statsLive = self.progress >= 0.92;
+              el.statsWrap.style.pointerEvents = statsLive ? "auto" : "none";
+              if (!statsLive && cardsArmed) resetCardStates();
+            }
           },
           onLeaveBack: function () {
             // Scrolled back above hero entirely — restore dark nav + scene 1 clicks
             if (navEl) navEl.classList.remove("nav--on-light");
             el.s1Content.style.pointerEvents = "auto";
             el.scene2.style.pointerEvents    = "none";
+            if (hasStats) {
+              el.statsWrap.style.pointerEvents = "none";
+              if (cardsArmed) resetCardStates();
+            }
           },
         },
       });
@@ -352,18 +400,22 @@
         duration: 0.10,
       }, 0.86);
 
-      // ── Phase 9 (0.78 – 1.00): Stats stagger in ──────────────────
+      // ── Phase 9 (0.76 – 0.92): Stats stagger in ──────────────────
       /*
-       * Spacing is computed from the stat count so the LAST stat always
-       * lands exactly at 1.0 — never past it. A position beyond 1.0 would
-       * extend the timeline's total duration and rescale every existing
-       * phase against the scroll distance (which must stay untouched).
+       * Spacing is computed from the stat count so the LAST stat lands at
+       * 0.92 — comfortably before the pin's end. Ending at exactly 1.0
+       * left the last card half-revealed whenever the user parked their
+       * scroll just shy of the pin boundary; the 0.08 margin guarantees
+       * every card is fully in before the hero can release. (Positions
+       * must also never exceed 1.0 — that would extend the timeline and
+       * rescale every existing phase against the scroll distance.)
        */
       if (hasStats) {
         var sDur   = 0.10;
-        var sStart = 0.78;
+        var sStart = 0.76;
+        var sEnd   = 0.92;
         var sSpace = el.stats.length > 1
-          ? (1.0 - sStart - sDur) / (el.stats.length - 1)
+          ? (sEnd - sStart - sDur) / (el.stats.length - 1)
           : 0;
 
         el.stats.forEach(function (stat, i) {
