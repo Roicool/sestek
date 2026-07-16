@@ -1,9 +1,10 @@
 /*!
- * savings-calculator.js v1.1.0
- * Ramp-style live savings calculator — slider (total inquiries) + two number
- * inputs (cost per agent, number of agents) drive a big animated total.
- * Fully data-attribute driven — configure everything from Webflow, no JS opts.
- * Uses gsap when present; otherwise a built-in rAF tween — no hard dependency.
+ * savings-calculator.js v2.0.0
+ * Ramp-style live savings calculator — custom div-based slider (Radix-like
+ * structure, no native <input type=range>, so Webflow CSS can't break it).
+ * Drag/click/keyboard handled with pointer events; GSAP animates the counter
+ * (built-in rAF tween fallback when gsap is absent). Fully data-attribute
+ * driven — configure everything from Webflow, no JS options.
  *
  * Formula (annual saving):
  *   costPerInquiry = costPerAgent / capacity        (capacity: inquiries one
@@ -12,10 +13,14 @@
  *   annual         = monthly × 12
  *
  * DOM (Webflow):
- *   <section data-savings-calc data-sv-rate="0.7" data-sv-capacity="600">
+ *   <section data-savings-calc>
  *     <div class="sv-calc__slider">
  *       <div class="sv-calc__bubble" data-sv-bubble>50K</div>
- *       <input type="range" data-sv-range aria-label="Total inquiries per month">
+ *       <div class="sv-calc__track" data-sv-track>
+ *         <div class="sv-calc__fill" data-sv-fill></div>
+ *         <div class="sv-calc__thumb" data-sv-thumb tabindex="0"
+ *              aria-label="Total inquiries per month"></div>
+ *       </div>
  *       <div class="sv-calc__slider-label">Total Inquiries (monthly)</div>
  *     </div>
  *     <div class="sv-calc__inputs">
@@ -63,6 +68,7 @@
     var n = parseFloat(v);
     return isFinite(n) ? n : fallback;
   }
+  function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
   function computeAnnualSaving(inquiries, costPerAgent, agents, o) {
     var costPerInquiry = costPerAgent / o.capacity;
@@ -117,7 +123,8 @@
     };
 
     var el = {
-      range  : root.querySelector("[data-sv-range]"),
+      track  : root.querySelector("[data-sv-track]"),
+      thumb  : root.querySelector("[data-sv-thumb]"),
       bubble : root.querySelector("[data-sv-bubble]"),
       cost   : root.querySelector("[data-sv-cost]"),
       agents : root.querySelector("[data-sv-agents]"),
@@ -128,10 +135,8 @@
       console.warn("[Sestek SavingsCalc] Missing elements:", missing.join(", ")); return;
     }
 
-    // Range input works on t ∈ [0,1000] for smoothness; value derived via log map.
-    el.range.min = 0; el.range.max = 1000; el.range.step = 1;
-    var startT = Math.log(o.start / o.min) / Math.log(o.max / o.min);
-    el.range.value = Math.round(Math.max(0, Math.min(1, startT)) * 1000);
+    // ── State ──────────────────────────────────────────────────
+    var t = clamp01(Math.log(o.start / o.min) / Math.log(o.max / o.min));
     if (!el.cost.value)   el.cost.value   = DEFAULTS.cost;   // or value="" in HTML
     if (!el.agents.value) el.agents.value = DEFAULTS.agents;
 
@@ -154,23 +159,21 @@
       rafId = requestAnimationFrame(step);
     }
 
-    function currentInquiries() {
-      return tToValue(el.range.value / 1000, o.min, o.max);
-    }
+    function currentInquiries() { return tToValue(t, o.min, o.max); }
 
     function render() {
       el.total.textContent = formatMoney(shown.val, o.currency);
     }
 
-    function positionBubble() {
-      var t = el.range.value / 1000;
-      el.bubble.textContent = abbreviate(currentInquiries());
-      // Thumb centre: offset by half thumb width at the extremes.
-      // Bubble AND label both ride this var (see CSS --sv-left).
-      var thumb = 16; // must match --sv-thumb-size in CSS
-      root.style.setProperty("--sv-left",
-        "calc(" + (t * 100) + "% + " + ((0.5 - t) * thumb) + "px)");
+    function paintSlider() {
+      var inquiries = currentInquiries();
+      el.bubble.textContent = abbreviate(inquiries);
+      // One source of truth: bubble, thumb and label all ride --sv-left,
+      // the fill stretches to --sv-fill (see CSS).
+      root.style.setProperty("--sv-left", (t * 100) + "%");
       root.style.setProperty("--sv-fill", (t * 100) + "%");
+      el.thumb.setAttribute("aria-valuenow", inquiries);
+      el.thumb.setAttribute("aria-valuetext", abbreviate(inquiries) + " inquiries per month");
     }
 
     function update(instant) {
@@ -179,7 +182,7 @@
       var agents = Math.max(0, num(el.agents.value, 0));
       var target = computeAnnualSaving(inquiries, cost, agents, o);
 
-      positionBubble();
+      paintSlider();
 
       if (instant || reduceMotion) {
         shown.val = target; render(); return;
@@ -197,10 +200,45 @@
       }
     }
 
-    el.range.addEventListener("input", function () { update(false); });
+    // ── Drag / click (pointer events on the whole track) ───────
+    function tFromEvent(e) {
+      var r = el.track.getBoundingClientRect();
+      return clamp01((e.clientX - r.left) / r.width);
+    }
+    el.track.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      el.track.setPointerCapture(e.pointerId);
+      el.thumb.focus({ preventScroll: true });
+      t = tFromEvent(e); update(false);
+    });
+    el.track.addEventListener("pointermove", function (e) {
+      if (!el.track.hasPointerCapture || !el.track.hasPointerCapture(e.pointerId)) return;
+      t = tFromEvent(e); update(false);
+    });
+
+    // ── Keyboard (arrows / Home / End / PageUp / PageDown) ─────
+    el.thumb.setAttribute("role", "slider");
+    el.thumb.setAttribute("aria-valuemin", o.min);
+    el.thumb.setAttribute("aria-valuemax", o.max);
+    if (!el.thumb.hasAttribute("tabindex")) el.thumb.setAttribute("tabindex", "0");
+    el.thumb.addEventListener("keydown", function (e) {
+      var step = 0.02, big = 0.1, was = t;
+      switch (e.key) {
+        case "ArrowRight": case "ArrowUp":   t = clamp01(t + step); break;
+        case "ArrowLeft":  case "ArrowDown": t = clamp01(t - step); break;
+        case "PageUp":   t = clamp01(t + big); break;
+        case "PageDown": t = clamp01(t - big); break;
+        case "Home": t = 0; break;
+        case "End":  t = 1; break;
+        default: return;
+      }
+      e.preventDefault();
+      if (t !== was) update(false);
+    });
+
+    // ── Number inputs ──────────────────────────────────────────
     el.cost.addEventListener("input", function () { update(false); });
     el.agents.addEventListener("input", function () { update(false); });
-    window.addEventListener("resize", positionBubble);
 
     update(true);                                       // first paint: no tween
   }
