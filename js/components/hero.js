@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.3.0
+ * hero.js v1.4.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -12,10 +12,6 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * The active stat is framed by four corner brackets (focus-frame style,
- * created at runtime). On hover the brackets release outward, the frame
- * glides to the new stat and the brackets lock back in with a slight
- * overshoot — sticky: the frame stays on the last hovered stat.
  * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
@@ -61,129 +57,17 @@
 
     var hasStats = !!(el.statsWrap && el.stats.length);
 
-    /*
-     * Stats "active" frame — a floating container holding four corner
-     * brackets (photo-camera focus-frame style) that frame whichever stat
-     * is active. On hover the brackets release outward, the frame glides
-     * to the new stat and the brackets lock back in with a slight
-     * overshoot (sticky: the frame stays on the last hovered stat). One
-     * stat is always active (index 0 initially); active state is mirrored
-     * with the house .is-active class for CSS styling.
-     */
-    var pill = null;
-    var corners = null;  // the four bracket elements [tl, tr, bl, br]
-    var moveTl = null;   // in-flight release→glide→lock-in sequence
-    var activeIndex = 0; // sticky: keeps the last hovered stat active
-
-    // Outward release direction per corner (matches the order above)
-    var CORNER_OUT = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
-
-    function movePill(index, immediate) {
-      if (!pill) return;
-      activeIndex = index;
-      var stat = el.stats[index];
-      el.stats.forEach(function (s, i) {
-        s.classList.toggle("is-active", i === index);
-      });
-      // offsetLeft/Top are relative to the wrapper (position: relative in CSS)
-      var props = {
-        x     : stat.offsetLeft,
-        y     : stat.offsetTop,
-        width : stat.offsetWidth,
-        height: stat.offsetHeight,
-      };
-      if (moveTl) { moveTl.kill(); moveTl = null; }
-      if (immediate) {
-        // Layout re-syncs (resize, count-up reflow): snap, brackets at rest
-        gsap.set(pill, props);
-        gsap.set(corners, { x: 0, y: 0, opacity: 1 });
-        return;
-      }
-      // Release the brackets → glide the frame → lock back in (overshoot)
-      moveTl = gsap.timeline();
-      moveTl
-        .to(corners, {
-          x: function (i) { return CORNER_OUT[i][0] * 10; },
-          y: function (i) { return CORNER_OUT[i][1] * 10; },
-          opacity  : 0.25,
-          duration : 0.16,
-          ease     : "power2.in",
-          overwrite: "auto",
-        })
-        .to(pill, {
-          x       : props.x,
-          y       : props.y,
-          width   : props.width,
-          height  : props.height,
-          duration: 0.38,
-          ease    : "power3.inOut",
-        }, 0.10)
-        .to(corners, {
-          x       : 0,
-          y       : 0,
-          opacity : 1,
-          duration: 0.34,
-          ease    : "back.out(2.4)",
-        }, 0.30);
-    }
-
-    function setupStatsPill() {
-      if (!hasStats || el.statsWrap._pillInit) return;
-      el.statsWrap._pillInit = true;
-
-      pill = document.createElement("div");
-      pill.className = "hero__stat-pill";
-      pill.setAttribute("aria-hidden", "true");
-      pill.innerHTML =
-        '<i class="hero__stat-corner hero__stat-corner--tl"></i>' +
-        '<i class="hero__stat-corner hero__stat-corner--tr"></i>' +
-        '<i class="hero__stat-corner hero__stat-corner--bl"></i>' +
-        '<i class="hero__stat-corner hero__stat-corner--br"></i>';
-      corners = Array.from(pill.children);
-      el.statsWrap.insertBefore(pill, el.statsWrap.firstChild);
-
-      el.stats.forEach(function (stat, i) {
-        stat.addEventListener("mouseenter", function () {
-          if (i !== activeIndex) movePill(i); // re-hovering the active stat is a no-op
-        });
-      });
-      // Active state is sticky: it stays on the last hovered stat, so no
-      // mouseleave handler — the frame only moves on the next hover.
-
-      /*
-       * The stats row reflows for reasons the pill can't see coming: the
-       * video slot collapsing narrows the shrink-to-fit scene wrapper,
-       * count-up reserves number widths, fonts load, breakpoints shift.
-       * Watching the wrapper + each stat keeps the pill glued to the active
-       * stat through ALL of them (any offset change here starts as a size
-       * change of one of these boxes).
-       */
-      if (typeof ResizeObserver !== "undefined") {
-        var ro = new ResizeObserver(function () { movePill(activeIndex, true); });
-        ro.observe(el.statsWrap);
-        el.stats.forEach(function (s) { ro.observe(s); });
-      }
-
-      movePill(0, true);
-    }
-
     // Prefers-reduced-motion: skip everything, show scene 2 immediately
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(el.scene2, { opacity: 1 });
       gsap.set(el.words, { opacity: 1, y: 0 });
       if (el.desc) gsap.set(el.desc, { opacity: 1, y: 0 });
-      if (hasStats) {
-        // Stats + pill appear instantly; numbers keep their final HTML value
-        setupStatsPill();
-        gsap.set(el.stats, { opacity: 1, y: 0 });
-        if (pill) gsap.set(pill, { opacity: 1 });
-      }
+      // Stats appear instantly; numbers keep their final HTML value
+      if (hasStats) gsap.set(el.stats, { opacity: 1, y: 0 });
       el.s1Content.style.pointerEvents = "none";
       el.scene2.style.pointerEvents = "auto";
       return;
     }
-
-    setupStatsPill();
 
     var activeST = null;
 
@@ -232,12 +116,7 @@
       el.scene2.style.pointerEvents = "none";
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
-      if (hasStats) {
-        gsap.set(el.stats, { opacity: 0, y: 24 });
-        if (pill) gsap.set(pill, { opacity: 0 });
-        // Stats may reflow on resize — re-measure the pill's home position
-        movePill(activeIndex, true);
-      }
+      if (hasStats) gsap.set(el.stats, { opacity: 0, y: 24 });
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
       var navEl = document.querySelector("[data-nav]");
@@ -380,35 +259,11 @@
                */
               var num = stat.querySelector("[data-count]");
               if (num && global.Sestek.countUp) {
-                var roll = global.Sestek.countUp(num, { duration: 1.6 });
-                // countUp reserves the number's final width (tabular-nums +
-                // min-width) synchronously, which reflows the centred stats
-                // row — re-measure the pill onto the active stat.
-                movePill(activeIndex, true);
-                // min-width only stops the row from SHRINKING; intermediate
-                // roll values can be wider than the final text, so the row
-                // settles once more when the roll lands. Snap-sync so the
-                // frame doesn't release/lock on every roll landing.
-                if (roll) roll.then(function () { movePill(activeIndex, true); });
+                global.Sestek.countUp(num, { duration: 1.6 });
               }
             },
           }, sStart + i * sSpace);
         });
-
-        // Frame appears together with the first (default-active) stat —
-        // the brackets converge onto its corners as the user keeps scrolling.
-        if (pill) {
-          tl.to(pill, { opacity: 1, duration: sDur }, sStart);
-          tl.fromTo(corners, {
-            x: function (i) { return CORNER_OUT[i][0] * 18; },
-            y: function (i) { return CORNER_OUT[i][1] * 18; },
-            opacity: 0,
-          }, {
-            x: 0, y: 0, opacity: 1,
-            duration: 0.14,
-            ease: "power2.out",
-          }, sStart);
-        }
       }
 
       activeST = tl.scrollTrigger;

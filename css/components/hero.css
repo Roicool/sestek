@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.3.0
+ * hero.css v1.4.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -140,7 +140,6 @@
 
 /* ── Stats (optional, below desc) ───────────────────────────── */
 .hero__stats {
-  position: relative; /* offset parent for the floating pill */
   display: flex;
   justify-content: center;
   gap: var(--spacing--3);
@@ -148,12 +147,8 @@
 }
 
 .hero__stat {
-  position: relative;
-  z-index: 1; /* content stays above the pill */
   padding: var(--spacing--4) var(--spacing--6);
-  border-radius: var(--radius--xl);
   text-align: center;
-  cursor: default;
   will-change: transform, opacity;
 }
 
@@ -162,53 +157,12 @@
   font-weight: var(--font-weight--medium);
   line-height: var(--leading--tight);
   color: var(--color-text--base);
-  transition: color 0.35s ease;
 }
 
 .hero__stat-label {
   font-size: var(--text--sm);
   color: var(--color-text--muted);
-  transition: color 0.35s ease;
 }
-
-/* Dual selector — house pattern: JS-driven .is-active OR pure CSS :hover */
-.hero__stat.is-active .hero__stat-number,
-.hero__stat:hover .hero__stat-number {
-  color: var(--color-text--accent);
-}
-
-/*
- * The floating active-state marker. Created by hero.js at runtime and moved
- * with GSAP (x/y/width/height). It's an invisible box tracking the active
- * stat; the visible part is the four focus-frame corner brackets inside it.
- */
-.hero__stat-pill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  opacity: 0; /* fades in with the first stat at the end of the timeline */
-  will-change: transform, width, height, opacity;
-  pointer-events: none;
-}
-
-/*
- * Focus-frame corner brackets — thin L shapes hugging the stat's corners,
- * sitting slightly outside its box. GSAP animates their x/y (release /
- * lock-in), the container carries them between stats.
- */
-.hero__stat-corner {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 0 solid var(--color-text--accent);
-  will-change: transform, opacity;
-}
-
-.hero__stat-corner--tl { top: -3px;    left: -3px;  border-top-width: 2px;    border-left-width: 2px; }
-.hero__stat-corner--tr { top: -3px;    right: -3px; border-top-width: 2px;    border-right-width: 2px; }
-.hero__stat-corner--bl { bottom: -3px; left: -3px;  border-bottom-width: 2px; border-left-width: 2px; }
-.hero__stat-corner--br { bottom: -3px; right: -3px; border-bottom-width: 2px; border-right-width: 2px; }
 
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -216,8 +170,7 @@
   .hero__word,
   .hero__video-overlay,
   .hero__s1-content,
-  .hero__stat,
-  .hero__stat-pill {
+  .hero__stat {
     will-change: auto !important;
     transition: none !important;
   }
