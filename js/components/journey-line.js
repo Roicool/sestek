@@ -1,5 +1,7 @@
 /*!
- * journey-line.js v1.0.0
+ * journey-line.js v1.1.0
+ * v1.1.0: badge reveals are a pure opacity fade — the scale + back.out pop
+ *         read badly when the scrub rewinds. Media/copy choreography unchanged.
  * Superpower-style pinned journey steps: the section pins for the whole
  * scroll distance, a full-bleed horizontal line fills with the accent colour
  * (scaleX — no SVG, no path measuring) and each step's badge/media/copy
@@ -120,7 +122,7 @@
       gsap.set(fill, { scaleX: 0, transformOrigin: "left center" });
       steps.forEach(function (s, i) {
         var open = i === 0;
-        if (badges[i]) gsap.set(badges[i], { autoAlpha: open ? 1 : 0, scale: open ? 1 : 0.4, transformOrigin: "center center" });
+        if (badges[i]) gsap.set(badges[i], { autoAlpha: open ? 1 : 0 });
         if (medias[i]) gsap.set(medias[i], { autoAlpha: open ? 1 : 0, y: open ? 0 : "-2.5rem", filter: open ? "blur(0px)" : "blur(8px)" });
         if (copies[i]) gsap.set(copies[i], { autoAlpha: open ? 1 : 0, y: open ? 0 : "2.5rem" });
       });
@@ -137,8 +139,10 @@
 
     /** One step's reveal tweens, added to any timeline at `at`. */
     function addReveal(tl, i, at, dur, stagger) {
-      if (badges[i]) tl.fromTo(badges[i], { autoAlpha: 0, scale: 0.4 },
-        { autoAlpha: 1, scale: 1, duration: dur * 0.6, ease: "back.out(1.6)" }, at);
+      // Badges: pure opacity fade — anything springy looks wrong in reverse
+      // when the scrub rewinds.
+      if (badges[i]) tl.fromTo(badges[i], { autoAlpha: 0 },
+        { autoAlpha: 1, duration: dur * 0.6, ease: "power1.inOut" }, at);
       if (medias[i]) tl.fromTo(medias[i], { autoAlpha: 0, y: "-2.5rem", filter: "blur(8px)" },
         { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: dur, ease: "power2.out" }, at + stagger);
       if (copies[i]) tl.fromTo(copies[i], { autoAlpha: 0, y: "2.5rem" },
