@@ -732,6 +732,8 @@ DOM yapısı:
 | `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
 | `js/components/demo-form.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/demo-form.js` |
 | `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
+| `js/components/email-popup.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-popup.js` |
+| `css/components/email-popup.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-popup.css` |
 
 ### Accordion
 
@@ -910,6 +912,98 @@ DOM:
 - GSAP yalnızca sol akordeon ve Lottie FLIP için gerekli; yoksa Lottie anında
   taşınır. Smooth scroll Lenis varsa `Sestek.scrollTo`, yoksa native.
 - `prefers-reduced-motion`: metin fade'i ve Lottie tween'i atlanır.
+
+### Email Popup (sol-alt lead capture slide-in)
+
+Sol alttan yumuşakça giren küçük e-posta toplama kartı ("Get the report" tarzı).
+Kartın görseli (arka plan, radius, gölge, metinler) Designer'da RC token'larıyla
+tasarlanır; form **native Webflow form** olarak kalır. Script yalnızca **ne
+zaman göstermenin kibar olduğuna** karar verir — boğuculuğu engelleyen tüm
+kurallar içinde:
+
+- **Girişte asla çıkmaz** — scroll derinliği (%50) **veya** sekme görünürken
+  geçen aktif süre (20 sn), hangisi önce gelirse. Arka plandaki sekmede süre
+  işlemez.
+- **Başka bir form alanına yazarken çıkmaz** — alan terk edilene kadar bekler.
+- **Lead formu olan sayfalarda çıkmaz** — varsayılan: `[data-demo-form]` içeren
+  sayfalar atlanır (zaten dönüşüm olan yerde ikinci kez istemek olmaz).
+- **Mobilde çıkmaz** — varsayılan 768px altında devre dışı (sabit kart ekranı yer).
+- **Oturum başına en fazla 1 kez** (sayfalar arası, sessionStorage).
+- **X / Esc ile kapatılırsa** 14 gün sus; **submit edilirse** 365 gün sus;
+  **3 kez gösterilip yok sayılırsa** yine sus — sessizlik de bir cevaptır.
+- **Modal değildir** — backdrop yok, scroll kilidi yok, odak asla çalınmaz.
+- `prefers-reduced-motion`: kayma animasyonu yerine sade fade.
+
+```html
+<!-- in <head> — bağımlılık yok (GSAP gerekmez) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-popup.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-popup.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initEmailPopup(); // tüm [data-email-popup] kartlarını bağlar
+  });
+</script>
+```
+
+DOM (Designer'da; kartı Symbol yapıp tüm sayfalara koyabilirsin — hangi
+sayfada ne zaman çıkacağına script karar verir):
+
+```html
+<!--
+  Kök ([data-email-popup]) attribute'ları (hepsi opsiyonel):
+    data-email-popup-key         kampanya id'si — snooze/done bu anahtara göre
+                                 saklanır; yeni kampanyada değiştir → kart yeniden
+                                 gösterilmeye başlar (varsayılan "default")
+    data-email-popup-scroll      scroll derinliği tetiği, % (varsayılan 50; 0 = kapalı)
+    data-email-popup-delay       aktif süre tetiği, sn (varsayılan 20; 0 = kapalı)
+    data-email-popup-snooze      kapatınca kaç gün susulacak (varsayılan 14)
+    data-email-popup-done        submit sonrası kaç gün susulacak (varsayılan 365)
+    data-email-popup-max-shows   kaç yok sayılmış gösterimden sonra snooze (varsayılan 3)
+    data-email-popup-min-width   gösterim için min viewport px (varsayılan 768; 0 = her zaman)
+    data-email-popup-skip-if     bu CSS seçicisi sayfada eşleşirse kart çıkmaz
+                                 (varsayılan "[data-demo-form]"; "none" = kontrol kapalı)
+    data-email-popup-hide-after  başarı mesajı kaç sn sonra kendiliğinden kapansın (varsayılan 4)
+-->
+<div data-email-popup data-email-popup-key="spend-report-2026"
+     aria-label="Rapor kayıt formu">
+
+  <button data-email-popup-close aria-label="Kapat">×</button>
+
+  <h4>ABD şirketlerinin %42'si zaten AI kullanıyor.</h4>
+  <p>Kış 2026 harcama raporundaki yeni bulguları görün.</p>
+
+  <div class="w-form">
+    <form>
+      <input type="email" name="email" placeholder="İş e-postanız" required>
+      <input type="submit" value="Raporu al">
+    </form>
+    <div class="w-form-done">Teşekkürler — rapor e-postanızda.</div>
+    <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+  </div>
+
+</div>
+```
+
+**Notlar**
+- Konumlandırma + giriş/çıkış animasyonu CSS'te (`email-popup.css`); kart
+  chrome'u tamamen Designer'da. Kartı Designer'da `display:none` YAPMA —
+  gizli başlangıç `visibility` ile CSS'ten geliyor, script `is-visible`
+  class'ıyla açıyor.
+- Submit'i **hijack etmez** — Webflow native submit + success mesajı çalışır;
+  script `.w-form-done` görünür olunca "aboneyi" işaretler ve kartı birkaç
+  saniye sonra kapatır.
+- Frekans sınırı `localStorage`'da tutulur (engellenmişse sessizce sayfa-başına
+  moduna düşer). Yeni kampanyada `data-email-popup-key` değiştir — eski
+  snooze'lar o anahtara bağlı kaldığı için kart yeniden gösterilir.
+- `Sestek.initEmailPopup()` her kart için `{ el, show, hide, dismiss }`
+  controller döndürür — `show()` tetikleri atlar ama snooze/done/oturum
+  sınırlarına yine uyar (başka bir CTA'dan elle açmak için).
+- Z-index `950` — içeriğin üstünde, nav/modal katmanlarının (1000+) altında.
 
 ### Site Utils
 

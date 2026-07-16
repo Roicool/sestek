@@ -1,0 +1,59 @@
+/*!
+ * email-popup.css v1.0.0
+ * Bottom-left email capture slide-in — critical/behavioural styles only.
+ * Card chrome (background, border, radius, shadow, typography) is styled in
+ * the Webflow Designer with RC tokens; this file owns positioning, the hidden
+ * resting state and the slide-in/out transition that email-popup.js toggles
+ * via the `is-visible` class.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Resting state — parked below the viewport edge, inert ─────────────
+ * visibility:hidden keeps it out of the a11y tree and tab order until the
+ * script decides it is a polite moment; pointer-events:none guarantees the
+ * invisible card can never swallow clicks meant for the page. */
+[data-email-popup] {
+  position: fixed;
+  left: var(--spacing--6);
+  bottom: var(--spacing--6);
+  z-index: 950; /* above content, below nav/modal layers (1000+) */
+  width: calc(100vw - var(--spacing--6) * 2);
+  max-width: 26rem;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(calc(100% + var(--spacing--8)));
+  pointer-events: none;
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    visibility 0s linear 0.6s; /* stay visible until the slide-out ends */
+}
+
+[data-email-popup].is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+/* ── Close — always a comfortable target, whatever the Designer styling ── */
+[data-email-popup-close] {
+  cursor: pointer;
+  min-width: var(--spacing--10);
+  min-height: var(--spacing--10);
+}
+
+/* ── Reduced motion — appear/disappear in place, no travel ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-email-popup],
+  [data-email-popup].is-visible {
+    transform: none;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  }
+  [data-email-popup].is-visible {
+    transition: opacity 0.2s ease;
+  }
+}
