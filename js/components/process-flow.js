@@ -1,5 +1,5 @@
 /*!
- * process-flow.js v2.8.1
+ * process-flow.js v2.9.0
  * Auxia-style looping journey hero: a left persona stack scrolls one row per
  * phase (active row highlighted), a stepped blue line draws across (DrawSVG),
  * segment pills sit on the line and swap their labels per phase, and three
@@ -38,16 +38,29 @@
  * Each phase opens with a staged ~4s prep: line draws fully -> beat ->
  * sparks/pills open -> cards dissolve in.
  *
+ * FIRST-PASS INTRO: on the very first viewport entry the grey track paths
+ * DRAW in too (slightly ahead of the accent line) and the whole phase-0
+ * opening runs data-pf-intro-speed× faster (default 1.6). When phase 0
+ * reaches its hold, the loop settles to normal speed — later cycles are
+ * untouched. Dashed tracks (.is-dash) fade in instead of drawing, so their
+ * dash pattern survives.
+ *
+ * Pinned-section safety: if ScrollTrigger is present, every refresh (pins
+ * being measured, images/fonts landing, resizes) re-measures the rail, so
+ * pin-spacer layout shifts can never leave the line misaligned.
+ *
  * Mobile & tablet (≤991px): a simple SCROLL-driven vertical stack — one card
  * per column (phase 0), personas hidden, and injected [data-pf-vline] grey
  * connector lines between the cards that fill with the accent colour as you
  * scroll (a pill turns active when its connector is full). No loop.
  *
  * Root attributes (all optional):
- *   data-pf-hold        seconds each phase holds before transitioning (default 3.5)
- *   data-pf-draw-dur    line draw / undraw duration in seconds       (default 2.2)
- *   data-pf-mobile      "static" = still frame · "loop" = desktop loop on mobile
- *                       (default = the scroll-filled vertical stack)
+ *   data-pf-hold         seconds each phase holds before transitioning (default 3.5)
+ *   data-pf-draw-dur     line draw / undraw duration in seconds       (default 2.2)
+ *   data-pf-intro-speed  first-pass speed multiplier for the phase-0
+ *                        opening + track assembly (default 1.6)
+ *   data-pf-mobile       "static" = still frame · "loop" = desktop loop on mobile
+ *                        (default = the scroll-filled vertical stack)
  *
  * Colour tokens (read from CSS custom properties on the root, with fallbacks):
  *   --pf-accent (#0b4fff) · --pf-ink (#232323) · --pf-muted (#c3c2b2)
@@ -124,6 +137,28 @@
     var drawTweens = [];                      // every DrawSVG tween — invalidated on resize
     var lineFrac = { a: 0, b: 0 };            // currently drawn fraction of the line
 
+    // Grey track paths — drawn in on the first-pass intro (loop mode only).
+    // Dashed variants keep their stroke-dasharray, so they fade instead.
+    var tracks = [], dashTracks = [];
+    if (svg) {
+      toArray(svg.querySelectorAll("path")).forEach(function (p) {
+        if (p === draw) return;
+        if (p.classList.contains("is-dash")) dashTracks.push(p);
+        else tracks.push(p);
+      });
+    }
+    var introManaged = false;                 // loop mode hides/draws the tracks
+    var introStarted = false;
+    var introTrackTween = null;
+
+    /** Track state survives re-measures: an active intro draw is invalidated
+     *  (re-inits against the new length); otherwise snap to the logical state. */
+    function applyTrackState() {
+      if (!introManaged || !tracks.length) return;
+      if (introTrackTween && introTrackTween.isActive()) introTrackTween.invalidate();
+      else gsap.set(tracks, { drawSVG: introStarted ? "0% 100%" : "0% 0%" });
+    }
+
     function railNum(name, fallback) {
       var v = parseFloat(cssVar(root, name, ""));
       return isNaN(v) ? fallback : v;
@@ -185,6 +220,7 @@
       if (!layoutRail()) return;
       drawTweens.forEach(function (t) { t.invalidate(); });
       applyLineFrac();
+      applyTrackState();
     }
 
     layoutRail();
@@ -196,6 +232,12 @@
     });
     if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
       document.fonts.ready.then(relayout);                 // metrics move once fonts land
+    }
+    // Pinned-section safety: ScrollTrigger pins insert spacers and re-measure
+    // the page (on init, image loads, resizes …). Re-measure the rail after
+    // every refresh so those layout shifts can never desync the line.
+    if (typeof ScrollTrigger !== "undefined" && ScrollTrigger.addEventListener) {
+      ScrollTrigger.addEventListener("refresh", relayout);
     }
 
     // ── Static / initial state ────────────────────────────────────────────────
@@ -344,6 +386,32 @@
       return tl;
     }
 
+    // ── First-pass intro ──────────────────────────────────────────────────────
+    // The grey tracks start undrawn and assemble on the first viewport entry,
+    // slightly ahead of the accent line; the whole phase-0 opening runs
+    // INTRO_SPEED× and the loop settles to 1× when phase 0 reaches its hold.
+    var INTRO_SPEED = parseFloat(root.getAttribute("data-pf-intro-speed")) || 1.6;
+    introManaged = true;
+    if (tracks.length) gsap.set(tracks, { drawSVG: "0% 0%" });
+    if (dashTracks.length) gsap.set(dashTracks, { autoAlpha: 0 });
+
+    function startIntro() {
+      introStarted = true;
+      master.timeScale(INTRO_SPEED);
+      var trackDur = (DRAW_DUR / INTRO_SPEED) * 0.8;       // grey leads the accent line
+      if (tracks.length) {
+        introTrackTween = gsap.fromTo(tracks, { drawSVG: "0% 0%" },
+          { drawSVG: "0% 100%", duration: trackDur, ease: "none" });
+      }
+      if (dashTracks.length) {
+        gsap.to(dashTracks, {
+          autoAlpha: 1, duration: trackDur, ease: "none",
+          onComplete: function () { gsap.set(dashTracks, { clearProps: "opacity,visibility" }); }
+        });
+      }
+      master.play();
+    }
+
     // ── Master loop ───────────────────────────────────────────────────────────
     // Starts PAUSED — an IntersectionObserver below plays it when the section
     // enters the viewport and pauses it again when it leaves.
@@ -365,6 +433,9 @@
         master.to(root.querySelectorAll("[data-pf-pill-wrap]"), { width: "auto", duration: 1, stagger: 0.35, ease: "power4.out" }, sparkAt);
         master.to(pills, { color: ACCENT, backgroundColor: TAG_ON, borderColor: TAG_ON, duration: 1.1, stagger: 0.35, ease: "power4.out" }, sparkAt);
         revealCards(phase, sparkAt + 0.5);
+        // First pass ran INTRO_SPEED× — settle to normal speed as the hold
+        // begins. Fires every loop; timeScale(1) is idempotent after the intro.
+        if (phase === 0) master.add(function () { master.timeScale(1); }, master.duration());
         master.to({}, { duration: HOLD });
 
         master.add(undrawLine(next));
@@ -385,13 +456,15 @@
     if (typeof IntersectionObserver !== "undefined") {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) master.play();
-          else master.pause();
+          if (entry.isIntersecting) {
+            if (introStarted) master.play();
+            else startIntro();                              // first entry: tracks + fast open
+          } else master.pause();
         });
       }, { threshold: 0.2 });
       io.observe(root);
     } else {
-      master.play();                                        // ancient browsers: just run
+      startIntro();                                         // ancient browsers: just run
     }
 
     root._processFlowTimeline = master;                     // exposed for debugging
