@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.4.0
+ * hero.css v1.5.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -147,21 +147,50 @@
 }
 
 .hero__stat {
+  position: relative;
+  overflow: hidden; /* the card clips its absolute media/overlay */
   padding: var(--spacing--4) var(--spacing--6);
   text-align: center;
   will-change: transform, opacity;
 }
 
 .hero__stat-number {
+  position: relative;
+  z-index: 2; /* above media + overlay */
   font-size: var(--text--3xl);
   font-weight: var(--font-weight--medium);
   line-height: var(--leading--tight);
   color: var(--color-text--base);
+  transition: color 0.35s ease;
 }
 
 .hero__stat-label {
+  position: relative;
+  z-index: 2;
   font-size: var(--text--sm);
   color: var(--color-text--muted);
+  transition: color 0.35s ease;
+}
+
+/* ── Stat card hover reveal ─────────────────────────────────── */
+/* Anti-flash: media + overlay stay hidden until the hover timeline
+   reveals them (JS animates clip-path / opacity). */
+[data-hero-stat-media] {
+  clip-path: inset(100% 0 0 0);
+  will-change: clip-path, transform;
+  pointer-events: none;
+}
+
+[data-hero-stat-overlay] {
+  opacity: 0;
+  will-change: opacity;
+  pointer-events: none;
+}
+
+/* Hover: text flips to white over the revealed image */
+.hero__stat.is-hover .hero__stat-number,
+.hero__stat.is-hover .hero__stat-label {
+  color: var(--neutral--0);
 }
 
 /* ── Reduced motion ─────────────────────────────────────────── */

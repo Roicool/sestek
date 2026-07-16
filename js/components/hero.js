@@ -1,17 +1,23 @@
 /*!
- * hero.js v1.4.0
+ * hero.js v1.5.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
  * Optional stats block (inside [data-hero-s2], below [data-hero-desc]):
  *   <div class="hero__stats" data-hero-stats>
  *     <div class="hero__stat" data-hero-stat>
+ *       <div data-hero-stat-media><img …></div>   ← absolute bg image (optional)
+ *       <div data-hero-stat-overlay></div>        ← absolute overlay  (optional)
  *       <div class="hero__stat-number" data-count>1,250+</div>
  *       <div class="hero__stat-label">Label</div>
  *     </div>
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
+ * Cards with [data-hero-stat-media] get a hover reveal: the image wipes up
+ * from the bottom with a slow zoom-out, the overlay fades in a beat later,
+ * and the card gets .is-hover (style text colors → white in CSS). Mouse out
+ * rewinds the reveal slightly faster.
  * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
@@ -56,9 +62,67 @@
     }
 
     var hasStats = !!(el.statsWrap && el.stats.length);
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /*
+     * Stat-card hover reveal — for cards carrying an absolute background
+     * image ([data-hero-stat-media]) and an optional overlay
+     * ([data-hero-stat-overlay]). On hover:
+     *   1. the image wipes up from the bottom (clip-path) while settling
+     *      from a slight zoom — a slow, cinematic uncover
+     *   2. the overlay fades in a beat later (readability + mood layer)
+     *   3. the card gets .is-hover → CSS flips text colors to white
+     * Mouse out rewinds the same timeline a touch faster, so rapid
+     * hovers stay perfectly in sync (one timeline per card, scrubbed
+     * forward/backward — no competing tweens).
+     */
+    function setupStatCards() {
+      el.stats.forEach(function (stat) {
+        var media = stat.querySelector("[data-hero-stat-media]");
+        if (!media || stat._cardInit) return;
+        stat._cardInit = true;
+        var overlay = stat.querySelector("[data-hero-stat-overlay]");
+
+        if (reduceMotion) {
+          // No motion: hover still works, but as instant CSS-driven states
+          stat.addEventListener("mouseenter", function () {
+            stat.classList.add("is-hover");
+            gsap.set(media, { clipPath: "inset(0% 0 0% 0)", scale: 1 });
+            if (overlay) gsap.set(overlay, { opacity: 1 });
+          });
+          stat.addEventListener("mouseleave", function () {
+            stat.classList.remove("is-hover");
+            gsap.set(media, { clipPath: "inset(100% 0 0% 0)" });
+            if (overlay) gsap.set(overlay, { opacity: 0 });
+          });
+          return;
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        tl.fromTo(media,
+          { clipPath: "inset(100% 0% 0% 0%)", scale: 1.15 },
+          { clipPath: "inset(0% 0% 0% 0%)",  scale: 1, duration: 0.65, ease: "power3.out" }, 0);
+        if (overlay) {
+          tl.fromTo(overlay,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.18);
+        }
+
+        stat.addEventListener("mouseenter", function () {
+          stat.classList.add("is-hover");
+          tl.timeScale(1).play();
+        });
+        stat.addEventListener("mouseleave", function () {
+          stat.classList.remove("is-hover");
+          tl.timeScale(1.5).reverse();
+        });
+      });
+    }
+
+    if (hasStats) setupStatCards();
 
     // Prefers-reduced-motion: skip everything, show scene 2 immediately
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (reduceMotion) {
       gsap.set(el.scene2, { opacity: 1 });
       gsap.set(el.words, { opacity: 1, y: 0 });
       if (el.desc) gsap.set(el.desc, { opacity: 1, y: 0 });
