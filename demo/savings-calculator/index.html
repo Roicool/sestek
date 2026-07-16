@@ -30,7 +30,10 @@
 </head>
 <body>
 
-  <section class="sv-calc" data-savings-calc>
+  <section class="sv-calc" data-savings-calc
+           data-sv-rate="0.7" data-sv-capacity="600"
+           data-sv-min="1000" data-sv-max="500000" data-sv-start="50000"
+           data-sv-currency="$">
     <div class="sv-calc__head">
       <h2>See what your team could save</h2>
       <p>Automation frees real budget. Move the slider to your monthly
@@ -45,10 +48,10 @@
 
     <div class="sv-calc__inputs">
       <label>Cost per agent ($/month)
-        <input type="number" data-sv-cost min="0" step="50">
+        <input type="number" data-sv-cost value="1500" min="0" step="50">
       </label>
       <label>Number of agents
-        <input type="number" data-sv-agents min="0" step="1">
+        <input type="number" data-sv-agents value="250" min="0" step="1">
       </label>
     </div>
 
