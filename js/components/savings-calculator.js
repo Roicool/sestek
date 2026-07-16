@@ -165,10 +165,11 @@
     function positionBubble() {
       var t = el.range.value / 1000;
       el.bubble.textContent = abbreviate(currentInquiries());
-      // Track thumb centre: offset by half thumb width at the extremes
-      var thumb = 24; // must match --sv-thumb-size in CSS
-      el.bubble.style.left =
-        "calc(" + (t * 100) + "% + " + ((0.5 - t) * thumb) + "px)";
+      // Thumb centre: offset by half thumb width at the extremes.
+      // Bubble AND label both ride this var (see CSS --sv-left).
+      var thumb = 16; // must match --sv-thumb-size in CSS
+      root.style.setProperty("--sv-left",
+        "calc(" + (t * 100) + "% + " + ((0.5 - t) * thumb) + "px)");
       root.style.setProperty("--sv-fill", (t * 100) + "%");
     }
 

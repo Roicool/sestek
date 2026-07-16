@@ -1,55 +1,72 @@
 /*!
- * savings-calculator.css v1.0.0
+ * savings-calculator.css v1.2.0
  * Ramp-style live savings calculator — critical/behavioural styles.
+ * Matches Ramp's real implementation: 3-stop gradient fill that scales with
+ * the thumb, value bubble with arrow + label both riding the thumb.
  * Bound via data-attributes (same hooks the JS targets).
- * Colours/fonts can be re-themed via the custom properties below.
  * https://github.com/roicool/sestek
  */
 
 [data-savings-calc] {
-  /* ── Theme knobs ─────────────────────────────────────────── */
-  --sv-accent: #5b7fd6;          /* big number + bubble (Ramp periwinkle) */
-  --sv-track-dark: #12224d;      /* filled end of the track, near thumb   */
-  --sv-track-light: #c9d4f0;     /* filled start of the track             */
-  --sv-track-rest: #e8ebf2;      /* unfilled remainder                    */
-  --sv-thumb-size: 24px;         /* keep in sync with JS `thumb` constant */
-  --sv-fill: 50%;                /* set live by JS                        */
+  /* ── Theme knobs (defaults = Ramp's exact colours) ────────── */
+  --sv-accent: #5683d2;          /* big number                            */
+  --sv-bubble: #5b7fde;          /* value bubble + its arrow              */
+  --sv-track-rest: #e4ebf6;      /* track background (unfilled)           */
+  --sv-grad-a: #e4ebf6;          /* fill gradient start                   */
+  --sv-grad-b: #5683d2;          /* fill gradient middle                  */
+  --sv-grad-c: #001b4a;          /* fill gradient end (at the thumb)      */
+  --sv-thumb: #001b4a;           /* thumb dot ("midnight")                */
+  --sv-thumb-size: 16px;         /* keep in sync with JS `thumb` constant */
+  --sv-fill: 50%;                /* ┐ set live by JS                      */
+  --sv-left: 50%;                /* ┘ thumb centre position               */
 
   position: relative;
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  padding: 4rem 1.5rem;
+  padding: 4rem 1rem;
   text-align: center;
 }
 
 /* ── Slider block ────────────────────────────────────────────── */
 .sv-calc__slider {
   position: relative;
-  max-width: 560px;
-  margin: 3.5rem auto 0;
-  /* room for the floating bubble */
-  padding-top: 3.25rem;
+  width: 90%;
+  max-width: 551px;
+  margin: clamp(2rem, 8vw, 5rem) auto 0;  /* Ramp's big spacer above */
+  padding-top: 4.5rem;     /* room for the floating bubble + arrow */
+  padding-bottom: 3rem;    /* room for the label riding below      */
 }
 
-/* Value bubble that rides along with the thumb */
+/* Value bubble — rides the thumb via --sv-left, arrow underneath */
 [data-sv-bubble] {
   position: absolute;
   top: 0;
-  left: 50%;
+  left: var(--sv-left);
   transform: translateX(-50%);
-  padding: 0.5em 1.1em;
+  padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: var(--sv-accent);
+  background: var(--sv-bubble);
   color: #fff;
-  font-size: 1.25rem;
-  font-weight: 500;
-  line-height: 1.2;
+  font-size: 1.125rem;
+  line-height: 23px;
   white-space: nowrap;
   pointer-events: none;
 }
+[data-sv-bubble]::after {          /* the little arrow, Ramp-style */
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: var(--sv-bubble);
+}
+@media (min-width: 992px) {
+  [data-sv-bubble] { font-size: 1.5rem; line-height: 28px; }
+}
 
-/* Range input — custom track with a gradient fill up to the thumb */
+/* Range input — 6px rounded track, gradient fill scaling with thumb */
 [data-sv-range] {
   -webkit-appearance: none;
   appearance: none;
@@ -60,28 +77,30 @@
   background: transparent;
   cursor: pointer;
 }
+/* Fill gradient stretches with the fill: light → blue → midnight at thumb */
 [data-sv-range]::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--sv-track-light) 0%,
-    var(--sv-track-dark) var(--sv-fill),
-    var(--sv-track-rest) var(--sv-fill),
-    var(--sv-track-rest) 100%
+    var(--sv-grad-a) 0%,
+    var(--sv-grad-b) calc(var(--sv-fill) * 0.55),
+    var(--sv-grad-c) var(--sv-fill),
+    var(--sv-track-rest) var(--sv-fill)
   );
 }
 [data-sv-range]::-moz-range-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--sv-track-light) 0%,
-    var(--sv-track-dark) var(--sv-fill),
-    var(--sv-track-rest) var(--sv-fill),
-    var(--sv-track-rest) 100%
+    var(--sv-grad-a) 0%,
+    var(--sv-grad-b) calc(var(--sv-fill) * 0.55),
+    var(--sv-grad-c) var(--sv-fill),
+    var(--sv-track-rest) var(--sv-fill)
   );
 }
+/* Thumb — plain 16px midnight dot, like Ramp */
 [data-sv-range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: var(--sv-thumb-size);
@@ -89,49 +108,65 @@
   margin-top: calc((6px - var(--sv-thumb-size)) / 2);
   border: none;
   border-radius: 50%;
-  background: var(--sv-track-dark);
-  box-shadow: 0 0 0 4px #fff inset;
+  background: var(--sv-thumb);
 }
 [data-sv-range]::-moz-range-thumb {
   width: var(--sv-thumb-size);
   height: var(--sv-thumb-size);
   border: none;
   border-radius: 50%;
-  background: var(--sv-track-dark);
-  box-shadow: 0 0 0 4px #fff inset;
+  background: var(--sv-thumb);
+}
+[data-sv-range]:focus-visible {
+  outline: 1px solid var(--sv-accent);
+  outline-offset: 4px;
+  border-radius: 999px;
 }
 
+/* Label — rides below the thumb, same --sv-left as the bubble */
 .sv-calc__slider-label {
-  margin-top: 1rem;
+  position: absolute;
+  top: calc(4.5rem + var(--sv-thumb-size) + 0.75rem);
+  left: var(--sv-left);
+  transform: translateX(-50%);
+  width: 200px;
   font-size: 1.125rem;
-  color: #232323;
+  line-height: 24px;
+  color: #71717a;
+  pointer-events: none;
 }
 
-/* ── Small inputs row ────────────────────────────────────────── */
+/* ── Small inputs row (Ramp: inline sentence with tiny boxes) ── */
 .sv-calc__inputs {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem 2.5rem;
-  margin-top: 3rem;
-  font-size: 1rem;
-  color: #4b4f58;
+  gap: 0.5rem 2rem;
+  max-width: 720px;
+  margin: 2.5rem auto 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #71717a;
 }
 .sv-calc__inputs label {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 .sv-calc__inputs input {
-  width: 5.5em;
-  padding: 0.65em 0.5em;
-  border: 1px solid #e4e6eb;
+  height: 2.5rem;                /* h-10 */
+  width: 3.5rem;                 /* w-14 */
+  padding: 0 0.5rem;
+  border: 1px solid #e5e7eb;     /* gray-200 */
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(20, 30, 60, 0.06);
-  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  color: inherit;
   text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
   -moz-appearance: textfield;
 }
 .sv-calc__inputs input::-webkit-outer-spin-button,
@@ -139,37 +174,33 @@
   -webkit-appearance: none;
   margin: 0;
 }
-.sv-calc__inputs input:focus {
-  outline: 2px solid var(--sv-accent);
-  outline-offset: 1px;
-}
+.sv-calc__inputs input:focus { border-color: var(--sv-grad-c); }
 
 /* ── Big animated total ──────────────────────────────────────── */
 .sv-calc__result {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   color: var(--sv-accent);
-  /* Tabular figures stop the number jittering while it counts */
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums;  /* no jitter while counting */
 }
 [data-sv-total] {
-  font-size: clamp(4rem, 16vw, 15rem);
+  font-size: clamp(64px, 15vw, 220px); /* Ramp: 64 → 220px responsive */
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 .sv-calc__per {
-  font-size: clamp(1.25rem, 2.5vw, 2rem);
-  margin-left: 0.35em;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  margin-left: 0.25em;
 }
 
 /* ── Disclaimer ──────────────────────────────────────────────── */
 .sv-calc__disclaimer {
-  max-width: 760px;
-  margin: 3rem auto 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: #6b7078;
+  max-width: 700px;
+  margin: 2.5rem auto 0;
+  font-size: 10px;
+  line-height: 14px;
+  color: #71717a;
 }
