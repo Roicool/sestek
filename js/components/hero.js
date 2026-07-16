@@ -1,7 +1,19 @@
 /*!
- * hero.js v1.0.3
+ * hero.js v1.1.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
+ *
+ * Optional stats block (inside [data-hero-s2], below [data-hero-desc]):
+ *   <div class="hero__stats" data-hero-stats>
+ *     <div class="hero__stat" data-hero-stat>
+ *       <div class="hero__stat-number" data-count>1,250+</div>
+ *       <div class="hero__stat-label">Label</div>
+ *     </div>
+ *   </div>
+ * Stats stagger in at the end of the scroll timeline; numbers roll via
+ * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
+ * A floating "pill" background glides to the hovered stat and returns to the
+ * first one on mouseleave. The pill element is created at runtime.
  * https://github.com/roicool/sestek
  */
 
@@ -31,9 +43,11 @@
       words     : Array.from(hero.querySelectorAll("[data-hero-word]")),
       slot      : hero.querySelector("[data-hero-video-slot]"),
       desc      : hero.querySelector("[data-hero-desc]"),
+      statsWrap : hero.querySelector("[data-hero-stats]"),
+      stats     : Array.from(hero.querySelectorAll("[data-hero-stat]")),
     };
 
-    // Bail if any critical element is missing (desc is optional)
+    // Bail if any critical element is missing (desc and stats are optional)
     var required = ["videoWrap", "overlay", "s1Content", "scene2", "words", "slot"];
     var missing = required.filter(function (k) {
       return !el[k] || (Array.isArray(el[k]) && !el[k].length);
@@ -42,15 +56,90 @@
       console.warn("[Sestek Hero] Missing elements:", missing.join(", ")); return;
     }
 
+    var hasStats = !!(el.statsWrap && el.stats.length);
+
+    /*
+     * Stats "active" pill — a single floating background element that glides
+     * to whichever stat is hovered and slides back to the first stat on
+     * mouseleave. One stat is always active (index 0 by default); active
+     * state is mirrored with the house .is-active class for CSS styling.
+     */
+    var pill = null;
+    var activeIndex = 0;
+
+    function movePill(index, immediate) {
+      if (!pill) return;
+      activeIndex = index;
+      var stat = el.stats[index];
+      el.stats.forEach(function (s, i) {
+        s.classList.toggle("is-active", i === index);
+      });
+      // offsetLeft/Top are relative to the wrapper (position: relative in CSS)
+      var props = {
+        x     : stat.offsetLeft,
+        y     : stat.offsetTop,
+        width : stat.offsetWidth,
+        height: stat.offsetHeight,
+      };
+      if (immediate) {
+        gsap.set(pill, props);
+      } else {
+        props.duration = 0.45;
+        props.ease = "power3.out";
+        props.overwrite = "auto"; // rapid hovers retarget mid-flight cleanly
+        gsap.to(pill, props);
+      }
+    }
+
+    function setupStatsPill() {
+      if (!hasStats || el.statsWrap._pillInit) return;
+      el.statsWrap._pillInit = true;
+
+      pill = document.createElement("div");
+      pill.className = "hero__stat-pill";
+      pill.setAttribute("aria-hidden", "true");
+      el.statsWrap.insertBefore(pill, el.statsWrap.firstChild);
+
+      el.stats.forEach(function (stat, i) {
+        stat.addEventListener("mouseenter", function () { movePill(i); });
+      });
+      // Mouse left the whole stats row — glide back home to the first stat
+      el.statsWrap.addEventListener("mouseleave", function () { movePill(0); });
+
+      /*
+       * The stats row reflows for reasons the pill can't see coming: the
+       * video slot collapsing narrows the shrink-to-fit scene wrapper,
+       * count-up reserves number widths, fonts load, breakpoints shift.
+       * Watching the wrapper + each stat keeps the pill glued to the active
+       * stat through ALL of them (any offset change here starts as a size
+       * change of one of these boxes).
+       */
+      if (typeof ResizeObserver !== "undefined") {
+        var ro = new ResizeObserver(function () { movePill(activeIndex, true); });
+        ro.observe(el.statsWrap);
+        el.stats.forEach(function (s) { ro.observe(s); });
+      }
+
+      movePill(0, true);
+    }
+
     // Prefers-reduced-motion: skip everything, show scene 2 immediately
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(el.scene2, { opacity: 1 });
       gsap.set(el.words, { opacity: 1, y: 0 });
       if (el.desc) gsap.set(el.desc, { opacity: 1, y: 0 });
+      if (hasStats) {
+        // Stats + pill appear instantly; numbers keep their final HTML value
+        setupStatsPill();
+        gsap.set(el.stats, { opacity: 1, y: 0 });
+        if (pill) gsap.set(pill, { opacity: 1 });
+      }
       el.s1Content.style.pointerEvents = "none";
       el.scene2.style.pointerEvents = "auto";
       return;
     }
+
+    setupStatsPill();
 
     var activeST = null;
 
@@ -99,6 +188,12 @@
       el.scene2.style.pointerEvents = "none";
       gsap.set(el.words,     { opacity: 0, y: 40 });
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
+      if (hasStats) {
+        gsap.set(el.stats, { opacity: 0, y: 24 });
+        if (pill) gsap.set(pill, { opacity: 0 });
+        // Stats may reflow on resize — re-measure the pill's home position
+        movePill(activeIndex, true);
+      }
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
       var navEl = document.querySelector("[data-nav]");
@@ -210,6 +305,56 @@
         ease    : "power2.inOut",
         duration: 0.10,
       }, 0.86);
+
+      // ── Phase 9 (0.78 – 1.00): Stats stagger in ──────────────────
+      /*
+       * Spacing is computed from the stat count so the LAST stat always
+       * lands exactly at 1.0 — never past it. A position beyond 1.0 would
+       * extend the timeline's total duration and rescale every existing
+       * phase against the scroll distance (which must stay untouched).
+       */
+      if (hasStats) {
+        var sDur   = 0.10;
+        var sStart = 0.78;
+        var sSpace = el.stats.length > 1
+          ? (1.0 - sStart - sDur) / (el.stats.length - 1)
+          : 0;
+
+        el.stats.forEach(function (stat, i) {
+          tl.to(stat, {
+            opacity : 1,
+            y       : 0,
+            ease    : "power3.out",
+            duration: sDur,
+            onStart : function () {
+              /*
+               * Numbers roll via count-up.js the moment the stat starts
+               * revealing. The element is already in the viewport (hero is
+               * pinned) so countUp's own ScrollTrigger fires instantly;
+               * its _countUpInit flag keeps scrubbing back/forth from
+               * re-initialising. Counts once, then stays (count-up default).
+               */
+              var num = stat.querySelector("[data-count]");
+              if (num && global.Sestek.countUp) {
+                var roll = global.Sestek.countUp(num, { duration: 1.6 });
+                // countUp reserves the number's final width (tabular-nums +
+                // min-width) synchronously, which reflows the centred stats
+                // row — re-measure the pill onto the active stat.
+                movePill(activeIndex, true);
+                // min-width only stops the row from SHRINKING; intermediate
+                // roll values can be wider than the final text, so the row
+                // settles once more when the roll lands. Glide the pill back.
+                if (roll) roll.then(function () { movePill(activeIndex); });
+              }
+            },
+          }, sStart + i * sSpace);
+        });
+
+        // Pill fades in together with the first (default-active) stat
+        if (pill) {
+          tl.to(pill, { opacity: 1, duration: sDur }, sStart);
+        }
+      }
 
       activeST = tl.scrollTrigger;
     }

@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.0.1
+ * hero.css v1.1.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -138,12 +138,71 @@
   will-change: transform, opacity;
 }
 
+/* ── Stats (optional, below desc) ───────────────────────────── */
+.hero__stats {
+  position: relative; /* offset parent for the floating pill */
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing--3);
+  margin-top: var(--spacing--10);
+}
+
+.hero__stat {
+  position: relative;
+  z-index: 1; /* content stays above the pill */
+  padding: var(--spacing--4) var(--spacing--6);
+  border-radius: var(--radius--xl);
+  text-align: center;
+  cursor: default;
+  will-change: transform, opacity;
+}
+
+.hero__stat-number {
+  font-size: var(--text--3xl);
+  font-weight: var(--font-weight--medium);
+  line-height: var(--leading--tight);
+  color: var(--color-text--base);
+  transition: color 0.35s ease;
+}
+
+.hero__stat-label {
+  font-size: var(--text--sm);
+  color: var(--color-text--muted);
+  transition: color 0.35s ease;
+}
+
+/* Dual selector — house pattern: JS-driven .is-active OR pure CSS :hover */
+.hero__stat.is-active .hero__stat-number,
+.hero__stat:hover .hero__stat-number {
+  color: var(--color-text--accent);
+}
+
+/*
+ * The floating active-state background. Created by hero.js at runtime and
+ * moved with GSAP (x/y/width/height), so it only needs its resting look here.
+ */
+.hero__stat-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--neutral--0);
+  border: 1px solid var(--border--color-border-muted);
+  border-radius: var(--radius--xl);
+  box-shadow: 0 8px 24px oklch(14% 0 0 / 0.06);
+  z-index: 0;
+  opacity: 0; /* fades in with the first stat at the end of the timeline */
+  will-change: transform, width, height, opacity;
+  pointer-events: none;
+}
+
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hero__video-wrap,
   .hero__word,
   .hero__video-overlay,
-  .hero__s1-content {
+  .hero__s1-content,
+  .hero__stat,
+  .hero__stat-pill {
     will-change: auto !important;
     transition: none !important;
   }
@@ -152,7 +211,8 @@
     opacity: 1;
   }
 
-  .hero__word {
+  .hero__word,
+  .hero__stat {
     opacity: 1 !important;
     transform: none !important;
   }
