@@ -1,6 +1,9 @@
 /*!
- * journey-line.css v1.0.1
+ * journey-line.css v1.1.0
  * v1.0.1: badge will-change narrowed to opacity (reveal is a pure fade now).
+ * v1.1.0: zero-CLS hardening — images always fill their media box, so a
+ *         lazy-loading image can never grow the box (the JS adds an
+ *         aspect-ratio fallback when no height is reserved).
  * Structural hooks for the Superpower-style pinned journey steps
  * (journey-line.js v1.0+). Mechanics only — the full-bleed track line, its
  * scaleX fill and the will-change hints for the blur reveals. The visual skin
@@ -53,6 +56,16 @@
 [data-jl-media],
 [data-jl-copy] {
   will-change: opacity, filter, transform;
+}
+
+/* ── CLS armour — an image can never resize its media box. The box's height
+   comes from the skin's aspect-ratio (or the JS fallback), so a lazy image
+   landing as the section enters the viewport shifts nothing. ──────────────── */
+[data-jl-media] img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ── Mobile & tablet — no pin, steps stack; the horizontal line makes no

@@ -1,10 +1,18 @@
 /*!
- * journey-line.js v1.2.0
+ * journey-line.js v1.3.0
  * v1.1.0: badge reveals are a pure opacity fade — the scale + back.out pop
  *         read badly when the scrub rewinds. Media/copy choreography unchanged.
  * v1.2.0: the fill starts AT badge 1 (step 1 is already open when the pin
  *         catches, so drawing the empty stretch before it was wasted scroll).
  *         Reveal timings re-map to the remaining badge-1 → end range.
+ * v1.3.0: ZERO-SHIFT hardening. anticipatePin removed — it flips the pin a
+ *         beat early, which reads as a jump-then-settle with Lenis (native
+ *         fast-scroll flash, the thing it guards, can't happen under Lenis;
+ *         step-scroll.js made the same call). Media boxes with no reserved
+ *         height get an aspect-ratio fallback so Webflow's lazy images can't
+ *         grow the box on viewport entry (the CLS source), and every late
+ *         image load re-seats the line immediately instead of waiting for
+ *         the next global refresh.
  * Superpower-style pinned journey steps: the section pins for the whole
  * scroll distance, a full-bleed horizontal line fills with the accent colour
  * (scaleX — no SVG, no path measuring) and each step's badge/media/copy
@@ -94,6 +102,19 @@
     var badges = steps.map(function (s) { return s.querySelector("[data-jl-badge]"); });
     var medias = steps.map(function (s) { return s.querySelector("[data-jl-media]"); });
     var copies = steps.map(function (s) { return s.querySelector("[data-jl-copy]"); });
+
+    // ── CLS guard: media boxes must own their height BEFORE images land ──────
+    // Webflow serves images loading="lazy" — they arrive right as the section
+    // enters the viewport. If a media box has no reserved height (skin not
+    // applied / aspect-ratio removed in the Designer), the box grows at that
+    // moment: the badge row jumps, the line is left mis-seated, and it counts
+    // as CLS. Same guard pattern as step-scroll's videoWrap fallback.
+    medias.forEach(function (m) {
+      if (m && m.getBoundingClientRect().height < 2) {
+        m.style.aspectRatio = "3 / 2";
+        m.style.overflow = "hidden";
+      }
+    });
 
     // ── Geometry: line top + badge fractions ─────────────────────────────────
     // The only measuring this component does: where (vertically) the line sits
@@ -197,7 +218,10 @@
           end: "+=" + (n * STEP_VH) + "%",
           pin: true,
           scrub: SCRUB,
-          anticipatePin: 1,
+          // NO anticipatePin: it flips the pin slightly BEFORE the section
+          // reaches the top — a visible jump-then-settle under Lenis. The
+          // native fast-scroll flash it guards against can't happen when
+          // Lenis drives the scroll (see step-scroll.js, same decision).
           // See PROJECT.md "ScrollTrigger — Pinli Bölüm Kuralları": priority is
           // driven by data-jl-priority, set per the page's pin stacking order.
           refreshPriority: PRIORITY,
@@ -239,6 +263,13 @@
     if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
       document.fonts.ready.then(place);
     }
+    // Lazy images land as the section nears the viewport — long after the
+    // window-load refresh. Re-seat the line the moment each one arrives
+    // (cheap rect math; with the aspect-ratio guard above this is usually
+    // a no-op, it only matters when a box's height genuinely changed).
+    toArray(root.querySelectorAll("img")).forEach(function (img) {
+      if (!img.complete) img.addEventListener("load", place, { once: true });
+    });
 
     root._journeyLineTimeline = master;                     // exposed for debugging
   }
