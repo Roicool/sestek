@@ -1,5 +1,5 @@
 /*!
- * hero.js v1.7.0
+ * hero.js v1.8.0
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -14,10 +14,11 @@
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * Cards with [data-hero-stat-media] get a cursor-origin reveal: the image
- * blooms out of the exact point where the pointer entered the card
- * (clip-path circle) while settling from a slow zoom; on leave it drains
- * back into the exit point. The card gets .is-hover (text → white via CSS).
+ * Cards with [data-hero-stat-media] get a slow-luxury crossfade reveal:
+ * the image arrives through a deep 1.2s fade and keeps settling from a
+ * 1.12 zoom for seconds after — it stays alive the whole time the card
+ * is hovered. No gimmick; the weight IS the effect. On leave it dissolves
+ * out quickly. The card gets .is-hover (text → white via CSS).
  * While ANY card is hovered the scene goes dark: a runtime "stage" layer
  * fades in over [data-hero-s2] (GSAP opacity — smoother than a CSS
  * background-color flip) and .is-dark restyles texts/cards via CSS. The
@@ -69,14 +70,14 @@
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /*
-     * Stat-card hover reveal — cursor-origin bloom. For cards carrying an
-     * absolute background image ([data-hero-stat-media]) and an optional
-     * overlay ([data-hero-stat-overlay]). The image is clipped to a
-     * zero-radius circle; on hover the circle blooms open FROM THE EXACT
-     * POINT the pointer entered the card while the image settles from a
-     * slow zoom (expo.out). On leave it drains back into the exit point.
-     * Because the reveal literally grows out of your own gesture, every
-     * hover feels bespoke — no two entries look the same.
+     * Stat-card hover reveal — slow-luxury crossfade. For cards carrying
+     * an absolute background image ([data-hero-stat-media]) and an
+     * optional overlay ([data-hero-stat-overlay]). On hover the image
+     * arrives through a deep 1.2s fade while a long 7s zoom keeps it
+     * settling from 1.12 toward rest — the picture stays alive for as
+     * long as the card is hovered, which is what gives it weight. The
+     * overlay breathes in behind the fade. On leave everything dissolves
+     * out in ~0.5s. No wipes, no shapes: restraint is the effect.
      *
      * Scene mood: while ANY card is hovered the scene goes dark — a
      * runtime stage layer fades in behind the content (GSAP opacity on a
@@ -104,15 +105,6 @@
       }
     }
 
-    /** % point where the pointer crossed the card's edge, clamped to it */
-    function pointerPct(stat, e) {
-      var r = stat.getBoundingClientRect();
-      return {
-        x: Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)),
-        y: Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100)),
-      };
-    }
-
     function setupStatCards() {
       // Darkness lives on its own composited layer behind the content
       stage = document.createElement("div");
@@ -126,55 +118,51 @@
         stat._cardInit = true;
         var overlay = stat.querySelector("[data-hero-stat-overlay]");
 
-        stat.addEventListener("mouseenter", function (e) {
+        stat.addEventListener("mouseenter", function () {
           if (darkTimer) { darkTimer.kill(); darkTimer = null; }
           setSceneDark(true);
           stat.classList.add("is-hover");
 
           if (reduceMotion) {
-            gsap.set(media, { clipPath: "circle(142% at 50% 50%)", scale: 1 });
+            gsap.set(media, { opacity: 1, scale: 1 });
             if (overlay) gsap.set(overlay, { opacity: 1 });
             return;
           }
 
-          var p = pointerPct(stat, e);
           if (stat._reveal) stat._reveal.kill();
           var tl = gsap.timeline();
-          tl.fromTo(media,
-            { clipPath: "circle(0% at " + p.x + "% " + p.y + "%)", scale: 1.18 },
-            {
-              clipPath: "circle(142% at " + p.x + "% " + p.y + "%)",
-              duration: 0.75,
-              ease: "power2.out",
-            }, 0)
-            .to(media, { scale: 1, duration: 1.1, ease: "expo.out" }, 0);
+          tl
+            // Deep, unhurried arrival…
+            .fromTo(media,
+              { opacity: 0 },
+              { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 0)
+            // …and a zoom that keeps settling long after the fade is done,
+            // so the image feels alive for the whole hover.
+            .fromTo(media,
+              { scale: 1.12 },
+              { scale: 1, duration: 7, ease: "power1.out" }, 0);
           if (overlay) {
             tl.fromTo(overlay,
               { opacity: 0 },
-              { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.2);
+              { opacity: 1, duration: 0.9, ease: "power2.inOut" }, 0.35);
           }
           stat._reveal = tl;
         });
 
-        stat.addEventListener("mouseleave", function (e) {
+        stat.addEventListener("mouseleave", function () {
           stat.classList.remove("is-hover");
 
           if (reduceMotion) {
-            gsap.set(media, { clipPath: "circle(0% at 50% 50%)" });
+            gsap.set(media, { opacity: 0 });
             if (overlay) gsap.set(overlay, { opacity: 0 });
             return;
           }
 
-          var p = pointerPct(stat, e);
           if (stat._reveal) stat._reveal.kill();
           var tl = gsap.timeline();
-          tl.to(media, {
-            clipPath: "circle(0% at " + p.x + "% " + p.y + "%)",
-            duration: 0.45,
-            ease: "power2.in",
-          }, 0);
+          tl.to(media,   { opacity: 0, duration: 0.5, ease: "power2.out" }, 0);
           if (overlay) {
-            tl.to(overlay, { opacity: 0, duration: 0.3 }, 0);
+            tl.to(overlay, { opacity: 0, duration: 0.35 }, 0);
           }
           stat._reveal = tl;
         });

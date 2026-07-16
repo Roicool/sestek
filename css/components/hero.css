@@ -1,5 +1,5 @@
 /*!
- * hero.css v1.7.0
+ * hero.css v1.8.0
  * Hero component — critical styles
  * https://github.com/roicool/sestek
  */
@@ -172,13 +172,12 @@
   transition: color 0.35s ease;
 }
 
-/* ── Stat card hover reveal (cursor-origin bloom) ───────────── */
-/* Anti-flash: media starts clipped to a zero-radius circle, overlay
-   invisible — the hover timeline blooms them open (JS animates
-   clip-path / opacity). */
+/* ── Stat card hover reveal (slow-luxury crossfade) ─────────── */
+/* Anti-flash: media + overlay stay invisible until the hover timeline
+   fades them in (JS animates opacity / scale). */
 [data-hero-stat-media] {
-  clip-path: circle(0% at 50% 100%);
-  will-change: clip-path, transform;
+  opacity: 0;
+  will-change: opacity, transform;
   pointer-events: none;
 }
 
@@ -233,13 +232,15 @@
   color: var(--neutral--400);
 }
 
-/* Cards adapt to the dark stage: surface → neutral-800, text → light */
+/* Cards adapt to the dark stage: surface → neutral-800, border →
+   neutral-700, text → light */
 .hero__stat {
-  transition: background-color 0.8s ease;
+  transition: background-color 0.8s ease, border-color 0.8s ease;
 }
 
 .hero__scene--2.is-dark .hero__stat {
   background-color: var(--neutral--800);
+  border-color: var(--neutral--700);
 }
 
 .hero__scene--2.is-dark .hero__stat-number {
