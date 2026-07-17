@@ -1,9 +1,18 @@
 /*!
- * email-popup.js v1.0.1
- * Bottom-left email capture slide-in ("get the report" style card). The card
- * itself is built in Webflow Designer inside a [data-email-popup] wrapper with
- * a NATIVE Webflow form (Webflow owns submit + success message); this script
- * only decides WHEN it is polite to show it — and when never to.
+ * leadgen-slide-in.js v1.0.0
+ * Leadgen family — slide-in form. Bottom-left email capture card ("get the
+ * report" style) that slides in from the corner. The card itself is built in
+ * Webflow Designer inside a [data-leadgen="slide-in"] wrapper with a NATIVE
+ * Webflow form (Webflow owns submit + success message); this script only
+ * decides WHEN it is polite to show it — and when never to.
+ *
+ * THE LEADGEN FAMILY: every lead-capture surface (this slide-in, the planned
+ * leadgen-popup modal, bars, …) ships as its own leadgen-*.js/css pair but
+ * shares one vocabulary and one memory:
+ *   - the root is data-leadgen="<type>", children/config are data-leadgen-*
+ *   - frequency state is stored under sestek-leadgen:<campaign key>, SHARED
+ *     across types — a campaign dismissed as a slide-in will not come back
+ *     as a popup; a visitor who subscribed via one surface is done for all
  *
  * Anti-annoyance contract (all thresholds tunable via attributes):
  *   - Never on landing. Shows only after real engagement: scroll depth
@@ -25,44 +34,48 @@
  *   - prefers-reduced-motion: the slide/fade transition is dropped in CSS.
  *
  * Requires: nothing. No GSAP — entrance/exit is a CSS class swap
- * (email-popup.css owns the transition), storage is guarded for private mode.
- * CSS: css/components/email-popup.css
+ * (leadgen-slide-in.css owns the transition), storage is guarded for
+ * private mode.
+ * CSS: css/components/leadgen-slide-in.css
  *
- * DOM (Webflow) — [data-email-popup-content]/[data-email-popup-media] get the
- * ready-made card skin from email-popup.css (content left, cover image right,
- * close circle straddling the corner; leave the close button EMPTY — the
- * cross is drawn in CSS):
- *   <div data-email-popup aria-label="Report signup">
- *     <button data-email-popup-close aria-label="Close"></button>
- *     <div data-email-popup-content>
- *       <h4>42% of companies already use AI.</h4>
- *       <p>See new insights on Winter 2026 spend shifts.</p>
- *       <div class="w-form">
- *         <form> <input type="email" required> <input type="submit"> </form>
- *         <div class="w-form-done">Thanks — the report is on its way.</div>
+ * DOM (Webflow) — all visual styling (card chrome, layout, the close
+ * button's look) is done in Designer; the CSS ships behaviour only
+ * (positioning + slide transition). Recommended nesting: an INNER card div
+ * carries overflow:hidden + radius (clips the cover image) while the close
+ * button sits on the OUTER wrapper so it can straddle the corner:
+ *   <div data-leadgen="slide-in" aria-label="Report signup">
+ *     <div class="lg-card">          <!-- Designer: radius, overflow:hidden -->
+ *       <div data-leadgen-content>   <!-- optional hook for Designer styling -->
+ *         <h4>42% of companies already use AI.</h4>
+ *         <p>See new insights on Winter 2026 spend shifts.</p>
+ *         <div class="w-form">
+ *           <form> <input type="email" required> <input type="submit"> </form>
+ *           <div class="w-form-done">Thanks — the report is on its way.</div>
+ *         </div>
  *       </div>
+ *       <div data-leadgen-media><img src="report-cover.jpg" alt=""></div>
  *     </div>
- *     <div data-email-popup-media><img src="report-cover.jpg" alt=""></div>
+ *     <button data-leadgen-close aria-label="Close">×</button>
  *   </div>
  *
  * Root attributes (all optional):
- *   data-email-popup-key         campaign id — storage is scoped per key, so a
- *                                new campaign re-arms past snoozes (default "default")
- *   data-email-popup-scroll      scroll-depth trigger, % of page (default 50; 0 = off)
- *   data-email-popup-delay       engaged-time trigger, seconds (default 20; 0 = off)
- *   data-email-popup-snooze      days to stay away after dismiss (default 14)
- *   data-email-popup-done        days to stay away after submit (default 365)
- *   data-email-popup-max-shows   ignored impressions before auto-snooze (default 3)
- *   data-email-popup-min-width   min viewport px to ever show (default 768; 0 = always)
- *   data-email-popup-skip-if     CSS selector — if it matches anything on the
- *                                page the popup stays away (default "[data-demo-form]";
- *                                "none" disables the check)
- *   data-email-popup-hide-after  seconds the success message stays before the
- *                                card slides away (default 4)
+ *   data-leadgen-key         campaign id — storage is scoped per key, so a
+ *                            new campaign re-arms past snoozes (default "default")
+ *   data-leadgen-scroll      scroll-depth trigger, % of page (default 50; 0 = off)
+ *   data-leadgen-delay       engaged-time trigger, seconds (default 20; 0 = off)
+ *   data-leadgen-snooze      days to stay away after dismiss (default 14)
+ *   data-leadgen-done        days to stay away after submit (default 365)
+ *   data-leadgen-max-shows   ignored impressions before auto-snooze (default 3)
+ *   data-leadgen-min-width   min viewport px to ever show (default 768; 0 = always)
+ *   data-leadgen-skip-if     CSS selector — if it matches anything on the
+ *                            page the card stays away (default "[data-demo-form]";
+ *                            "none" disables the check)
+ *   data-leadgen-hide-after  seconds the success message stays before the
+ *                            card slides away (default 4)
  *
- * Sestek.initEmailPopup() returns a controller per root: { el, show, hide,
- * dismiss } — show() bypasses the triggers but still honours snooze/done/session
- * caps, so a manual CTA elsewhere can reuse the same card.
+ * Sestek.initLeadgenSlideIn() returns a controller per root: { el, show,
+ * hide, dismiss } — show() bypasses the triggers but still honours
+ * snooze/done/session caps, so a manual CTA elsewhere can reuse the card.
  *
  * https://github.com/roicool/sestek
  */
@@ -95,7 +108,7 @@
     } catch (e) { /* private mode — silently degrade */ }
   }
 
-  /** Is the visitor mid-typing somewhere OUTSIDE the popup? Don't interrupt. */
+  /** Is the visitor mid-typing somewhere OUTSIDE the card? Don't interrupt. */
   function isTypingOutside(root) {
     var el = doc.activeElement;
     if (!el || el === doc.body || root.contains(el)) return false;
@@ -109,18 +122,20 @@
   }
 
   function wire(root) {
-    var key = root.getAttribute("data-email-popup-key") || "default";
-    var storeKey = "sestek-email-popup:" + key;
+    var key = root.getAttribute("data-leadgen-key") || "default";
+    // Family-wide store: shared with future leadgen surfaces (popup, bar…)
+    // so the same campaign never asks twice through different formats.
+    var storeKey = "sestek-leadgen:" + key;
     var sessionKey = storeKey + ":shown";
 
-    var scrollPct = attrNum(root, "data-email-popup-scroll", 50);
-    var delaySec = attrNum(root, "data-email-popup-delay", 20);
-    var snoozeDays = attrNum(root, "data-email-popup-snooze", 14);
-    var doneDays = attrNum(root, "data-email-popup-done", 365);
-    var maxShows = attrNum(root, "data-email-popup-max-shows", 3);
-    var minWidth = attrNum(root, "data-email-popup-min-width", 768);
-    var hideAfter = attrNum(root, "data-email-popup-hide-after", 4);
-    var skipIf = root.getAttribute("data-email-popup-skip-if");
+    var scrollPct = attrNum(root, "data-leadgen-scroll", 50);
+    var delaySec = attrNum(root, "data-leadgen-delay", 20);
+    var snoozeDays = attrNum(root, "data-leadgen-snooze", 14);
+    var doneDays = attrNum(root, "data-leadgen-done", 365);
+    var maxShows = attrNum(root, "data-leadgen-max-shows", 3);
+    var minWidth = attrNum(root, "data-leadgen-min-width", 768);
+    var hideAfter = attrNum(root, "data-leadgen-hide-after", 4);
+    var skipIf = root.getAttribute("data-leadgen-skip-if");
     if (skipIf == null || skipIf === "") skipIf = "[data-demo-form]";
 
     // Non-modal landmark; screen readers find it, focus is never moved to it.
@@ -228,7 +243,7 @@
     }
 
     /* ── Wire up ── */
-    var closeBtn = root.querySelector("[data-email-popup-close]");
+    var closeBtn = root.querySelector("[data-leadgen-close]");
     if (closeBtn) closeBtn.addEventListener("click", dismiss);
 
     var done = root.querySelector(".w-form-done");
@@ -245,16 +260,16 @@
   }
 
   /**
-   * Initialize all [data-email-popup] roots on the page.
-   * @param {string} [selector="[data-email-popup]"]
+   * Initialize all [data-leadgen="slide-in"] roots on the page.
+   * @param {string} [selector='[data-leadgen="slide-in"]']
    * @returns {Array<{el:HTMLElement, show:Function, hide:Function, dismiss:Function}>}
    */
-  function initEmailPopup(selector) {
-    var roots = doc.querySelectorAll(selector || "[data-email-popup]");
+  function initLeadgenSlideIn(selector) {
+    var roots = doc.querySelectorAll(selector || '[data-leadgen="slide-in"]');
     return Array.prototype.map.call(roots, wire);
   }
 
   global.Sestek = global.Sestek || {};
-  global.Sestek.initEmailPopup = initEmailPopup;
+  global.Sestek.initLeadgenSlideIn = initLeadgenSlideIn;
 
 })(typeof window !== "undefined" ? window : this);

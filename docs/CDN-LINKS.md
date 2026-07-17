@@ -732,8 +732,8 @@ DOM yapısı:
 | `css/components/logo-slider.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/logo-slider.css` |
 | `js/components/demo-form.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/demo-form.js` |
 | `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
-| `js/components/email-popup.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-popup.js` |
-| `css/components/email-popup.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-popup.css` |
+| `js/components/leadgen-slide-in.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/leadgen-slide-in.js` |
+| `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
 
 ### Accordion
 
@@ -913,13 +913,21 @@ DOM:
   taşınır. Smooth scroll Lenis varsa `Sestek.scrollTo`, yoksa native.
 - `prefers-reduced-motion`: metin fade'i ve Lottie tween'i atlanır.
 
-### Email Popup (sol-alt lead capture slide-in)
+### Leadgen — Slide-in Form (sol-alt e-posta kartı)
 
-Sol alttan yumuşakça giren küçük e-posta toplama kartı ("Get the report" tarzı).
-Kartın görseli (arka plan, radius, gölge, metinler) Designer'da RC token'larıyla
-tasarlanır; form **native Webflow form** olarak kalır. Script yalnızca **ne
-zaman göstermenin kibar olduğuna** karar verir — boğuculuğu engelleyen tüm
-kurallar içinde:
+> **Leadgen ailesi:** Sitedeki tüm lead toplama yüzeyleri `leadgen-*` adıyla
+> yaşar — bu slide-in ilk üye; modal **popup form** vb. eklendikçe her biri
+> kendi `leadgen-<tip>.js/css` çiftiyle gelir. Hepsi aynı attribute sözlüğünü
+> paylaşır (kök: `data-leadgen="<tip>"`, geri kalanı `data-leadgen-*`) ve
+> frekans hafızası ortaktır (`sestek-leadgen:<key>`) — aynı kampanya, iki
+> farklı formatta iki kez sorulmaz.
+
+Sol alttan yumuşakça giren e-posta toplama kartı ("Get the report" tarzı).
+Kartın görseli (arka plan, radius, gölge, layout, kapatma butonu) tamamen
+**Designer'da** stillendirilir — CSS yalnızca davranışı taşır (konum +
+kayma animasyonu). Form **native Webflow form** olarak kalır. Script
+yalnızca **ne zaman göstermenin kibar olduğuna** karar verir — boğuculuğu
+engelleyen tüm kurallar içinde:
 
 - **Girişte asla çıkmaz** — scroll derinliği (%50) **veya** sekme görünürken
   geçen aktif süre (20 sn), hangisi önce gelirse. Arka plandaki sekmede süre
@@ -936,8 +944,8 @@ kurallar içinde:
 
 ```html
 <!-- in <head> — bağımlılık yok (GSAP gerekmez) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-popup.css">
-<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-popup.js" defer></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/leadgen-slide-in.js" defer></script>
 ```
 
 Webflow `</body>` öncesi:
@@ -945,7 +953,7 @@ Webflow `</body>` öncesi:
 ```html
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initEmailPopup(); // tüm [data-email-popup] kartlarını bağlar
+    Sestek.initLeadgenSlideIn(); // tüm [data-leadgen="slide-in"] kartlarını bağlar
   });
 </script>
 ```
@@ -955,65 +963,76 @@ sayfada ne zaman çıkacağına script karar verir):
 
 ```html
 <!--
-  Kök ([data-email-popup]) attribute'ları (hepsi opsiyonel):
-    data-email-popup-key         kampanya id'si — snooze/done bu anahtara göre
-                                 saklanır; yeni kampanyada değiştir → kart yeniden
-                                 gösterilmeye başlar (varsayılan "default")
-    data-email-popup-scroll      scroll derinliği tetiği, % (varsayılan 50; 0 = kapalı)
-    data-email-popup-delay       aktif süre tetiği, sn (varsayılan 20; 0 = kapalı)
-    data-email-popup-snooze      kapatınca kaç gün susulacak (varsayılan 14)
-    data-email-popup-done        submit sonrası kaç gün susulacak (varsayılan 365)
-    data-email-popup-max-shows   kaç yok sayılmış gösterimden sonra snooze (varsayılan 3)
-    data-email-popup-min-width   gösterim için min viewport px (varsayılan 768; 0 = her zaman)
-    data-email-popup-skip-if     bu CSS seçicisi sayfada eşleşirse kart çıkmaz
-                                 (varsayılan "[data-demo-form]"; "none" = kontrol kapalı)
-    data-email-popup-hide-after  başarı mesajı kaç sn sonra kendiliğinden kapansın (varsayılan 4)
+  Kök (data-leadgen="slide-in") attribute'ları (hepsi opsiyonel):
+    data-leadgen-key         kampanya id'si — snooze/done bu anahtara göre
+                             saklanır; yeni kampanyada değiştir → kart yeniden
+                             gösterilmeye başlar (varsayılan "default")
+    data-leadgen-scroll      scroll derinliği tetiği, % (varsayılan 50; 0 = kapalı)
+    data-leadgen-delay       aktif süre tetiği, sn (varsayılan 20; 0 = kapalı)
+    data-leadgen-snooze      kapatınca kaç gün susulacak (varsayılan 14)
+    data-leadgen-done        submit sonrası kaç gün susulacak (varsayılan 365)
+    data-leadgen-max-shows   kaç yok sayılmış gösterimden sonra snooze (varsayılan 3)
+    data-leadgen-min-width   gösterim için min viewport px (varsayılan 768; 0 = her zaman)
+    data-leadgen-skip-if     bu CSS seçicisi sayfada eşleşirse kart çıkmaz
+                             (varsayılan "[data-demo-form]"; "none" = kontrol kapalı)
+    data-leadgen-hide-after  başarı mesajı kaç sn sonra kendiliğinden kapansın (varsayılan 4)
 -->
-<div data-email-popup data-email-popup-key="spend-report-2026"
+<div data-leadgen="slide-in" data-leadgen-key="spend-report-2026"
      aria-label="Rapor kayıt formu">
 
-  <!-- BOŞ bırak — çarpı CSS'te çizilir, isim aria-label'dan gelir -->
-  <button data-email-popup-close aria-label="Kapat"></button>
+  <!-- İÇ KART — radius + overflow:hidden BURADA (görseli kırpar);
+       dış wrapper'da overflow verme ki çarpı köşeden taşabilsin -->
+  <div class="lg-card">
 
-  <!-- SOL: içerik kolonu (başlık + metin + form) -->
-  <div data-email-popup-content>
-    <h4>ABD şirketlerinin %42'si zaten AI kullanıyor.</h4>
-    <p>Kış 2026 harcama raporundaki yeni bulguları görün.</p>
+    <!-- SOL: içerik kolonu (başlık + metin + form) -->
+    <div data-leadgen-content>
+      <h4>ABD şirketlerinin %42'si zaten AI kullanıyor.</h4>
+      <p>Kış 2026 harcama raporundaki yeni bulguları görün.</p>
 
-    <div class="w-form">
-      <form>
-        <input type="email" name="email" placeholder="İş e-postanız" required>
-        <input type="submit" value="Raporu al">
-      </form>
-      <div class="w-form-done">Teşekkürler — rapor e-postanızda.</div>
-      <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+      <div class="w-form">
+        <form>
+          <input type="email" name="email" placeholder="İş e-postanız" required>
+          <input type="submit" value="Raporu al">
+        </form>
+        <div class="w-form-done">Teşekkürler — rapor e-postanızda.</div>
+        <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+      </div>
     </div>
+
+    <!-- SAĞ: rapor kapağı — iç kartın kenarına tam yaslanır -->
+    <div data-leadgen-media>
+      <img src="report-cover.jpg" alt="Rapor kapağı">
+    </div>
+
   </div>
 
-  <!-- SAĞ: rapor kapağı — kartın üst/sağ/alt kenarına tam yaslanır -->
-  <div data-email-popup-media>
-    <img src="report-cover.jpg" alt="Rapor kapağı">
-  </div>
+  <!-- Çarpı — DIŞ wrapper'ın çocuğu; absolute ile sağ üst köşeye,
+       translate(50%,-50%) ile köşeden taşacak şekilde konumlandır -->
+  <button data-leadgen-close aria-label="Kapat">×</button>
 
 </div>
 ```
 
 **Notlar**
-- **Hazır skin:** `email-popup.css` kart chrome'unu da veriyor — beyaz kart,
-  radius, gölge, solda içerik + tek satır e-posta/pill form, sağda tam-kanat
-  kapak görseli, köşede taşan yuvarlak kapatma butonu. Hepsi RC token'larıyla
-  yazıldı ve Designer'dan override edilebilir. Kartı Designer'da
-  `display:none` YAPMA — gizli başlangıç `visibility` ile CSS'ten geliyor,
-  script `is-visible` class'ıyla açıyor. Wrapper'a `overflow:hidden` de
-  verme — kapatma butonu köşeden taşar; görsel zaten kendi kutusunda
-  (`[data-email-popup-media]`) kırpılıyor.
+- **Stillendirme tamamen Designer'da** — CSS yalnızca davranışı taşır: sabit
+  sol-alt konum, gizli başlangıç ve soldan kayma animasyonu (200ms ease-out,
+  Ramp'takiyle aynı). Kartı Designer'da `display:none` YAPMA — gizli
+  başlangıç `visibility` ile CSS'ten geliyor, script `is-visible` class'ıyla
+  açıyor. `position` da verme — `fixed` CSS'ten geliyor.
+- **Katman hilesi (Ramp yapısı):** `overflow:hidden` + radius **iç kartta**
+  (`lg-card`) olsun — kapak görselini o kırpar. Çarpı butonu dış wrapper'ın
+  çocuğu kalır ve `absolute` + `translate(50%,-50%)` ile köşeden taşar.
+  `[data-leadgen-content]` / `[data-leadgen-media]` sadece isimlendirilmiş
+  stil kancalarıdır — script onlara dokunmaz, class da kullanabilirsin.
 - Submit'i **hijack etmez** — Webflow native submit + success mesajı çalışır;
   script `.w-form-done` görünür olunca "aboneyi" işaretler ve kartı birkaç
   saniye sonra kapatır.
 - Frekans sınırı `localStorage`'da tutulur (engellenmişse sessizce sayfa-başına
-  moduna düşer). Yeni kampanyada `data-email-popup-key` değiştir — eski
-  snooze'lar o anahtara bağlı kaldığı için kart yeniden gösterilir.
-- `Sestek.initEmailPopup()` her kart için `{ el, show, hide, dismiss }`
+  moduna düşer). Yeni kampanyada `data-leadgen-key` değiştir — eski snooze'lar
+  o anahtara bağlı kaldığı için kart yeniden gösterilir. Anahtar alanı tüm
+  leadgen tipleriyle ortaktır — aynı key'li bir popup ve slide-in birbirinin
+  snooze/done durumunu görür.
+- `Sestek.initLeadgenSlideIn()` her kart için `{ el, show, hide, dismiss }`
   controller döndürür — `show()` tetikleri atlar ama snooze/done/oturum
   sınırlarına yine uyar (başka bir CTA'dan elle açmak için).
 - Z-index `950` — içeriğin üstünde, nav/modal katmanlarının (1000+) altında.

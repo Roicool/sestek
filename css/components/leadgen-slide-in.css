@@ -1,0 +1,58 @@
+/*!
+ * leadgen-slide-in.css v1.0.0
+ * Leadgen family — slide-in form. Critical/behavioural styles ONLY: fixed
+ * bottom-left positioning, the hidden resting state and the slide-in/out
+ * transition that leadgen-slide-in.js toggles via the `is-visible` class.
+ * Card chrome (background, border, radius, shadow, layout, typography, the
+ * close button's look) is styled entirely in the Webflow Designer.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Resting state — parked below the viewport edge, inert ─────────────
+ * visibility:hidden keeps it out of the a11y tree and tab order until the
+ * script decides it is a polite moment; pointer-events:none guarantees the
+ * invisible card can never swallow clicks meant for the page.
+ * Designer notes: do NOT set display:none on the wrapper (hiding is done
+ * here via visibility) and do NOT set position — fixed comes from here. */
+[data-leadgen="slide-in"] {
+  position: fixed;
+  left: var(--spacing--5);
+  bottom: var(--spacing--5);
+  z-index: 950; /* above content, below nav/modal layers (1000+) */
+  max-width: calc(100vw - var(--spacing--5) * 2); /* never overflow small screens */
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-50%); /* enters from the left, Ramp-style */
+  pointer-events: none;
+  transition:
+    transform 0.2s ease-out,
+    opacity 0.2s ease-out,
+    visibility 0s linear 0.2s; /* stay visible until the slide-out ends */
+}
+
+[data-leadgen="slide-in"].is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    transform 0.2s ease-out,
+    opacity 0.2s ease-out;
+}
+
+/* ── Close — behaviour only; look & placement are Designer's ── */
+[data-leadgen-close] {
+  cursor: pointer;
+}
+
+/* ── Reduced motion — appear/disappear in place, no travel ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-leadgen="slide-in"],
+  [data-leadgen="slide-in"].is-visible {
+    transform: none;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  }
+  [data-leadgen="slide-in"].is-visible {
+    transition: opacity 0.2s ease;
+  }
+}
