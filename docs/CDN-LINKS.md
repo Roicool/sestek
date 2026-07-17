@@ -972,28 +972,41 @@ sayfada ne zaman çıkacağına script karar verir):
 <div data-email-popup data-email-popup-key="spend-report-2026"
      aria-label="Rapor kayıt formu">
 
-  <button data-email-popup-close aria-label="Kapat">×</button>
+  <!-- BOŞ bırak — çarpı CSS'te çizilir, isim aria-label'dan gelir -->
+  <button data-email-popup-close aria-label="Kapat"></button>
 
-  <h4>ABD şirketlerinin %42'si zaten AI kullanıyor.</h4>
-  <p>Kış 2026 harcama raporundaki yeni bulguları görün.</p>
+  <!-- SOL: içerik kolonu (başlık + metin + form) -->
+  <div data-email-popup-content>
+    <h4>ABD şirketlerinin %42'si zaten AI kullanıyor.</h4>
+    <p>Kış 2026 harcama raporundaki yeni bulguları görün.</p>
 
-  <div class="w-form">
-    <form>
-      <input type="email" name="email" placeholder="İş e-postanız" required>
-      <input type="submit" value="Raporu al">
-    </form>
-    <div class="w-form-done">Teşekkürler — rapor e-postanızda.</div>
-    <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+    <div class="w-form">
+      <form>
+        <input type="email" name="email" placeholder="İş e-postanız" required>
+        <input type="submit" value="Raporu al">
+      </form>
+      <div class="w-form-done">Teşekkürler — rapor e-postanızda.</div>
+      <div class="w-form-fail">Bir hata oluştu, lütfen tekrar deneyin.</div>
+    </div>
+  </div>
+
+  <!-- SAĞ: rapor kapağı — kartın üst/sağ/alt kenarına tam yaslanır -->
+  <div data-email-popup-media>
+    <img src="report-cover.jpg" alt="Rapor kapağı">
   </div>
 
 </div>
 ```
 
 **Notlar**
-- Konumlandırma + giriş/çıkış animasyonu CSS'te (`email-popup.css`); kart
-  chrome'u tamamen Designer'da. Kartı Designer'da `display:none` YAPMA —
-  gizli başlangıç `visibility` ile CSS'ten geliyor, script `is-visible`
-  class'ıyla açıyor.
+- **Hazır skin:** `email-popup.css` kart chrome'unu da veriyor — beyaz kart,
+  radius, gölge, solda içerik + tek satır e-posta/pill form, sağda tam-kanat
+  kapak görseli, köşede taşan yuvarlak kapatma butonu. Hepsi RC token'larıyla
+  yazıldı ve Designer'dan override edilebilir. Kartı Designer'da
+  `display:none` YAPMA — gizli başlangıç `visibility` ile CSS'ten geliyor,
+  script `is-visible` class'ıyla açıyor. Wrapper'a `overflow:hidden` de
+  verme — kapatma butonu köşeden taşar; görsel zaten kendi kutusunda
+  (`[data-email-popup-media]`) kırpılıyor.
 - Submit'i **hijack etmez** — Webflow native submit + success mesajı çalışır;
   script `.w-form-done` görünür olunca "aboneyi" işaretler ve kartı birkaç
   saniye sonra kapatır.

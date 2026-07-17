@@ -1,5 +1,5 @@
 /*!
- * email-popup.js v1.0.0
+ * email-popup.js v1.0.1
  * Bottom-left email capture slide-in ("get the report" style card). The card
  * itself is built in Webflow Designer inside a [data-email-popup] wrapper with
  * a NATIVE Webflow form (Webflow owns submit + success message); this script
@@ -28,15 +28,21 @@
  * (email-popup.css owns the transition), storage is guarded for private mode.
  * CSS: css/components/email-popup.css
  *
- * DOM (Webflow):
+ * DOM (Webflow) — [data-email-popup-content]/[data-email-popup-media] get the
+ * ready-made card skin from email-popup.css (content left, cover image right,
+ * close circle straddling the corner; leave the close button EMPTY — the
+ * cross is drawn in CSS):
  *   <div data-email-popup aria-label="Report signup">
- *     <button data-email-popup-close aria-label="Close">×</button>
- *     <h4>42% of companies already use AI.</h4>
- *     <p>See new insights on Winter 2026 spend shifts.</p>
- *     <div class="w-form">
- *       <form> <input type="email" required> <input type="submit"> </form>
- *       <div class="w-form-done">Thanks — the report is on its way.</div>
+ *     <button data-email-popup-close aria-label="Close"></button>
+ *     <div data-email-popup-content>
+ *       <h4>42% of companies already use AI.</h4>
+ *       <p>See new insights on Winter 2026 spend shifts.</p>
+ *       <div class="w-form">
+ *         <form> <input type="email" required> <input type="submit"> </form>
+ *         <div class="w-form-done">Thanks — the report is on its way.</div>
+ *       </div>
  *     </div>
+ *     <div data-email-popup-media><img src="report-cover.jpg" alt=""></div>
  *   </div>
  *
  * Root attributes (all optional):
