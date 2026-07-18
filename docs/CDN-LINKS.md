@@ -2314,9 +2314,10 @@ DOM yapısı:
 
 ### Parallax
 
-Background image'lar ve normal image'lar için scrub'lı scroll parallax.
-CSS dosyası yok — gerekli stiller JS'ten basılır. Pin yok, `refreshPriority: -1`
-(pinli bölüm kurallarıyla uyumlu).
+Absolute duran background image'lar ve normal image'lar için scrub'lı scroll
+parallax. CSS dosyası yok — gerekli stiller JS'ten basılır. Pin yok,
+`refreshPriority: -1` (pinli bölüm kurallarıyla uyumlu); pinli bölüm İÇİNDE
+kullanım için `data-parallax-pinned` var.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
@@ -2338,25 +2339,36 @@ Webflow `</body>` öncesi:
 İki mod:
 
 ```html
-<!-- 1) Normal image/eleman — kendisi hafifçe sürüklenir -->
-<img src="…" data-parallax data-parallax-speed="0.2">
+<!-- 1) Background — attribute absolute duran IMG'İN KENDİSİNE.
+     Script img'i parent section'a cover'lar, ölçekleyip kaydırır. -->
+<section class="hero">
+  <img class="hero-bg" src="…"
+       data-parallax="bg" data-parallax-speed="0.25" data-parallax-zoom="1.15">
+  <div class="hero-content">…</div>  <!-- z-index ile img'in üstünde tut -->
+</section>
 
-<!-- 2) Background — attribute KONTEYNERE; içindeki img/video (yoksa
-     konteynerin CSS background-image'ı otomatik iç katmana taşınır)
-     ölçeklenip konteyner içinde kayar -->
-<div class="hero" data-parallax="bg" data-parallax-speed="0.25">
-  <img src="…">
-  <div class="hero-content">…</div>  <!-- z-index ile medyanın üstünde tut -->
-</div>
+<!-- 2) Normal image/eleman — kendisi hafifçe sürüklenir -->
+<img src="…" data-parallax data-parallax-speed="0.2">
 ```
 
+> **Görsel boyutu nasıl olmalı?** Önemsiz — section'dan uzun görsel koymana
+> GEREK YOK. Script img'i section'a `object-fit: cover` ile doldurur, kayma
+> payını `scale(1+speed)` ile kendisi verir; kenar açığı matematiksel olarak
+> imkânsız. Sadece çözünürlük yeterli olsun (≈ section genişliği × 1+speed).
+
 - `data-parallax-speed` → hareket miktarı (default `0.2`). Normal modda viewport
-  yüksekliğinin oranı; bg modda medyanın ekstra ölçeği (0.25 → scale 1.25).
+  yüksekliğinin oranı; bg modda img'in ekstra ölçeği (0.25 → scale 1.25).
   **Negatif** değer yönü çevirir (foreground hissi).
-- `data-parallax-media` → bg modda medya seçici (default `img, video`).
-- `data-parallax-scale` → bg modda kadraj override (≥ 1 + |speed| olmalı).
+- `data-parallax-zoom` → bg modda premium yavaş zoom; scroll boyunca scale bu
+  çarpana kadar büyür, örn. `1.15` (default kapalı).
+- `data-parallax-trigger` → bg modda sarmalayıcı seçici, `closest` ile aranır
+  (default parent). Img section'ın direkt çocuğu değilse ver.
+- `data-parallax-clip="false"` → sarmalayıcıya `overflow: hidden` basılmasın.
+- `data-parallax-pinned` → eleman **pinli bir bölümün içindeyse** pinli
+  konteynerin seçicisi (→ ScrollTrigger `pinnedContainer`). Verilmezse pin
+  süresi start/end hesabına katılmaz ve efekt bozuk görünür.
 - `data-parallax-start` / `-end` / `-scrub` → ScrollTrigger override'ları.
-- Bg modda konteynere JS `overflow: hidden` (+ statikse `position: relative`) basar.
+- Bg modda sarmalayıcıya JS `overflow: hidden` (+ statikse `position: relative`) basar.
 - Sayfa üstündeki (yüklenince görünür) bölümlerde start otomatik `clamp()`lenir — açılışta zıplama olmaz.
 - `prefers-reduced-motion`: efekt hiç kurulmaz, sayfa statik kalır.
 
