@@ -19,10 +19,6 @@
  * 1.12 zoom for seconds after — it stays alive the whole time the card
  * is hovered. No gimmick; the weight IS the effect. On leave it dissolves
  * out quickly. The card gets .is-hover (text → white via CSS).
- * While ANY card is hovered the scene goes dark: a runtime "stage" layer
- * fades in over [data-hero-s2] (GSAP opacity — smoother than a CSS
- * background-color flip) and .is-dark restyles texts/cards via CSS. The
- * stage only lifts 6s after the mouse leaves the whole stats row.
  * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
@@ -78,32 +74,20 @@
      * long as the card is hovered, which is what gives it weight. The
      * overlay breathes in behind the fade. On leave everything dissolves
      * out in ~0.5s. No wipes, no shapes: restraint is the effect.
-     *
-     * Scene mood: while ANY card is hovered the scene goes dark — a
-     * runtime stage layer fades in behind the content (GSAP opacity on a
-     * composited layer: one smooth crossfade instead of a repainting CSS
-     * background-color) and .is-dark on [data-hero-s2] restyles texts and
-     * card surfaces via CSS. The stage lifts only 6 seconds AFTER the
-     * mouse leaves the whole stats row — re-entering within that window
-     * cancels the revert.
      */
-    var darkTimer = null;
-    var stage = null;
     var cardsArmed = false; // true while any hover side-effect is applied
 
     /*
-     * Nuclear reset for every hover side-effect: dark stage, pending 6s
-     * revert, .is-hover, in-flight reveals, media/overlay visibility.
-     * Called whenever the cards stop being interactive (scrub back below
-     * the stats phase, leave-back above the hero, rebuild on resize) so
-     * NO state can leak out of the hover system — browsers fire
-     * mouseenter for elements that merely scroll under a parked cursor,
-     * and a missed mouseleave must never strand the scene in dark mode.
+     * Nuclear reset for every hover side-effect: .is-hover, in-flight
+     * reveals, media/overlay visibility. Called whenever the cards stop
+     * being interactive (scrub back below the stats phase, leave-back
+     * above the hero, rebuild on resize) so NO state can leak out of the
+     * hover system — browsers fire mouseenter for elements that merely
+     * scroll under a parked cursor, and a missed mouseleave must never
+     * strand a card mid-reveal.
      */
     function resetCardStates() {
       if (!hasStats) return;
-      if (darkTimer) { darkTimer.kill(); darkTimer = null; }
-      if (el.scene2.classList.contains("is-dark")) setSceneDark(false);
       el.stats.forEach(function (stat) {
         stat.classList.remove("is-hover");
         if (stat._reveal) { stat._reveal.kill(); stat._reveal = null; }
@@ -115,28 +99,7 @@
       cardsArmed = false;
     }
 
-    function setSceneDark(on) {
-      el.scene2.classList.toggle("is-dark", on);
-      if (!stage) return;
-      if (reduceMotion) {
-        gsap.set(stage, { opacity: on ? 1 : 0 });
-      } else {
-        gsap.to(stage, {
-          opacity: on ? 1 : 0,
-          duration: 0.9,
-          ease: "power2.inOut",
-          overwrite: "auto",
-        });
-      }
-    }
-
     function setupStatCards() {
-      // Darkness lives on its own composited layer behind the content
-      stage = document.createElement("div");
-      stage.className = "hero__stage";
-      stage.setAttribute("aria-hidden", "true");
-      el.scene2.insertBefore(stage, el.scene2.firstChild);
-
       el.stats.forEach(function (stat) {
         var media = stat.querySelector("[data-hero-stat-media]");
         if (!media || stat._cardInit) return;
@@ -144,9 +107,7 @@
         var overlay = stat.querySelector("[data-hero-stat-overlay]");
 
         stat.addEventListener("mouseenter", function () {
-          if (darkTimer) { darkTimer.kill(); darkTimer = null; }
           cardsArmed = true;
-          setSceneDark(true);
           stat.classList.add("is-hover");
 
           if (reduceMotion) {
@@ -191,15 +152,6 @@
             tl.to(overlay, { opacity: 0, duration: 0.35 }, 0);
           }
           stat._reveal = tl;
-        });
-      });
-
-      // The dark stage lifts 6s after the mouse leaves the entire stats row
-      el.statsWrap.addEventListener("mouseleave", function () {
-        if (darkTimer) darkTimer.kill();
-        darkTimer = gsap.delayedCall(6, function () {
-          setSceneDark(false);
-          darkTimer = null;
         });
       });
     }
@@ -304,8 +256,8 @@
              * (phase 9 ends at 0.92). Browsers fire mouseenter for
              * elements that scroll under a parked cursor, so without this
              * gate an INVISIBLE card passing under the pointer mid-morph
-             * would trigger the reveal + dark stage. Scrubbing back below
-             * the gate force-clears any hover state that got applied.
+             * would trigger the reveal. Scrubbing back below the gate
+             * force-clears any hover state that got applied.
              */
             if (hasStats) {
               var statsLive = self.progress >= 0.92;

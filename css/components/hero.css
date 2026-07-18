@@ -193,64 +193,6 @@
   color: var(--neutral--0);
 }
 
-/* ── Scene mood: any card hovered → dark stage ──────────────── */
-/*
- * hero.js creates .hero__stage (a black composited layer behind the
- * scene content) and crossfades its opacity with GSAP — smoother than
- * transitioning background-color. .is-dark on [data-hero-s2] restyles
- * texts and card surfaces; it lifts 6s after the mouse leaves the row.
- */
-.hero__stage {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-color: var(--neutral--950);
-  opacity: 0;
-  will-change: opacity;
-  pointer-events: none;
-}
-
-/* Scene content rides above the stage layer */
-.hero__scene--2 > :not(.hero__stage) {
-  position: relative;
-  z-index: 1;
-}
-
-.hero__phrase {
-  transition: color 0.8s ease;
-}
-
-.hero__scene--2.is-dark .hero__phrase {
-  color: var(--neutral--0);
-}
-
-.hero__desc {
-  transition: color 0.8s ease;
-}
-
-.hero__scene--2.is-dark .hero__desc {
-  color: var(--neutral--400);
-}
-
-/* Cards adapt to the dark stage: surface → neutral-800, border →
-   neutral-700, text → light */
-.hero__stat {
-  transition: background-color 0.8s ease, border-color 0.8s ease;
-}
-
-.hero__scene--2.is-dark .hero__stat {
-  background-color: var(--neutral--800);
-  border-color: var(--neutral--700);
-}
-
-.hero__scene--2.is-dark .hero__stat-number {
-  color: var(--neutral--0);
-}
-
-.hero__scene--2.is-dark .hero__stat-label {
-  color: var(--neutral--400);
-}
-
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hero__video-wrap,
