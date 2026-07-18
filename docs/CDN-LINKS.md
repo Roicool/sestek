@@ -46,7 +46,7 @@ js/
                video-inline.js, webinar-player.js, card-marquee.js, section-title.js,
                text-rotator.js, story.js, accordion.js, demo-form.js, blog-utils.js,
                site-utils.js, sticky-utms.js
-  effects/     grain.js, btn-glow.js
+  effects/     grain.js, btn-glow.js, parallax.js
   animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 css/
   core/        nav.css, nav-full.css
@@ -2182,6 +2182,7 @@ DOM:
 | `css/effects/btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css` |
 | `js/effects/stagger-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js` |
 | `js/effects/circle-reveal-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/circle-reveal-button.js` |
+| `js/effects/parallax.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/parallax.js` |
 
 ### Grain
 
@@ -2310,6 +2311,54 @@ DOM yapısı:
 
 - `.explore-btn` → `position: relative; overflow: hidden` olmalı, `.circle-scale` küçük başlangıç boyutuyla (örn. küçük yuvarlak) ortalı konumlandırılmalı — JS sadece `scale` tween'ler, konum/boyut/renk Designer'dan.
 - `prefers-reduced-motion`: hover'da hiçbir animasyon çalışmaz.
+
+### Parallax
+
+Background image'lar ve normal image'lar için scrub'lı scroll parallax.
+CSS dosyası yok — gerekli stiller JS'ten basılır. Pin yok, `refreshPriority: -1`
+(pinli bölüm kurallarıyla uyumlu).
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/parallax.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initParallax(); // tüm [data-parallax] elemanlarını başlatır
+  });
+</script>
+```
+
+İki mod:
+
+```html
+<!-- 1) Normal image/eleman — kendisi hafifçe sürüklenir -->
+<img src="…" data-parallax data-parallax-speed="0.2">
+
+<!-- 2) Background — attribute KONTEYNERE; içindeki img/video (yoksa
+     konteynerin CSS background-image'ı otomatik iç katmana taşınır)
+     ölçeklenip konteyner içinde kayar -->
+<div class="hero" data-parallax="bg" data-parallax-speed="0.25">
+  <img src="…">
+  <div class="hero-content">…</div>  <!-- z-index ile medyanın üstünde tut -->
+</div>
+```
+
+- `data-parallax-speed` → hareket miktarı (default `0.2`). Normal modda viewport
+  yüksekliğinin oranı; bg modda medyanın ekstra ölçeği (0.25 → scale 1.25).
+  **Negatif** değer yönü çevirir (foreground hissi).
+- `data-parallax-media` → bg modda medya seçici (default `img, video`).
+- `data-parallax-scale` → bg modda kadraj override (≥ 1 + |speed| olmalı).
+- `data-parallax-start` / `-end` / `-scrub` → ScrollTrigger override'ları.
+- Bg modda konteynere JS `overflow: hidden` (+ statikse `position: relative`) basar.
+- Sayfa üstündeki (yüklenince görünür) bölümlerde start otomatik `clamp()`lenir — açılışta zıplama olmaz.
+- `prefers-reduced-motion`: efekt hiç kurulmaz, sayfa statik kalır.
 
 ---
 
