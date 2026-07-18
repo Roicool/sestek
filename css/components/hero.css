@@ -172,27 +172,6 @@
   transition: color 0.35s ease;
 }
 
-/* ── Stat card hover reveal (slow-luxury crossfade) ─────────── */
-/* Anti-flash: media + overlay stay invisible until the hover timeline
-   fades them in (JS animates opacity / scale). */
-[data-hero-stat-media] {
-  opacity: 0;
-  will-change: opacity, transform;
-  pointer-events: none;
-}
-
-[data-hero-stat-overlay] {
-  opacity: 0;
-  will-change: opacity;
-  pointer-events: none;
-}
-
-/* Hover: text flips to white over the revealed image */
-.hero__stat.is-hover .hero__stat-number,
-.hero__stat.is-hover .hero__stat-label {
-  color: var(--neutral--0);
-}
-
 /* ── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hero__video-wrap,

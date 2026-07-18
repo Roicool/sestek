@@ -6,19 +6,12 @@
  * Optional stats block (inside [data-hero-s2], below [data-hero-desc]):
  *   <div class="hero__stats" data-hero-stats>
  *     <div class="hero__stat" data-hero-stat>
- *       <div data-hero-stat-media><img …></div>   ← absolute bg image (optional)
- *       <div data-hero-stat-overlay></div>        ← absolute overlay  (optional)
  *       <div class="hero__stat-number" data-count>1,250+</div>
  *       <div class="hero__stat-label">Label</div>
  *     </div>
  *   </div>
  * Stats stagger in at the end of the scroll timeline; numbers roll via
  * Sestek.countUp (count-up.js, optional — write the real value in the HTML).
- * Cards with [data-hero-stat-media] get a slow-luxury crossfade reveal:
- * the image arrives through a deep 1.2s fade and keeps settling from a
- * 1.12 zoom for seconds after — it stays alive the whole time the card
- * is hovered. No gimmick; the weight IS the effect. On leave it dissolves
- * out quickly. The card gets .is-hover (text → white via CSS).
  * No plugins needed beyond gsap + ScrollTrigger.
  * https://github.com/roicool/sestek
  */
@@ -64,99 +57,6 @@
 
     var hasStats = !!(el.statsWrap && el.stats.length);
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    /*
-     * Stat-card hover reveal — slow-luxury crossfade. For cards carrying
-     * an absolute background image ([data-hero-stat-media]) and an
-     * optional overlay ([data-hero-stat-overlay]). On hover the image
-     * arrives through a deep 1.2s fade while a long 7s zoom keeps it
-     * settling from 1.12 toward rest — the picture stays alive for as
-     * long as the card is hovered, which is what gives it weight. The
-     * overlay breathes in behind the fade. On leave everything dissolves
-     * out in ~0.5s. No wipes, no shapes: restraint is the effect.
-     */
-    var cardsArmed = false; // true while any hover side-effect is applied
-
-    /*
-     * Nuclear reset for every hover side-effect: .is-hover, in-flight
-     * reveals, media/overlay visibility. Called whenever the cards stop
-     * being interactive (scrub back below the stats phase, leave-back
-     * above the hero, rebuild on resize) so NO state can leak out of the
-     * hover system — browsers fire mouseenter for elements that merely
-     * scroll under a parked cursor, and a missed mouseleave must never
-     * strand a card mid-reveal.
-     */
-    function resetCardStates() {
-      if (!hasStats) return;
-      el.stats.forEach(function (stat) {
-        stat.classList.remove("is-hover");
-        if (stat._reveal) { stat._reveal.kill(); stat._reveal = null; }
-        var media = stat.querySelector("[data-hero-stat-media]");
-        var overlay = stat.querySelector("[data-hero-stat-overlay]");
-        if (media) gsap.set(media, { opacity: 0 });
-        if (overlay) gsap.set(overlay, { opacity: 0 });
-      });
-      cardsArmed = false;
-    }
-
-    function setupStatCards() {
-      el.stats.forEach(function (stat) {
-        var media = stat.querySelector("[data-hero-stat-media]");
-        if (!media || stat._cardInit) return;
-        stat._cardInit = true;
-        var overlay = stat.querySelector("[data-hero-stat-overlay]");
-
-        stat.addEventListener("mouseenter", function () {
-          cardsArmed = true;
-          stat.classList.add("is-hover");
-
-          if (reduceMotion) {
-            gsap.set(media, { opacity: 1, scale: 1 });
-            if (overlay) gsap.set(overlay, { opacity: 1 });
-            return;
-          }
-
-          if (stat._reveal) stat._reveal.kill();
-          var tl = gsap.timeline();
-          tl
-            // Deep, unhurried arrival…
-            .fromTo(media,
-              { opacity: 0 },
-              { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 0)
-            // …and a zoom that keeps settling long after the fade is done,
-            // so the image feels alive for the whole hover.
-            .fromTo(media,
-              { scale: 1.12 },
-              { scale: 1, duration: 7, ease: "power1.out" }, 0);
-          if (overlay) {
-            tl.fromTo(overlay,
-              { opacity: 0 },
-              { opacity: 1, duration: 0.9, ease: "power2.inOut" }, 0.35);
-          }
-          stat._reveal = tl;
-        });
-
-        stat.addEventListener("mouseleave", function () {
-          stat.classList.remove("is-hover");
-
-          if (reduceMotion) {
-            gsap.set(media, { opacity: 0 });
-            if (overlay) gsap.set(overlay, { opacity: 0 });
-            return;
-          }
-
-          if (stat._reveal) stat._reveal.kill();
-          var tl = gsap.timeline();
-          tl.to(media,   { opacity: 0, duration: 0.5, ease: "power2.out" }, 0);
-          if (overlay) {
-            tl.to(overlay, { opacity: 0, duration: 0.35 }, 0);
-          }
-          stat._reveal = tl;
-        });
-      });
-    }
-
-    if (hasStats) setupStatCards();
 
     // Prefers-reduced-motion: skip everything, show scene 2 immediately
     if (reduceMotion) {
@@ -219,9 +119,6 @@
       if (el.desc) gsap.set(el.desc, { opacity: 0, y: 20 });
       if (hasStats) {
         gsap.set(el.stats, { opacity: 0, y: 24 });
-        // Rebuild (resize) must not carry hover state or clickability over
-        el.statsWrap.style.pointerEvents = "none";
-        resetCardStates();
       }
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
 
@@ -251,29 +148,12 @@
             // clicked or tabbed into while off-screen.
             el.s1Content.style.pointerEvents = inScene2 ? "none" : "auto";
             el.scene2.style.pointerEvents    = inScene2 ? "auto" : "none";
-            /*
-             * Card hovers arm only once every stat has fully staggered in
-             * (phase 9 ends at 0.92). Browsers fire mouseenter for
-             * elements that scroll under a parked cursor, so without this
-             * gate an INVISIBLE card passing under the pointer mid-morph
-             * would trigger the reveal. Scrubbing back below the gate
-             * force-clears any hover state that got applied.
-             */
-            if (hasStats) {
-              var statsLive = self.progress >= 0.92;
-              el.statsWrap.style.pointerEvents = statsLive ? "auto" : "none";
-              if (!statsLive && cardsArmed) resetCardStates();
-            }
           },
           onLeaveBack: function () {
             // Scrolled back above hero entirely — restore dark nav + scene 1 clicks
             if (navEl) navEl.classList.remove("nav--on-light");
             el.s1Content.style.pointerEvents = "auto";
             el.scene2.style.pointerEvents    = "none";
-            if (hasStats) {
-              el.statsWrap.style.pointerEvents = "none";
-              if (cardsArmed) resetCardStates();
-            }
           },
         },
       });
