@@ -1,0 +1,324 @@
+/*!
+ * video-inline.css v1.0.0
+ * Sestek-style controller skin for video-inline.js's data-video-controls mode.
+ * The library injects the DOM (.svp__bigplay, .svp__bar, …) into the video's
+ * parent element; this file owns the look. Accent colour comes from
+ * --svp-accent (set per-player from data-video-accent, defaults to
+ * --interactive--color-primary-base). Only needed when a video uses
+ * data-video-controls="true" — plain/hover/scroll videos need no CSS.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── No-CLS reservation ───────────────────────────────────────────
+ * Reserve a 16:9 box at CSS-parse time — BEFORE the poster loads and BEFORE
+ * the JS adds .svp — so nothing below the player shifts. :where() keeps
+ * specificity at zero: any Webflow class on the wrapper (own aspect-ratio,
+ * radius, height…) wins without a fight.
+ * MUST be loaded in <head> (render-blocking) to apply before first paint. */
+:where(:has(> video[data-video-controls="true"])) {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius--xl, 1rem);
+  background: #000;
+}
+
+/* Video + optional poster <picture> fill the box edge-to-edge */
+:where(.svp) > video[data-video],
+:where(:has(> video[data-video-controls="true"])) > video[data-video] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+:where(.svp) picture[data-video-picture] {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;        /* clicks fall through to the play surface */
+  transition: opacity 0.4s ease;
+}
+:where(.svp) picture[data-video-picture] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Accent fallback — JS sets --svp-accent inline per wrapper */
+.svp {
+  --svp-accent: var(--interactive--color-primary-base, #ec008c);
+  --svp-bar-h: 3rem;
+  isolation: isolate;          /* own stacking context for the overlay layers */
+}
+
+.svp,
+.svp * { box-sizing: border-box; }
+
+/* ── Big centre play button ───────────────────────────────────── */
+.svp__bigplay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(3.75rem, 5.5vw, 5.25rem);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius--full, 9999px);
+  background: var(--svp-accent);
+  color: #fff;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 12px 38px -6px color-mix(in srgb, var(--svp-accent) 60%, transparent),
+              0 4px 14px -4px rgba(0, 0, 0, 0.45),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.svp__bigplay svg {
+  width: 42%;
+  height: 42%;
+  fill: currentColor;
+  /* Path is bbox-centred; tiny nudge right for true optical centring */
+  transform: translateX(3%);
+}
+
+.svp__bigplay:hover {
+  transform: translate(-50%, -50%) scale(1.07);
+  box-shadow: 0 16px 46px -6px color-mix(in srgb, var(--svp-accent) 72%, transparent),
+              0 6px 18px -4px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+.svp__bigplay:active { transform: translate(-50%, -50%) scale(0.97); }
+.svp__bigplay:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+/* Soft pulsing halo behind the button to draw the eye (paused state only) */
+.svp__bigplay::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: inherit;
+  background: var(--svp-accent);
+  opacity: 0.25;
+  z-index: -1;
+  animation: svp-pulse 2.4s ease-out infinite;
+}
+
+@keyframes svp-pulse {
+  0%   { transform: scale(0.85); opacity: 0.35; }
+  70%  { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Hide the big button while playing */
+.svp.is-playing .svp__bigplay {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+/* Loading state: swap the triangle for a spinner while the mp4 loads */
+.svp.is-loading .svp__bigplay { pointer-events: none; }
+.svp.is-loading .svp__bigplay::before { animation: none; opacity: 0; }
+.svp.is-loading .svp__bigplay svg { display: none; }
+.svp.is-loading .svp__bigplay::after {
+  content: "";
+  width: 42%;
+  height: 42%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: svp-spin 0.7s linear infinite;
+}
+
+@keyframes svp-spin { to { transform: rotate(360deg); } }
+
+/* ── Bottom control bar (floating frosted glass) ──────────────── */
+.svp__bar {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--3, 0.75rem);
+  height: var(--svp-bar-h);
+  margin: clamp(0.5rem, 1.4vw, 0.875rem);
+  padding: 0 clamp(0.625rem, 1.4vw, 1rem);
+  border-radius: var(--radius--full, 9999px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 18, 22, 0.46);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.65);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Auto-hide while playing + idle */
+.svp.is-idle .svp__bar {
+  opacity: 0;
+  transform: translateY(0.75rem);
+  pointer-events: none;
+}
+
+/* ── Buttons in the bar ───────────────────────────────────────── */
+.svp__btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius--base, 0.5rem);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.svp__btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Filled glyphs (play / pause) read better solid */
+.svp__toggle svg { fill: currentColor; stroke: none; }
+
+.svp__btn:hover { background: rgba(255, 255, 255, 0.14); }
+.svp__btn:focus-visible { outline: 2px solid var(--svp-accent); outline-offset: 2px; }
+.svp__toggle:hover { color: var(--svp-accent); }
+
+/* ── Time labels ──────────────────────────────────────────────── */
+.svp__time {
+  flex: 0 0 auto;
+  min-width: 3ch;
+  font-family: var(--font--mono, var(--font--primary, inherit));
+  font-size: var(--text--xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  user-select: none;
+}
+
+/* ── Scrubber ─────────────────────────────────────────────────── */
+.svp__scrub {
+  position: relative;
+  flex: 1 1 auto;
+  height: 0.375rem;
+  display: flex;
+  align-items: center;
+}
+
+.svp__scrub::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius--full, 9999px);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.svp__buffered,
+.svp__fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius--full, 9999px);
+  pointer-events: none;
+}
+
+.svp__buffered { width: 0; background: rgba(255, 255, 255, 0.35); }
+.svp__fill     { width: 0; background: var(--svp-accent); }
+
+/* Native range sits on top — invisible track, draggable thumb */
+.svp__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.svp__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--svp-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+.svp__range::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--svp-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.svp__range:hover::-webkit-slider-thumb,
+.svp__range:active::-webkit-slider-thumb { transform: scale(1.25); }
+.svp__range:focus-visible { outline: none; }
+.svp__range:focus-visible::-webkit-slider-thumb { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ── Fullscreen ───────────────────────────────────────────────── */
+.svp.is-fullscreen {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;        /* fill the whole screen, no 16:9 lock */
+  border-radius: 0;          /* sharp edges edge-to-edge */
+}
+.svp.is-fullscreen > video[data-video] { object-fit: contain; }
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .svp { --svp-bar-h: 2.75rem; }
+  .svp__btn { width: 1.75rem; height: 1.75rem; }
+  .svp__btn svg { width: 1.1rem; height: 1.1rem; }
+  .svp__time { font-size: 0.7rem; }
+}
+
+/* Very narrow (small phones / half-width embeds): drop the time labels so
+ * the scrubber keeps a usable width */
+@media (max-width: 479px) {
+  .svp__time { display: none; }
+  .svp__bar { gap: var(--spacing--2, 0.5rem); }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .svp__bigplay,
+  .svp__bar,
+  .svp__btn,
+  .svp__range::-webkit-slider-thumb { transition: none; }
+  .svp__bigplay::before { animation: none; }
+}

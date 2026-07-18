@@ -51,8 +51,8 @@ js/
 css/
   core/        nav.css, nav-full.css
   components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
-               card-marquee.css, section-title.css, text-rotator.css, story.css,
-               accordion.css, demo-form.css
+               video-inline.css, card-marquee.css, section-title.css, text-rotator.css,
+               story.css, accordion.css, demo-form.css
   effects/     grain.css, btn-glow.css
   animations/  reveal.css
 ```
@@ -713,6 +713,7 @@ DOM yapısı:
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
+| `css/components/video-inline.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-inline.css` |
 | `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
 | `css/components/webinar-player.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/webinar-player.css` |
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
@@ -1429,13 +1430,23 @@ Tetikleyici (herhangi bir element — buton, link, kapak görseli):
 
 ### Video Inline
 
-Self-hosted `<video>` dosyaları için lazy-load, poster crossfade,
-hover-to-play, scroll-in-play ve tamamen özel play/pause kontrolleri sunan
-sıfır bağımlılıklı kütüphane. YouTube/Vimeo lightbox için `video-modal.js`,
-inline custom-controls YouTube player için `webinar-player.js` kullan.
+Self-hosted `<video>` dosyaları (Cloudflare Stream MP4 dahil) için lazy-load,
+poster crossfade, hover-to-play, scroll-in-play, tamamen özel play/pause
+kontrolleri ve opsiyonel **kendi kendini kuran Sestek tarzı kontrol barı**
+sunan sıfır bağımlılıklı kütüphane. YouTube/Vimeo lightbox için
+`video-modal.js`, inline custom-controls YouTube player için
+`webinar-player.js` kullan.
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js" defer></script>
+```
+
+Kontrol barı (`data-video-controls="true"`) kullanılacaksa CSS'i de `<head>`'e
+ekle (render-blocking olmalı — 16:9 kutu ilk boyamadan önce rezerve edilir,
+CLS sıfır kalır):
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-inline.css">
 ```
 
 Webflow `</body>` öncesi:
@@ -1465,9 +1476,33 @@ DOM yapısı:
 </div>
 ```
 
+Kontrol barı modu (ör. Cloudflare Stream MP4 embed'i) — wrapper div'in içine
+sadece `<video>` koy, tüm UI (büyük play butonu, scrubber, süre, ses, tam
+ekran) script tarafından inject edilir:
+
+```html
+<div class="video-embed">
+  <video data-video="cf-tanitim" data-video-controls="true" playsinline
+         poster="https://customer-xxxx.cloudflarestream.com/VIDEO_ID/thumbnails/thumbnail.jpg?height=600">
+    <source data-src="https://customer-xxxx.cloudflarestream.com/VIDEO_ID/downloads/default.mp4" type="video/mp4">
+  </video>
+</div>
+```
+
+Kontrol barı modunda video bir **facade**'dır: sayfa yüklenirken sadece poster
+görünür, MP4 ancak ilk play tıklamasında indirilir (PageSpeed etkilenmez).
+`data-video-autoplay="true"` eklersen viewport'a yaklaşınca sessiz (muted)
+autoplay yapar.
+
 Attribute'lar (hepsi `<video data-video="…">` üzerinde):
 
 - **`data-video`** — benzersiz id, her parçayı birbirine bağlar (zorunlu).
+- **`data-video-controls="true"`** — Sestek tarzı kontrol barını inject eder
+  (video-inline.css gerekir; wrapper = videonun parent elementi).
+- **`data-video-accent="#EC008C"`** — kontrol barı vurgu rengi (hex veya CSS
+  var); varsayılan `--interactive--color-primary-base`.
+- **`data-video-autoplay="true"`** — sadece kontrol barı modunda: viewport'a
+  yaklaşınca muted autoplay.
 - **`data-video-hover="true"`** — mouse-enter'da oynat, mouse-leave'de durdur
   + posteri geri getir (`[data-video-trigger]` gerekir).
 - **`data-video-scroll-in-play="true"`** — viewport'a ≥%50 girince oynat,
