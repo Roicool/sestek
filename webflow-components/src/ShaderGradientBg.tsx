@@ -22,11 +22,23 @@ import * as React from "react";
 
 const LazyGradient = React.lazy(async () => {
   const m = await import("@shadergradient/react");
+  /* Fade sarmalayıcı BURADA (lazy modülün içinde): animasyon ancak shader
+   * chunk'ı yüklenip canvas gerçekten mount olurken başlar — CSS fallback'ten
+   * WebGL sahnesine geçiş yumuşak olur, "atlama" görünmez. */
   function Gradient({ canvas, gradient }: { canvas: any; gradient: any }) {
     return (
-      <m.ShaderGradientCanvas {...canvas}>
-        <m.ShaderGradient {...gradient} />
-      </m.ShaderGradientCanvas>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0,
+          animation: "sgb-fade-in 1100ms ease 150ms forwards",
+        }}
+      >
+        <m.ShaderGradientCanvas {...canvas}>
+          <m.ShaderGradient {...gradient} />
+        </m.ShaderGradientCanvas>
+      </div>
     );
   }
   return { default: Gradient };
@@ -199,7 +211,9 @@ function useNearViewport(ref: React.RefObject<HTMLDivElement | null>): boolean {
           io.disconnect();
         }
       },
-      { rootMargin: "300px" }
+      /* Erken kur: kullanıcı section'a varmadan shader hazır olsun —
+       * viewport'a girerken kurulum "atlaması" görünmesin. */
+      { rootMargin: "900px" }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -310,6 +324,7 @@ export function ShaderGradientBg({
             `radial-gradient(140% 140% at 50% 95%, ${c3} 0%, transparent 60%)`,
         }}
       />
+      <style>{`@keyframes sgb-fade-in{from{opacity:0}to{opacity:1}}`}</style>
       {near && (
         <React.Suspense fallback={null}>
           <LazyGradient key={sceneKey} canvas={canvas} gradient={gradient} />
