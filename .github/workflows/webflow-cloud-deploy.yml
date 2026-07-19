@@ -12,11 +12,10 @@ name: Deploy Webflow Cloud App
 # yapıldı; CI'ın siteyi habersiz publish etmesini istemiyoruz. Mount değişirse
 # run görünür şekilde uyarır/başarısız olur, bir kez lokalde deploy edilir.
 
+# Otomatik deploy artık Webflow Cloud'un kendi GitHub entegrasyonunda —
+# bu workflow yalnızca elle tetiklenen bir yedek (token'da Cloud apps
+# scope'u gerektirir).
 on:
-  push:
-    branches: [main]
-    paths:
-      - "webflow-cloud-app/**"
   workflow_dispatch:
 
 jobs:
