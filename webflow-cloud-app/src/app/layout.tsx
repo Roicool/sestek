@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DevLinkProvider } from "../../webflow/DevLinkProvider";
 import { Navbar } from "../../webflow/Navbar";
-import { Footer } from "../../webflow/Footer";
+import SiteFooter from "../components/site-footer";
 import SiteRuntime from "./site-runtime";
 import "../../webflow/css/global.css";
 import "./globals.css";
@@ -30,8 +30,8 @@ export default function RootLayout({
         <DevLinkProvider>
           <Navbar />
           {children}
-          <Footer />
         </DevLinkProvider>
+        <SiteFooter />
         <SiteRuntime />
       </body>
     </html>

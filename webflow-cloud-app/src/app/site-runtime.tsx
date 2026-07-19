@@ -1,18 +1,16 @@
 "use client";
 
 /**
- * Sitenin CDN kütüphanesini export edilmiş navbar/footer'a bağlar:
- *   • gsap + js/core/nav.js'i sırayla yükler ve Sestek.initNav()'ı çağırır
- *     (mega-menü, hamburger, autohide — hepsi data-nav attribute'larından)
- *   • DevLink'in "This builtin is not currently supported" placeholder'larını
- *     gizler (Collection List + Animation)
- *   • Footer'ın Product / Solutions / Industries kolonlarını
- *     /demos/api/footer-links'ten gelen canlı CMS verisiyle doldurur
+ * Sitenin CDN kütüphanesini export edilmiş navbar'a (ve app geneline) bağlar:
+ *   • gsap + js/core/nav.js + js/effects/link-underline.js'i sırayla yükler
+ *   • Sestek.initNav() — mega-menü, hamburger, autohide (data-nav attr'ları)
+ *   • Sestek.initLinkUnderline() — [data-underline] hover çizgisi
+ *     (footer'daki linkler dahil; init link başına guard'lı, tekrar güvenli)
+ *   • DevLink'in "not supported" placeholder'ları görünürse gizler
  */
 
 import { useEffect } from "react";
 
-const MOUNT = "/demos"; // environment mount path'i ile aynı tutulmalı
 const CDN = "https://cdn.jsdelivr.net/gh/roicool/sestek@main";
 
 const SCRIPTS = [
@@ -55,33 +53,6 @@ function hideUnsupportedPlaceholders() {
     });
 }
 
-type FooterLink = { name: string; href: string };
-
-function injectFooterLists(lists: Record<string, FooterLink[]>) {
-  document.querySelectorAll<HTMLElement>(".footer__links").forEach((col) => {
-    const heading =
-      col.firstElementChild?.textContent?.trim().toLowerCase() ?? "";
-    const items = lists[heading];
-    if (!items?.length) return;
-    if (col.querySelector("[data-cms-list]")) return; /* idempotent */
-
-    const wrap = document.createElement("div");
-    wrap.className = "gap-2 w-layout-vflex";
-    wrap.setAttribute("data-cms-list", "");
-
-    for (const item of items) {
-      const a = document.createElement("a");
-      a.className = "footer__links-text";
-      a.setAttribute("data-underline", "");
-      a.href = item.href;
-      a.textContent = item.name;
-      wrap.appendChild(a);
-    }
-
-    col.appendChild(wrap);
-  });
-}
-
 type SestekGlobal = {
   Sestek?: { initNav?: () => void; initLinkUnderline?: () => void };
 };
@@ -92,27 +63,17 @@ export default function SiteRuntime() {
 
     let cancelled = false;
 
-    const scriptsReady = (async () => {
-      for (const src of SCRIPTS) await loadScript(src);
-      if (cancelled) return;
-      const S = (window as unknown as SestekGlobal).Sestek;
-      S?.initNav?.();
-      S?.initLinkUnderline?.(); /* idempotent — guarded per link */
-    })().catch((err) => console.warn("[SiteRuntime]", err));
-
-    const listsReady = fetch(`${MOUNT}/api/footer-links`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.lists) injectFooterLists(data.lists);
-      })
-      .catch(() => {});
-
-    /* injecte edilen CMS linkleri de hover-underline alsın */
-    Promise.allSettled([scriptsReady, listsReady]).then(() => {
-      if (!cancelled) {
-        (window as unknown as SestekGlobal).Sestek?.initLinkUnderline?.();
+    (async () => {
+      try {
+        for (const src of SCRIPTS) await loadScript(src);
+        if (cancelled) return;
+        const S = (window as unknown as SestekGlobal).Sestek;
+        S?.initNav?.();
+        S?.initLinkUnderline?.();
+      } catch (err) {
+        console.warn("[SiteRuntime]", err);
       }
-    });
+    })();
 
     return () => {
       cancelled = true;

@@ -1,54 +1,65 @@
-// Server component — her istekte Cloudflare Workers üzerinde render edilir.
+// Demo hub — server component, her istekte render edilir.
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const renderedAt = new Date().toLocaleString("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    dateStyle: "medium",
-    timeStyle: "medium",
-  });
+const DEMOS = [
+  {
+    href: "speech-recognition",
+    eyebrow: "Knovvu SR",
+    title: "Speech Recognition",
+    description:
+      "Konuşma tanıma doğruluğumuzu deneyin — mikrofonla konuşun veya ses dosyası yükleyin, transkript canlı aksın.",
+    ready: true,
+  },
+  {
+    href: "tts",
+    eyebrow: "Knovvu TTS",
+    title: "Text-to-Speech",
+    description:
+      "Metninizi yazın, dil ve ses seçin, doğal sentezlenmiş konuşmayı anında dinleyin.",
+    ready: true,
+  },
+  {
+    href: "#",
+    eyebrow: "Knovvu Virtual Agent",
+    title: "Virtual Agent",
+    description:
+      "Sesle ve yazıyla konuşabileceğiniz avatar destekli sanal asistan — çok yakında.",
+    ready: false,
+  },
+];
 
+export default function Home() {
   return (
     <main>
       <header>
-        <p className="eyebrow">Webflow Cloud</p>
+        <p className="eyebrow">Knovvu Demos</p>
         <h1>
-          Sestek <span>Demo Hub</span>
+          Ürünlerimizi <span>şimdi deneyin</span>
         </h1>
         <p className="lead">
-          Bu sayfa, Webflow sitesine mount edilmiş bir Next.js uygulamasından
-          server-side render ediliyor. Demo sayfaları ve özel servisler buraya
-          eklenecek.
+          Sestek&apos;in konuşma teknolojilerini tarayıcınızdan test edin —
+          kayıt olmadan, beklemeden.
         </p>
       </header>
 
       <section className="cards">
-        <article className="card">
-          <h2>Server-side render</h2>
-          <p>
-            Bu istek <strong>{renderedAt}</strong>&apos;de Cloudflare Workers
-            üzerinde işlendi — statik değil, her ziyarette yeniden üretiliyor.
-          </p>
-        </article>
-
-        <article className="card">
-          <h2>API endpoint örneği</h2>
-          <p>
-            <a href="api/hello">
-              <code>/demos/api/hello</code>
-            </a>{" "}
-            canlı bir JSON servisi — form işleme, hesaplayıcı, entegrasyon gibi
-            servislerin temeli.
-          </p>
-        </article>
-
-        <article className="card">
-          <h2>Sıradaki demolar</h2>
-          <p>
-            Yeni bir demo eklemek için <code>src/app/</code> altına bir klasör +{" "}
-            <code>page.tsx</code> koymak yeterli — route otomatik oluşur.
-          </p>
-        </article>
+        {DEMOS.map((demo) => (
+          <article
+            className={`card demo-hub-card${demo.ready ? "" : " demo-hub-card--soon"}`}
+            key={demo.title}
+          >
+            <p className="eyebrow">{demo.eyebrow}</p>
+            <h2>{demo.title}</h2>
+            <p>{demo.description}</p>
+            {demo.ready ? (
+              <a className="demo-btn demo-hub-card__cta" href={demo.href}>
+                Demoyu aç →
+              </a>
+            ) : (
+              <span className="demo-hub-card__soon">Yakında</span>
+            )}
+          </article>
+        ))}
       </section>
     </main>
   );
