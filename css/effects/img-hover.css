@@ -1,10 +1,14 @@
 /*!
- * img-hover.css v1.0.0
+ * img-hover.css v1.1.0
  * Drives: js/effects/img-hover.js
  *
  * Static layout only — all motion is GSAP-scrubbed by the JS. The frame
  * clips the parallax-zoomed image; the sheen <span> is injected by the JS
  * and swept across on hover-in.
+ *
+ * v1.1.0: wrapper içinde data-img-hover-target işaretli bir görsel varsa
+ * cover/%100 kuralları YALNIZ ona uygulanır — diğer görseller (ikon, logo)
+ * kendi boyutlarında kalır. Target yoksa v1.0 davranışı: tüm görseller.
  * https://github.com/roicool/sestek
  */
 
@@ -17,8 +21,11 @@
   isolation: isolate; /* sheen'i kendi katmanında tut */
 }
 
-[data-img-hover] img,
-[data-img-hover] video {
+/* Target işaretli DEĞİLSE içerideki tüm görseller kaplar (v1.0 davranışı);
+   target işaretliyse yalnız o kaplar — kardeş görsellere dokunulmaz. */
+[data-img-hover]:not(:has([data-img-hover-target])) img,
+[data-img-hover]:not(:has([data-img-hover-target])) video,
+[data-img-hover] [data-img-hover-target] {
   display: block;
   width: 100%;
   height: 100%;
