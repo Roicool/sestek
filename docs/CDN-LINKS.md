@@ -713,6 +713,8 @@ DOM yapısı:
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `css/components/heading-shine.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine.css` |
+| `js/components/sticky-stack.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-stack.js` |
+| `css/components/sticky-stack.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/sticky-stack.css` |
 | `css/components/heading-shine-rte.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine-rte.css` |
 | `js/components/heading-shine.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/heading-shine.js` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
@@ -1391,6 +1393,72 @@ Webflow `</body>` öncesi:
   davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
+
+### Sticky Stack
+
+Premium "stacking panels" — **küçülen panel görünür kalır.** Sonraki panel
+üzerine kayarken alttaki panel örtülme miktarıyla birebir orantılı küçülür,
+hafif yukarı toplanır ve kararır; hiçbir aşamada şeffaflaşmaz, fiziksel
+olarak örtülene kadar ekranda kalır. (`stack-panels.js`'in yeniden ele
+alınmış hali, ayrı dosya — eskisi opacity-dissolve kullanır ve küçülen panel
+yarı yolda kaybolur; eski sayfalar onunla çalışmaya devam eder, yenilerde
+bunu kullan.)
+
+Pinleme native `position: sticky` — GSAP pin yok, pin-spacing yok, pinli
+bölüm kurallarıyla (hero/scroll-tabs) çatışmaz.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/sticky-stack.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-stack.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initStickyStack();
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<div data-sticky-stack data-sticky-peek="14">
+  <section data-sticky-panel> … </section>
+  <section data-sticky-panel> … </section>
+  <section data-sticky-panel> … </section>
+</div>
+```
+
+Panellerin boyutu/arka planı/radius'u Designer'dan (genelde min-height
+85-100svh + **opak** background). Root'a ve panellere position VERME —
+sticky düzenini JS + CSS kurar.
+
+Attribute'lar (root `[data-sticky-stack]` üzerinde, hepsi opsiyonel):
+
+| Attribute | Varsayılan | Ne yapar |
+|---|---|---|
+| `data-sticky-top` | `0px` | Sticky üst boşluk (CSS uzunluğu: `8vh`, `80px`…) |
+| `data-sticky-peek` | `0` | px — her panel bir öncekinden bu kadar aşağıda yapışır; örtülen panellerin üst kenarları görünür bir "deste" oluşturur (`14` dene) |
+| `data-sticky-scale` | `0.93` | Tam örtülen panelin scale'i |
+| `data-sticky-dim` | `0.35` | Tam örtülen panelin karartma opaklığı (overlay — içerik keskin kalır) |
+| `data-sticky-blur` | `0` | Tam örtülen panelin blur'u, px (0 = kapalı) |
+| `data-sticky-lift` | `24` | Örtülen panelin yukarı toplanması, px |
+
+Notlar:
+
+- Karartma filter değil overlay'dir (JS enjekte eder) — panel içeriği
+  kararırken keskin ve görünür kalır.
+- Son panel hiç küçülmez (örtülmez).
+- `prefers-reduced-motion`: küçülme/karartma çalışmaz, paneller sticky ile
+  sadece üst üste biner.
 
 ### Heading Shine
 
