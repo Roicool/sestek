@@ -26,6 +26,18 @@
   will-change: transform, filter;
 }
 
+/* Background-image çerçeveler için JS'in enjekte ettiği zoom katmanı —
+   frame'in arka plan görselini kopyalar, transform ile zoom/pan/tilt alır. */
+.img-hover__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform, filter;
+}
+
 .img-hover__sheen {
   position: absolute;
   inset: -25%;

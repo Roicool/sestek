@@ -1,5 +1,15 @@
 /*!
- * img-hover.js v1.1.0
+ * img-hover.js v1.2.0
+ *
+ * Changelog
+ * v1.2.0 — iki gerçek sahada teşhis edilen kusur:
+ *   • (hover: hover) → (any-hover: hover): (hover) BİRİNCİL girdiye bakar,
+ *     fareli dokunmatik laptop'ları "touch" sanıp efekti HİÇ bağlamıyordu.
+ *     any-hover, herhangi bir girdi hover yapabiliyorsa çalışır.
+ *   • background-image desteği: [data-img-hover] içinde <img>/<video> yoksa
+ *     ama elementin kendisi bir arka plan görseli ise, onu kopyalayan bir
+ *     katman enjekte edilip o zoom'lanır (Webflow "background image"
+ *     bölümleri artık çalışıyor).
  * Premium image hover for cards & blog links — NOT a plain CSS scale.
  * Four coordinated layers, all GSAP-scrubbed:
  *   • parallax zoom — the image eases up to `zoom` AND drifts toward the
@@ -91,12 +101,36 @@
     }
   }
 
+  /* Zoom hedefini çöz: içinde <img>/<video> varsa o; yoksa frame'in kendisi
+   * bir background-image ise, onu kopyalayan mutlak konumlu bir katman enjekte
+   * edip onu zoom'la (Webflow "background image" bölümleri böyle çalışır). */
+  function resolveTarget(frame) {
+    var media = frame.querySelector("img, video");
+    if (media) return media;
+
+    var cs = global.getComputedStyle(frame);
+    if (cs.backgroundImage && cs.backgroundImage !== "none") {
+      var layer = global.document.createElement("div");
+      layer.className = "img-hover__bg";
+      layer.style.backgroundImage = cs.backgroundImage;
+      layer.style.backgroundSize =
+        cs.backgroundSize && cs.backgroundSize !== "auto" ? cs.backgroundSize : "cover";
+      layer.style.backgroundPosition = cs.backgroundPosition || "center";
+      layer.style.backgroundRepeat = "no-repeat";
+      /* Frame'in kendi arka planını gizle — çift boyama/kenar sızması olmasın */
+      frame.style.backgroundImage = "none";
+      frame.insertBefore(layer, frame.firstChild);
+      return layer;
+    }
+    return null;
+  }
+
   function bind(frame, reduce) {
     if (frame._imgHoverInit) return;
     frame._imgHoverInit = true;
 
-    var img = frame.querySelector("img, video");
-    if (!img) return;
+    var img = resolveTarget(frame);
+    if (!img) return; /* ne <img>/<video> ne de background-image → atla */
 
     var trigger = resolveTrigger(frame);
     var zoom  = Math.max(1, num(frame, "data-img-hover-zoom", 1.06));
@@ -187,8 +221,17 @@
       console.error("[Sestek ImgHover] GSAP required.");
       return;
     }
-    /* Touch-only cihazlarda hover yok — hiç bağlanma */
-    if (global.matchMedia && !global.matchMedia("(hover: hover)").matches) return;
+    /* Fareyle hover YAPILAMAYAN cihazlarda (saf dokunmatik) bağlanma.
+     * (any-hover: hover) kullanılır — (hover: hover) BİRİNCİL girdiye bakar ve
+     * fareli dokunmatik laptop'ları yanlışlıkla dışlar; any-hover ise HERHANGİ
+     * bir girdi hover yapabiliyorsa true döner. */
+    var mm = global.matchMedia;
+    var canHover = mm
+      ? (mm("(any-hover: hover)").matches ||
+         /* çok eski tarayıcı any-hover bilmiyorsa hover'a düş */
+         (!mm("(any-hover: hover)").media && mm("(hover: hover)").matches))
+      : true;
+    if (!canHover) return;
     var reduce = global.matchMedia &&
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var frames = global.document.querySelectorAll(selector || "[data-img-hover]");

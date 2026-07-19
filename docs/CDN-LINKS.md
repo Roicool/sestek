@@ -2645,6 +2645,12 @@ Notlar:
 - Touch cihazlarda (hover yok) efekt hiç bağlanmaz; `prefers-reduced-motion`
   açıkken dinlenme tonu korunur ama hareket çalışmaz.
 - `<video>` thumbnail'larıyla da çalışır (`img` yerine `video` da bulur).
+- **Background-image de olur:** `[data-img-hover]` içinde `<img>`/`<video>`
+  yoksa ama elementin kendisi bir arka plan görseliyse, JS o görseli
+  kopyalayan bir katman enjekte edip onu zoom'lar — Webflow'un "background
+  image" bölümleri de çalışır, ekstra bir şey gerekmez.
+- Fareyle hover **yapılabilen** her cihazda çalışır (`any-hover`) — fareli
+  dokunmatik laptop'lar dahil; saf dokunmatik telefonlarda bağlanmaz.
 
 ### Parallax
 
