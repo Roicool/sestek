@@ -1,0 +1,47 @@
+name: Deploy Webflow Cloud App
+
+# webflow-cloud-app/ değişen her main push'unda uygulamayı Webflow Cloud'a
+# deploy eder (webflow cloud deploy). App/site id'leri webflow.json'da commit'li
+# olduğu ve CI=true iken CLI tüm onayları otomatik geçtiği için soru sorulmaz.
+#
+# Ön koşul: WEBFLOW_API_TOKEN repo secret'ı — workspace token'ında
+# "Cloud apps: Read and write" scope'u da açık olmalı (Components scope'uyla
+# aynı token paylaşılabilir; iki workflow da aynı secret'ı kullanır).
+#
+# Not: --auto-publish bilerek verilmedi — mount path yapılandırması zaten
+# yapıldı; CI'ın siteyi habersiz publish etmesini istemiyoruz. Mount değişirse
+# run görünür şekilde uyarır/başarısız olur, bir kez lokalde deploy edilir.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "webflow-cloud-app/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webflow-cloud-app
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: webflow-cloud-app/package-lock.json
+
+      - run: npm ci
+
+      - name: Deploy to Webflow Cloud
+        env:
+          WEBFLOW_API_TOKEN: ${{ secrets.WEBFLOW_API_TOKEN }}
+        run: |
+          if [ -z "$WEBFLOW_API_TOKEN" ]; then
+            echo "::warning::WEBFLOW_API_TOKEN secret'ı tanımlı değil — deploy atlandı."
+            exit 0
+          fi
+          npx webflow cloud deploy --skip-update-check
