@@ -1,5 +1,14 @@
 /*!
- * stack-panels-2.js v2.0.0
+ * stack-panels-2.js v2.1.0
+ *
+ * Changelog
+ * v2.1.0 — GERÇEK 3D derinlik: RECEDE artık düz scale değil, panelin kendi
+ *          perspektifinde translateZ ile ekranın İÇİNE çekilme (+ hafif
+ *          rotateX ile arkaya yatma). VANISH'te panel daha da derine düşerek
+ *          buharlaşır — "uzaklaşıp yok olma" hissi. transformPerspective
+ *          per-element uygulanır; ancestor'a perspective KOYULMAZ (pin'in
+ *          position:fixed'ini kırar — PROJECT.md Kural 3). data-sp-depth="0"
+ *          ile v2.0'ın düz scale recede'ine dönülebilir.
  * stack-panels.js'in premium yeniden ele alınışı — AYNI desen (panel pinlenir,
  * sonraki üzerine kayar, alttaki KÜÇÜLÜP KAYBOLUR), AYNI DOM/attribute
  * sözleşmesi ([data-stack-panels] / [data-sp-panel] / [data-sp-inner]) —
@@ -37,9 +46,15 @@
  * Root attributes (v1'dekiler korunur, yenileri eklendi):
  *   data-sp-hold             dissolve başlamadan tam okunur bekleme oranı
  *                                                              (default 0.4)
- *   data-sp-scale            RECEDE sonunda panelin scale'i    (default 0.9;
- *                            v1'in 0.7'si fazla şiddetliydi — "birden yok
- *                            oldu" hissinin sebeplerinden biri)
+ *   data-sp-depth            RECEDE'de panelin ekranın içine çekildiği
+ *                            translateZ mesafesi, px — gerçek 3D derinlik
+ *                            (default 160; 0 = kapat, düz scale kullanılır)
+ *   data-sp-tilt             RECEDE'de arkaya yatma, derece (rotateX)
+ *                                                              (default 4)
+ *   data-sp-perspective      panelin kendi perspektif derinliği, px
+ *                                                              (default 1200)
+ *   data-sp-scale            SADECE data-sp-depth="0" iken: RECEDE sonunda
+ *                            panelin scale'i                   (default 0.9)
  *   data-sp-fade-portion     VANISH fazının dissolve içindeki payı
  *                                                              (default 0.25)
  *   data-sp-dim              RECEDE sonunda karartma opaklığı  (default 0.35)
@@ -110,6 +125,9 @@
 
     var holdFrac    = attrNum(root, "data-sp-hold", 0.4);
     var endScale    = attrNum(root, "data-sp-scale", 0.9);
+    var depth       = attrNum(root, "data-sp-depth", 160);
+    var tilt        = attrNum(root, "data-sp-tilt", 4);
+    var persp       = attrNum(root, "data-sp-perspective", 1200);
     var fadePortion = attrNum(root, "data-sp-fade-portion", 0.25);
     var dimMax      = attrNum(root, "data-sp-dim", 0.35);
     var desat       = attrNum(root, "data-sp-desat", 0.9);
@@ -215,17 +233,30 @@
         tl.to({}, { duration: (holdFrac / (1 - holdFrac)), ease: "none" });
       }
 
-      // RECEDE — küçülmenin tamamı opacity 1'de, görünür
+      // RECEDE — geri çekilmenin tamamı opacity 1'de, görünür.
+      // depth > 0 (varsayılan): panel KENDİ perspektifinde translateZ ile
+      // ekranın içine çekilir + hafif rotateX ile arkaya yatar — gerçek 3D
+      // uzaklaşma. depth = 0: v2.0'ın düz scale recede'i.
       var recedeDur = 1 - fadePortion;
-      var recedeFrom = { scale: 1, y: 0 };
+      var recedeFrom = { y: 0 };
       var recedeTo = {
-        scale: endScale,
         y: -liftPx,
         duration: recedeDur,
         ease: "none",
         force3D: true,
         immediateRender: false,
       };
+      if (depth > 0) {
+        recedeFrom.z = 0;
+        recedeFrom.rotateX = 0;
+        recedeFrom.transformPerspective = persp;
+        recedeTo.z = -depth;
+        recedeTo.rotateX = tilt;
+        recedeTo.transformPerspective = persp;
+      } else {
+        recedeFrom.scale = 1;
+        recedeTo.scale = endScale;
+      }
       if (desat < 1) {
         recedeFrom.filter = "saturate(1) blur(0px)";
         recedeTo.filter = "saturate(" + desat + ") blur(0px)";
@@ -233,13 +264,18 @@
       tl.fromTo(panel, recedeFrom, recedeTo);
       tl.to(dim, { opacity: dimMax, duration: recedeDur, ease: "none" }, "<");
 
-      // VANISH — kısa, temiz buharlaşma
+      // VANISH — panel daha da derine düşerek buharlaşır
       var vanish = {
         opacity: 0,
-        scale: endScale - 0.03,
         duration: fadePortion,
         ease: "none",
       };
+      if (depth > 0) {
+        vanish.z = -depth * 1.6;
+        vanish.rotateX = tilt * 1.5;
+      } else {
+        vanish.scale = endScale - 0.03;
+      }
       if (blurPx > 0) {
         vanish.filter = "saturate(" + (desat < 1 ? desat : 1) + ") blur(" + blurPx + "px)";
       }

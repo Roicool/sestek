@@ -1445,7 +1445,10 @@ Attribute'lar (root üzerinde, hepsi opsiyonel):
 | Attribute | Varsayılan | Ne yapar |
 |---|---|---|
 | `data-sp-hold` | `0.4` | Dissolve başlamadan tam okunur bekleme oranı |
-| `data-sp-scale` | `0.9` | RECEDE sonunda scale (v1'in 0.7'si fazla şiddetliydi) |
+| `data-sp-depth` | `160` | RECEDE'de panelin ekranın **içine** çekildiği translateZ mesafesi, px — gerçek 3D uzaklaşma; VANISH'te 1.6 katına düşerek buharlaşır (`0` = kapat, düz scale kullanılır) |
+| `data-sp-tilt` | `4` | RECEDE'de arkaya yatma, derece (rotateX) |
+| `data-sp-perspective` | `1200` | Panelin kendi perspektif derinliği, px (küçült = daha dramatik) |
+| `data-sp-scale` | `0.9` | Sadece `data-sp-depth="0"` iken: RECEDE sonunda düz scale |
 | `data-sp-fade-portion` | `0.25` | VANISH fazının payı |
 | `data-sp-dim` | `0.35` | RECEDE karartma opaklığı (overlay) |
 | `data-sp-desat` | `0.9` | RECEDE saturate değeri (1 = kapalı) |
