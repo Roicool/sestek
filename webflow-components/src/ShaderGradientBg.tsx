@@ -42,64 +42,76 @@ export interface ShaderGradientBgProps {
   minHeight?: number;
 }
 
-/* Scene values tuned per preset — colours are Sestek brand tokens. */
+/* Scene values tuned per preset.
+ * "Soft *" ailesi: yumuşatılmış Sestek pastelleri, düşük strength/density,
+ * yavaş hız, yüksek brightness → minimal ve soft görünüm (açık temaya uygun).
+ * "Sestek Deep": koyu section'lar için canlı/derin varyant. */
+const SOFT = {
+  uFrequency: 5.5,
+  positionX: -1.4,
+  positionY: 0,
+  positionZ: 0,
+  rotationX: 0,
+  rotationY: 10,
+  rotationZ: 50,
+  cAzimuthAngle: 180,
+  cPolarAngle: 95,
+  cDistance: 3.6,
+  cameraZoom: 1,
+  lightType: "3d",
+  envPreset: "city",
+  reflection: 0.1,
+  brightness: 1.6,
+};
+
 const PRESETS: Record<string, Record<string, unknown>> = {
-  "Sestek Brand": {
-    type: "waterPlane",
-    color1: "#00ffeb",
-    color2: "#7f81ae",
-    color3: "#ec008c",
-    uSpeed: 0.2,
-    uStrength: 3,
-    uDensity: 1.6,
-    uFrequency: 5.5,
-    positionX: -1.4,
-    positionY: 0,
-    positionZ: 0,
-    rotationX: 0,
-    rotationY: 10,
-    rotationZ: 50,
-    cAzimuthAngle: 180,
-    cPolarAngle: 90,
-    cDistance: 3.2,
-    cameraZoom: 1,
-    lightType: "3d",
-    envPreset: "city",
-    reflection: 0.1,
+  "Soft Mist": {
+    /* en hafif: nefes alan pastel sis */
+    ...SOFT,
+    type: "plane",
+    color1: "#b8f4ee",
+    color2: "#cdcee9",
+    color3: "#f9c2de",
+    uSpeed: 0.08,
+    uStrength: 0.9,
+    uDensity: 1.0,
+    brightness: 1.8,
   },
-  "Sestek Deep": {
+  "Soft Water": {
+    /* yumuşak su yüzeyi — pastel turkuaz ağırlıklı */
+    ...SOFT,
     type: "waterPlane",
-    color1: "#0e9488",
-    color2: "#565978",
-    color3: "#8f0a58",
-    uSpeed: 0.15,
-    uStrength: 2.4,
-    uDensity: 1.4,
-    uFrequency: 5.5,
-    positionX: -1.4,
-    positionY: 0,
-    positionZ: 0,
-    rotationX: 0,
-    rotationY: 10,
-    rotationZ: 50,
-    cAzimuthAngle: 180,
-    cPolarAngle: 95,
-    cDistance: 3.4,
-    cameraZoom: 1,
-    lightType: "3d",
-    envPreset: "city",
-    reflection: 0.1,
+    color1: "#8fe8de",
+    color2: "#a7a9d6",
+    color3: "#f489c1",
+    uSpeed: 0.12,
+    uStrength: 1.6,
+    uDensity: 1.2,
   },
-  Halo: {
-    type: "sphere",
-    color1: "#ec008c",
-    color2: "#7f81ae",
-    color3: "#00ffeb",
-    uSpeed: 0.25,
-    uStrength: 0.3,
+  "Soft Silk": {
+    /* lila ağırlıklı, çok yavaş çapraz akış */
+    ...SOFT,
+    type: "plane",
+    color1: "#c9cae8",
+    color2: "#9fd8d2",
+    color3: "#f4a9cf",
+    uSpeed: 0.06,
+    uStrength: 1.2,
     uDensity: 0.8,
+    rotationZ: 35,
+    brightness: 1.7,
+  },
+  "Soft Halo": {
+    /* kürede sakin pastel ışıltı */
+    type: "sphere",
+    color1: "#f489c1",
+    color2: "#a7a9d6",
+    color3: "#8fe8de",
+    uSpeed: 0.1,
+    uStrength: 0.25,
+    uDensity: 0.7,
     uFrequency: 5.5,
-    uAmplitude: 3.2,
+    uAmplitude: 2.4,
     positionX: -0.1,
     positionY: 0,
     positionZ: 0,
@@ -112,7 +124,22 @@ const PRESETS: Record<string, Record<string, unknown>> = {
     cameraZoom: 15.1,
     lightType: "env",
     envPreset: "city",
-    reflection: 0.4,
+    reflection: 0.35,
+    brightness: 1.3,
+  },
+  "Sestek Deep": {
+    /* koyu section'lar için canlı marka varyantı */
+    ...SOFT,
+    type: "waterPlane",
+    color1: "#0e9488",
+    color2: "#565978",
+    color3: "#8f0a58",
+    uSpeed: 0.15,
+    uStrength: 2.4,
+    uDensity: 1.4,
+    cPolarAngle: 95,
+    cDistance: 3.4,
+    brightness: 1.1,
   },
 };
 
@@ -154,14 +181,14 @@ function useNearViewport(ref: React.RefObject<HTMLElement | null>): boolean {
 }
 
 export function ShaderGradientBg({
-  preset = "Sestek Brand",
+  preset = "Soft Mist",
   gradientType = "waterPlane",
-  color1 = "#00ffeb",
-  color2 = "#7f81ae",
-  color3 = "#ec008c",
+  color1 = "#8fe8de",
+  color2 = "#a7a9d6",
+  color3 = "#f489c1",
   speed = 1,
-  grain = true,
-  brightness = 1.2,
+  grain = false,
+  brightness = 0,
   animate = true,
   pixelDensity = 1,
   minHeight = 480,
@@ -171,7 +198,7 @@ export function ShaderGradientBg({
   const near = useNearViewport(ref);
 
   const scene = PRESETS[preset] ?? {
-    ...PRESETS["Sestek Brand"],
+    ...PRESETS["Soft Water"],
     type: gradientType,
     color1,
     color2,
@@ -184,7 +211,8 @@ export function ShaderGradientBg({
     animate: animate && !reduced ? "on" : "off",
     uSpeed: (scene.uSpeed as number) * speed,
     grain: grain ? "on" : "off",
-    brightness,
+    /* 0 = preset'in kendi brightness'ı; >0 girilirse override */
+    ...(brightness > 0 ? { brightness } : {}),
     enableTransition: false,
   };
 

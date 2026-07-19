@@ -10,7 +10,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | Component | Dosya | Ne yapar |
 |---|---|---|
 | **Soft Gradient BG** ⭐ | `src/SoftGradientBg.webflow.tsx` | **Önerilen.** Minimal (~11KB, sıfır bağımlılık) saf WebGL soft gradient. 4 karakter: Mist (gezinen lekeler), Flow (yatay dalgalar), Silk (çapraz bantlar), Halo (merkez ışıltı). Yumuşak Sestek renkleri varsayılan; base rengi değiştirerek koyu temaya uyar. Viewport dışında durur, reduced-motion'da statik kare, WebGL yoksa CSS fallback. |
-| **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk). Görsel olarak daha katmanlı ama ağır — hero dışı, tek seferlik vitrin kullanımları için. Sestek marka preset'leri, lazy-mount, `prefers-reduced-motion` desteği. |
+| **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
 

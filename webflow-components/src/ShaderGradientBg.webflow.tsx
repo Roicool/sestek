@@ -12,9 +12,12 @@ export default declareComponent(ShaderGradientBg, {
   props: {
     preset: props.Variant({
       name: "Preset",
-      options: ["Sestek Brand", "Sestek Deep", "Halo", "Custom"],
-      defaultValue: "Sestek Brand",
-      tooltip: "Hazır Sestek sahneleri; Custom seçince tür ve renkler aşağıdan ayarlanır",
+      options: ["Soft Mist", "Soft Water", "Soft Silk", "Soft Halo", "Sestek Deep", "Custom"],
+      defaultValue: "Soft Mist",
+      tooltip:
+        "Soft Mist: nefes alan pastel sis · Soft Water: yumuşak su yüzeyi · " +
+        "Soft Silk: yavaş çapraz akış · Soft Halo: kürede sakin ışıltı · " +
+        "Sestek Deep: koyu section'lar için canlı · Custom: tür + renkler aşağıdan",
     }),
     gradientType: props.Variant({
       name: "Type (Custom)",
@@ -26,18 +29,18 @@ export default declareComponent(ShaderGradientBg, {
     color1: props.Text({
       name: "Color 1 (Custom)",
       group: "Custom",
-      defaultValue: "#00ffeb",
+      defaultValue: "#8fe8de",
       tooltip: "Hex renk — sadece Preset = Custom iken kullanılır",
     }),
     color2: props.Text({
       name: "Color 2 (Custom)",
       group: "Custom",
-      defaultValue: "#7f81ae",
+      defaultValue: "#a7a9d6",
     }),
     color3: props.Text({
       name: "Color 3 (Custom)",
       group: "Custom",
-      defaultValue: "#ec008c",
+      defaultValue: "#f489c1",
     }),
     speed: props.Number({
       name: "Speed",
@@ -49,16 +52,18 @@ export default declareComponent(ShaderGradientBg, {
     }),
     grain: props.Boolean({
       name: "Grain",
-      defaultValue: true,
+      defaultValue: false,
       trueLabel: "On",
       falseLabel: "Off",
+      tooltip: "Film greni dokusu — soft görünüm için varsayılan kapalı",
     }),
     brightness: props.Number({
       name: "Brightness",
-      defaultValue: 1.2,
+      defaultValue: 0,
       min: 0,
       max: 3,
       decimals: 2,
+      tooltip: "0 = preset'in kendi parlaklığı; başka değer girersen onu ezer",
     }),
     animate: props.Boolean({
       name: "Animate",
