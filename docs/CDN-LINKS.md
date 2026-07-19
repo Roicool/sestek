@@ -53,7 +53,7 @@ css/
   components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
                video-inline.css, card-marquee.css, section-title.css, text-rotator.css,
                story.css, accordion.css, demo-form.css
-  effects/     grain.css, btn-glow.css
+  effects/     grain.css, btn-glow.css, img-hover.css
   animations/  reveal.css
 ```
 
@@ -2214,6 +2214,8 @@ DOM:
 | `js/effects/grain.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/grain.js` |
 | `css/effects/grain.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/grain.css` |
 | `js/effects/btn-glow.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/btn-glow.js` |
+| `js/effects/img-hover.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/img-hover.js` |
+| `css/effects/img-hover.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/img-hover.css` |
 | `css/effects/btn-glow.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/btn-glow.css` |
 | `js/effects/stagger-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js` |
 | `js/effects/circle-reveal-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/circle-reveal-button.js` |
@@ -2346,6 +2348,72 @@ DOM yapısı:
 
 - `.explore-btn` → `position: relative; overflow: hidden` olmalı, `.circle-scale` küçük başlangıç boyutuyla (örn. küçük yuvarlak) ortalı konumlandırılmalı — JS sadece `scale` tween'ler, konum/boyut/renk Designer'dan.
 - `prefers-reduced-motion`: hover'da hiçbir animasyon çalışmaz.
+
+### Img Hover
+
+Kartlar ve blog linkleri için **premium görsel hover'ı** — düz CSS scale
+değil, GSAP ile koreografili dört katman:
+
+- **Parallax zoom** — görsel `zoom`'a yumuşakça büyürken kırpılmış çerçeve
+  içinde cursor'a doğru süzülür (quickTo ile atalet hissi)
+- **3D tilt** — çerçeve, ışığı yakalayan bir kart gibi cursor'ın peşinden
+  birkaç derece yatar (perspective 800px)
+- **Işık süpürmesi** — her hover girişinde çapraz yumuşak bir parlama
+  görselin üzerinden bir kez geçer
+- **Tonal lift** — görsel hafif soluk/karanlık durur, hover'da tam renge
+  canlanır (editoryal his)
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/img-hover.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/img-hover.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initImgHover(); // tüm [data-img-hover] elementlerini bağlar
+  });
+</script>
+```
+
+DOM yapısı:
+
+```html
+<a href="/blog/yazi" class="blog-card">
+  <div data-img-hover class="blog-card__thumb">
+    <img src="cover.jpg" alt="">
+  </div>
+  <h3>Yazı başlığı</h3>
+</a>
+```
+
+Hover, `[data-img-hover]`'ın en yakın `<a>` atası üzerinden dinlenir (yoksa
+elementin kendisi) — kartın herhangi bir yerine gelince görsel canlanır.
+Sheen `<span>`'i JS otomatik enjekte eder, Webflow'da eklemezsin.
+
+Attribute'lar (hepsi `[data-img-hover]` üzerinde):
+
+- **`data-img-hover`** — zorunlu.
+- **`data-img-hover-zoom="1.06"`** — maksimum scale (varsayılan 1.06).
+- **`data-img-hover-tilt="3.5"`** — maksimum yatma derecesi (varsayılan 3.5,
+  `0` = kapalı).
+- **`data-img-hover-pan="2.5"`** — cursor'a süzülme miktarı, çerçevenin
+  %'si (varsayılan 2.5, `0` = kapalı; kenar açığa çıkmasın diye zoom
+  payına göre otomatik sınırlanır).
+- **`data-img-hover-shine="false"`** — ışık süpürmesini kapat.
+- **`data-img-hover-tone="false"`** — tonal lift'i kapat.
+
+Notlar:
+
+- `[data-img-hover]` çerçevesine Webflow'dan boyut + `border-radius` ver;
+  `overflow: hidden` CSS'ten gelir.
+- Touch cihazlarda (hover yok) efekt hiç bağlanmaz; `prefers-reduced-motion`
+  açıkken dinlenme tonu korunur ama hareket çalışmaz.
+- `<video>` thumbnail'larıyla da çalışır (`img` yerine `video` da bulur).
 
 ### Parallax
 
