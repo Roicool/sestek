@@ -1,0 +1,763 @@
+:root {
+  --surface--base: var(--neutral--050);
+  --font--primary: Montserrat, sans-serif;
+  --color-text--base: var(--neutral--900);
+  --text--base: 1rem;
+  --leading--normal: 1.5;
+  --font-weight--normal: 400;
+  --spacing--2: clamp(
+    0.375 * 1rem,
+    (
+        (
+          0.375 -
+            (
+              (0.5 - 0.375)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((0.5 - 0.375)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    0.5 * 1rem
+  );
+  --spacing--4: clamp(
+    0.75 * 1rem,
+    (
+        (
+          0.75 -
+            ((1 - 0.75)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1 - 0.75)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1 * 1rem
+  );
+  --spacing--6: clamp(
+    0.975 * 1rem,
+    (
+        (
+          0.975 -
+            (
+              (1.5 - 0.975)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1.5 - 0.975)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1.5 * 1rem
+  );
+  --spacing--8: clamp(
+    1.3 * 1rem,
+    (
+        (
+          1.3 -
+            ((2 - 1.3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2 - 1.3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    2 * 1rem
+  );
+  --spacing--10: clamp(
+    1.625 * 1rem,
+    (
+        (
+          1.625 -
+            (
+              (2.5 - 1.625)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2.5 - 1.625)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    2.5 * 1rem
+  );
+  --spacing--12: clamp(
+    1.95 * 1rem,
+    (
+        (
+          1.95 -
+            ((3 - 1.95)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((3 - 1.95)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    3 * 1rem
+  );
+  --spacing--16: clamp(
+    2 * 1rem,
+    (
+        (
+          2 - ((4 - 2)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((4 - 2)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    4 * 1rem
+  );
+  --spacing--24: clamp(
+    3 * 1rem,
+    (
+        (
+          3 - ((6 - 3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((6 - 3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    6 * 1rem
+  );
+  --spacing--1: 0.25rem;
+  --spacing--3: clamp(
+    0.563 * 1rem,
+    (
+        (
+          0.563 -
+            (
+              (0.75 - 0.563)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((0.75 - 0.563)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    0.75 * 1rem
+  );
+  --gap--sm: var(--spacing--4);
+  --gap--lg: var(--spacing--8);
+  --gap--xl: var(--spacing--12);
+  --gap--2xl: var(--spacing--16);
+  --spacing--0: 0rem;
+  --interactive--color-primary-base: var(--brand-primary--500);
+  --spacing--20: clamp(
+    2.5 * 1rem,
+    (
+        (
+          2.5 -
+            ((5 - 2.5)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((5 - 2.5)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    5 * 1rem
+  );
+  --text--xs: 0.75rem;
+  --text--sm: 0.875rem;
+  --text--lg: 1.125rem;
+  --color-text--muted: var(--neutral--600);
+  --font-weight--light: 300;
+  --font-weight--medium: 500;
+  --font-weight--semibold: 600;
+  --font-weight--bold: 700;
+  --font--secondary: "Open Sans", sans-serif;
+  --leading--none: 1;
+  --leading--tight: 1.25;
+  --tracking--wide: 0.025em;
+  --tracking--wider: 0.05em;
+  --tracking--widest: 0.1em;
+  --brand-primary--500: lab(51.53% 81.5 -8.5);
+  --neutral--900: lab(7.22% 0.06 -1.54);
+  --neutral--950: lab(0.82% 0 0);
+  --color-text--inverted: var(--neutral--0);
+  --brand-primary--100: lab(96% 5.65 -0.59);
+  --brand-primary--900: lab(17% 37.45 -3.91);
+  --brand-secondary--100: lab(94.3% 1.44 -3.85);
+  --brand-secondary--900: lab(13% 5.2 -12.63);
+  --neutral--050: lab(97.78% -0.45 -1.78);
+  --neutral--100: lab(94.31% -0.24 -3.35);
+  --surface--muted: var(--color-gray--200);
+  --surface--inverted: var(--neutral--950);
+  --radius--md: 0.375rem;
+  --radius--lg: 0.75rem;
+  --radius--2xl: 1.25rem;
+  --radius--full: 9999px;
+  --border--color-border-base: var(--neutral--200);
+  --border--color-border-muted: var(--neutral--200);
+  --brand-primary--200: lab(90% 14.62 -1.53);
+  --brand-secondary--500: lab(55.35% 9.55 -24.01);
+  --neutral--transparent: transparent;
+  --container--sm: clamp(
+    30 * 1rem,
+    (
+        (
+          30 -
+            ((40 - 30)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((40 - 30)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    40 * 1rem
+  );
+  --container--md: clamp(
+    36 * 1rem,
+    (
+        (
+          36 -
+            ((48 - 36)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((48 - 36)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    48 * 1rem
+  );
+  --container--lg: clamp(
+    48 * 1rem,
+    (
+        (
+          48 -
+            ((64 - 48)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((64 - 48)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    64 * 1rem
+  );
+  --container--2xl: clamp(
+    68 * 1rem,
+    (
+        (
+          68 -
+            ((80 - 68)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((80 - 68)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    80 * 1rem
+  );
+  --heading--h2: var(--text--4xl);
+  --spacing--9: clamp(
+    1.463 * 1rem,
+    (
+        (
+          1.463 -
+            (
+              (2.25 - 1.463)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2.25 - 1.463)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    2.25 * 1rem
+  );
+  --container--xl: clamp(
+    56 * 1rem,
+    (
+        (
+          56 -
+            ((80 - 56)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((80 - 56)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    80 * 1rem
+  );
+  --brand-secondary--200: lab(88.11% 2.65 -7.92);
+  --surface--accent: var(--brand-primary--500);
+  --radius--base: 0.5rem;
+  --text--6xl: clamp(
+    3.125 * 1rem,
+    (
+        (
+          3.125 -
+            (
+              (4.688 - 3.125)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((4.688 - 3.125)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    4.688 * 1rem
+  );
+  --section--py-1: clamp(2rem, 1.42857rem + 2.857vw, 4rem);
+  --section--py-2: clamp(3rem, 2.14286rem + 4.286vw, 6rem);
+  --section--py-4: clamp(5rem, 3.57143rem + 7.143vw, 10rem);
+  --section--py-5: clamp(6rem, 4.28571rem + 8.571vw, 12rem);
+  --section--py-6: clamp(8rem, 5.71429rem + 11.429vw, 16rem);
+  --view--px: clamp(1.25rem, 0.8929rem + 1.786vw, 2.5rem);
+  --_nav---nav-height: 3.75rem;
+  --_nav---nav-radius-sm: 0.375rem;
+  --_nav---nav-text: oklch(16% 0.025 264);
+  --_nav---nav-font-size: 0.935rem;
+  --_nav---nav-font-weight: 450;
+  --neutral--0: lab(100% 0 0);
+  --_nav---nav-text-hover: oklch(16% 0.025 264 / 0.45);
+  --_nav---nav-solar: var(--brand-primary--500);
+  --_nav---nav-solar-text: oklch(99% 0.004 264 / 0.82);
+  --_nav---nav-font-weight-btn: 600;
+  --_nav---nav-solar-hover: var(--brand-primary--600);
+  --_nav---nav-dropdown-bg: oklch(99.5% 0.003 264);
+  --_nav---nav-featured-color: var(--brand-secondary--200);
+  --_nav---nav-text-muted: oklch(16% 0.025 264 / 0.45);
+  --_nav---nav-radius-md: 0.5rem;
+  --_nav---nav-icon-bg: hsla(0, 0%, 0%, 0.2);
+  --_nav---nav-mobile-bg: oklch(99% 0.004 264);
+  --leading--relaxed: 1.625;
+  --heading--h1: var(--text--5xl);
+  --heading--h3: var(--text--2xl);
+  --leading--snug: 1.375;
+  --neutral--700: lab(30.49% -0.07 -3.41);
+  --neutral--500: lab(53.73% -0.53 -5.08);
+  --neutral--800: lab(8.86531% 0.515342 0.18619);
+  --neutral--300: lab(76.79% -0.13 -5.74);
+  --surface--light: var(--neutral--100);
+  --spacing--14: clamp(
+    1.75 * 1rem,
+    (
+        (
+          1.75 -
+            (
+              (3.5 - 1.75)/ (var(--layout--fluid-max) - var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((3.5 - 1.75)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    3.5 * 1rem
+  );
+  --spacing--1-s: 0.375rem;
+  --border--color-border-page: var(--color-gray--100);
+  --color-gray--900: lab(55.8% 0 0);
+  --color-gray--200: lab(89.4% 0 0);
+  --brand-secondary--700: lab(24.08% 6.9 -16.52);
+  --card--sm: clamp(17.5rem, 16.7857rem + 3.571vw, 20rem);
+  --spacing--80: clamp(
+    7 * 1rem,
+    (
+        (
+          7 - ((20 - 7)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((20 - 7)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    20 * 1rem
+  );
+  --spacing--28: clamp(
+    2.8 * 1rem,
+    (
+        (
+          2.8 -
+            ((7 - 2.8)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((7 - 2.8)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    7 * 1rem
+  );
+  --card--xs: clamp(12.5rem, 11.7857rem + 3.571vw, 15rem);
+  --spacing--3-5: clamp(
+    0.656 * 1rem,
+    (
+        (
+          0.656 -
+            (
+              (0.875 - 0.656)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((0.875 - 0.656)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    0.875 * 1rem
+  );
+  --font--mono: Montserrat, sans-serif;
+  --spacing--96: clamp(
+    8.4 * 1rem,
+    (
+        (
+          8.4 -
+            ((24 - 8.4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((24 - 8.4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    24 * 1rem
+  );
+  --spacing--48: clamp(
+    4.8 * 1rem,
+    (
+        (
+          4.8 -
+            ((12 - 4.8)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((12 - 4.8)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    12 * 1rem
+  );
+  --section--py-3: clamp(4rem, 2.85714rem + 5.714vw, 8rem);
+  --spacing--44: clamp(
+    4.4 * 1rem,
+    (
+        (
+          4.4 -
+            ((11 - 4.4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((11 - 4.4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    11 * 1rem
+  );
+  --spacing--52: clamp(
+    4.55 * 1rem,
+    (
+        (
+          4.55 -
+            ((13 - 4.55)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((13 - 4.55)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    13 * 1rem
+  );
+  --spacing--40: clamp(
+    4 * 1rem,
+    (
+        (
+          4 - ((10 - 4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((10 - 4)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    10 * 1rem
+  );
+  --spacing--32: clamp(
+    3.2 * 1rem,
+    (
+        (
+          3.2 -
+            ((8 - 3.2)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((8 - 3.2)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    8 * 1rem
+  );
+  --spacing--5: clamp(
+    0.813 * 1rem,
+    (
+        (
+          0.813 -
+            (
+              (1.25 - 0.813)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1.25 - 0.813)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1.25 * 1rem
+  );
+  --gap--xs: var(--spacing--2);
+  --layout--fluid-min: 20;
+  --spacing--0-5: 0.125rem;
+  --card--md: clamp(21.25rem, 20.1786rem + 5.357vw, 25rem);
+  --spacing--72: clamp(
+    6.3 * 1rem,
+    (
+        (
+          6.3 -
+            ((18 - 6.3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((18 - 6.3)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    18 * 1rem
+  );
+  --radius--3xl: 1.5rem;
+  --tracking--tighter: -0.05em;
+  --spacing--64: clamp(
+    5.6 * 1rem,
+    (
+        (
+          5.6 -
+            ((16 - 5.6)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((16 - 5.6)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    16 * 1rem
+  );
+  --card--xl: clamp(35rem, 33.5714rem + 7.143vw, 40rem);
+  --spacing--56: clamp(
+    4.9 * 1rem,
+    (
+        (
+          4.9 -
+            ((14 - 4.9)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((14 - 4.9)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    14 * 1rem
+  );
+  --view--px-lg: clamp(1.5rem, 0.9286rem + 2.857vw, 3.5rem);
+  --spacing--36: clamp(
+    3.6 * 1rem,
+    (
+        (
+          3.6 -
+            ((9 - 3.6)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((9 - 3.6)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) * 100vw,
+    9 * 1rem
+  );
+  --view--px-sm: clamp(1rem, 0.7143rem + 1.429vw, 2rem);
+  --spacing--60: clamp(
+    5.25 * 1rem,
+    (
+        (
+          5.25 -
+            ((15 - 5.25)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+            var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((15 - 5.25)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    15 * 1rem
+  );
+  --tracking--tight: -0.025em;
+  --layout--fluid-max: 90;
+  --spacing--7: clamp(
+    1.138 * 1rem,
+    (
+        (
+          1.138 -
+            (
+              (1.75 - 1.138)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1.75 - 1.138)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1.75 * 1rem
+  );
+  --gap--md: var(--spacing--6);
+  --card--lg: clamp(27.5rem, 26.0714rem + 7.143vw, 32.5rem);
+  --card--2xl: clamp(42.5rem, 41.0714rem + 7.143vw, 47.5rem);
+  --spacing--11: clamp(
+    1.788 * 1rem,
+    (
+        (
+          1.788 -
+            (
+              (2.75 - 1.788)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2.75 - 1.788)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    2.75 * 1rem
+  );
+  --tracking--normal: 0em;
+  --leading--loose: 2;
+  --_nav---nav-blur: 24px;
+  --_nav---nav-radius-lg: 0.75rem;
+  --_nav---nav-text-on-light: #1a1a1a;
+  --_nav---nav-text-muted-on-light: rgba(26, 26, 26, 0.5);
+  --_nav---nav-border-on-light: rgba(0, 0, 0, 0.1);
+  --neutral--200: lab(88.35% -0.05 -3.89);
+  --neutral--400: lab(65.28% -0.32 -5.41);
+  --neutral--600: lab(41.89% 0.14 -3.79);
+  --color-teritary--100: lab(99% -4.76 -0.41);
+  --color-teritary--200: lab(97% -14.74 -1.26);
+  --color-teritary--300: lab(95% -25.58 -2.18);
+  --color-teritary--400: lab(93% -37.45 -3.2);
+  --color-teritary--500: lab(90.56% -53.67 -4.58);
+  --color-teritary--600: lab(75% -45.83 -3.91);
+  --color-teritary--700: lab(55% -35.76 -3.05);
+  --color-teritary--800: lab(35% -25.69 -2.19);
+  --color-teritary--900: lab(18% -17.13 -1.46);
+  --color-gray--0: lab(100% 0 0);
+  --color-gray--50: lab(99% 0 0);
+  --color-gray--100: lab(94.2% 0 0);
+  --color-gray--300: lab(84.6% 0 0);
+  --color-gray--400: lab(79.8% 0 0);
+  --color-gray--500: lab(75% 0 0);
+  --color-gray--600: lab(70.2% 0 0);
+  --lm-height: 5rem;
+  --color-gray--700: lab(65.4% 0 0);
+  --color-gray--800: lab(60.6% 0 0);
+  --stsc_wrap: min(39rem, 100%);
+  --cslider-padding: max(1.5rem, calc((100% - var(--container--2xl)) / 2));
+  --slide-in-w: calc(100vw - var(--spacing--5) * 2);
+  --brand-primary--800: lab(27% 48.78 -5.09);
+  --brand-primary--700: lab(36% 58.99 -6.16);
+  --brand-primary--600: lab(44% 68.07 -7.11);
+  --brand-primary--400: lab(70% 49.78 -5.2);
+  --brand-primary--300: lab(82% 27.64 -2.89);
+  --brand-secondary--800: lab(34.3% 7.89 -19.78);
+  --brand-secondary--600: lab(44.79% 8.55 -22.32);
+  --brand-secondary--400: lab(67.91% 6.62 -18.12);
+  --brand-secondary--300: lab(79.41% 4.62 -13.65);
+  --border--color-border-accent: var(--brand-primary--500);
+  --color-text--negative: oklch(60% 0.2 25);
+  --color-text--accent: var(--brand-primary--600);
+  --interactive--color-accent-base: var(--brand-secondary--500);
+  --interactive--color-primary-text: var(--neutral--0);
+  --interactive--color-primary-hover: var(--brand-primary--600);
+  --interactive--color-primary-active: var(--brand-primary--700);
+  --interactive--color-accent-hover: var(--brand-secondary--600);
+  --interactive--color-accent-active: var(--brand-secondary--700);
+  --_nav---nav-bg: var(--surface--muted);
+  --_nav---nav-border: oklch(0% 0 0 / 0.08);
+  --_nav---nav-dropdown-border: oklch(0% 0 0 / 0.07);
+  --_nav---nav-item-hover-bg: oklch(0% 0 0 / 0.04);
+  --_nav---nav-item-icon-bg: oklch(16% 0.025 264 / 0.06);
+  --_nav---nav-mobile-border: oklch(0% 0 0 / 0.08);
+  --radius--none: 0rem;
+  --radius--sm: 0.125rem;
+  --radius--xl: 1rem;
+  --heading--h4: var(--text--xl);
+  --heading--h5: var(--text--lg);
+  --heading--h6: var(--text--lg);
+  --spacing--2-s: clamp(
+    0.469 * 1rem,
+    (
+        (
+          0.469 -
+            (
+              (0.625 - 0.469)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((0.625 - 0.469)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    0.625 * 1rem
+  );
+  --text--xl: clamp(
+    1.406 * 1rem,
+    (
+        (
+          1.406 -
+            (
+              (1.563 - 1.406)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1.563 - 1.406)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1.563 * 1rem
+  );
+  --text--2xl: clamp(
+    1.563 * 1rem,
+    (
+        (
+          1.563 -
+            (
+              (1.875 - 1.563)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((1.875 - 1.563)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    1.875 * 1rem
+  );
+  --text--3xl: clamp(
+    1.875 * 1rem,
+    (
+        (
+          1.875 -
+            (
+              (2.344 - 1.875)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2.344 - 1.875)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    2.344 * 1rem
+  );
+  --text--4xl: clamp(
+    2.188 * 1rem,
+    (
+        (
+          2.188 -
+            (
+              (2.813 - 2.188)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((2.813 - 2.188)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    2.813 * 1rem
+  );
+  --text--5xl: clamp(
+    2.813 * 1rem,
+    (
+        (
+          2.813 -
+            (
+              (3.75 - 2.813)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((3.75 - 2.813)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    3.75 * 1rem
+  );
+  --text--7xl: clamp(
+    3.75 * 1rem,
+    (
+        (
+          3.75 -
+            (
+              (5.625 - 3.75)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((5.625 - 3.75)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    5.625 * 1rem
+  );
+  --text--8xl: clamp(
+    4.688 * 1rem,
+    (
+        (
+          4.688 -
+            (
+              (7.5 - 4.688)/ (var(--layout--fluid-max) -
+                    var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((7.5 - 4.688)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    7.5 * 1rem
+  );
+  --text--9xl: clamp(
+    5.625 * 1rem,
+    (
+        (
+          5.625 -
+            (
+              (10 - 5.625)/ (var(--layout--fluid-max) - var(--layout--fluid-min))
+            ) * var(--layout--fluid-min)
+        )
+      ) * 1rem +
+      ((10 - 5.625)/ (var(--layout--fluid-max) - var(--layout--fluid-min))) *
+      100vw,
+    10 * 1rem
+  );
+}

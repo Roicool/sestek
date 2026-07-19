@@ -8,5 +8,20 @@
     "skip_no_bundle": false,
     "framework_version": "16.2.6"
   },
-  "siteId": "6a15f6e39b139e2c81103be6"
+  "siteId": "6a15f6e39b139e2c81103be6",
+  "telemetry": {
+    "global": {
+      "allowTelemetry": true,
+      "lastPrompted": 1784464301788,
+      "version": "2.2.0"
+    }
+  },
+  "devlink-export": {
+    "rootDir": "./webflow",
+    "components": "[Nn]av|[Ff]ooter",
+    "componentGroups": ".*",
+    "ts": true,
+    "cssScopes": true,
+    "relativeHrefRoot": "/"
+  }
 }
