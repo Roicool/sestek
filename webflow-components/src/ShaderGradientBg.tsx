@@ -195,32 +195,42 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-/* Mount the heavy shader only once the wrapper nears the viewport.
- * enabled=false → hemen kur (varsayılan): pinli/transformlu section'lar
- * scroll geometrisini değiştirdiğinde IntersectionObserver'ın tetiklenme
- * anı kayabiliyor ve kurulum tam kullanıcı bakarken gerçekleşiyordu. */
+/* Sayfanın çizimi tamamlandı mı? (window load + bir sonraki boş an)
+ * Shader kurulumu ilk boyama ve kritik kaynaklarla ASLA yarışmaz. */
+function useLoadDone(): boolean {
+  const [done, setDone] = React.useState(false);
+  React.useEffect(() => {
+    if (done) return;
+    const go = () => setDone(true);
+    if (document.readyState === "complete") {
+      const t = window.setTimeout(go, 0);
+      return () => window.clearTimeout(t);
+    }
+    window.addEventListener("load", go, { once: true });
+    /* güvenlik ağı: load takılırsa 4s'te yine kur */
+    const t = window.setTimeout(go, 4000);
+    return () => {
+      window.removeEventListener("load", go);
+      window.clearTimeout(t);
+    };
+  }, [done]);
+  return done;
+}
+
+/* Section viewport'a yaklaştı mı? (tek seferlik, geniş marj)
+ * Fold ALTINDAKİ shader kullanıcı yaklaşana dek HİÇ kurulmaz — ana iş
+ * parçacığına ve TBT'ye dokunmaz (Lighthouse scroll etmez → hiç mount olmaz).
+ * eager=true → her zaman "yakın" say (Lazy load Off seçilirse). */
 function useNearViewport(
   ref: React.RefObject<HTMLDivElement | null>,
-  enabled: boolean
+  eager: boolean
 ): boolean {
   const [near, setNear] = React.useState(false);
   React.useEffect(() => {
     if (near) return;
-    /* Eager mod (varsayılan): sayfanın İLK ÇİZİMİNİ ENGELLEME — kurulumu
-     * window load sonrasına (veya en geç 2.5s) bırak. Fallback gradient o
-     * ana kadar görünür, shader fade ile üzerine gelir. */
-    if (!enabled) {
-      const go = () => setNear(true);
-      if (document.readyState === "complete") {
-        const t = window.setTimeout(go, 0);
-        return () => window.clearTimeout(t);
-      }
-      window.addEventListener("load", go, { once: true });
-      const t = window.setTimeout(go, 2500);
-      return () => {
-        window.removeEventListener("load", go);
-        window.clearTimeout(t);
-      };
+    if (eager) {
+      setNear(true);
+      return;
     }
     const el = ref.current;
     if (!el) return;
@@ -235,13 +245,14 @@ function useNearViewport(
           io.disconnect();
         }
       },
-      /* Erken kur: kullanıcı section'a varmadan shader hazır olsun —
-       * viewport'a girerken kurulum "atlaması" görünmesin. */
+      /* Erken tetik: kullanıcı section'a varmadan shader hazır olsun —
+       * pinli section'ların geometri kaydırmasına karşı geniş marj; giriş
+       * anı zaten fade ile maskeleniyor. */
       { rootMargin: "900px" }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [ref, near, enabled]);
+  }, [ref, near, eager]);
   return near;
 }
 
@@ -257,11 +268,15 @@ export function ShaderGradientBg({
   animate = true,
   pixelDensity = 1,
   minHeight = 480,
-  lazy = false,
+  lazy = true,
 }: ShaderGradientBgProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
-  const near = useNearViewport(ref, lazy);
+  const loadDone = useLoadDone();
+  const nearView = useNearViewport(ref, !lazy);
+  /* Kurulum şartı: sayfanın çizimi bitti VE section'a yaklaşıldı.
+   * Fold altındaki shader ölçüm sırasında hiç kurulmaz → TBT'ye etkisi 0. */
+  const near = loadDone && nearView;
 
   /* 1) Sahne: preset motion/kamera değerleri (Custom → Soft Water tabanı +
    *    seçilen tür). 2) Renkler: geçerli hex girilen her prop, preset

@@ -94,13 +94,14 @@ export default declareComponent(ShaderGradientBg, {
     }),
     lazy: props.Boolean({
       name: "Lazy load",
-      defaultValue: false,
+      defaultValue: true,
       trueLabel: "On",
       falseLabel: "Off",
       tooltip:
-        "Off (önerilen) = shader sayfa yüklenirken kurulur, fade ile girer. " +
-        "On = viewport'a yaklaşınca kurulur — pinli/sticky section'ların " +
-        "olduğu sayfalarda kurulum anı görünür 'atlama' yapabilir",
+        "On (önerilen) = sayfa çizimi bittikten sonra + section'a yaklaşınca " +
+        "kurulur (fade ile girer; fold altındaysa TBT/Lighthouse'a etkisi 0). " +
+        "Off = çizim biter bitmez kurulur — sadece hero gibi anında görünen " +
+        "yerlerde gerekli",
     }),
   },
   options: {
