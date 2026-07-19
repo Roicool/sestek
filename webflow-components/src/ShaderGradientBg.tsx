@@ -261,6 +261,12 @@ export function ShaderGradientBg({
     pixelDensity: safePixelDensity,
     pointerEvents: "none" as const,
     fov: 45,
+    /* Kütüphanenin kendi lazyLoad'ı TOGGLE'dır: section viewport'tan çıkınca
+     * canvas'ı unmount eder, girince yeniden kurar — her girişte shader
+     * yeniden derlenir ve animasyon saati sıfırlanır (görünür "atlama").
+     * Lazy'liği zaten dışarıda tek seferlik yapıyoruz (useNearViewport,
+     * 300px, disconnect) — içerideki kapalı: canvas bir kez kurulur, kalır. */
+    lazyLoad: false,
   };
 
   /* ShaderGradient bazı prop'ları canlı güncellemez — herhangi bir ayar
