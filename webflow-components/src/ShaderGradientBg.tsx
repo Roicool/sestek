@@ -1,17 +1,21 @@
 /*!
  * ShaderGradientBg — Sestek shader-gradient background for Webflow.
  *
- * Wraps @shadergradient/react (three.js is bundled inside the package) with:
+ * Wraps @shadergradient/react (three.js bundled in the package) with:
  *   • lazy-mount: the WebGL canvas + shader chunks load only when the section
  *     nears the viewport (rootMargin 300px) — zero cost on initial page load
- *   • prefers-reduced-motion: renders a single static frame, no animation
- *   • Sestek presets: brand-coloured scenes tuned per gradient type, with a
- *     Custom mode that exposes every knob to the Designer
- *   • CSS-gradient fallback: shown while the shader loads and wherever WebGL
- *     is unavailable, built from the same three colours
+ *   • soft Sestek pastel presets (Mist/Water/Silk/Halo) + a vivid Deep
+ *     variant + fully Custom mode
+ *   • colours ALWAYS win: Color 1-3 override the preset's palette whenever a
+ *     valid hex is entered; left empty, the preset's own palette is used
+ *   • prop changes force a clean remount (keyed) so the scene reliably
+ *     reflects Designer edits — ShaderGradient does not hot-update all props
+ *   • prefers-reduced-motion: renders a single static frame
+ *   • CSS-gradient fallback while loading / without WebGL, from the same
+ *     effective colours
  *
- * The component fills its parent (100% × 100%). Give the wrapper div in
- * Webflow a size, or use the minHeight prop as a floor.
+ * Fills its parent (100% × 100%); size the wrapper in Webflow or use the
+ * minHeight prop as a floor.
  */
 
 import * as React from "react";
@@ -42,11 +46,32 @@ export interface ShaderGradientBgProps {
   minHeight?: number;
 }
 
+/* "#abc" / "abc123" / "#AABBCC" → "#aabbcc"; geçersiz/boş → null */
+function normalizeHex(v: string | undefined | null): string | null {
+  if (!v) return null;
+  const t = v.trim().replace(/^#/, "");
+  if (/^[0-9a-f]{6}$/i.test(t)) return "#" + t.toLowerCase();
+  if (/^[0-9a-f]{3}$/i.test(t)) {
+    return (
+      "#" +
+      t
+        .toLowerCase()
+        .split("")
+        .map((c) => c + c)
+        .join("")
+    );
+  }
+  return null;
+}
+
 /* Scene values tuned per preset.
  * "Soft *" ailesi: yumuşatılmış Sestek pastelleri, düşük strength/density,
  * yavaş hız, yüksek brightness → minimal ve soft görünüm (açık temaya uygun).
- * "Sestek Deep": koyu section'lar için canlı/derin varyant. */
+ * "Sestek Deep": koyu section'lar için canlı/derin varyant.
+ * Not: lightType hep "3d" — "env" modu dış HDR texture ister, Webflow
+ * canvas'ında güvenilir değildir. */
 const SOFT = {
+  shader: "defaults",
   uFrequency: 5.5,
   positionX: -1.4,
   positionY: 0,
@@ -61,21 +86,29 @@ const SOFT = {
   lightType: "3d",
   envPreset: "city",
   reflection: 0.1,
-  brightness: 1.6,
+  wireframe: false,
+  brightness: 1.2,
 };
 
-const PRESETS: Record<string, Record<string, unknown>> = {
+type Scene = Record<string, unknown> & {
+  color1: string;
+  color2: string;
+  color3: string;
+  uSpeed: number;
+};
+
+const PRESETS: Record<string, Scene> = {
   "Soft Mist": {
     /* en hafif: nefes alan pastel sis */
     ...SOFT,
     type: "plane",
-    color1: "#b8f4ee",
-    color2: "#cdcee9",
-    color3: "#f9c2de",
+    color1: "#9fe8e0",
+    color2: "#b4b6df",
+    color3: "#f7abd1",
     uSpeed: 0.08,
     uStrength: 0.9,
     uDensity: 1.0,
-    brightness: 1.8,
+    brightness: 1.25,
   },
   "Soft Water": {
     /* yumuşak su yüzeyi — pastel turkuaz ağırlıklı */
@@ -99,10 +132,11 @@ const PRESETS: Record<string, Record<string, unknown>> = {
     uStrength: 1.2,
     uDensity: 0.8,
     rotationZ: 35,
-    brightness: 1.7,
+    brightness: 1.25,
   },
   "Soft Halo": {
     /* kürede sakin pastel ışıltı */
+    ...SOFT,
     type: "sphere",
     color1: "#f489c1",
     color2: "#a7a9d6",
@@ -110,22 +144,16 @@ const PRESETS: Record<string, Record<string, unknown>> = {
     uSpeed: 0.1,
     uStrength: 0.25,
     uDensity: 0.7,
-    uFrequency: 5.5,
     uAmplitude: 2.4,
     positionX: -0.1,
-    positionY: 0,
-    positionZ: 0,
-    rotationX: 0,
     rotationY: 130,
     rotationZ: 70,
     cAzimuthAngle: 270,
     cPolarAngle: 180,
     cDistance: 0.5,
     cameraZoom: 15.1,
-    lightType: "env",
-    envPreset: "city",
     reflection: 0.35,
-    brightness: 1.3,
+    brightness: 1.1,
   },
   "Sestek Deep": {
     /* koyu section'lar için canlı marka varyantı */
@@ -137,7 +165,6 @@ const PRESETS: Record<string, Record<string, unknown>> = {
     uSpeed: 0.15,
     uStrength: 2.4,
     uDensity: 1.4,
-    cPolarAngle: 95,
     cDistance: 3.4,
     brightness: 1.1,
   },
@@ -156,7 +183,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /* Mount the heavy shader only once the wrapper nears the viewport. */
-function useNearViewport(ref: React.RefObject<HTMLElement | null>): boolean {
+function useNearViewport(ref: React.RefObject<HTMLDivElement | null>): boolean {
   const [near, setNear] = React.useState(false);
   React.useEffect(() => {
     const el = ref.current;
@@ -183,9 +210,9 @@ function useNearViewport(ref: React.RefObject<HTMLElement | null>): boolean {
 export function ShaderGradientBg({
   preset = "Soft Mist",
   gradientType = "waterPlane",
-  color1 = "#8fe8de",
-  color2 = "#a7a9d6",
-  color3 = "#f489c1",
+  color1 = "",
+  color2 = "",
+  color3 = "",
   speed = 1,
   grain = false,
   brightness = 0,
@@ -197,19 +224,32 @@ export function ShaderGradientBg({
   const reduced = usePrefersReducedMotion();
   const near = useNearViewport(ref);
 
-  const scene = PRESETS[preset] ?? {
+  /* 1) Sahne: preset motion/kamera değerleri (Custom → Soft Water tabanı +
+   *    seçilen tür). 2) Renkler: geçerli hex girilen her prop, preset
+   *    rengini ezer — hangi preset seçili olursa olsun. */
+  const base = PRESETS[preset];
+  const scene: Scene = base ?? {
     ...PRESETS["Soft Water"],
-    type: gradientType,
-    color1,
-    color2,
-    color3,
+    type: ["plane", "sphere", "waterPlane"].includes(gradientType)
+      ? gradientType
+      : "waterPlane",
   };
+
+  const c1 = normalizeHex(color1) ?? scene.color1;
+  const c2 = normalizeHex(color2) ?? scene.color2;
+  const c3 = normalizeHex(color3) ?? scene.color3;
+
+  const safeSpeed = Math.max(0, Math.min(speed, 10));
+  const safePixelDensity = Math.max(0.5, Math.min(pixelDensity, 2));
 
   const gradient = {
     control: "props",
     ...scene,
+    color1: c1,
+    color2: c2,
+    color3: c3,
     animate: animate && !reduced ? "on" : "off",
-    uSpeed: (scene.uSpeed as number) * speed,
+    uSpeed: scene.uSpeed * safeSpeed,
     grain: grain ? "on" : "off",
     /* 0 = preset'in kendi brightness'ı; >0 girilirse override */
     ...(brightness > 0 ? { brightness } : {}),
@@ -218,16 +258,27 @@ export function ShaderGradientBg({
 
   const canvas = {
     style: { position: "absolute", inset: 0, width: "100%", height: "100%" },
-    pixelDensity,
+    pixelDensity: safePixelDensity,
     pointerEvents: "none" as const,
-    /* Extra guard inside the package on top of our own observer */
-    lazyLoad: true,
-    rootMargin: "300px",
+    fov: 45,
   };
 
-  const c1 = (scene.color1 as string) ?? color1;
-  const c2 = (scene.color2 as string) ?? color2;
-  const c3 = (scene.color3 as string) ?? color3;
+  /* ShaderGradient bazı prop'ları canlı güncellemez — herhangi bir ayar
+   * değişiminde temiz bir remount, sahnenin Designer'daki düzenlemeyi
+   * güvenilir şekilde yansıtmasını garanti eder. */
+  const sceneKey = [
+    preset,
+    scene.type,
+    c1,
+    c2,
+    c3,
+    safeSpeed,
+    grain,
+    brightness,
+    animate,
+    reduced,
+    safePixelDensity,
+  ].join("|");
 
   return (
     <div
@@ -240,22 +291,22 @@ export function ShaderGradientBg({
         overflow: "hidden",
       }}
     >
-      {/* CSS fallback: visible until the shader paints, and wherever WebGL is unavailable */}
+      {/* CSS fallback: shader yüklenene dek ve WebGL olmayan cihazlarda —
+          efektif renklerden üretilir, geçiş yumuşak olur */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
           background:
-            `radial-gradient(120% 120% at 0% 0%, ${c1} 0%, transparent 55%),` +
-            `radial-gradient(120% 120% at 100% 0%, ${c2} 0%, transparent 55%),` +
-            `radial-gradient(140% 140% at 50% 100%, ${c3} 0%, transparent 60%)`,
-          filter: "saturate(1.1)",
+            `radial-gradient(120% 120% at 15% 20%, ${c1} 0%, transparent 55%),` +
+            `radial-gradient(120% 120% at 85% 25%, ${c2} 0%, transparent 55%),` +
+            `radial-gradient(140% 140% at 50% 95%, ${c3} 0%, transparent 60%)`,
         }}
       />
       {near && (
         <React.Suspense fallback={null}>
-          <LazyGradient canvas={canvas} gradient={gradient} />
+          <LazyGradient key={sceneKey} canvas={canvas} gradient={gradient} />
         </React.Suspense>
       )}
     </div>

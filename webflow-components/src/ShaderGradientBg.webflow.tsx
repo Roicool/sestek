@@ -5,9 +5,10 @@ import { ShaderGradientBg } from "./ShaderGradientBg";
 export default declareComponent(ShaderGradientBg, {
   name: "Shader Gradient BG",
   description:
-    "Animated WebGL shader-gradient background (Sestek brand presets). " +
-    "Fills its parent element; loads lazily near the viewport and respects " +
-    "prefers-reduced-motion.",
+    "Animated 3D shader-gradient background (ShaderGradient/three.js). Soft " +
+    "Sestek pastel presets; Color 1-3 override the preset palette on ANY " +
+    "preset when filled. Lazy near the viewport, respects " +
+    "prefers-reduced-motion, CSS fallback without WebGL. Fills its parent.",
   group: "Sestek",
   props: {
     preset: props.Variant({
@@ -17,7 +18,7 @@ export default declareComponent(ShaderGradientBg, {
       tooltip:
         "Soft Mist: nefes alan pastel sis · Soft Water: yumuşak su yüzeyi · " +
         "Soft Silk: yavaş çapraz akış · Soft Halo: kürede sakin ışıltı · " +
-        "Sestek Deep: koyu section'lar için canlı · Custom: tür + renkler aşağıdan",
+        "Sestek Deep: koyu section'lar için canlı · Custom: türü aşağıdan seç",
     }),
     gradientType: props.Variant({
       name: "Type (Custom)",
@@ -27,20 +28,24 @@ export default declareComponent(ShaderGradientBg, {
       tooltip: "Sadece Preset = Custom iken kullanılır",
     }),
     color1: props.Text({
-      name: "Color 1 (Custom)",
-      group: "Custom",
-      defaultValue: "#8fe8de",
-      tooltip: "Hex renk — sadece Preset = Custom iken kullanılır",
+      name: "Color 1",
+      group: "Colors",
+      defaultValue: "",
+      tooltip:
+        "Hex renk (örn. #8fe8de). BOŞ bırak = preset'in kendi rengi; " +
+        "doldurursan HER preset'te preset rengini ezer",
     }),
     color2: props.Text({
-      name: "Color 2 (Custom)",
-      group: "Custom",
-      defaultValue: "#a7a9d6",
+      name: "Color 2",
+      group: "Colors",
+      defaultValue: "",
+      tooltip: "Hex renk — boş = preset rengi",
     }),
     color3: props.Text({
-      name: "Color 3 (Custom)",
-      group: "Custom",
-      defaultValue: "#f489c1",
+      name: "Color 3",
+      group: "Colors",
+      defaultValue: "",
+      tooltip: "Hex renk — boş = preset rengi",
     }),
     speed: props.Number({
       name: "Speed",
@@ -48,7 +53,7 @@ export default declareComponent(ShaderGradientBg, {
       min: 0,
       max: 5,
       decimals: 2,
-      tooltip: "Animasyon hız çarpanı (1 = preset hızı)",
+      tooltip: "Animasyon hız çarpanı (1 = preset hızı, 0 = durgun)",
     }),
     grain: props.Boolean({
       name: "Grain",
