@@ -1,0 +1,35 @@
+/*!
+ * stack-panels-2.css v2.0.0
+ * Drives: js/components/stack-panels-2.js
+ *
+ * v1 CSS'inin (stack-panels.css) yerine geçer — geometri + karartma katmanı.
+ * Panellerin görsel tasarımı (background, radius, padding) Designer'dan.
+ * https://github.com/roicool/sestek
+ */
+
+[data-stack-panels] {
+  position: relative;
+}
+
+/* Her panel OPAK bir katman olmalı: pinliyken sonraki panel üzerine kayar,
+   kendi solid background'u yoksa arkası görünür. Yükseklik panelin kendi
+   CSS'inden gelir — 100vh'a zorlanmaz; uzun paneller fake-scroll alır. */
+[data-stack-panels] [data-sp-panel] {
+  position: relative;
+  overflow: hidden;
+  will-change: transform, opacity, filter;
+  transform-origin: center center;
+  z-index: 1;
+}
+
+/* JS'in enjekte ettiği karartma katmanı — RECEDE fazında oranla koyulaşır.
+   Filter/opacity değil overlay: panel içeriği kararırken keskin kalır. */
+.stack-panels__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: #0c0c10;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}

@@ -715,6 +715,8 @@ DOM yapısı:
 | `css/components/heading-shine.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine.css` |
 | `js/components/sticky-stack.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-stack.js` |
 | `css/components/sticky-stack.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/sticky-stack.css` |
+| `js/components/stack-panels-2.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/stack-panels-2.js` |
+| `css/components/stack-panels-2.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/stack-panels-2.css` |
 | `css/components/heading-shine-rte.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine-rte.css` |
 | `js/components/heading-shine.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/heading-shine.js` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
@@ -1394,15 +1396,77 @@ Webflow `</body>` öncesi:
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
 
+### Stack Panels 2 (pin + dissolve, premium)
+
+`stack-panels.js`'in premium yeniden ele alınışı — **aynı desen** (panel
+pinlenir, sonraki üzerine kayar, alttaki küçülüp kaybolur) ve **birebir aynı
+DOM/attribute sözleşmesi**: script URL'ini değiştirmek yeterli, Webflow'da
+hiçbir şey ellenmiyor. Init adı da aynı (`Sestek.initStackPanels`).
+
+v1'in kusuru: dissolve, scale ile aynı anda opacity'yi 0.5'e düşürüyordu —
+küçülme daha başlamadan panel hayalete dönüyordu. v2'nin koreografisi üç
+net faz:
+
+- **HOLD** — panel ortada, tam okunur
+- **RECEDE** — küçülmenin TAMAMI opacity 1'de, gözle görülür: scale →
+  0.9, oranla koyulaşan karartma (overlay — içerik keskin kalır), hafif
+  desatürasyon ve yukarı toplanma
+- **VANISH** — son çeyrekte kısa, temiz buharlaşma (opacity → 0 + blur)
+
+Artı: gelen panel 0.98'de süzülüp pin konumuna "yerleşir" ve alttakine
+temas gölgesi düşürür.
+
+```html
+<!-- in <head> — v1 linklerinin yerine bunlar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/stack-panels-2.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/stack-panels-2.js" defer></script>
+```
+
+Webflow `</body>` öncesi (v1 ile aynı):
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initStackPanels();
+  });
+</script>
+```
+
+DOM (v1 ile birebir aynı): `[data-stack-panels] > [data-sp-panel]`
+(+ opsiyonel `[data-sp-inner]` uzun içerik için). Panellere min-height
+~100svh + **opak** background ver.
+
+Attribute'lar (root üzerinde, hepsi opsiyonel):
+
+| Attribute | Varsayılan | Ne yapar |
+|---|---|---|
+| `data-sp-hold` | `0.4` | Dissolve başlamadan tam okunur bekleme oranı |
+| `data-sp-scale` | `0.9` | RECEDE sonunda scale (v1'in 0.7'si fazla şiddetliydi) |
+| `data-sp-fade-portion` | `0.25` | VANISH fazının payı |
+| `data-sp-dim` | `0.35` | RECEDE karartma opaklığı (overlay) |
+| `data-sp-desat` | `0.9` | RECEDE saturate değeri (1 = kapalı) |
+| `data-sp-blur` | `6` | VANISH blur'u, px (0 = kapalı) |
+| `data-sp-lift` | `20` | RECEDE yukarı toplanma, px |
+| `data-sp-settle` | `0.98` | Gelen panelin süzülme scale'i (1 = kapalı) |
+| `data-sp-shadow` | `0.3` | Gelen panelin temas gölgesi (0 = kapalı) |
+| `data-sp-scrub` | `true` | ScrollTrigger scrub |
+| `data-sp-refresh-priority-start` | `0` | v1 ile aynı (PROJECT.md Kural 1) |
+
+(v1'in `data-sp-mid-fade`'i bilinçli olarak yok — erken şeffaflaşma tam da
+düzeltilen kusurdu. Tall-panel fake-scroll, pin-blocker guard'ı ve
+reduced-motion v1'den aynen taşındı.)
+
 ### Sticky Stack
 
-Premium "stacking panels" — **küçülen panel görünür kalır.** Sonraki panel
-üzerine kayarken alttaki panel örtülme miktarıyla birebir orantılı küçülür,
-hafif yukarı toplanır ve kararır; hiçbir aşamada şeffaflaşmaz, fiziksel
-olarak örtülene kadar ekranda kalır. (`stack-panels.js`'in yeniden ele
-alınmış hali, ayrı dosya — eskisi opacity-dissolve kullanır ve küçülen panel
-yarı yolda kaybolur; eski sayfalar onunla çalışmaya devam eder, yenilerde
-bunu kullan.)
+Alternatif desen — **küçülen panel hiç kaybolmaz.** Sonraki panel üzerine
+kayarken alttaki örtülme miktarıyla orantılı küçülür ve kararır ama asla
+şeffaflaşmaz; fiziksel olarak örtülene kadar ekranda kalır (Linear/Stripe
+tarzı). Pin yerine native `position: sticky` kullanır. Kaybolan dissolve
+istiyorsan yukarıdaki **Stack Panels 2**'yi kullan.
 
 Pinleme native `position: sticky` — GSAP pin yok, pin-spacing yok, pinli
 bölüm kurallarıyla (hero/scroll-tabs) çatışmaz.
