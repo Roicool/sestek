@@ -1,0 +1,25 @@
+{
+  "name": "sestek-webflow-components",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sestek Webflow Code Components — React components importable into the Webflow Designer via DevLink",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "bundle": "webflow devlink bundle",
+    "publish:webflow": "webflow devlink import"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^8.18.0",
+    "@shadergradient/react": "^2.4.20",
+    "@webflow/data-types": "^2.0.0",
+    "@webflow/react": "^2.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.160.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@webflow/webflow-cli": "^2.2.0",
+    "typescript": "^5.6.0"
+  }
+}

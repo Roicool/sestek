@@ -1,0 +1,16 @@
+{
+  "library": {
+    "name": "Sestek Code Components",
+    "description": "Sestek marka renkleriyle hazır, Designer'dan ayarlanabilir React componentleri (ShaderGradient arka plan vb.)",
+    "components": [
+      "src/**/*.webflow.tsx"
+    ]
+  },
+  "telemetry": {
+    "global": {
+      "allowTelemetry": true,
+      "lastPrompted": 1784458990847,
+      "version": "2.2.0"
+    }
+  }
+}
