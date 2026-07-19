@@ -1,32 +1,26 @@
 /*!
- * heading-shine.css v1.5.0
- * Animated multi-colour "shine" on a heading — a radial glow of Sestek's
- * brand colours (turquoise → lilac → magenta) drifting across the text and
- * fading back into the element's own colour. Pure CSS, no JS.
+ * heading-shine.css v2.0.0
+ * Soft multi-colour "shine" sweep on a heading — a gentle band of Sestek's
+ * brand colours (turquoise → lilac → magenta) glides across the text from
+ * left to right, then rests before the next pass. Pure CSS, no JS.
  *
- * The glow is masked onto the text (background-clip: text); everywhere the
- * gradient is currentColor the heading keeps whatever colour you set in
- * Designer, so only the moving glow is tinted.
+ * v2 rewrite: v1'in köşeye çapalı, neredeyse kıpırdamayan radial parlaması
+ * yerine gerçek bir süpürme. İki background katmanı text'e clip'lenir:
+ *   1. taban — currentColor (başlık Designer'daki rengini AYNEN korur)
+ *   2. ışık bandı — yumuşak kenarlı renk şeridi; her döngüde metnin
+ *      üzerinden bir kez geçer, kalan sürede metin dışında bekler
+ * Bant beklerken başlık tamamen normal görünür — "leke" kalmaz.
  *
  * Tone options, chosen by the attribute value:
- *   data-heading-mask="brand"        vivid brand colours (turquoise/lilac/magenta)
- *   data-heading-mask="deep"         the same hues, deeper / less neon
- *   data-heading-mask="display"      vivid, tuned for VERY LARGE type (display-1,
- *                                    hero headings): a bigger, softer glow that
- *                                    sweeps diagonally across the whole heading
- *   data-heading-mask="display-deep" the display sweep in the deeper tone
- *
- * Why a separate "display" mode?
- *   The brand/deep glow is calibrated for body-scale headings — its colour
- *   stops (%) and 200% background travel make a small highlight that reads well
- *   on an h2/h3. On a display-1 (huge font-size) that same glow shrinks to a
- *   faint corner blob and the sweep barely moves. The display modes widen the
- *   colour stops, enlarge the background so the highlight scales up with the
- *   type, and sweep corner-to-corner so the shine actually travels across the
- *   giant letters. Drop it on any large heading — including Webflow display
- *   classes like .display-1 / .display-2.
+ *   data-heading-mask="brand"        vivid brand colours — h2/h3 ölçeği
+ *   data-heading-mask="deep"         aynı renklerin derin/az neon hali
+ *   data-heading-mask="display"      VERY LARGE type (display-1, hero):
+ *                                    daha geniş bant + daha yavaş süpürme,
+ *                                    dev harfleri uçtan uca kateder
+ *   data-heading-mask="display-deep" display süpürmesi, derin tonlarda
  *
  * Add the attribute to any text element (h1, h2, a span inside a heading…).
+ * Çok satırlı başlıklarda da çalışır (bant, elementin tüm kutusunu tarar).
  *
  * https://github.com/roicool/sestek
  */
@@ -35,73 +29,128 @@
 [data-heading-mask="deep"],
 [data-heading-mask="display"],
 [data-heading-mask="display-deep"] {
+  /* descender'lar (g, y, p) clip'te kırpılmasın */
   padding-block: 0.1em;
   margin-block: -0.1em;
+
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: sestek-heading-shine 5s infinite linear;
+
+  /* Katman 1 (üstte): yumuşak kenarlı ışık bandı — bant dışı transparan,
+   * alttaki currentColor tabanı gösterir.
+   * Katman 2 (altta): düz currentColor — başlık kendi renginde kalır. */
+  background-image:
+    var(--heading-shine-band),
+    linear-gradient(currentColor, currentColor);
+  background-size:
+    300% 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  /* Bant başlangıçta sağda, görünmez park halinde */
+  background-position:
+    130% 0,
+    0 0;
+
+  animation: sestek-heading-shine 5.5s ease-in-out infinite;
 }
 
+/* ── Tonlar (bant tanımı) ─────────────────────────────────────────
+ * Kenarlar geniş geçişli → metalik parıltı değil, yumuşak bir ışık. */
+
 [data-heading-mask="brand"] {
-  background-image: radial-gradient(circle farthest-side at 0% 0%,
-    #00ffeb 5%,
-    #7f81ae 10%,
-    currentColor 20%);
+  --heading-shine-band: linear-gradient(
+    105deg,
+    transparent 40%,
+    #00d5c8 46%,
+    #7f81ae 50%,
+    #ec008c 54%,
+    transparent 60%
+  );
 }
 
 [data-heading-mask="deep"] {
-  background-image: radial-gradient(circle farthest-side at 0% 0%,
-    #0e9488 5%,
-    #565978 10%,
-    currentColor 20%);
+  --heading-shine-band: linear-gradient(
+    105deg,
+    transparent 40%,
+    #0e9488 46%,
+    #565978 50%,
+    #8f0a58 54%,
+    transparent 60%
+  );
 }
 
-/* ── Display / large-type mode ─────────────────────────────────────────
- * Same premium radial glow as brand/deep, just scaled up for very large type
- * (display-1, hero headings): a wider glow (farthest-corner + wider colour
- * stops) on a 300% background so the highlight grows with the font-size, and
- * a slower corner-to-corner drift so the shine travels across the giant
- * letters instead of sitting as a faint corner blob. */
+/* ── Display / large-type mode ────────────────────────────────────
+ * Dev tipografide dar bant iğreti durur: bant genişletilir (stops 30→70),
+ * background büyütülür ve süpürme yavaşlatılır — ışık, koca harflerin
+ * üzerinden dolgun ve ağır bir dalga gibi geçer. */
+
 [data-heading-mask="display"],
 [data-heading-mask="display-deep"] {
-  background-size: 300% 300%;
+  background-size:
+    350% 100%,
+    100% 100%;
   animation-name: sestek-heading-shine-display;
-  animation-duration: 7s;
+  animation-duration: 7.5s;
 }
 
 [data-heading-mask="display"] {
-  background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #00ffeb 16%,
-    #7f81ae 40%,
-    currentColor 74%);
+  --heading-shine-band: linear-gradient(
+    105deg,
+    transparent 30%,
+    #00d5c8 42%,
+    #7f81ae 50%,
+    #ec008c 58%,
+    transparent 70%
+  );
 }
 
 [data-heading-mask="display-deep"] {
-  background-image: radial-gradient(circle farthest-corner at 0% 0%,
-    #0e9488 16%,
-    #565978 40%,
-    currentColor 74%);
+  --heading-shine-band: linear-gradient(
+    105deg,
+    transparent 30%,
+    #0e9488 42%,
+    #565978 50%,
+    #8f0a58 58%,
+    transparent 70%
+  );
 }
+
+/* ── Süpürme ──────────────────────────────────────────────────────
+ * Döngünün ilk ~%40'ında bant soldan sağa metni kateder (position
+ * 130% → -30%: taşmalı uçlar bandın tamamen gizli başlayıp tamamen
+ * çıkmasını garantiler), kalan sürede ekran dışında dinlenir. */
 
 @keyframes sestek-heading-shine {
-  0%   { background-position: 0% 20%; }
-  50%  { background-position: 15% 0%; }
-  100% { background-position: 0% 20%; }
+  0% {
+    background-position: 130% 0, 0 0;
+  }
+  40% {
+    background-position: -30% 0, 0 0;
+  }
+  100% {
+    background-position: -30% 0, 0 0;
+  }
 }
 
-/* Display mode: a wider corner-to-corner drift so the glow crosses the full
- * heading (bottom-left → top-right and back) and shimmers giant type end to end. */
 @keyframes sestek-heading-shine-display {
-  0%   { background-position: 0% 100%; }
-  50%  { background-position: 100% 0%; }
-  100% { background-position: 0% 100%; }
+  0% {
+    background-position: 135% 0, 0 0;
+  }
+  45% {
+    background-position: -35% 0, 0 0;
+  }
+  100% {
+    background-position: -35% 0, 0 0;
+  }
 }
 
+/* Reduced motion: bant park halinde kalır → başlık tamamen normal görünür */
 @media (prefers-reduced-motion: reduce) {
   [data-heading-mask="brand"],
   [data-heading-mask="deep"],
   [data-heading-mask="display"],
-  [data-heading-mask="display-deep"] { animation: none; }
+  [data-heading-mask="display-deep"] {
+    animation: none;
+  }
 }

@@ -50,7 +50,7 @@ js/
   animations/  height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 css/
   core/        nav.css, nav-full.css
-  components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css,
+  components/  hero.css, hero-slider.css, marquee.css, scroll-tabs.css, video-modal.css, heading-shine.css,
                video-inline.css, card-marquee.css, section-title.css, text-rotator.css,
                story.css, accordion.css, demo-form.css
   effects/     grain.css, btn-glow.css, img-hover.css
@@ -712,6 +712,7 @@ DOM yapısı:
 | `css/components/hover-list.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hover-list.css` |
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
+| `css/components/heading-shine.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine.css` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
 | `css/components/video-inline.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-inline.css` |
 | `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
@@ -1388,6 +1389,41 @@ Webflow `</body>` öncesi:
   davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
+
+### Heading Shine
+
+Başlıkların üzerinden **soldan sağa süzülen yumuşak, çok renkli bir ışık
+bandı** — turkuaz → lila → magenta. Saf CSS, JS yok, init gerekmez. Bant her
+döngüde metni bir kez kateder, kalan sürede metin dışında bekler — beklerken
+başlık Designer'daki rengiyle tamamen normal görünür (v1'deki "köşede sabit
+leke" davranışı v2'de tamamen kaldırıldı).
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine.css">
+```
+
+Kullanım — herhangi bir metin elementine attribute (h1, h2, heading içindeki
+span…):
+
+```html
+<h1 data-heading-mask="display">Conversational AI</h1>
+```
+
+Attribute değerleri:
+
+- **`brand`** — canlı marka renkleri; normal ölçekli h2/h3 başlıklar.
+- **`deep`** — aynı renklerin derin/az neon hali.
+- **`display`** — çok büyük tipografi (display-1, hero): daha geniş bant +
+  daha yavaş süpürme, dev harfleri uçtan uca dolgun bir dalga gibi kateder.
+- **`display-deep`** — display süpürmesi, derin tonlarda.
+
+Notlar:
+
+- Başlık kendi rengini korur — bant geçerken bile metnin geri kalanı normal
+  renktedir; renk yalnızca hareketli banttadır.
+- Çok satırlı başlıklarda da çalışır.
+- `prefers-reduced-motion`: animasyon durur, başlık tamamen normal görünür.
 
 ### Video Modal
 
