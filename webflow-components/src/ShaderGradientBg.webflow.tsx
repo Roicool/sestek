@@ -7,8 +7,8 @@ export default declareComponent(ShaderGradientBg, {
   description:
     "Animated 3D shader-gradient background (ShaderGradient/three.js). Soft " +
     "Sestek pastel presets; Color 1-3 override the preset palette on ANY " +
-    "preset when filled. Lazy near the viewport, respects " +
-    "prefers-reduced-motion, CSS fallback without WebGL. Fills its parent.",
+    "preset when filled. Mounts eagerly with a soft fade-in (optional lazy), " +
+    "respects prefers-reduced-motion, CSS fallback without WebGL. Fills its parent.",
   group: "Sestek",
   props: {
     preset: props.Variant({
@@ -91,6 +91,16 @@ export default declareComponent(ShaderGradientBg, {
       min: 0,
       max: 2000,
       tooltip: "Parent'ın yüksekliği yoksa taban yükseklik; 0 = tamamen parent'a uy",
+    }),
+    lazy: props.Boolean({
+      name: "Lazy load",
+      defaultValue: false,
+      trueLabel: "On",
+      falseLabel: "Off",
+      tooltip:
+        "Off (önerilen) = shader sayfa yüklenirken kurulur, fade ile girer. " +
+        "On = viewport'a yaklaşınca kurulur — pinli/sticky section'ların " +
+        "olduğu sayfalarda kurulum anı görünür 'atlama' yapabilir",
     }),
   },
   options: {

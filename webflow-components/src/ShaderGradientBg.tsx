@@ -56,6 +56,7 @@ export interface ShaderGradientBgProps {
   animate?: boolean;
   pixelDensity?: number;
   minHeight?: number;
+  lazy?: boolean;
 }
 
 /* "#abc" / "abc123" / "#AABBCC" → "#aabbcc"; geçersiz/boş → null */
@@ -194,9 +195,15 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-/* Mount the heavy shader only once the wrapper nears the viewport. */
-function useNearViewport(ref: React.RefObject<HTMLDivElement | null>): boolean {
-  const [near, setNear] = React.useState(false);
+/* Mount the heavy shader only once the wrapper nears the viewport.
+ * enabled=false → hemen kur (varsayılan): pinli/transformlu section'lar
+ * scroll geometrisini değiştirdiğinde IntersectionObserver'ın tetiklenme
+ * anı kayabiliyor ve kurulum tam kullanıcı bakarken gerçekleşiyordu. */
+function useNearViewport(
+  ref: React.RefObject<HTMLDivElement | null>,
+  enabled: boolean
+): boolean {
+  const [near, setNear] = React.useState(!enabled);
   React.useEffect(() => {
     const el = ref.current;
     if (!el || near) return;
@@ -233,10 +240,11 @@ export function ShaderGradientBg({
   animate = true,
   pixelDensity = 1,
   minHeight = 480,
+  lazy = false,
 }: ShaderGradientBgProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
-  const near = useNearViewport(ref);
+  const near = useNearViewport(ref, lazy);
 
   /* 1) Sahne: preset motion/kamera değerleri (Custom → Soft Water tabanı +
    *    seçilen tür). 2) Renkler: geçerli hex girilen her prop, preset
