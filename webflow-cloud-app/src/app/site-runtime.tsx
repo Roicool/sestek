@@ -18,6 +18,7 @@ const CDN = "https://cdn.jsdelivr.net/gh/roicool/sestek@main";
 const SCRIPTS = [
   "https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js",
   `${CDN}/js/core/nav.js`,
+  `${CDN}/js/effects/link-underline.js`,
 ];
 
 function loadScript(src: string): Promise<void> {
@@ -81,28 +82,37 @@ function injectFooterLists(lists: Record<string, FooterLink[]>) {
   });
 }
 
+type SestekGlobal = {
+  Sestek?: { initNav?: () => void; initLinkUnderline?: () => void };
+};
+
 export default function SiteRuntime() {
   useEffect(() => {
     hideUnsupportedPlaceholders();
 
     let cancelled = false;
 
-    (async () => {
-      try {
-        for (const src of SCRIPTS) await loadScript(src);
-        if (cancelled) return;
-        (window as unknown as { Sestek?: { initNav?: () => void } }).Sestek?.initNav?.();
-      } catch (err) {
-        console.warn("[SiteRuntime]", err);
-      }
-    })();
+    const scriptsReady = (async () => {
+      for (const src of SCRIPTS) await loadScript(src);
+      if (cancelled) return;
+      const S = (window as unknown as SestekGlobal).Sestek;
+      S?.initNav?.();
+      S?.initLinkUnderline?.(); /* idempotent — guarded per link */
+    })().catch((err) => console.warn("[SiteRuntime]", err));
 
-    fetch(`${MOUNT}/api/footer-links`)
+    const listsReady = fetch(`${MOUNT}/api/footer-links`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!cancelled && data?.lists) injectFooterLists(data.lists);
       })
       .catch(() => {});
+
+    /* injecte edilen CMS linkleri de hover-underline alsın */
+    Promise.allSettled([scriptsReady, listsReady]).then(() => {
+      if (!cancelled) {
+        (window as unknown as SestekGlobal).Sestek?.initLinkUnderline?.();
+      }
+    });
 
     return () => {
       cancelled = true;

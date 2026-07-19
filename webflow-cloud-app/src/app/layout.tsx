@@ -18,10 +18,14 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>
-        {/* Navbar'ın site davranışı/görünümü CDN kütüphanesinden gelir */}
+        {/* Navbar davranışı/görünümü + link hover efekti CDN kütüphanesinden gelir */}
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/core/nav.css"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/link-underline.css"
         />
         <DevLinkProvider>
           <Navbar />

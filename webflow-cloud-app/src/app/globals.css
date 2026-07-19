@@ -111,3 +111,9 @@ code {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.85em;
 }
+
+/* DevLink export'unda eksik kalan tek utility (footer'da kullanılıyor) */
+.text-2xs {
+  font-size: 0.625rem;
+  line-height: 1.4;
+}
