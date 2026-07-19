@@ -4,7 +4,8 @@
     "description": "Sestek marka renkleriyle hazır, Designer'dan ayarlanabilir React componentleri (ShaderGradient arka plan vb.)",
     "components": [
       "src/**/*.webflow.tsx"
-    ]
+    ],
+    "id": "sestek-code-components"
   },
   "telemetry": {
     "global": {
