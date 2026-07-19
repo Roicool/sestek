@@ -2,6 +2,13 @@
  * sticky-stack.js v1.1.0
  *
  * Changelog
+ * v1.1.1 — sticky guard: root'un ancestor'larından birinde overflow:hidden
+ *          varsa position:sticky sessizce ölür (paneller üst üste binmez,
+ *          normal akışta kayar gider — Webflow page-wrapper'larının klasik
+ *          tuzağı). Component artık bunu kendisi teşhis eder ve hidden'ı
+ *          görsel olarak birebir aynı olan overflow:clip'e çevirip onarır
+ *          (console'a bilgi düşer). data-sticky-fix-overflow="false" ile
+ *          kapatılabilir; auto/scroll ancestor'ları ise yalnızca uyarılır.
  * v1.1.0 — premium depth pass:
  *   • incoming settle: gelen panel 0.97 scale'de süzülür, sticky çizgisine
  *     oturduğu anda 1'e "yerleşir" — kartın rafa oturma hissi
@@ -64,6 +71,8 @@
  *   data-sticky-shadow  gelen panelin alttakine düşürdüğü temas gölgesinin
  *                       opaklığı                           (default 0.35, 0 = off)
  *   data-sticky-desat   tam örtülen panelin saturate değeri (default 0.9, 1 = off)
+ *   data-sticky-fix-overflow  "false" → ancestor'lardaki overflow:hidden'ı
+ *                       clip'e çevirme onarımını kapat (default açık)
  *
  * Not: panellere ≥ ~90svh yükseklik ver — çok kısa panellerde "geliş" ve
  * "örtülme" fazları üst üste binip titreme yapabilir.
@@ -114,6 +123,31 @@
     var desat    = num(root, "data-sticky-desat", 0.9);
 
     var reduce = Sestek.util.prefersReducedMotion();
+
+    // ── Sticky guard ──────────────────────────────────────────────
+    // position:sticky, root ile scroller arasındaki HERHANGİ bir ancestor'da
+    // overflow:hidden/auto/scroll varsa o elemente "yapışmaya" çalışır — sayfa
+    // scroller'ı o olmadığı için paneller hiç yapışmaz, üst üste binme çalışmaz
+    // (Webflow page-wrapper'larının klasik overflow:hidden tuzağı).
+    // hidden → clip dönüşümü görsel olarak birebir aynıdır (ikisi de kırpar)
+    // ama clip scroll container OLUŞTURMAZ, sticky viewport'a bağlı kalır.
+    var fixOverflow = root.getAttribute("data-sticky-fix-overflow") !== "false";
+    for (var anc = root.parentElement; anc && anc !== global.document.documentElement; anc = anc.parentElement) {
+      var cs = global.getComputedStyle(anc);
+      ["overflow", "overflowX", "overflowY"].forEach(function (prop) {
+        var v = cs[prop];
+        if (v === "hidden") {
+          if (fixOverflow) {
+            anc.style[prop] = "clip";
+            console.info("[Sestek StickyStack] overflow:hidden → clip (sticky onarımı):", anc);
+          } else {
+            console.warn("[Sestek StickyStack] Ancestor'da overflow:hidden — sticky ÇALIŞMAZ, paneller üst üste binmez:", anc);
+          }
+        } else if (v === "auto" || v === "scroll") {
+          console.warn("[Sestek StickyStack] Ancestor bir scroll container (" + v + ") — sticky buna bağlanır; paneller beklediğin gibi binmeyebilir:", anc);
+        }
+      });
+    }
 
     /* px cinsinden sticky-top ölçümü — ScrollTrigger end'i ve peek hesabı
      * için CSS uzunluğunu ("8vh" vb.) piksele çevir. */
