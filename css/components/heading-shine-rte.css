@@ -1,0 +1,54 @@
+/*!
+ * heading-shine-rte.css v1.0.0
+ * CMS / Rich Text varyantı — attribute GEREKMEZ: sayfadaki her <h2> içindeki
+ * <b> / <strong> otomatik olarak brand tonunda shine süpürmesi alır. CMS
+ * template'lerinde editörün sadece bold yapması yeterlidir.
+ *
+ * REQUIRES: heading-shine.css (keyframe'ler oradan gelir) — bu dosyayı
+ * onunla BİRLİKTE, yalnızca istediğin sayfalarda (örn. blog template)
+ * yükle. Site genelinde her h2 bold'unu etkilemek istemiyorsan sayfa
+ * bazında ekle.
+ *
+ * Viewport'a girince süpürme için js/components/heading-shine.js'i de yükle
+ * (h2 bold'larını otomatik kapsar).
+ *
+ * https://github.com/roicool/sestek
+ */
+
+h2 b,
+h2 strong {
+  /* bold zaten görsel vurgu — font-weight'e dokunmuyoruz */
+  padding-block: 0.1em;
+  margin-block: -0.1em;
+
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  background-image:
+    linear-gradient(
+      105deg,
+      transparent 40%,
+      #00d5c8 46%,
+      #7f81ae 50%,
+      #ec008c 54%,
+      transparent 60%
+    ),
+    linear-gradient(currentColor, currentColor);
+  background-size:
+    300% 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    130% 0,
+    0 0;
+
+  animation: sestek-heading-shine 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  h2 b,
+  h2 strong {
+    animation: none;
+  }
+}

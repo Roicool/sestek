@@ -713,6 +713,8 @@ DOM yapısı:
 | `js/components/video-modal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-modal.js` |
 | `css/components/video-modal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-modal.css` |
 | `css/components/heading-shine.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine.css` |
+| `css/components/heading-shine-rte.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine-rte.css` |
+| `js/components/heading-shine.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/heading-shine.js` |
 | `js/components/video-inline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-inline.js` |
 | `css/components/video-inline.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-inline.css` |
 | `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
@@ -1424,6 +1426,47 @@ Notlar:
   renktedir; renk yalnızca hareketli banttadır.
 - Çok satırlı başlıklarda da çalışır.
 - `prefers-reduced-motion`: animasyon durur, başlık tamamen normal görünür.
+
+#### Viewport senkronu (önerilir)
+
+CSS tek başına sayfa yüklenince döngüye başlar — kullanıcı başlığa scroll
+ettiğinde bant döngünün ortasında/dinlenmede olabilir, süpürme kaçar.
+`heading-shine.js` bunu çözer: element viewport'a girene kadar animasyonu
+bekletir, **girdiği anda süpürmeyi sıfırdan başlatır** (her yeniden girişte
+tekrar), ekran dışındayken durdurur. Bağımlılık yok (GSAP gerekmez); JS
+yüklenmezse CSS'in kendi döngüsü aynen çalışır.
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/heading-shine.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initHeadingShine(); // [data-heading-mask] + h2 bold'larını bağlar
+  });
+</script>
+```
+
+#### CMS / Rich Text varyantı — `heading-shine-rte.css`
+
+CMS template'lerinde attribute veremezsin — bu ek dosya, sayfadaki her
+`<h2>` içindeki `<b>` / `<strong>`'a brand tonunda shine'ı **otomatik**
+uygular; editörün başlıkta bold yapması yeterli.
+
+```html
+<!-- heading-shine.css'ten SONRA, sadece istediğin sayfalarda (örn. blog template) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/heading-shine-rte.css">
+```
+
+- `heading-shine.css` zorunludur (keyframe'ler oradan gelir) — bu dosya tek
+  başına çalışmaz.
+- Site genelinde tüm h2 bold'larını etkilememek için sadece ilgili page
+  template'inin custom code'una ekle.
+- `heading-shine.js` bu bold'ları da otomatik kapsar — ekstra bir şey gerekmez.
 
 ### Video Modal
 
