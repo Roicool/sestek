@@ -1,7 +1,10 @@
 /*!
- * img-hover.js v1.2.0
+ * img-hover.js v1.2.1
  *
  * Changelog
+ * v1.2.1 — background-image çocuk elementte de yakalanır: görsel çoğu
+ *   Webflow yapısında [data-img-hover]'ın KENDİSİNDE değil, içindeki bir
+ *   div'in background'undadır. Artık önce frame, sonra çocuklar taranır.
  * v1.2.0 — iki gerçek sahada teşhis edilen kusur:
  *   • (hover: hover) → (any-hover: hover): (hover) BİRİNCİL girdiye bakar,
  *     fareli dokunmatik laptop'ları "touch" sanıp efekti HİÇ bağlamıyordu.
@@ -101,15 +104,24 @@
     }
   }
 
-  /* Zoom hedefini çöz: içinde <img>/<video> varsa o; yoksa frame'in kendisi
-   * bir background-image ise, onu kopyalayan mutlak konumlu bir katman enjekte
-   * edip onu zoom'la (Webflow "background image" bölümleri böyle çalışır). */
+  function hasBg(el) {
+    var v = global.getComputedStyle(el).backgroundImage;
+    return v && v !== "none" && v.indexOf("url(") !== -1;
+  }
+
+  /* Zoom hedefini çöz (öncelik sırası):
+   *   1. içindeki <img>/<video>
+   *   2. frame'in KENDİSİ background-image ise → kopyalayan katman enjekte et
+   *   3. bir ÇOCUK elementte background-image varsa → o elementi doğrudan
+   *      zoom hedefi yap (Webflow'da görsel çoğu zaman iç bir div'in
+   *      background'udur; frame sadece sarmalayıcıdır)
+   * Hiçbiri yoksa null → efekt bağlanmaz. */
   function resolveTarget(frame) {
     var media = frame.querySelector("img, video");
     if (media) return media;
 
-    var cs = global.getComputedStyle(frame);
-    if (cs.backgroundImage && cs.backgroundImage !== "none") {
+    if (hasBg(frame)) {
+      var cs = global.getComputedStyle(frame);
       var layer = global.document.createElement("div");
       layer.className = "img-hover__bg";
       layer.style.backgroundImage = cs.backgroundImage;
@@ -121,6 +133,12 @@
       frame.style.backgroundImage = "none";
       frame.insertBefore(layer, frame.firstChild);
       return layer;
+    }
+
+    /* Çocuklarda background-image ara — frame'i kaplayan ilk uygun eleman */
+    var kids = frame.querySelectorAll("*");
+    for (var i = 0; i < kids.length; i++) {
+      if (hasBg(kids[i])) return kids[i];
     }
     return null;
   }
