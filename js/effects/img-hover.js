@@ -1,5 +1,5 @@
 /*!
- * img-hover.js v1.3.0
+ * img-hover.js v1.3.1
  * Premium image hover for cards & blog links — NOT a plain CSS scale.
  * Four coordinated layers, all GSAP-scrubbed:
  *   • parallax zoom — the image eases up to `zoom` AND drifts toward the
@@ -10,6 +10,10 @@
  *     once per hover-in
  *   • tonal lift — the image rests slightly desaturated/dimmed and lifts to
  *     full colour on hover (editorial feel)
+ *
+ * v1.3.1: wrapper içinde birden fazla görsel varsa doğru olanı seçmek
+ * için data-img-hover-target eklendi — bu attribute'u taşıyan <img>/<video>
+ * hedeflenir; yoksa ilk <img>/<video> alınır (v1.0 davranışı).
  *
  * v1.3.0: v1.0.0 tabanı. Tek düzeltme — aynı <a> içinde birden fazla
  * [data-img-hover] varsa her frame kendi üzerinden dinler (v1.0'da hepsi
@@ -43,6 +47,11 @@
  *                               0 = off; auto-clamped so edges never show)
  *   data-img-hover-shine="false"  disable the light sweep
  *   data-img-hover-tone="false"   disable the tonal lift
+ *
+ * ── Attribute (on the <img>/<video> itself, optional) ────────────
+ *
+ *   data-img-hover-target       wrapper içinde birden fazla görsel varsa
+ *                               animasyonun hedefi olarak BUNU seç
  *
  * Touch devices (no hover) are skipped entirely; prefers-reduced-motion
  * keeps the resting tone but disables all motion.
@@ -82,7 +91,11 @@
     }
     frame._imgHoverInit = true;
 
-    var img = frame.querySelector("img, video");
+    /* v1.3.1: birden fazla görsel varsa data-img-hover-target ile elle
+     * seçilir; yoksa ilk <img>/<video> (v1.0 davranışı). */
+    var img =
+      frame.querySelector("img[data-img-hover-target], video[data-img-hover-target]") ||
+      frame.querySelector("img, video");
     if (!img) {
       dbg("frame#" + index, "SKIP — içinde <img>/<video> yok", frame);
       return;
@@ -100,6 +113,9 @@
       trigger: trigger === frame ? "frame (kendisi)" : "<a> atası",
       sharedAnchor: !!shared,
       img: img.tagName.toLowerCase(),
+      imgSrc: (img.currentSrc || img.src || "").split("/").pop() || "(yok)",
+      explicitTarget: img.hasAttribute("data-img-hover-target"),
+      imgCountInFrame: frame.querySelectorAll("img, video").length,
       class: frame.className || "(yok)"
     });
 
@@ -188,7 +204,7 @@
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var frames = global.document.querySelectorAll(selector || "[data-img-hover]");
 
-    dbg("init v1.3.0", {
+    dbg("init v1.3.1", {
       frames: frames.length,
       "hover:hover": hoverOk,
       reducedMotion: !!reduce
