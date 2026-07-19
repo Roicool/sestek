@@ -2597,24 +2597,38 @@ Webflow `</body>` öncesi:
 </script>
 ```
 
-DOM yapısı:
+DOM yapısı (link ŞART DEĞİL — her görsel bağımsız çalışır):
+
+```html
+<div data-img-hover class="thumb">
+  <img src="cover.jpg" alt="">
+</div>
+```
+
+Varsayılan olarak hover, `[data-img-hover]` çerçevesinin **kendisi** üzerinden
+dinlenir; her görsel bağımsızdır. Tüm kartın (başlık dahil) tetiklemesini
+istersen kartın kendi sarmalayıcısını `data-img-hover-trigger` ile işaret et
+— **paylaşılan bir liste linkini değil** (tek `<a>` içinde birden çok görsel
+varsa hepsi birden tetiklenirdi, v1.1 bunu düzeltti):
 
 ```html
 <a href="/blog/yazi" class="blog-card">
-  <div data-img-hover class="blog-card__thumb">
+  <div data-img-hover data-img-hover-trigger="link" class="blog-card__thumb">
     <img src="cover.jpg" alt="">
   </div>
   <h3>Yazı başlığı</h3>
 </a>
 ```
 
-Hover, `[data-img-hover]`'ın en yakın `<a>` atası üzerinden dinlenir (yoksa
-elementin kendisi) — kartın herhangi bir yerine gelince görsel canlanır.
 Sheen `<span>`'i JS otomatik enjekte eder, Webflow'da eklemezsin.
 
 Attribute'lar (hepsi `[data-img-hover]` üzerinde):
 
 - **`data-img-hover`** — zorunlu.
+- **`data-img-hover-trigger`** — hover'ı dinleyecek eleman: **yok (varsayılan)**
+  → çerçevenin kendisi (bağımsız, link gerektirmez); `"link"` → en yakın `<a>`
+  atası; `".blog-card"` gibi bir **selector** → en yakın eşleşen ata (tüm
+  kartı tetikler).
 - **`data-img-hover-zoom="1.06"`** — maksimum scale (varsayılan 1.06).
 - **`data-img-hover-tilt="3.5"`** — maksimum yatma derecesi (varsayılan 3.5,
   `0` = kapalı).
