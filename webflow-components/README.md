@@ -38,6 +38,24 @@ npx webflow devlink import      # değişiklikleri yeniden yayınlar
 Sadece yerel build almak için (yayınlamadan): `npx webflow devlink bundle`
 (çıktı `dist/`, git'e girmez).
 
+## Otomatik yayın (CI)
+
+`.github/workflows/webflow-components-publish.yml` — `webflow-components/`
+klasörüne dokunan her **main** push'unda library'yi otomatik yayınlar.
+Aktifleşmesi için iki tek seferlik adım:
+
+1. **İlk yayını lokalde yap** (yukarıdaki "Yayınlama" bölümü) ve CLI'ın
+   `webflow.json`'a yazdığı `library.id` alanını **commit'le** — CI,
+   interaktif soru soramadığı için id'nin hazır olmasına ihtiyaç duyar.
+2. **Workspace API token'ı ekle:** Webflow dashboard → Workspace settings →
+   API access → token oluştur; GitHub repo → Settings → Secrets and
+   variables → Actions → `WEBFLOW_API_TOKEN` adıyla kaydet.
+
+İkisi tamamlanana kadar workflow uyarı verip sessizce geçer (build'i
+kırmaz). Sonrasında akış tamamen otomatiktir: component'i düzenle → main'e
+push'la → library workspace'te güncellenir → Designer'da library güncellemesi
+olarak görünür.
+
 ## Shader Gradient BG — Designer prop'ları
 
 | Prop | Tip | Varsayılan | Açıklama |

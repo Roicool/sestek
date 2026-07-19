@@ -1,0 +1,53 @@
+name: Publish Webflow Code Components
+
+# webflow-components/ değişen her main push'unda component library'yi
+# Webflow workspace'ine otomatik yayınlar (webflow devlink import).
+#
+# Çalışması için iki ön koşul var — ikisi de yoksa job uyarı verip sessizce
+# geçer, pipeline'ı kırmaz:
+#   1. İlk yayın lokalde interaktif yapılmış ve CLI'ın webflow.json'a yazdığı
+#      library.id commit'lenmiş olmalı (bkz. webflow-components/README.md).
+#   2. Repo secret'ı WEBFLOW_API_TOKEN tanımlı olmalı:
+#      Webflow dashboard → Workspace settings → API access → yeni token
+#      GitHub  → repo Settings → Secrets and variables → Actions → New secret
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "webflow-components/**"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webflow-components
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: webflow-components/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Publish library to Webflow
+        env:
+          WEBFLOW_API_TOKEN: ${{ secrets.WEBFLOW_API_TOKEN }}
+        run: |
+          if [ -z "$WEBFLOW_API_TOKEN" ]; then
+            echo "::warning::WEBFLOW_API_TOKEN secret'ı tanımlı değil — yayın atlandı. README'deki kurulum adımlarına bak."
+            exit 0
+          fi
+          if ! node -e "const m=require('./webflow.json'); process.exit(m.library && m.library.id ? 0 : 1)"; then
+            echo "::warning::webflow.json'da library.id yok — önce lokalde 'npx webflow devlink import' ile ilk yayını yap ve id'yi commit'le. Yayın atlandı."
+            exit 0
+          fi
+          npx webflow devlink import --api-token "$WEBFLOW_API_TOKEN" --skip-update-check
