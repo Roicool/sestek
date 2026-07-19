@@ -2,10 +2,11 @@
   --brand-magenta: #ec008c;
   --brand-turquoise: #00ffeb;
   --brand-lilac: #7f81ae;
-  --bg: #0c0c10;
-  --surface: #16161d;
-  --text: #f5f5f7;
-  --text-dim: #9a9aa5;
+  --brand-teal-deep: #0e9488;
+  --bg: #f7f7f9;
+  --surface: #ffffff;
+  --text: #16161d;
+  --text-dim: #5f5f6b;
 }
 
 * {
@@ -42,7 +43,7 @@ main {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-turquoise);
+  color: var(--brand-teal-deep);
 }
 
 h1 {
@@ -55,7 +56,7 @@ h1 {
 h1 span {
   background: linear-gradient(
     100deg,
-    var(--brand-turquoise),
+    var(--brand-teal-deep),
     var(--brand-lilac) 45%,
     var(--brand-magenta)
   );
@@ -81,9 +82,10 @@ h1 span {
 
 .card {
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 1rem;
   background: var(--surface);
+  box-shadow: 0 1px 3px rgba(16, 16, 24, 0.05);
 }
 
 .card h2 {
@@ -99,7 +101,7 @@ h1 span {
 }
 
 .card a {
-  color: var(--brand-turquoise);
+  color: var(--brand-teal-deep);
   text-decoration: none;
 }
 
@@ -120,8 +122,8 @@ code {
 
 /* ── Basit site footer'ı (.sfooter) — Webflow utility bağımlılığı yok ── */
 .sfooter {
-  background: #0a0a0e;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f0f0f3;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--text);
   font-size: 0.9rem;
 }
@@ -190,7 +192,7 @@ code {
   max-width: 72rem;
   margin: 0 auto;
   padding: 1.1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
   color: var(--text-dim);
   font-size: 0.8rem;
 }
@@ -231,7 +233,7 @@ code {
 
 .demo-card {
   padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 1rem;
   background: var(--surface);
   display: flex;
@@ -253,9 +255,9 @@ code {
 .demo-select {
   width: 100%;
   padding: 0.7rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.16);
   border-radius: 0.6rem;
-  background: #0e0e13;
+  background: #fafafb;
   color: var(--text);
   font: inherit;
   font-size: 0.95rem;
@@ -313,7 +315,7 @@ code {
 
 .demo-btn--ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   color: var(--text);
 }
 
@@ -337,9 +339,9 @@ code {
 .demo-transcript {
   min-height: 6rem;
   padding: 1rem;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border: 1px dashed rgba(0, 0, 0, 0.18);
   border-radius: 0.6rem;
-  background: #0e0e13;
+  background: #fafafb;
   line-height: 1.6;
   font-size: 0.98rem;
 }
@@ -361,7 +363,7 @@ code {
 }
 
 .demo-note--error {
-  color: #ff8aa8;
+  color: #d81b60;
 }
 
 .demo-hub-card {
@@ -383,7 +385,7 @@ code {
   align-self: flex-start;
   margin-top: 0.75rem;
   padding: 0.35rem 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
   font-size: 0.75rem;
   letter-spacing: 0.08em;

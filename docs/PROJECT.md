@@ -37,6 +37,11 @@ sestek/
 │   │                #   logo-marquee, process-flow)
 │   ├── effects/     # grain.css, btn-glow.css
 │   └── animations/  # reveal.css
+├── webflow-components/  # Webflow Code Components (React → Designer, DevLink import)
+│                        #   kendi package.json'ı var, CDN'den SERVİS EDİLMEZ
+├── webflow-cloud-app/   # Webflow Cloud app (Next.js, /demos mount'u)
+│                        #   kendi package.json'ı var, CDN'den SERVİS EDİLMEZ
+├── .github/workflows/   # CI: code-components otomatik yayın + cloud manuel yedek
 └── docs/            # PROJECT.md, CDN-LINKS.md, fluted-glass.md, gsap-svg.md,
                      #   RC-STRUCTURE-REFERENCE.css
 ```
@@ -213,6 +218,118 @@ while (el) {
   el = el.parentElement;
 }
 ```
+
+---
+
+## Webflow Code Components — `webflow-components/`
+
+React componentlerini **Webflow Designer'a** sokan pipeline (DevLink import).
+Ana kütüphaneden bağımsız bir npm paketidir; CDN ile ilgisi yoktur.
+
+### Nasıl çalışır
+
+- Component çifti: `src/Foo.tsx` (React) + `src/Foo.webflow.tsx`
+  (`declareComponent` ile prop tanımları — `@webflow/data-types`'ın
+  `props.Text/Number/Boolean/Variant/...` constructor'ları).
+- `webflow.json` → library manifest'i (`id: sestek-code-components` —
+  ilk interaktif import'ta CLI yazdı, silme).
+- Yayın: `npx webflow devlink import` (lokal) **veya otomatik CI**.
+- Designer tarafı: Add panel → Libraries → "Sestek Code Components" →
+  Install. Library güncellemeleri sitelere otomatik YANSIMAZ — Libraries
+  panelinde "update" onayı gerekir (bilinçli Webflow davranışı).
+
+### CI — otomatik yayın
+
+`.github/workflows/webflow-components-publish.yml`:
+`webflow-components/**` değişen her **main push'unda** library'yi yayınlar.
+Gerekli secret: `WEBFLOW_API_TOKEN` (workspace token, **Components:
+Read+Write** scope'u). Token workspace-level olmalı — site token'ları
+`devlink import` için ÇALIŞMAZ.
+
+### Mevcut componentler
+
+| Component | Ne | Notlar |
+|---|---|---|
+| Shader Gradient BG | Animasyonlu WebGL gradient arka planı (`@shadergradient/react`) | Sestek Brand / Deep / Halo / Custom preset'leri; IntersectionObserver + `React.lazy` ile three.js chunk'ı (~1MB) viewport'a yaklaşana dek inmez (giriş ~12KB); `prefers-reduced-motion`'da statik kare; `ssr: false` |
+
+> Tuzak: `@shadergradient/react`, `three` ve `@react-three/fiber`'ı peer
+> olarak BİLDİRMEZ ama import eder — package.json'da tutulmaları şart.
+
+---
+
+## Webflow Cloud App — `webflow-cloud-app/`
+
+Siteye **`/demos`** path'inden mount edilen **Next.js 16 (App Router) +
+React 19** uygulaması (Cloudflare Workers, OpenNext). Demo sayfaları ve
+özel servisler (API route'ları) burada yaşar.
+
+### Deploy
+
+- **Otomatik:** Webflow Cloud'un kendi GitHub entegrasyonu — dashboard'da
+  app `sestek-demos`, branch `main`, root directory `./webflow-cloud-app`,
+  mount `/demos`. Klasöre dokunan her main push'unda Webflow kendisi
+  build + deploy eder.
+- **Manuel/yedek:** `npm run deploy` (= `webflow cloud deploy`; Node 22+
+  gerekir) veya Actions'taki manuel "Deploy Webflow Cloud App" workflow'u
+  (token'da Cloud apps scope'u ister).
+- `basePath`'i **elle yazma** — deploy, mount path'ten kendisi enjekte
+  eder. `next.config.ts` bilinçli olarak boştur.
+- `webflow.json` içindeki `cloud.app_id` / `siteId` commit'lidir; CLI'ın
+  build sırasında bıraktığı `wrangler.json`, `next.config.webflow.ts` vb.
+  geçici dosyalar `.gitignore`'dadır.
+
+### Site görünümü entegrasyonu
+
+- **Navbar:** Webflow'dan **DevLink export** ile geldi (`webflow/`
+  klasörü; `npx webflow devlink export`, filtre `[Nn]av|[Ff]ooter`,
+  style isolation açık). Davranış + görünüm CDN kütüphanesinden:
+  `css/core/nav.css`, gsap, `js/core/nav.js` → `Sestek.initNav()`
+  (bkz. `src/app/site-runtime.tsx`). Designer'da navbar değişirse
+  export'u yeniden çalıştır + push.
+- **Footer:** DevLink footer'ı kullanılmıyor (Collection List + grid
+  utility boşlukları yüzünden kırık render oldu). Yerine
+  `src/components/site-footer.tsx` — basit, kendi CSS'li
+  (`.sfooter`), CMS kolonları server-side.
+- **Değişkenler:** export'un `webflow/css/variables.css`'i sitenin GERÇEK
+  token'larını içerir. `docs/RC-STRUCTURE-REFERENCE.css`'i runtime'da
+  YÜKLEME — placeholder paletleri gerçek değerleri ezer (o dosya
+  blueprint/dokümantasyondur).
+- `data-underline` hover efekti: `css/effects/link-underline.css` +
+  `js/effects/link-underline.js` (CDN, site-runtime yükler).
+
+### Demolar (sestek.com/demos'un yeniden inşası)
+
+Araştırma sonucu gerçek sayfa "Knovvu Demos": Speech Recognition
+(mikrofon + 100MB dosya), Text-to-Speech, Knovvu Virtual Agent avatar.
+**Halka açık anahtarsız API yok** → provider-abstraksiyonu: bugün
+tarayıcı-native fallback, env girilince gerçek API (component'e dokunmadan).
+
+| Route | Component | Fallback → Gerçek |
+|---|---|---|
+| `/demos/speech-recognition` | `speech-recognition-demo.tsx` | Web Speech API (Chrome/Edge) → `SESTEK_SR_URL` + `SESTEK_SR_API_KEY` (`/api/demos/transcribe` proxy) |
+| `/demos/tts` | `text-to-speech-demo.tsx` | `speechSynthesis` ("önizleme" etiketli) → `SESTEK_TTS_URL` + `SESTEK_TTS_API_KEY` (`/api/demos/tts` proxy, 501 → fallback) |
+| Virtual Agent | — Yakında | Knovvu webchat script'i (`va.<region>.knovvu.com/webchat-plugin/chat.min.js`) — Sestek'ten `integrationId` bekleniyor |
+
+Mock yanıtlar HER ZAMAN "simüle/önizleme" olarak etiketlenir — gerçek
+doğruluk iddiası taklit edilmez.
+
+### Ortam değişkenleri (dashboard → sestek-demos → Environment variables)
+
+| Değişken | Ne için |
+|---|---|
+| `WEBFLOW_CMS_TOKEN` | Footer CMS kolonları (site token, **CMS: Read**) |
+| `SESTEK_TTS_URL` / `SESTEK_TTS_API_KEY` | Gerçek TTS proxy'si |
+| `SESTEK_SR_URL` / `SESTEK_SR_API_KEY` | Gerçek SR dosya transkripsiyon proxy'si |
+
+Env değişikliği yeni deploy ile aktifleşir ("Deploy latest commit").
+
+### Yeni demo ekleme
+
+`src/app/<slug>/page.tsx` (DemoShell ile) + gerekirse
+`src/components/demos/<slug>-demo.tsx` (`"use client"`) +
+`src/app/api/demos/<slug>/route.ts`. Hub kartı: `src/app/page.tsx`
+içindeki `DEMOS` dizisi. Tema **açık renk**; token'lar
+`src/app/globals.css` `:root` bloğunda.
 
 ---
 
