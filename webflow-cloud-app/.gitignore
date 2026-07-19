@@ -2,6 +2,14 @@ node_modules/
 .next/
 .open-next/
 .wrangler/
+.tmp/
 .env
 next-env.d.ts
 *.tsbuildinfo
+
+# webflow cloud deploy'un build sırasında bıraktığı geçici dosyalar
+wrangler.json
+next.config.webflow.ts
+clouduser.next.config.ts
+webflow-loader.ts
+open-next.config.ts
