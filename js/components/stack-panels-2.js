@@ -2,6 +2,11 @@
  * stack-panels-2.js v2.1.0
  *
  * Changelog
+ * v2.2.0 — derinlik hissi güçlendirildi (depth 160→260, perspective
+ *          1200→1000, tilt 4→6: tam gerilemede panel görsel ~0.79'a düşer)
+ *          ve karartma varsayılan olarak KALDIRILDI (data-sp-dim default 0;
+ *          overlay ancak >0 verilirse enjekte edilir) — geri çekilme artık
+ *          yalnızca 3D uzaklaşma + hafif solmayla, temiz.
  * v2.1.0 — GERÇEK 3D derinlik: RECEDE artık düz scale değil, panelin kendi
  *          perspektifinde translateZ ile ekranın İÇİNE çekilme (+ hafif
  *          rotateX ile arkaya yatma). VANISH'te panel daha da derine düşerek
@@ -48,16 +53,17 @@
  *                                                              (default 0.4)
  *   data-sp-depth            RECEDE'de panelin ekranın içine çekildiği
  *                            translateZ mesafesi, px — gerçek 3D derinlik
- *                            (default 160; 0 = kapat, düz scale kullanılır)
+ *                            (default 260; 0 = kapat, düz scale kullanılır)
  *   data-sp-tilt             RECEDE'de arkaya yatma, derece (rotateX)
- *                                                              (default 4)
- *   data-sp-perspective      panelin kendi perspektif derinliği, px
- *                                                              (default 1200)
+ *                                                              (default 6)
+ *   data-sp-perspective      panelin kendi perspektif derinliği, px —
+ *                            küçült = daha dramatik           (default 1000)
  *   data-sp-scale            SADECE data-sp-depth="0" iken: RECEDE sonunda
  *                            panelin scale'i                   (default 0.9)
  *   data-sp-fade-portion     VANISH fazının dissolve içindeki payı
  *                                                              (default 0.25)
- *   data-sp-dim              RECEDE sonunda karartma opaklığı  (default 0.35)
+ *   data-sp-dim              RECEDE karartması — varsayılan KAPALI; isteyen
+ *                            0.2-0.4 gibi bir değerle açar     (default 0)
  *   data-sp-desat            RECEDE sonunda saturate değeri    (default 0.9,
  *                            1 = off)
  *   data-sp-blur             VANISH'te ulaşılan blur, px       (default 6,
@@ -125,11 +131,11 @@
 
     var holdFrac    = attrNum(root, "data-sp-hold", 0.4);
     var endScale    = attrNum(root, "data-sp-scale", 0.9);
-    var depth       = attrNum(root, "data-sp-depth", 160);
-    var tilt        = attrNum(root, "data-sp-tilt", 4);
-    var persp       = attrNum(root, "data-sp-perspective", 1200);
+    var depth       = attrNum(root, "data-sp-depth", 260);
+    var tilt        = attrNum(root, "data-sp-tilt", 6);
+    var persp       = attrNum(root, "data-sp-perspective", 1000);
     var fadePortion = attrNum(root, "data-sp-fade-portion", 0.25);
-    var dimMax      = attrNum(root, "data-sp-dim", 0.35);
+    var dimMax      = attrNum(root, "data-sp-dim", 0);
     var desat       = attrNum(root, "data-sp-desat", 0.9);
     var blurPx      = attrNum(root, "data-sp-blur", 6);
     var liftPx      = attrNum(root, "data-sp-lift", 20);
@@ -198,11 +204,14 @@
         panel.style.marginBottom = innerH * fakeRatio + "px";
       }
 
-      // Karartma katmanı — RECEDE'in "geri çekilme" hissi buradan gelir,
-      // şeffaflıktan değil. Overlay olduğu için içerik keskin kalır.
-      var dim = document.createElement("div");
-      dim.className = "stack-panels__dim";
-      panel.appendChild(dim);
+      // Karartma katmanı — varsayılan kapalı; data-sp-dim > 0 verilirse
+      // enjekte edilir (overlay olduğu için içerik keskin kalır).
+      var dim = null;
+      if (dimMax > 0) {
+        dim = document.createElement("div");
+        dim.className = "stack-panels__dim";
+        panel.appendChild(dim);
+      }
 
       var tl = gsap.timeline({
         scrollTrigger: {
@@ -262,7 +271,9 @@
         recedeTo.filter = "saturate(" + desat + ") blur(0px)";
       }
       tl.fromTo(panel, recedeFrom, recedeTo);
-      tl.to(dim, { opacity: dimMax, duration: recedeDur, ease: "none" }, "<");
+      if (dim) {
+        tl.to(dim, { opacity: dimMax, duration: recedeDur, ease: "none" }, "<");
+      }
 
       // VANISH — panel daha da derine düşerek buharlaşır
       var vanish = {
