@@ -1,5 +1,5 @@
 /*!
- * img-hover.js v1.3.1
+ * img-hover.js v1.3.2
  * Premium image hover for cards & blog links — NOT a plain CSS scale.
  * Four coordinated layers, all GSAP-scrubbed:
  *   • parallax zoom — the image eases up to `zoom` AND drifts toward the
@@ -10,6 +10,10 @@
  *     once per hover-in
  *   • tonal lift — the image rests slightly desaturated/dimmed and lifts to
  *     full colour on hover (editorial feel)
+ *
+ * v1.3.2: saha geri bildirimi — varsayılan zoom 1.06 → 1.04 (bazı
+ * fotoğraflar bozuk/gerilmiş görünüyordu); sheen (beyaz ışık süpürmesi)
+ * artık varsayılan KAPALI — isteyen data-img-hover-shine="true" ile açar.
  *
  * v1.3.1: wrapper içinde birden fazla görsel varsa doğru olanı seçmek
  * için data-img-hover-target eklendi — bu attribute'u taşıyan <img>/<video>
@@ -41,11 +45,11 @@
  * ── Attributes (on [data-img-hover]) ─────────────────────────────
  *
  *   data-img-hover              required
- *   data-img-hover-zoom="1.06"  max scale (default 1.06)
+ *   data-img-hover-zoom="1.04"  max scale (default 1.04)
  *   data-img-hover-tilt="3.5"   max tilt in degrees (default 3.5, 0 = off)
  *   data-img-hover-pan="2.5"    max cursor-drift as % of frame (default 2.5,
  *                               0 = off; auto-clamped so edges never show)
- *   data-img-hover-shine="false"  disable the light sweep
+ *   data-img-hover-shine="true"   enable the light sweep (default OFF)
  *   data-img-hover-tone="false"   disable the tonal lift
  *
  * ── Attribute (on the <img>/<video> itself, optional) ────────────
@@ -119,10 +123,12 @@
       class: frame.className || "(yok)"
     });
 
-    var zoom  = Math.max(1, num(frame, "data-img-hover-zoom", 1.06));
+    var zoom  = Math.max(1, num(frame, "data-img-hover-zoom", 1.04));
     var tilt  = Math.max(0, num(frame, "data-img-hover-tilt", 3.5));
     var pan   = Math.max(0, num(frame, "data-img-hover-pan", 2.5));
-    var shine = !off(frame, "data-img-hover-shine");
+    /* v1.3.2: sheen varsayılan kapalı — beyaz bant bazı görsellerde çizgi
+     * gibi görünüyordu. data-img-hover-shine="true" ile açılır. */
+    var shine = frame.getAttribute("data-img-hover-shine") === "true";
     var tone  = !off(frame, "data-img-hover-tone");
 
     /* Pan asla kırpılmış kenarı açığa çıkarmasın: zoom'un sağladığı taşma
@@ -204,7 +210,7 @@
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var frames = global.document.querySelectorAll(selector || "[data-img-hover]");
 
-    dbg("init v1.3.1", {
+    dbg("init v1.3.2", {
       frames: frames.length,
       "hover:hover": hoverOk,
       reducedMotion: !!reduce
