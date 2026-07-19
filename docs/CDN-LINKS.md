@@ -1451,6 +1451,9 @@ Attribute'lar (root `[data-sticky-stack]` üzerinde, hepsi opsiyonel):
 | `data-sticky-dim` | `0.35` | Tam örtülen panelin karartma opaklığı (overlay — içerik keskin kalır) |
 | `data-sticky-blur` | `0` | Tam örtülen panelin blur'u, px (0 = kapalı) |
 | `data-sticky-lift` | `24` | Örtülen panelin yukarı toplanması, px |
+| `data-sticky-settle` | `0.97` | Gelen panelin yaklaşırken scale'i — sticky çizgisine oturunca 1'e "yerleşir" (1 = kapalı) |
+| `data-sticky-shadow` | `0.35` | Gelen panelin alttakine düşürdüğü temas gölgesinin opaklığı (0 = kapalı) |
+| `data-sticky-desat` | `0.9` | Tam örtülen panelin saturate değeri — kararırken hafifçe solar (1 = kapalı) |
 
 Notlar:
 

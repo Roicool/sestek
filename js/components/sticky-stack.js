@@ -1,5 +1,15 @@
 /*!
- * sticky-stack.js v1.0.0
+ * sticky-stack.js v1.1.0
+ *
+ * Changelog
+ * v1.1.0 — premium depth pass:
+ *   • incoming settle: gelen panel 0.97 scale'de süzülür, sticky çizgisine
+ *     oturduğu anda 1'e "yerleşir" — kartın rafa oturma hissi
+ *   • contact shadow: gelen panel, alttaki panelin üzerine yaklaştıkça
+ *     koyulaşan yumuşak bir gölge düşürür — katmanlar gerçekten ayrışır
+ *   • desaturation: örtülen panel kararırken hafifçe solar (saturate) —
+ *     editoryal recede hissi
+ *   Hepsi opsiyonel ve attribute'la kapatılabilir.
  * Premium "stacking panels", rebuilt — the Linear/Stripe pattern where the
  * covered panel VISIBLY recedes: as the next panel slides up over it, the
  * one beneath scales down, gently lifts and darkens in EXACT proportion to
@@ -49,6 +59,14 @@
  *   data-sticky-dim     tam örtülen panelin karartma opaklığı (default 0.35)
  *   data-sticky-blur    tam örtülen panelin blur'u, px       (default 0 = off)
  *   data-sticky-lift    örtülen panelin yukarı toplanması, px (default 24)
+ *   data-sticky-settle  gelen panelin yaklaşırken scale'i — sticky çizgisine
+ *                       oturunca 1'e yerleşir              (default 0.97, 1 = off)
+ *   data-sticky-shadow  gelen panelin alttakine düşürdüğü temas gölgesinin
+ *                       opaklığı                           (default 0.35, 0 = off)
+ *   data-sticky-desat   tam örtülen panelin saturate değeri (default 0.9, 1 = off)
+ *
+ * Not: panellere ≥ ~90svh yükseklik ver — çok kısa panellerde "geliş" ve
+ * "örtülme" fazları üst üste binip titreme yapabilir.
  *
  * prefers-reduced-motion: küçülme/karartma çalışmaz; paneller sticky ile
  * sadece üst üste biner — tamamen işlevsel, hareketsiz.
@@ -91,6 +109,9 @@
     var dimMax   = num(root, "data-sticky-dim", 0.35);
     var blurMax  = num(root, "data-sticky-blur", 0);
     var lift     = num(root, "data-sticky-lift", 24);
+    var settle   = num(root, "data-sticky-settle", 0.97);
+    var shadowOp = num(root, "data-sticky-shadow", 0.35);
+    var desat    = num(root, "data-sticky-desat", 0.9);
 
     var reduce = Sestek.util.prefersReducedMotion();
 
@@ -123,10 +144,44 @@
 
     if (reduce) return; /* sticky binme kalır; hareket yok */
 
+    // ── Geliş scrub'ı (incoming settle + temas gölgesi) ───────────
+    // İlk panel dışındaki her panel, viewport'a girişinden sticky çizgisine
+    // oturana dek hafifçe küçük (settle) süzülür ve 1'e "yerleşir"; aynı
+    // yolculukta üst kenarından alttaki panele düşen temas gölgesi koyulaşır.
+    panels.forEach(function (panel, i) {
+      if (i === 0) return;
+
+      var myTopPx = topPx + i * peek;
+      var shadowFrom = "0px -18px 44px -18px rgba(10, 10, 14, 0)";
+      var shadowTo   = "0px -18px 44px -18px rgba(10, 10, 14, " + shadowOp + ")";
+
+      var arrive = gsap.timeline({
+        scrollTrigger: {
+          trigger: panel,
+          start: "top bottom",
+          end: "top " + myTopPx + "px",
+          scrub: true,
+          invalidateOnRefresh: true,
+          refreshPriority: -1,
+        },
+      });
+
+      if (settle < 1) {
+        arrive.fromTo(panel,
+          { scale: settle },
+          { scale: 1, ease: "none", force3D: true, immediateRender: true }, 0);
+      }
+      if (shadowOp > 0) {
+        arrive.fromTo(panel,
+          { boxShadow: shadowFrom },
+          { boxShadow: shadowTo, ease: "none", immediateRender: true }, 0);
+      }
+    });
+
     // ── Örtülme scrub'ı ───────────────────────────────────────────
     // panels[i]'yi panels[i+1] örter. Küçülme her karede örtülme miktarıyla
     // birebir orantılı — panel örtülene kadar gözle görülür şekilde geriler,
-    // hiçbir aşamada şeffaflaşmaz.
+    // hiçbir aşamada şeffaflaşmaz; kararırken hafifçe solar (desat).
     panels.forEach(function (panel, i) {
       if (i === panels.length - 1) return; /* son panel örtülmez */
 
@@ -134,8 +189,14 @@
       dim.className = "sticky-stack__dim";
       panel.appendChild(dim);
 
-      var vars = { scale: endScale, y: -lift, ease: "none", force3D: true };
-      if (blurMax > 0) vars.filter = "blur(" + blurMax + "px)";
+      var fromVars = { scale: 1, y: 0 };
+      var toVars   = { scale: endScale, y: -lift, ease: "none", force3D: true };
+      /* filter başlangıcını AÇIKÇA ver — "none"dan interpole edilirse GSAP
+       * saturate'i 0'dan başlatır (panel önce grileşip geri canlanır). */
+      var fromF = [], toF = [];
+      if (blurMax > 0) { fromF.push("blur(0px)"); toF.push("blur(" + blurMax + "px)"); }
+      if (desat < 1)   { fromF.push("saturate(1)"); toF.push("saturate(" + desat + ")"); }
+      if (toF.length) { fromVars.filter = fromF.join(" "); toVars.filter = toF.join(" "); }
 
       var nextTopPx = topPx + (i + 1) * peek;
 
@@ -150,7 +211,11 @@
         },
       });
 
-      tl.to(panel, vars, 0).to(dim, { opacity: dimMax, ease: "none" }, 0);
+      /* immediateRender:false — geliş fazındaki settle durumunu ezmesin */
+      tl.fromTo(panel, fromVars, mergeIR(toVars), 0)
+        .to(dim, { opacity: dimMax, ease: "none" }, 0);
+
+      function mergeIR(v) { v.immediateRender = false; return v; }
     });
   }
 
