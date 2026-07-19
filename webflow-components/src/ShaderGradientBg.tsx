@@ -203,10 +203,27 @@ function useNearViewport(
   ref: React.RefObject<HTMLDivElement | null>,
   enabled: boolean
 ): boolean {
-  const [near, setNear] = React.useState(!enabled);
+  const [near, setNear] = React.useState(false);
   React.useEffect(() => {
+    if (near) return;
+    /* Eager mod (varsayılan): sayfanın İLK ÇİZİMİNİ ENGELLEME — kurulumu
+     * window load sonrasına (veya en geç 2.5s) bırak. Fallback gradient o
+     * ana kadar görünür, shader fade ile üzerine gelir. */
+    if (!enabled) {
+      const go = () => setNear(true);
+      if (document.readyState === "complete") {
+        const t = window.setTimeout(go, 0);
+        return () => window.clearTimeout(t);
+      }
+      window.addEventListener("load", go, { once: true });
+      const t = window.setTimeout(go, 2500);
+      return () => {
+        window.removeEventListener("load", go);
+        window.clearTimeout(t);
+      };
+    }
     const el = ref.current;
-    if (!el || near) return;
+    if (!el) return;
     if (!("IntersectionObserver" in window)) {
       setNear(true);
       return;
@@ -224,7 +241,7 @@ function useNearViewport(
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [ref, near]);
+  }, [ref, near, enabled]);
   return near;
 }
 

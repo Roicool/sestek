@@ -1,6 +1,6 @@
 {
   "name": "sestek-webflow-components",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Sestek Webflow Code Components — React components importable into the Webflow Designer via DevLink",
   "scripts": {
