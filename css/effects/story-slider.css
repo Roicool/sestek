@@ -1,0 +1,125 @@
+/*!
+ * story-slider.css v1.0.0
+ * Stripe-style customer story slider on top of a Webflow Collection List.
+ * Cards grow VERY slightly on hover (neighbours ease away), the story
+ * link's arrow draws itself longer — all CSS; js/effects/story-slider.js
+ * only wires classes, nav buttons and the arrow markup.
+ *
+ * Hooks (set on [data-story-slider] or any ancestor):
+ *   --ss-scale    hover scale            (default 1.035)
+ *   --ss-shift    neighbour shift in px  (default 6px)
+ *   --ss-gap      gap between cards      (default 24px)
+ *   --ss-card-w   card width             (default 332px, caps at 78vw)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-story-slider] {
+  position: relative;
+  --ss-scale: 1.035;
+  --ss-shift: 6px;
+  --ss-gap: 24px;
+  --ss-card-w: 332px;
+  /* Stripe hissinin sırrı bu eğri: hızlı kalkış, çok yumuşak iniş. */
+  --ss-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Collection List (JS .ss-list sınıfını ekler) → yatay kaydırıcı.
+   Dikey padding+negatif margin: hover'da büyüyen kart üstten/alttan
+   kırpılmasın diye nefes payı. */
+[data-story-slider] .ss-list {
+  display: flex;
+  gap: var(--ss-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 16px 0;
+  margin: -16px 0;
+}
+[data-story-slider] .ss-list::-webkit-scrollbar { display: none; }
+
+/* Collection Item = kart */
+[data-story-slider] .ss-item {
+  flex: 0 0 auto;
+  width: min(var(--ss-card-w), 78vw);
+  scroll-snap-align: start;
+  transition: transform 0.55s var(--ss-ease);
+}
+
+/* Hover koreografisi: kart çok az büyür, komşular usulca yol verir. */
+@media (hover: hover) {
+  [data-story-slider] .ss-item:hover {
+    transform: scale(var(--ss-scale));
+    z-index: 1;
+  }
+  /* hover'lı karttan SONRAKİLER sağa kayar */
+  [data-story-slider] .ss-item:hover ~ .ss-item {
+    transform: translateX(var(--ss-shift));
+  }
+  /* ÖNCEKİLER sola kayar (modern tarayıcılar; yoksa sessizce atlanır) */
+  [data-story-slider] .ss-item:has(~ .ss-item:hover) {
+    transform: translateX(calc(var(--ss-shift) * -1));
+  }
+}
+
+/* ── "Read story" oku: çizgi hover'da uzar, uç sağa süzülür ──────── */
+.ss-arrow {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.35em;
+}
+.ss-arrow svg { display: block; overflow: visible; }
+.ss-arrow .ss-arrow-line {
+  stroke-dasharray: 7;
+  stroke-dashoffset: 7;               /* çizgi başta görünmez */
+  transition: stroke-dashoffset 0.3s var(--ss-ease, ease);
+}
+.ss-arrow .ss-arrow-head {
+  transition: transform 0.3s var(--ss-ease, ease);
+}
+[data-story-slider] .ss-item:hover .ss-arrow-line { stroke-dashoffset: 0; }
+[data-story-slider] .ss-item:hover .ss-arrow-head { transform: translateX(3px); }
+
+/* ── Nav okları (JS enjekte eder; kendi butonunu verirsen bu blok
+      sadece disabled görünümünü yönetir) ──────────────────────────── */
+.ss-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+.ss-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border--color-border-base, #e6e6e6);
+  border-radius: 8px;
+  background: var(--surface--base, #fff);
+  color: var(--color-text--base, #212121);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+.ss-nav-btn:hover:not(:disabled) {
+  background: var(--surface--muted, #f5f5f5);
+  color: var(--brand-primary--500, #EC008C);
+}
+.ss-nav-btn:disabled,
+[data-ss-prev]:disabled,
+[data-ss-next]:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-story-slider] .ss-item,
+  .ss-arrow .ss-arrow-line,
+  .ss-arrow .ss-arrow-head { transition: none; }
+  [data-story-slider] .ss-item:hover { transform: none; }
+  [data-story-slider] .ss-list { scroll-behavior: auto; }
+}

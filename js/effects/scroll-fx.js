@@ -1,5 +1,11 @@
 /*!
- * scroll-fx.js v1.1.0
+ * scroll-fx.js v1.2.0
+ *
+ * FOUC guard (optional but recommended): add to the page <head>
+ *   <style>html.w-mod-js [data-text-fill], html.w-mod-js [data-scale-in] { opacity: 0; }</style>
+ * so elements don't flash in their final state before this script runs;
+ * init reveals each element the moment its start state is applied.
+ * (w-mod-js = Webflow's "JS available" class → no-JS visitors still see content.)
  * Scroll-scrubbed micro effects (GSAP + ScrollTrigger). Fully reversible:
  * everything is scrub-driven, so scrolling back rewinds the animation —
  * nothing is one-shot.
@@ -32,6 +38,9 @@
  *
  * Attributes — [data-scale-in] (all optional; defaults are the look):
  *   data-si-scale="0.94"       starting scale.
+ *   data-si-delay="0.3"        hold fraction at the start of the scroll
+ *                              range (0.3 = motion starts 30% in) — give
+ *                              siblings 0 / 0.15 / 0.3 for a stagger.
  *   data-si-y="48"             starting rise offset in px.
  *   data-si-fade="false"       disable the opacity fade (default: on).
  *   data-si-zoom="false"       disable auto media counter-zoom; "true"
@@ -104,11 +113,21 @@
     return spans;
   }
 
+  /* FOUC koruması: sayfaya
+       html.w-mod-js [data-text-fill], html.w-mod-js [data-scale-in] { opacity: 0; }
+     eklersen, ilk boyamada "dolu başlık / tam boy görsel" bir an görünüp
+     sonra başlangıç haline zıplamaz. init her elemanı burada geri açar;
+     GSAP'ın kendi başlangıç değerleri (dim/scale) aynı karede uygulanır. */
+  function unveil(el) {
+    el.style.opacity = "1"; /* gizleme kuralını ezer; GSAP gerekirse üstüne yazar */
+  }
+
   function buildTextFill(el, reduce) {
     if (el.__sfxBuilt) return;
     el.__sfxBuilt = true;
 
     var spans = splitWords(el);
+    unveil(el);
     if (!spans.length) return;
     if (reduce) return; /* final state = zaten dolu */
 
@@ -140,6 +159,7 @@
   function buildScaleIn(el, reduce) {
     if (el.__sfxBuilt) return;
     el.__sfxBuilt = true;
+    unveil(el);
     if (reduce) return; /* final state = orijinal boyut */
 
     var scale = num(el.getAttribute("data-si-scale"), 0.94);
@@ -172,10 +192,17 @@
       st.onLeave = function () { el.style.height = ""; };
     }
 
+    /* data-si-delay: scroll aralığının başında bekleme payı (oran).
+       0.3 → aralığın ilk %30'unda eleman başlangıç halinde bekler,
+       hareket sonra başlar. Yan yana kartları 0 / 0.15 / 0.3 vererek
+       merdiven gibi geciktirebilirsin. Scrub olduğu için geri sarma
+       aynen çalışır. */
+    var delay = Math.max(0, num(el.getAttribute("data-si-delay"), 0));
+
     var tl = gsap.timeline({
       /* power2.out: hareketin çoğu erken biter, sona doğru yumuşakça
          "yerine oturur" — scrub'la birlikte lineer çiğliği kırar. */
-      defaults: { ease: "power2.out" },
+      defaults: { ease: "power2.out", duration: 1 },
       scrollTrigger: st
     });
 
@@ -204,13 +231,13 @@
       };
     }
 
-    tl.fromTo(el, from, to, 0);
+    tl.fromTo(el, from, to, delay);
 
     if (zoom) {
       el.style.overflow = "hidden";
       tl.fromTo(zoom,
         { scale: num(el.getAttribute("data-si-zoom-scale"), 1.15) },
-        { scale: 1, transformOrigin: "center center" }, 0);
+        { scale: 1, transformOrigin: "center center" }, delay);
     }
   }
 
