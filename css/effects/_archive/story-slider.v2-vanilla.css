@@ -1,0 +1,136 @@
+/*!
+ * story-slider.css v2.0.0
+ * Stripe-style customer story slider on top of a Webflow Collection List.
+ * Hover motion is JS-driven (rAF + lerp writes --ss-s / --ss-x onto the
+ * card's inner wrapper); this file holds the scroller layout, the
+ * transform hook and the self-drawing arrow.
+ *
+ * Hooks (set on [data-story-slider] or any ancestor):
+ *   --ss-gap        gap between cards   (default 24px)
+ *   --ss-card-w     card width          (default 332px, caps at 78vw)
+ *   --ss-arrow-gap  text→arrow spacing  (default 0.5em)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-story-slider] {
+  position: relative;
+  --ss-gap: 24px;
+  --ss-card-w: 332px;
+  --ss-ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* Collection List (JS .ss-list sınıfını ekler) → yatay kaydırıcı.
+   Dikey padding+negatif margin: hover'da büyüyen kart üstten/alttan
+   kırpılmasın diye nefes payı. */
+[data-story-slider] .ss-list {
+  display: flex;
+  gap: var(--ss-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 16px 0;
+  margin: -16px 0;
+  cursor: grab;
+}
+[data-story-slider] .ss-list::-webkit-scrollbar { display: none; }
+
+/* Sürükleme: görsellerin native drag'i ve metin seçimi araya girmesin */
+[data-story-slider] .ss-list img { -webkit-user-drag: none; user-select: none; }
+[data-story-slider] .ss-list.ss-grabbing {
+  cursor: grabbing;
+  user-select: none;
+}
+/* Sürüklerken ve kart sınırına otururken CSS snap araya girmesin */
+[data-story-slider] .ss-list.ss-grabbing,
+[data-story-slider] .ss-list.ss-settling {
+  scroll-snap-type: none;
+}
+
+/* Klavye odağı */
+[data-story-slider] .ss-list:focus-visible {
+  outline: 2px solid var(--brand-primary--500, #EC008C);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+/* Collection Item = kart kutusu (giriş animasyonu bunu oynatır) */
+[data-story-slider] .ss-item {
+  flex: 0 0 auto;
+  width: min(var(--ss-card-w), 78vw);
+  scroll-snap-align: start;
+}
+
+/* Hover transform'u iç sarmalayıcıda yaşar — JS her frame --ss-s /
+   --ss-x yazar; origin left center (komşular ezilmeden yol verir). */
+[data-story-slider] .ss-inner {
+  display: block;
+  transform: translate3d(var(--ss-x, 0px), 0, 0) scale(var(--ss-s, 1));
+  transform-origin: left center;
+  will-change: transform;
+}
+[data-story-slider] .ss-item:hover { z-index: 1; }
+
+/* ── "Read story" oku: ok soldan başlar, hover'da sağa süzülürken
+      şaft kendini çizer ─────────────────────────────────────────── */
+.ss-arrow {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: var(--ss-arrow-gap, 0.5em);
+  transform: translateX(-3px);
+  transition: transform 0.25s var(--ss-ease);
+}
+.ss-arrow svg { display: block; overflow: visible; }
+.ss-arrow .ss-arrow-line {
+  stroke-dasharray: 7;
+  stroke-dashoffset: 7;               /* şaft başta görünmez */
+  transition: stroke-dashoffset 0.25s var(--ss-ease);
+}
+[data-story-slider] .ss-item:hover .ss-arrow { transform: translateX(0); }
+[data-story-slider] .ss-item:hover .ss-arrow-line { stroke-dashoffset: 0; }
+
+/* ── Nav okları (JS enjekte eder; [data-ss-nav] kutusuna yerleşir.
+      Kendi butonunu verirsen bu blok sadece disabled'ı yönetir) ───── */
+.ss-nav {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+[data-ss-nav] .ss-nav { margin: 0; }   /* konum host'un işi */
+
+/* Stripe "quiet button": çerçevesiz, zeminsiz; hover'da yumuşak ton */
+.ss-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text--base, #212121);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+.ss-nav-btn:hover:not(:disabled) {
+  background: rgba(236, 0, 140, 0.08);
+  color: var(--brand-primary--500, #EC008C);
+}
+.ss-nav-btn:disabled,
+[data-ss-prev]:disabled,
+[data-ss-next]:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-arrow,
+  .ss-arrow .ss-arrow-line { transition: none; }
+  [data-story-slider] .ss-inner { transform: none; will-change: auto; }
+  [data-story-slider] .ss-list { scroll-behavior: auto; }
+}
