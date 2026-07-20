@@ -1,0 +1,14 @@
+<svg data-orbit viewBox="0 0 1440 720" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogPlanet" gradientUnits="userSpaceOnUse" x1="0" y1="720" x2="1440" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M3595 2600A2875 2300 0 1 0 -2155 2600A2875 2300 0 1 0 3595 2600Z" stroke="url(#sogPlanet)" stroke-width="1"/>
+  <path d="M3495 2600A2775 2220 0 1 0 -2055 2600A2775 2220 0 1 0 3495 2600Z" stroke="url(#sogPlanet)" stroke-width="1"/>
+  <path data-orbit-track d="M3395 2600A2675 2140 0 1 0 -1955 2600A2675 2140 0 1 0 3395 2600Z" stroke="url(#sogPlanet)" stroke-width="1"/>
+  <path d="M3295 2600A2575 2060 0 1 0 -1855 2600A2575 2060 0 1 0 3295 2600Z" stroke="url(#sogPlanet)" stroke-width="1"/>
+  <path d="M3195 2600A2475 1980 0 1 0 -1755 2600A2475 1980 0 1 0 3195 2600Z" stroke="url(#sogPlanet)" stroke-width="1"/>
+</svg>

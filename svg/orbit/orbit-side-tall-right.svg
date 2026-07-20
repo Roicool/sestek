@@ -1,0 +1,14 @@
+<svg data-orbit viewBox="0 0 420 900" fill="none" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogTallR" gradientUnits="userSpaceOnUse" x1="420" y1="900" x2="0" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M-615.6 2050A1600 565.8 150 1 0 2155.6 450A1600 565.8 150 1 0 -615.6 2050Z" stroke="url(#sogTallR)" stroke-width="0.75"/>
+  <path d="M-419 2320.6A1600 771.1 138 1 0 1959 179.4A1600 771.1 138 1 0 -419 2320.6Z" stroke="url(#sogTallR)" stroke-width="0.75"/>
+  <path data-orbit-track d="M-170.5 2544.4A1600 935.1 126 1 0 1710.5 -44.4A1600 935.1 126 1 0 -170.5 2544.4Z" stroke="url(#sogTallR)" stroke-width="0.75"/>
+  <path d="M119.2 2711.7A1600 1067.6 114 1 0 1420.8 -211.7A1600 1067.6 114 1 0 119.2 2711.7Z" stroke="url(#sogTallR)" stroke-width="0.75"/>
+  <path d="M437.3 2815A1600 1199.7 102 1 0 1102.7 -315A1600 1199.7 102 1 0 437.3 2815Z" stroke="url(#sogTallR)" stroke-width="0.75"/>
+</svg>

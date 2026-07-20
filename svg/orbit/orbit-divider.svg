@@ -1,0 +1,12 @@
+<svg data-orbit viewBox="0 0 1440 200" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogDivider" gradientUnits="userSpaceOnUse" x1="0" y1="200" x2="1440" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M3440 1780A2720 1600 0 1 0 -2000 1780A2720 1600 0 1 0 3440 1780Z" stroke="url(#sogDivider)" stroke-width="1"/>
+  <path data-orbit-track d="M3525 1780A2805 1650 0 1 0 -2085 1780A2805 1650 0 1 0 3525 1780Z" stroke="url(#sogDivider)" stroke-width="1"/>
+  <path d="M3610 1780A2890 1700 0 1 0 -2170 1780A2890 1700 0 1 0 3610 1780Z" stroke="url(#sogDivider)" stroke-width="1"/>
+</svg>

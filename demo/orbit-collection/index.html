@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sestek Orbit Collection — demo</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b0b12;
+      color: #f4f3f8;
+    }
+    section {
+      position: relative;
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .label {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 560px;
+      padding: 0 24px;
+    }
+    .label h2 { font-size: 28px; letter-spacing: -0.02em; }
+    .label p  { margin-top: 8px; color: #9b97ad; font-size: 14px; }
+    .label code {
+      color: #00ffeb;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Orbit placement helpers — how the SVGs are meant to sit in a layout. */
+    .orbit-slot { position: absolute; inset: 0; pointer-events: none; }
+    .orbit-slot svg { position: absolute; }
+
+    .slot-edge-left  svg { left: 0;  top: 0; height: 100%; width: auto; }
+    .slot-edge-right svg { right: 0; top: 0; height: 100%; width: auto; }
+    .slot-hero    svg { inset: 0; width: 100%; height: 100%; }
+    .slot-divider svg { left: 0; bottom: 0; width: 100%; height: auto; }
+    .slot-corner  svg { right: 0; top: 0; width: min(60vh, 480px); height: auto; }
+    .slot-ring    svg { left: 50%; top: 50%; width: min(56vh, 440px); height: auto;
+                        translate: -50% -50%; }
+    .slot-edge-top  svg { left: 0; top: 0; width: 100%; height: auto; }
+    .slot-planet    svg { inset: 0; width: 100%; height: 100%; }
+    .slot-weave     svg { inset: 0; width: 100%; height: 100%; }
+    .slot-tall-left  svg { left: 0;  top: 0; height: 100%; width: auto; }
+    .slot-tall-right svg { right: 0; top: 0; height: 100%; width: auto; }
+    .slot-corner-bl svg { left: 0; bottom: 0; width: min(60vh, 480px); height: auto; }
+    .slot-halo   svg { left: 50%; top: 50%; width: min(56vh, 440px); height: auto;
+                       translate: -50% -50%; }
+    .slot-vortex svg { left: 50%; top: 50%; width: min(56vh, 440px); height: auto;
+                       translate: -50% -50%; }
+    .slot-badge  svg { left: 50%; top: 50%; width: min(30vh, 220px); height: auto;
+                       translate: -50% -50%; }
+
+    .divider-demo { min-height: 40vh; }
+    .tall-demo    { min-height: 100vh; }
+  </style>
+</head>
+<body>
+
+  <section>
+    <div class="orbit-slot slot-hero" data-orbit-src="orbit-hero.svg"></div>
+    <div class="label">
+      <h2>orbit-hero</h2>
+      <p>Genis ufuk yaylari — hero / tam genislik bant arkaplani. <code>xMidYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-edge-left" data-orbit-src="orbit-edge-left.svg"></div>
+    <div class="label">
+      <h2>orbit-edge-left</h2>
+      <p>Sol kenara yaslanan yelpaze. Body/section sol dekoru. <code>xMinYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-edge-right" data-orbit-src="orbit-edge-right.svg"></div>
+    <div class="label">
+      <h2>orbit-edge-right</h2>
+      <p>Ayna ikizi — sag kenar dekoru. <code>xMaxYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-corner" data-orbit-src="orbit-corner.svg"></div>
+    <div class="label">
+      <h2>orbit-corner</h2>
+      <p>Sag ust koseden yayilan ceyrek yaylar — kart / component kosesi. <code>xMaxYMin slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-ring" data-orbit-src="orbit-ring.svg"></div>
+    <div class="label">
+      <h2>orbit-ring</h2>
+      <p>Tamami gorunur atom halkalari — ikon / kart merkezi. <code>xMidYMid meet</code></p>
+    </div>
+  </section>
+
+  <section class="divider-demo">
+    <div class="orbit-slot slot-divider" data-orbit-src="orbit-divider.svg"></div>
+    <div class="label">
+      <h2>orbit-divider</h2>
+      <p>Sig yay bandi — section gecisleri. <code>xMidYMid slice</code></p>
+    </div>
+  </section>
+
+  <section class="divider-demo">
+    <div class="orbit-slot slot-edge-top" data-orbit-src="orbit-edge-top.svg"></div>
+    <div class="label">
+      <h2>orbit-edge-top</h2>
+      <p>Divider'in ikizi — ust kenardan sarkan sig yaylar. <code>xMidYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-planet" data-orbit-src="orbit-planet.svg"></div>
+    <div class="label">
+      <h2>orbit-planet</h2>
+      <p>Sik aralikli gezegen ufku — footer ustu / CTA bandi. <code>xMidYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-weave" data-orbit-src="orbit-weave.svg"></div>
+    <div class="label">
+      <h2>orbit-weave</h2>
+      <p>Iki ayna yelpazenin ortada kesismesi — genis bant. <code>xMidYMid slice</code></p>
+    </div>
+  </section>
+
+  <section class="tall-demo">
+    <div class="orbit-slot slot-tall-left" data-orbit-src="orbit-side-tall-left.svg"></div>
+    <div class="orbit-slot slot-tall-right" data-orbit-src="orbit-side-tall-right.svg"></div>
+    <div class="label">
+      <h2>orbit-side-tall-left / -right</h2>
+      <p>Dikey panel yelpazeleri — uzun section'larin yan kolonlari. <code>xMinYMid / xMaxYMid slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-corner-bl" data-orbit-src="orbit-corner-bl.svg"></div>
+    <div class="label">
+      <h2>orbit-corner-bl</h2>
+      <p>orbit-corner'in ikizi — sol alt kose. <code>xMinYMax slice</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-halo" data-orbit-src="orbit-halo.svg"></div>
+    <div class="label">
+      <h2>orbit-halo</h2>
+      <p>Sakin es merkezli halkalar — portre/gorsel cercevesi. <code>xMidYMid meet</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-vortex" data-orbit-src="orbit-vortex.svg"></div>
+    <div class="label">
+      <h2>orbit-vortex</h2>
+      <p>Yarim tur yelpaze — giyosje cicegi, kart merkezi. <code>xMidYMid meet</code></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="orbit-slot slot-badge" data-orbit-src="orbit-badge.svg"></div>
+    <div class="label">
+      <h2>orbit-badge</h2>
+      <p>Mini uc halkali atom — kucuk ikon/rozet. <code>xMidYMid meet</code></p>
+    </div>
+  </section>
+
+  <!-- GSAP + plugins (CDN, defer) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/DrawSVGPlugin.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js" defer></script>
+
+  <!-- Sestek (relative paths for the local demo; use CDN in Webflow) -->
+  <script src="../../js/core/utils.js" defer></script>
+  <script src="../../js/animations/orbit.js" defer></script>
+
+  <script>
+    /*
+     * Demo loader: fetches each ../../svg/orbit/*.svg and injects it INLINE,
+     * then wires the orbit animations. Inline injection is required —
+     * orbit.js needs the <ellipse> elements in the DOM (an <img src="…svg">
+     * cannot be animated). In Webflow, paste the SVG markup into an Embed
+     * instead. Serve this demo over HTTP (python3 -m http.server).
+     */
+    document.addEventListener("DOMContentLoaded", function () {
+      gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, MotionPathPlugin);
+
+      var slots = document.querySelectorAll("[data-orbit-src]");
+      var pending = slots.length;
+
+      slots.forEach(function (slot) {
+        fetch("../../svg/orbit/" + slot.getAttribute("data-orbit-src"))
+          .then(function (r) { return r.text(); })
+          .then(function (markup) { slot.innerHTML = markup; })
+          .finally(function () {
+            if (--pending === 0) Sestek.initOrbit();
+          });
+      });
+    });
+  </script>
+</body>
+</html>

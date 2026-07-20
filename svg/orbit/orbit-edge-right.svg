@@ -1,0 +1,16 @@
+<svg data-orbit viewBox="0 0 491 271" fill="none" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogEdgeR" gradientUnits="userSpaceOnUse" x1="491" y1="271" x2="0" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M97.1 785.2A650 313.4 152 1 0 1244.9 174.8A650 313.4 152 1 0 97.1 785.2Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path d="M165.9 889.1A650 391.5 141 1 0 1176.1 70.9A650 391.5 141 1 0 165.9 889.1Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path data-orbit-track d="M253.2 977.9A650 466.7 130 1 0 1088.8 -17.9A650 466.7 130 1 0 253.2 977.9Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path d="M355.9 1048.5A650 537.8 119 1 0 986.1 -88.5A650 537.8 119 1 0 355.9 1048.5Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path d="M470.1 1098.2A650 610.3 108 1 0 871.9 -138.2A650 610.3 108 1 0 470.1 1098.2Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path d="M591.8 1125.2A650 702.6 97 1 0 750.2 -165.2A650 702.6 97 1 0 591.8 1125.2Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+  <path d="M716.3 1128.4A650 887.4 86 1 0 625.7 -168.4A650 887.4 86 1 0 716.3 1128.4Z" stroke="url(#sogEdgeR)" stroke-width="0.75"/>
+</svg>

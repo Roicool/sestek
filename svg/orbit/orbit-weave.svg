@@ -1,0 +1,17 @@
+<svg data-orbit viewBox="0 0 1440 600" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogWeave" gradientUnits="userSpaceOnUse" x1="0" y1="600" x2="1440" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M-1412.4 300A1400 565.7 -150 1 0 1012.4 1700A1400 565.7 -150 1 0 -1412.4 300Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path data-orbit-track d="M-1207.1 27.5A1400 789.8 -136 1 0 807.1 1972.5A1400 789.8 -136 1 0 -1207.1 27.5Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M-941.9 -187.3A1400 1005.5 -122 1 0 541.9 2187.3A1400 1005.5 -122 1 0 -941.9 -187.3Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M-632.6 -331.5A1400 1226.9 -108 1 0 232.6 2331.5A1400 1226.9 -108 1 0 -632.6 -331.5Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M427.6 1700A1400 565.7 150 1 0 2852.4 300A1400 565.7 150 1 0 427.6 1700Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M632.9 1972.5A1400 789.8 136 1 0 2647.1 27.5A1400 789.8 136 1 0 632.9 1972.5Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M898.1 2187.3A1400 1005.5 122 1 0 2381.9 -187.3A1400 1005.5 122 1 0 898.1 2187.3Z" stroke="url(#sogWeave)" stroke-width="1"/>
+  <path d="M1207.4 2331.5A1400 1226.9 108 1 0 2072.6 -331.5A1400 1226.9 108 1 0 1207.4 2331.5Z" stroke="url(#sogWeave)" stroke-width="1"/>
+</svg>

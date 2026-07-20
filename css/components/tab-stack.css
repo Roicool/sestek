@@ -1,0 +1,151 @@
+/*!
+ * tab-stack.css v1.1.0
+ * Pinned tab section with stacking panels — critical/behavioural styles only.
+ * Colours, fonts and exact spacing come from the Webflow Designer + RC tokens.
+ * https://github.com/roicool/sestek
+ *
+ * Changelog
+ * v1.1.0 — [data-tstack-progress]: full-width progress track pinned to the
+ *          bar's bottom edge, driven by the whole section's scroll
+ * v1.0.0 — initial release
+ */
+
+/* ── Section ─────────────────────────────────────────────────── */
+.tstack {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Tab bar — pinned to the very top of the section ─────────── */
+/*
+ * Sits above the stage (z-index) because JS slides it down by the navbar's
+ * height while the nav is visible — it must glide OVER the panel content.
+ * Needs its own opaque background for the same reason.
+ */
+[data-tstack-bar] {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  will-change: transform;
+  background-color: var(--tstack-bar-bg, var(--neutral--white, #fff));
+}
+
+/* ── Tab ─────────────────────────────────────────────────────── */
+/* Button reset so a Webflow <button>/link both look right */
+[data-tstack-tab] {
+  position: relative;               /* anchors the progress track */
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.3s ease;
+}
+
+[data-tstack-tab]:hover,
+[data-tstack-tab].is-active {
+  opacity: 1;
+}
+
+/* ── Progress track + fill ───────────────────────────────────── */
+/*
+ * [data-tstack-progress] = full-width track pinned to the BAR's bottom
+ * edge; its fill maps 1:1 to the whole section's scroll progress.
+ * [data-tstack-track] = optional per-tab variant (inside a tab).
+ * Fill = scaleX 0→1 (GSAP). Override size/colour freely in Designer.
+ */
+[data-tstack-progress] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--tstack-track-h, 2px);
+  overflow: hidden;
+  background: var(--tstack-track-color, rgba(0, 0, 0, 0.08));
+  pointer-events: none;
+}
+
+[data-tstack-track] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--tstack-track-h, 2px);
+  overflow: hidden;
+  background: var(--tstack-track-color, rgba(0, 0, 0, 0.08));
+}
+
+[data-tstack-fill] {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--tstack-fill-color, var(--brand-primary--500, currentColor));
+  will-change: transform;
+}
+
+/* ── Stage — panels stack in one grid cell ───────────────────── */
+/*
+ * overflow:hidden is critical: incoming panels wait at yPercent 100
+ * (one own-height below) and must be clipped until their cover starts.
+ */
+[data-tstack-stage] {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+}
+
+[data-tstack-stage] > [data-tstack-panel] {
+  grid-area: 1 / 1;
+  position: relative;
+  min-width: 0;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+/*
+ * Each panel COVERS the previous one, so it must be an opaque layer —
+ * give every panel its own solid background in Webflow, otherwise the
+ * receding panel shows through.
+ */
+
+/* Pre-init flash guard: until JS stacks the panels, only the first shows.
+   (JS adds .is-ready right after positioning them.) */
+[data-tab-stack]:not(.is-ready) [data-tstack-panel]:not(:first-child) {
+  visibility: hidden;
+}
+
+/* ── Mobile — tab bar becomes a horizontal scroll row ────────── */
+@media (max-width: 768px) {
+  [data-tstack-bar] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+  }
+
+  [data-tstack-bar]::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-tstack-tab] {
+    white-space: nowrap;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-tstack-bar],
+  [data-tstack-fill],
+  [data-tstack-stage] > [data-tstack-panel] {
+    will-change: auto !important;
+  }
+
+  [data-tstack-tab] {
+    transition: none;
+  }
+}

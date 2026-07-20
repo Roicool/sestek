@@ -1,0 +1,15 @@
+<svg data-orbit viewBox="0 0 480 480" fill="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogVortex" gradientUnits="userSpaceOnUse" x1="0" y1="480" x2="480" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path data-orbit-track d="M454 240A214 72 0 1 0 26 240A214 72 0 1 0 454 240Z" stroke="url(#sogVortex)" stroke-width="1"/>
+  <path d="M425.3 347A214 72 30 1 0 54.7 133A214 72 30 1 0 425.3 347Z" stroke="url(#sogVortex)" stroke-width="1"/>
+  <path d="M347 425.3A214 72 60 1 0 133 54.7A214 72 60 1 0 347 425.3Z" stroke="url(#sogVortex)" stroke-width="1"/>
+  <path d="M240 454A214 72 90 1 0 240 26A214 72 90 1 0 240 454Z" stroke="url(#sogVortex)" stroke-width="1"/>
+  <path d="M133 425.3A214 72 120 1 0 347 54.7A214 72 120 1 0 133 425.3Z" stroke="url(#sogVortex)" stroke-width="1"/>
+  <path d="M54.7 347A214 72 150 1 0 425.3 133A214 72 150 1 0 54.7 347Z" stroke="url(#sogVortex)" stroke-width="1"/>
+</svg>

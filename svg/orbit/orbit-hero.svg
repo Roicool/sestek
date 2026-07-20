@@ -1,0 +1,15 @@
+<svg data-orbit viewBox="0 0 1440 600" fill="none" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sogHero" gradientUnits="userSpaceOnUse" x1="0" y1="600" x2="1440" y2="0">
+      <stop offset="0%" stop-color="#EC008C"/>
+      <stop offset="50%" stop-color="#7F81AE"/>
+      <stop offset="100%" stop-color="#00FFEB"/>
+    </linearGradient>
+  </defs>
+  <path d="M3198.5 1963.4A2480 1550 -2 1 0 -1758.5 2136.6A2480 1550 -2 1 0 3198.5 1963.4Z" stroke="url(#sogHero)" stroke-width="1"/>
+  <path d="M3310.4 2140.5A2592 1620 2 1 0 -1870.4 1959.5A2592 1620 2 1 0 3310.4 2140.5Z" stroke="url(#sogHero)" stroke-width="1"/>
+  <path d="M3422.4 1955.6A2704 1690 -2 1 0 -1982.4 2144.4A2704 1690 -2 1 0 3422.4 1955.6Z" stroke="url(#sogHero)" stroke-width="1"/>
+  <path data-orbit-track d="M3534.3 2148.3A2816 1760 2 1 0 -2094.3 1951.7A2816 1760 2 1 0 3534.3 2148.3Z" stroke="url(#sogHero)" stroke-width="1"/>
+  <path d="M3646.2 1947.8A2928 1830 -2 1 0 -2206.2 2152.2A2928 1830 -2 1 0 3646.2 1947.8Z" stroke="url(#sogHero)" stroke-width="1"/>
+  <path d="M3758.1 2156.1A3040 1900 2 1 0 -2318.1 1943.9A3040 1900 2 1 0 3758.1 2156.1Z" stroke="url(#sogHero)" stroke-width="1"/>
+</svg>

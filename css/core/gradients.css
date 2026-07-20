@@ -1,0 +1,146 @@
+/*
+ * ============================================================
+ *  GRADIENT TOKENS — token-driven gradient system
+ *  Source palette: RC-STRUCTURE-REFERENCE.css (Base collection)
+ *
+ *  Her gradient stop'u brand/neutral tokenlarından color-mix(in oklch)
+ *  ile türetilir → Webflow'da marka rengi değişince gradientlar da
+ *  otomatik güncellenir. Class'lar ayrıca oluşturulacak; burada
+ *  yalnızca :root değişkenleri var.
+ *
+ *  Usage:
+ *    background: var(--gradient--hero-dawn);
+ *  Text gradient:
+ *    background: var(--gradient--text-brand);
+ *    -webkit-background-clip: text; background-clip: text;
+ *    color: transparent;
+ * ============================================================ */
+
+:root {
+
+  /* ------------------------------------------------------------
+     1 · GRADIENT STOPS — derived tints (do not use directly on
+         elements; these feed the gradients below)
+     ------------------------------------------------------------ */
+
+  /* airy pastels — hero / ambient backgrounds */
+  --gradient-stop--ice:        color-mix(in oklch, var(--brand-secondary--100), var(--neutral--0) 40%);
+  --gradient-stop--cream:      color-mix(in oklch, var(--brand-primary--100),   var(--neutral--0) 40%);
+  --gradient-stop--cool-soft:  color-mix(in oklch, var(--brand-secondary--200), var(--neutral--0) 28%);
+  --gradient-stop--warm-soft:  color-mix(in oklch, var(--brand-primary--200),   var(--neutral--0) 28%);
+  --gradient-stop--cool-mist:  color-mix(in oklch, var(--brand-secondary--300), var(--neutral--0) 52%);
+  --gradient-stop--warm-mist:  color-mix(in oklch, var(--brand-primary--300),   var(--neutral--0) 52%);
+  --gradient-stop--blush:      color-mix(in oklch,
+                                 color-mix(in oklch, var(--brand-primary--300), var(--brand-secondary--300) 38%),
+                                 var(--neutral--0) 46%);
+
+  /* translucent tints — glows / dark auroras */
+  --gradient-stop--cool-veil:  color-mix(in oklch, var(--brand-secondary--400), transparent 55%);
+  --gradient-stop--warm-veil:  color-mix(in oklch, var(--brand-primary--400),   transparent 55%);
+  --gradient-stop--cool-deep:  color-mix(in oklch, var(--brand-secondary--700), transparent 45%);
+  --gradient-stop--warm-deep:  color-mix(in oklch, var(--brand-primary--800),   transparent 55%);
+
+
+  /* ------------------------------------------------------------
+     2 · HERO / AMBIENT — layered aurora meshes (full-bleed
+         section & hero backgrounds; premium, low-chroma)
+     ------------------------------------------------------------ */
+
+  /* Soft dawn — cool top-left → cream/white core → warm blush right
+     (reference image look) */
+  --gradient--hero-dawn:
+    radial-gradient(115% 110% at 0% 0%,   var(--gradient-stop--cool-soft) 0%, transparent 52%),
+    radial-gradient(90% 100% at 100% 12%, var(--gradient-stop--warm-mist) 0%, transparent 55%),
+    radial-gradient(75% 85%  at 84% 100%, var(--gradient-stop--blush) 0%,     transparent 58%),
+    linear-gradient(100deg in oklch, var(--gradient-stop--ice) 0%, var(--neutral--0) 42%, var(--gradient-stop--cream) 100%);
+
+  /* Soft dusk — mirrored, cool-dominant */
+  --gradient--hero-dusk:
+    radial-gradient(115% 110% at 100% 0%, var(--gradient-stop--warm-soft) 0%, transparent 52%),
+    radial-gradient(90% 100% at 0% 18%,   var(--gradient-stop--cool-mist) 0%, transparent 55%),
+    radial-gradient(80% 85%  at 18% 100%, var(--gradient-stop--blush) 0%,     transparent 58%),
+    linear-gradient(260deg in oklch, var(--gradient-stop--cream) 0%, var(--neutral--0) 45%, var(--gradient-stop--ice) 100%);
+
+  /* Halo — single centered top glow, editorial & minimal */
+  --gradient--hero-halo:
+    radial-gradient(85% 60% at 50% 0%, var(--gradient-stop--cool-mist) 0%, transparent 68%),
+    linear-gradient(180deg in oklch, var(--neutral--0) 0%, var(--gradient-stop--cream) 100%);
+
+
+  /* ------------------------------------------------------------
+     3 · SECTION WASHES — quiet linear tints for content sections
+         (fade into --surface--base so sections stitch seamlessly)
+     ------------------------------------------------------------ */
+
+  --gradient--wash-cool:    linear-gradient(180deg in oklch, var(--gradient-stop--ice) 0%,   var(--surface--base) 62%);
+  --gradient--wash-warm:    linear-gradient(180deg in oklch, var(--gradient-stop--cream) 0%, var(--surface--base) 62%);
+  --gradient--wash-horizon: linear-gradient(95deg  in oklch, var(--gradient-stop--ice) 0%,   var(--neutral--0) 50%, var(--gradient-stop--cream) 100%);
+  --gradient--wash-rise:    linear-gradient(0deg   in oklch, var(--gradient-stop--ice) 0%,   var(--surface--base) 62%);
+
+
+  /* ------------------------------------------------------------
+     4 · BRAND VIVID — saturated gradients for CTAs, badges,
+         icons, accent chips
+     ------------------------------------------------------------ */
+
+  --gradient--brand:       linear-gradient(135deg in oklch, var(--brand-secondary--500) 0%, var(--brand-primary--500) 100%);
+  --gradient--brand-hover: linear-gradient(135deg in oklch, var(--brand-secondary--600) 0%, var(--brand-primary--600) 100%);
+  --gradient--brand-deep:  linear-gradient(135deg in oklch, var(--brand-secondary--700) 0%, var(--brand-primary--600) 100%);
+  --gradient--brand-soft:  linear-gradient(135deg in oklch, var(--brand-secondary--200) 0%, var(--brand-primary--200) 100%);
+
+
+  /* ------------------------------------------------------------
+     5 · DARK / INVERTED — depth for footer, testimonial,
+         inverted feature sections
+     ------------------------------------------------------------ */
+
+  /* Ink aurora — near-black with faint brand light leaks */
+  --gradient--ink:
+    radial-gradient(120% 100% at 85% 0%,  var(--gradient-stop--cool-deep) 0%, transparent 55%),
+    radial-gradient(90% 90%   at 8% 100%, var(--gradient-stop--warm-deep) 0%, transparent 60%),
+    linear-gradient(165deg in oklch, var(--neutral--900) 0%, var(--neutral--950) 100%);
+
+  /* Ink flat — plain premium dark falloff */
+  --gradient--ink-flat: linear-gradient(180deg in oklch, var(--neutral--900) 0%, var(--neutral--950) 100%);
+
+
+  /* ------------------------------------------------------------
+     6 · TEXT GRADIENTS — pair with background-clip: text
+     ------------------------------------------------------------ */
+
+  --gradient--text-brand: linear-gradient(95deg in oklch, var(--brand-secondary--600) 0%, var(--brand-primary--500) 100%);
+  --gradient--text-ink:   linear-gradient(180deg in oklch, var(--neutral--700) 0%, var(--neutral--950) 100%);
+  --gradient--text-mist:  linear-gradient(95deg in oklch, var(--neutral--0) 0%, color-mix(in oklch, var(--neutral--0), transparent 45%) 100%);
+
+
+  /* ------------------------------------------------------------
+     7 · SCRIMS — image/video overlays for legible captions
+     ------------------------------------------------------------ */
+
+  --gradient--scrim-bottom: linear-gradient(180deg, transparent 38%, color-mix(in oklch, var(--neutral--950), transparent 22%) 100%);
+  --gradient--scrim-top:    linear-gradient(0deg,   transparent 45%, color-mix(in oklch, var(--neutral--950), transparent 35%) 100%);
+  --gradient--scrim-full:   linear-gradient(180deg,
+                              color-mix(in oklch, var(--neutral--950), transparent 55%) 0%,
+                              color-mix(in oklch, var(--neutral--950), transparent 80%) 45%,
+                              color-mix(in oklch, var(--neutral--950), transparent 25%) 100%);
+
+
+  /* ------------------------------------------------------------
+     8 · DETAIL — gradient borders & glows
+         Border usage (class side):
+           border: 1px solid transparent;
+           background:
+             linear-gradient(var(--surface--base), var(--surface--base)) padding-box,
+             var(--gradient--border-shine) border-box;
+     ------------------------------------------------------------ */
+
+  --gradient--border-shine: linear-gradient(120deg in oklch,
+                              var(--gradient-stop--cool-soft) 0%,
+                              var(--border--color-border-muted) 35%,
+                              var(--gradient-stop--warm-soft) 65%,
+                              var(--border--color-border-muted) 100%);
+  --gradient--border-brand: linear-gradient(120deg in oklch, var(--brand-secondary--400) 0%, var(--brand-primary--400) 100%);
+
+  --gradient--glow-cool: radial-gradient(50% 50% at 50% 50%, var(--gradient-stop--cool-veil) 0%, transparent 72%);
+  --gradient--glow-warm: radial-gradient(50% 50% at 50% 50%, var(--gradient-stop--warm-veil) 0%, transparent 72%);
+}
