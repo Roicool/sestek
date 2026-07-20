@@ -1,5 +1,5 @@
 /*!
- * globe-pulse.css v1.0.0
+ * globe-pulse.css v1.1.0
  * Flat globe wireframe with light pulses travelling along the grid
  * (Framer "Edge Network" style). Pure CSS motion — stroke-dashoffset
  * loop; JS (js/effects/globe-pulse.js) only injects the SVG markup.
@@ -11,15 +11,26 @@
  * https://github.com/roicool/sestek
  */
 
+/* CLS zırhı: kutu, JS enjekte etmeden ÖNCE son yüksekliğini alır
+   (880x460 oranı CSS'te rezerve). SVG absolute dolduğu için geldiği
+   anda tek piksellik layout kayması olmaz. */
 [data-globe-pulse] {
   position: relative;
   overflow: hidden;
+  aspect-ratio: 880 / 460;
 }
 
 [data-globe-pulse] svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;          /* viewBox 880x460 keeps the aspect ratio */
+  height: 100%;
+}
+
+/* aspect-ratio bilmeyen çok eski tarayıcılar: padding hack fallback */
+@supports not (aspect-ratio: 1) {
+  [data-globe-pulse] { height: 0; padding-bottom: 52.273%; }
 }
 
 .gp-grid {
