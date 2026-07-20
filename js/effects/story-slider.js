@@ -1,5 +1,5 @@
 /*!
- * story-slider.js v1.1.0
+ * story-slider.js v1.2.0
  * Stripe-style customer story slider for a Webflow Collection List.
  *
  *   1. tags the Collection List / Items with .ss-list / .ss-item,
@@ -15,7 +15,13 @@
  *      scroll like scroll-fx: reversible, never one-shot. Needs
  *      ScrollTrigger; skipped under prefers-reduced-motion.
  *
- * Hover motion is pure CSS (css/effects/story-slider.css).
+ * Hover choreography is GSAP-driven like Stripe's (tweened per card,
+ * expo.out — direction changes bend mid-flight); the CSS :hover rules
+ * only remain as a no-GSAP fallback.
+ *
+ * Nav placement: put data-ss-nav on any Div (e.g. in your heading row,
+ * even outside the wrapper) — the injected buttons land inside it.
+ * Without it they go right above the list.
  * gsap + Draggable + InertiaPlugin + ScrollTrigger recommended; every
  * layer degrades gracefully if its plugin is missing (no drag / no
  * entrance — buttons, swipe and keyboard still work).
@@ -44,6 +50,8 @@
  *   data-ss-enter="false"   disable the entrance choreography
  *   data-ss-snap="false"    disable card-boundary snapping after a throw
  *   data-ss-label="Customer stories"  accessible name for the region
+ * On any div (anywhere in the section):
+ *   data-ss-nav               injected prev/next buttons go here
  *
  * https://github.com/roicool/sestek
  */
@@ -70,6 +78,19 @@
       root.querySelector(".w-dyn-items") ||
       root.firstElementChild
     );
+  }
+
+  /* Nav'ın gideceği kutu: [data-ss-nav] — önce wrapper'ın içinde, sonra
+     yukarı doğru her atada aranır (Webflow'da başlık satırındaki bir Div
+     olur genelde). Bulunamazsa nav listenin üstüne enjekte edilir. */
+  function findNavHost(root) {
+    var node = root;
+    while (node && node !== document.body) {
+      var host = node.querySelector("[data-ss-nav]");
+      if (host) return host;
+      node = node.parentElement;
+    }
+    return null;
   }
 
   function flag(el, name, fallback) {
@@ -125,8 +146,10 @@
     }
 
     /* Nav butonları */
-    var prev = root.querySelector("[data-ss-prev]");
-    var next = root.querySelector("[data-ss-next]");
+    var navHost = findNavHost(root);
+    var scope = navHost ? navHost.parentElement || navHost : root;
+    var prev = scope.querySelector("[data-ss-prev]") || root.querySelector("[data-ss-prev]");
+    var next = scope.querySelector("[data-ss-next]") || root.querySelector("[data-ss-next]");
     if (!prev || !next) {
       var nav = document.createElement("div");
       nav.className = "ss-nav";
@@ -134,7 +157,8 @@
       next = next || makeBtn(1, "Next");
       nav.appendChild(prev);
       nav.appendChild(next);
-      root.insertBefore(nav, list);
+      if (navHost) navHost.appendChild(nav);
+      else root.insertBefore(nav, list);
     }
 
     function gapPx() {
@@ -183,6 +207,47 @@
       else if (e.key === "End") { e.preventDefault(); killThrow(); list.scrollTo({ left: maxScroll(), behavior: "smooth" }); }
     });
 
+    /* ── Hover koreografisi — Stripe gibi JS sürer ────────────────
+       CSS transition yerine her kart kendi GSAP tween'iyle hedefe
+       yaklaşır (expo.out): hover hızla değişince yön yarı yoldan
+       yumuşakça döner, CSS'in "baştan başlama" hissi olmaz.
+       .ss-js-hover sınıfı CSS fallback'ini kapatır. */
+    var clearHover = function () {};
+    var hoverOn = hasGsap && !reduce &&
+      global.matchMedia && global.matchMedia("(hover: hover)").matches;
+    if (hoverOn) {
+      root.classList.add("ss-js-hover");
+      var hScale = !isNaN(scale) && scale > 0 ? scale : 1.035;
+      var hShift = !isNaN(shift) ? shift : 6;
+      var hovered = -1;
+      var render = function () {
+        for (var k = 0; k < items.length; k++) {
+          var isH = k === hovered;
+          items[k].style.zIndex = isH ? "2" : "";
+          gsap.to(items[k], {
+            scale: isH ? hScale : 1,
+            x: hovered < 0 || isH ? 0 : (k < hovered ? -hShift : hShift),
+            duration: 0.6,
+            ease: "expo.out",
+            overwrite: "auto"
+          });
+        }
+      };
+      clearHover = function () {
+        if (hovered > -1) { hovered = -1; render(); }
+      };
+      items.forEach(function (it, k) {
+        it.addEventListener("pointerenter", function (e) {
+          if (e.pointerType && e.pointerType !== "mouse") return;
+          hovered = k; render();
+        });
+        it.addEventListener("pointerleave", function (e) {
+          if (e.pointerType && e.pointerType !== "mouse") return;
+          if (hovered === k) { hovered = -1; render(); }
+        });
+      });
+    }
+
     /* ── Drag + inertia (Draggable proxy → native scrollLeft) ─────── */
     var drag = null;
     if (hasGsap && typeof Draggable !== "undefined") {
@@ -209,6 +274,7 @@
         allowNativeTouchScrolling: true, /* dikey swipe = sayfa scroll'u */
         onPress: function () {
           killScroll();
+          clearHover();
           pressX = this.x;
           pressScroll = list.scrollLeft;
           pressStep = step();
