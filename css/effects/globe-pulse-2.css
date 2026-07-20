@@ -1,0 +1,59 @@
+/*!
+ * globe-pulse-2.css v1.0.0
+ * Behavioural CSS for the GSAP DrawSVG variant of the globe-pulse visual.
+ * All motion lives in js/effects/globe-pulse-2.js (DrawSVG choreography);
+ * this file only reserves the box (CLS 0) and holds the colour hooks.
+ *
+ * Colour hooks (set on [data-globe-pulse-2] or any ancestor):
+ *   --gp2-color   pulse colour  (default: var(--brand-primary--500, #EC008C))
+ *   --gp2-grid    grid colour   (default: #212121)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* CLS zırhı: kutu, JS enjekte etmeden ÖNCE son yüksekliğini alır. */
+[data-globe-pulse-2] {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 880 / 460;
+}
+
+[data-globe-pulse-2] svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Designer placeholder: div'in içine svg/globe-pulse/globe-pulse.svg'yi
+   <img> olarak koy — init yayında inline sürümle değiştirir. */
+[data-globe-pulse-2] > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gp2-grid {
+  stroke: var(--gp2-grid, #212121);
+  stroke-width: 1;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.gp2-pulse {
+  stroke: var(--gp2-color, var(--brand-primary--500, #EC008C));
+  stroke-width: 2.933;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0; /* GSAP açar */
+  will-change: stroke-dashoffset, opacity;
+}
+
+/* aspect-ratio bilmeyen çok eski tarayıcılar: padding hack fallback */
+@supports not (aspect-ratio: 1) {
+  [data-globe-pulse-2] { height: 0; padding-bottom: 52.273%; }
+}
