@@ -2,9 +2,11 @@
  * globe-pulse-2.js v1.1.0
  *
  * Changelog
- * v1.1.0 — preserveAspectRatio "slice": geniş kutuda küre tam genişliğe
- *          oturur, çizgiler kenarda biter (sağda havada kesilme yok).
- *          Draw-in bir tık yavaşladı; pulse trafiği artık çizim bitmeden
+ * v1.2.0 — küre KOMPLE görünür: çizim %75 ölçeklenip viewBox'a tam
+ *          oturtuldu (yatayda hiçbir çizgi kesilmez, alt kesik kalır);
+ *          "meet" fit — her kutu oranında tam küre, gerekirse yanlarda
+ *          nefes boşluğu.
+ * v1.1.0 — Draw-in bir tık yavaşladı; pulse trafiği artık çizim bitmeden
  *          (draw-in'in ~0.9sn'sinde) başlıyor.
  * GSAP DrawSVG variant of the globe-pulse visual — same wireframe globe,
  * premium choreography. Kept SEPARATE from globe-pulse v1 (pure CSS);
@@ -122,9 +124,10 @@
     var fid = "gp2-glow-" + (++uid);
     var svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("viewBox", VIEWBOX);
-    /* "slice": kutu viewBox oranından genişse küre tam genişliğe ölçeklenir,
-       taşan kısım kutu kenarında kırpılır — çizgiler havada bitmez. */
-    svg.setAttribute("preserveAspectRatio", "xMidYMin slice");
+    /* "meet": küre her kutu oranında KOMPLE görünür (yatayda kesilmez);
+       çizim FIT ölçeğiyle viewBox'a tam oturtulduğu için kenarlardan
+       taşan çizgi yok, alt taraf tasarım gereği kesik. */
+    svg.setAttribute("preserveAspectRatio", "xMidYMin meet");
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", "Globe wireframe with moving light pulses");
     svg.innerHTML =
@@ -135,8 +138,14 @@
       "<feMergeNode in=\"SourceGraphic\"></feMergeNode></feMerge>" +
       "</filter></defs>";
 
+    /* Çizim verisi x:-146.67..1026.67 (1173 birim) — viewBox'tan geniş.
+       0.75 ölçek + 110 kaydırma ile 0..880'e TAM oturur: kürenin sağı/solu
+       hiçbir kutuda kesilmez. (Grid'de non-scaling-stroke 1px'i korur.) */
+    var FIT = "translate(110.0025,0) scale(0.75)";
+
     var gGrid = document.createElementNS(SVGNS, "g");
     gGrid.setAttribute("class", "gp2-grid");
+    gGrid.setAttribute("transform", FIT);
     var gridPaths = GRID.map(function (d) {
       var p = document.createElementNS(SVGNS, "path");
       p.setAttribute("d", d);
@@ -147,6 +156,7 @@
     svg.appendChild(gGrid);
 
     var gPulse = document.createElementNS(SVGNS, "g");
+    gPulse.setAttribute("transform", FIT);
     svg.appendChild(gPulse);
 
     root.innerHTML = "";
