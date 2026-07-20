@@ -6,7 +6,7 @@
  * Optional stats block (inside [data-hero-s2], below [data-hero-desc]):
  *   <div class="hero__stats" data-hero-stats>
  *     <div class="hero__stat" data-hero-stat>
- *       <div class="hero__stat-number" data-count>1,250+</div>
+ *       <div class="hero__stat-number" data-counter="1250" data-counter-suffix="+">1,250+</div>
  *       <div class="hero__stat-label">Label</div>
  *     </div>
  *   </div>
@@ -264,7 +264,7 @@
                * its _countUpInit flag keeps scrubbing back/forth from
                * re-initialising. Counts once, then stays (count-up default).
                */
-              var num = stat.querySelector("[data-count]");
+              var num = stat.querySelector("[data-counter]");
               if (num && global.Sestek.countUp) {
                 global.Sestek.countUp(num, { duration: 1.6 });
               }

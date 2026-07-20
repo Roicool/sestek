@@ -1,14 +1,22 @@
 /*!
- * count-up.js v1.0.0
+ * count-up.js v1.1.0
  * Viewport count-up — numbers roll from a start value to the value you set,
  * the moment the element scrolls into view. Fully data-attribute driven.
  *
- * The final value LIVES IN THE HTML (SEO / no-JS safe): write the finished
- * number in the element, the script parses it — prefix, number, decimals,
- * thousands separators and suffix are all detected automatically:
- *   <div data-count>1,250,000+</div>   → rolls 0 → 1,250,000+ (keeps "," and "+")
- *   <div data-count>%98.6</div>        → rolls  0 → %98.6     (keeps "%" and 1 decimal)
- *   <div data-count="42">0</div>       → rolls  0 → 42        (explicit target)
+ * Webflow note: custom attributes require BOTH a name and a value, so set
+ * the target as the value (data-counter="1250") — the visible text can be
+ * anything (e.g. "0"). Add the sign you want appended with
+ * data-counter-suffix ("+", "%", " try", " ms"…) and any leading sign with
+ * data-counter-prefix ("%", "$"…). Outside Webflow you can still leave
+ * data-counter empty and let the script parse everything from the text.
+ *
+ * The final value can also LIVE IN THE HTML (SEO / no-JS safe): write the
+ * finished number in the element and the script parses it — prefix, number,
+ * decimals, thousands separators and suffix are all detected automatically:
+ *   <div data-counter="1250" data-counter-suffix="+">0</div>  → 0 → 1,250+
+ *   <div data-counter="98.6" data-counter-prefix="%">0</div>  → 0 → %98.6
+ *   <div data-counter>1,250,000+</div>   → rolls 0 → 1,250,000+ (parsed from text)
+ *   <div data-counter>%98.6</div>        → rolls  0 → %98.6     (parsed from text)
  *
  * Premium details baked in:
  *   • tabular-nums + reserved width — digits roll in place, zero layout shift
@@ -18,30 +26,30 @@
  *   • prefers-reduced-motion → value is set instantly, no motion
  *
  * Two ways to use it:
- *   1. Sestek.initCountUp()          — declarative, scans [data-count] (no JS)
+ *   1. Sestek.initCountUp()          — declarative, scans [data-counter] (no JS)
  *   2. Sestek.countUp(el, opts)      — programmatic, returns the GSAP tween
  *
  * Requires: gsap + ScrollTrigger registered. Core: js/core/utils.js
  *
  * DOM (Webflow):
- *   <span class="stat_number" data-count data-count-duration="2.4">12,500+</span>
+ *   <span class="stat_number" data-counter data-counter-duration="2.4">12,500+</span>
  *
- * Attributes (all optional except data-count):
- *   data-count            target number. Empty → parsed from the element's text
+ * Attributes (all optional except data-counter):
+ *   data-counter            target number. Empty → parsed from the element's text
  *                         (recommended: keep the real value in the HTML).
- *   data-count-from       number the roll starts from                 (default 0)
- *   data-count-duration   roll duration in seconds                    (default 2)
- *   data-count-delay      delay before it starts, in seconds          (default 0)
- *   data-count-ease       GSAP ease of the roll                (default "expo.out")
- *   data-count-decimals   decimal places. Empty → inferred from the target text.
- *   data-count-separator  thousands separator character, e.g. "," or "."
+ *   data-counter-from       number the roll starts from                 (default 0)
+ *   data-counter-duration   roll duration in seconds                    (default 2)
+ *   data-counter-delay      delay before it starts, in seconds          (default 0)
+ *   data-counter-ease       GSAP ease of the roll                (default "expo.out")
+ *   data-counter-decimals   decimal places. Empty → inferred from the target text.
+ *   data-counter-separator  thousands separator character, e.g. "," or "."
  *                         Empty → whatever the original text used (or none).
- *   data-count-locale     BCP-47 locale for Intl formatting, e.g. "tr-TR".
- *                         Overrides data-count-separator/decimal detection.
- *   data-count-prefix     text before the number. Empty → parsed from text.
- *   data-count-suffix     text after the number.  Empty → parsed from text.
- *   data-count-start      ScrollTrigger start position          (default "top 85%")
- *   data-count-once       default true: counts once and stays. "false" →
+ *   data-counter-locale     BCP-47 locale for Intl formatting, e.g. "tr-TR".
+ *                         Overrides data-counter-separator/decimal detection.
+ *   data-counter-prefix     text before the number. Empty → parsed from text.
+ *   data-counter-suffix     text after the number.  Empty → parsed from text.
+ *   data-counter-start      ScrollTrigger start position          (default "top 85%")
+ *   data-counter-once       default true: counts once and stays. "false" →
  *                         re-rolls on every viewport enter (resets on leave-back).
  *
  * https://github.com/roicool/sestek
@@ -159,22 +167,22 @@
     var o = opts || {};
     var parsed = parseStat(el.textContent) || { prefix: "", value: 0, decimals: 0, separator: "", suffix: "" };
 
-    var target = o.value != null ? o.value : attrNum(el, "data-count", parsed.value);
-    var from = o.from != null ? o.from : attrNum(el, "data-count-from", DEFAULTS.from);
-    var duration = o.duration != null ? o.duration : attrNum(el, "data-count-duration", DEFAULTS.duration);
-    var delay = o.delay != null ? o.delay : attrNum(el, "data-count-delay", DEFAULTS.delay);
-    var decimals = o.decimals != null ? o.decimals : attrNum(el, "data-count-decimals", parsed.decimals);
-    var ease = o.ease || el.getAttribute("data-count-ease") || DEFAULTS.ease;
-    var start = o.start || el.getAttribute("data-count-start") || DEFAULTS.start;
-    var locale = o.locale || el.getAttribute("data-count-locale") || "";
+    var target = o.value != null ? o.value : attrNum(el, "data-counter", parsed.value);
+    var from = o.from != null ? o.from : attrNum(el, "data-counter-from", DEFAULTS.from);
+    var duration = o.duration != null ? o.duration : attrNum(el, "data-counter-duration", DEFAULTS.duration);
+    var delay = o.delay != null ? o.delay : attrNum(el, "data-counter-delay", DEFAULTS.delay);
+    var decimals = o.decimals != null ? o.decimals : attrNum(el, "data-counter-decimals", parsed.decimals);
+    var ease = o.ease || el.getAttribute("data-counter-ease") || DEFAULTS.ease;
+    var start = o.start || el.getAttribute("data-counter-start") || DEFAULTS.start;
+    var locale = o.locale || el.getAttribute("data-counter-locale") || "";
     var once = o.once != null ? o.once
-      : el.getAttribute("data-count-once") !== null ? Sestek.util.flag(el.getAttribute("data-count-once"))
+      : el.getAttribute("data-counter-once") !== null ? Sestek.util.flag(el.getAttribute("data-counter-once"))
       : DEFAULTS.once;
 
-    var sepAttr = o.separator != null ? o.separator : el.getAttribute("data-count-separator");
+    var sepAttr = o.separator != null ? o.separator : el.getAttribute("data-counter-separator");
     var format = makeFormatter({
-      prefix: o.prefix != null ? o.prefix : (el.getAttribute("data-count-prefix") || parsed.prefix),
-      suffix: o.suffix != null ? o.suffix : (el.getAttribute("data-count-suffix") || parsed.suffix),
+      prefix: o.prefix != null ? o.prefix : (el.getAttribute("data-counter-prefix") || parsed.prefix),
+      suffix: o.suffix != null ? o.suffix : (el.getAttribute("data-counter-suffix") || parsed.suffix),
       separator: sepAttr != null ? sepAttr : parsed.separator,
       decimal: parsed.decimal,
       decimals: decimals,
@@ -222,8 +230,8 @@
   }
 
   /**
-   * Initialise every [data-count] element on the page.
-   * @param {string} [selector="[data-count]"]
+   * Initialise every [data-counter] element on the page.
+   * @param {string} [selector="[data-counter]"]
    * @returns {Array<gsap.core.Tween>}
    */
   function initCountUp(selector) {
@@ -231,7 +239,7 @@
       console.error("[Sestek initCountUp] GSAP + ScrollTrigger required.");
       return [];
     }
-    var els = document.querySelectorAll(selector || "[data-count]");
+    var els = document.querySelectorAll(selector || "[data-counter]");
     var tweens = [];
     Array.prototype.forEach.call(els, function (el) {
       var t = countUp(el);
