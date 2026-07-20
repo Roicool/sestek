@@ -13,6 +13,10 @@
  * DOM (Webflow):
  *   <div data-globe-pulse></div>       height follows width (880x460 ratio)
  *
+ * Designer placeholder (recommended): drop svg/globe-pulse/globe-pulse.svg
+ * as an <img> INSIDE the div — you see the animated globe while designing,
+ * and it doubles as a no-JS fallback. init replaces it on the live site.
+ *
  * Attributes (all optional, on [data-globe-pulse]):
  *   data-gp-color="--brand-primary--500"  pulse colour — CSS var token
  *                                         (leading --) or raw colour.

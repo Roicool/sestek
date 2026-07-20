@@ -1,5 +1,5 @@
 /*!
- * globe-pulse.css v1.1.0
+ * globe-pulse.css v1.2.0
  * Flat globe wireframe with light pulses travelling along the grid
  * (Framer "Edge Network" style). Pure CSS motion — stroke-dashoffset
  * loop; JS (js/effects/globe-pulse.js) only injects the SVG markup.
@@ -21,6 +21,18 @@
 }
 
 [data-globe-pulse] svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Placeholder: Designer'da görebilmek için div'in içine svg/globe-pulse/
+   globe-pulse.svg'yi <img> olarak koy — rezerve kutuyu doldurur, kendi
+   içinde animasyonludur. initGlobePulse() yayında onu inline sürümle
+   değiştirir; JS hiç yüklenmezse img zaten çalışan fallback'tir. */
+[data-globe-pulse] > img {
   position: absolute;
   inset: 0;
   display: block;
