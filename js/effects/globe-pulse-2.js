@@ -1,5 +1,11 @@
 /*!
- * globe-pulse-2.js v1.0.0
+ * globe-pulse-2.js v1.1.0
+ *
+ * Changelog
+ * v1.1.0 — preserveAspectRatio "slice": geniş kutuda küre tam genişliğe
+ *          oturur, çizgiler kenarda biter (sağda havada kesilme yok).
+ *          Draw-in bir tık yavaşladı; pulse trafiği artık çizim bitmeden
+ *          (draw-in'in ~0.9sn'sinde) başlıyor.
  * GSAP DrawSVG variant of the globe-pulse visual — same wireframe globe,
  * premium choreography. Kept SEPARATE from globe-pulse v1 (pure CSS);
  * use one or the other on a page, not both on the same element.
@@ -116,7 +122,9 @@
     var fid = "gp2-glow-" + (++uid);
     var svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("viewBox", VIEWBOX);
-    svg.setAttribute("preserveAspectRatio", "xMidYMin meet");
+    /* "slice": kutu viewBox oranından genişse küre tam genişliğe ölçeklenir,
+       taşan kısım kutu kenarında kırpılır — çizgiler havada bitmez. */
+    svg.setAttribute("preserveAspectRatio", "xMidYMin slice");
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", "Globe wireframe with moving light pulses");
     svg.innerHTML =
@@ -189,7 +197,7 @@
           el.setAttribute("class", "gp2-pulse");
           el.setAttribute("filter", "url(#" + fid + ")");
           gPulse.appendChild(el);
-          gsap.delayedCall(rnd(0, 1.4) + i * 0.3, function () {
+          gsap.delayedCall(rnd(0, 0.8) + i * 0.22, function () {
             if (visible) spawn(el);
             else el.__gp2Pending = true;
           });
@@ -204,15 +212,19 @@
       if (draw) {
         gsap.set(gridPaths, { drawSVG: "0%" });
         var tl = gsap.timeline({
-          onComplete: function () { purge(tl); startTraffic(); }
+          onComplete: function () { purge(tl); }
         });
-        /* meridyenler (kutuptan yelpaze) → paraleller (üstten alta) */
+        /* meridyenler (kutuptan yelpaze) → paraleller (üstten alta) —
+           ağır, törensel çizim */
         tl.to(gridPaths.slice(1, 8), {
-          drawSVG: "100%", duration: 1.3, ease: "power2.inOut", stagger: 0.07
+          drawSVG: "100%", duration: 1.9, ease: "power2.inOut", stagger: 0.1
         }, 0);
         tl.to([gridPaths[10], gridPaths[9], gridPaths[8], gridPaths[0]], {
-          drawSVG: "100%", duration: 1.1, ease: "power2.inOut", stagger: 0.12
-        }, 0.35);
+          drawSVG: "100%", duration: 1.7, ease: "power2.inOut", stagger: 0.16
+        }, 0.5);
+        /* trafik çizimin bitmesini BEKLEMEZ — grid yarı çizilmişken
+           ilk pulse'lar süzülmeye başlar */
+        tl.call(startTraffic, [], 0.9);
         live.push(tl);
       } else {
         startTraffic();
