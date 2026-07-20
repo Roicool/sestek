@@ -1,57 +1,46 @@
 /*!
- * story-slider.js v1.2.0
+ * story-slider.js v2.0.0
  * Stripe-style customer story slider for a Webflow Collection List.
+ * Core mechanics are dependency-free vanilla JS (Stripe's own approach):
  *
- *   1. tags the Collection List / Items with .ss-list / .ss-item,
- *   2. injects (or wires) prev/next buttons + keeps disabled state,
- *   3. appends the self-drawing arrow after every [data-ss-link],
- *   4. drag + throw — GSAP Draggable + InertiaPlugin drive the native
- *      scroller through a proxy (grab a card, fling it, it glides and
- *      settles on a card boundary). Touch: horizontal swipe = drag with
- *      inertia, vertical swipe = native page scroll.
- *   5. keyboard — the list is focusable; ←/→ move one card,
- *      Home/End jump to the ends.
- *   6. entrance — cards stagger into place (rise + fade), scrubbed to
- *      scroll like scroll-fx: reversible, never one-shot. Needs
- *      ScrollTrigger; skipped under prefers-reduced-motion.
- *
- * Hover choreography is GSAP-driven like Stripe's (tweened per card,
- * expo.out — direction changes bend mid-flight); the CSS :hover rules
- * only remain as a no-GSAP fallback.
- *
- * Nav placement: put data-ss-nav on any Div (e.g. in your heading row,
- * even outside the wrapper) — the injected buttons land inside it.
- * Without it they go right above the list.
- * gsap + Draggable + InertiaPlugin + ScrollTrigger recommended; every
- * layer degrades gracefully if its plugin is missing (no drag / no
- * entrance — buttons, swipe and keyboard still work).
+ *   1. Hover — rAF + lerp drives two CSS vars (--ss-s scale, --ss-x
+ *      shift) on each card's inner wrapper. Target scale 1.036; the
+ *      neighbour shift is computed from the real card width
+ *      (w * 0.036 / 2 → 5.976px on a 332px card, Stripe's exact number).
+ *      transform-origin left center: hovered card and everything to its
+ *      left ease left, the rest ease right — growth reads symmetric.
+ *   2. Drag — mouse pointer drag on the native scroller (touch already
+ *      scrolls natively); a real drag never triggers the card link.
+ *   3. Nav — prev/next buttons (injected into [data-ss-nav] or above
+ *      the list), disabled at the ends, one card per click.
+ *   4. Keyboard — focusable region; ←/→ one card, Home/End jump.
+ *   5. Entrance — cards stagger into place scrubbed to scroll
+ *      (rise+fade+scale). The ONLY part that uses GSAP/ScrollTrigger;
+ *      skipped silently if GSAP is absent or reduced motion is on.
  *
  * FOUC guard (optional, pairs with the entrance):
  *   html.w-mod-js [data-story-slider] .w-dyn-item { opacity: 0; }
- * init reveals items the moment their start state is applied.
  *
  * API:
  *   Sestek.initStorySlider()  — wire every [data-story-slider]
  *
  * DOM (Webflow) — attribute goes on the Collection List WRAPPER:
  *   <div data-story-slider>          Collection List Wrapper
- *     <div>                          Collection List      → .ss-list
+ *     <div>                          Collection List      → .ss-list (scroller)
  *       <div>…</div>                 Collection Item      → .ss-item
+ *         <a>…</a>                   kartın tamamı        → .ss-inner (transform)
  *     </div>
  *   </div>
  *
- * Inside each item, put data-ss-link on the "Read story" text block —
- * the animated arrow is appended automatically. Own nav: data-ss-prev /
- * data-ss-next on any two buttons inside the wrapper.
+ * data-ss-link on the "Read story" text block → animated arrow appended.
+ * data-ss-nav on any div (anywhere in the section) → buttons land there.
+ * data-ss-prev / data-ss-next on your own two buttons → they get wired.
  *
  * Attributes (all optional, on [data-story-slider]):
- *   data-ss-scale="1.035"   hover scale
- *   data-ss-shift="6"       neighbour shift in px
- *   data-ss-enter="false"   disable the entrance choreography
- *   data-ss-snap="false"    disable card-boundary snapping after a throw
+ *   data-ss-scale="1.036"     hover scale target
+ *   data-ss-card-w="360px"    card width (default 332px, caps at 78vw)
+ *   data-ss-enter="false"     disable the entrance choreography
  *   data-ss-label="Customer stories"  accessible name for the region
- * On any div (anywhere in the section):
- *   data-ss-nav               injected prev/next buttons go here
  *
  * https://github.com/roicool/sestek
  */
@@ -59,10 +48,12 @@
 (function (global) {
   "use strict";
 
+  var LERP = 0.12; /* frame başına yumuşatma — küçük = daha yumuşak */
+
   var ARROW_SVG =
     '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
     '<path class="ss-arrow-line" d="M0.5 5.5h7"></path>' +
-    '<path class="ss-arrow-head" d="M1.5 1.5l4 4-4 4"></path></svg>';
+    '<path d="M1.5 1.5l4 4-4 4"></path></svg>';
 
   var PREV_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" aria-hidden="true">' +
@@ -80,9 +71,8 @@
     );
   }
 
-  /* Nav'ın gideceği kutu: [data-ss-nav] — önce wrapper'ın içinde, sonra
-     yukarı doğru her atada aranır (Webflow'da başlık satırındaki bir Div
-     olur genelde). Bulunamazsa nav listenin üstüne enjekte edilir. */
+  /* Nav'ın gideceği kutu: [data-ss-nav] — önce wrapper'da, sonra yukarı
+     doğru her atada aranır. Yoksa nav listenin üstüne enjekte edilir. */
   function findNavHost(root) {
     var node = root;
     while (node && node !== document.body) {
@@ -112,7 +102,6 @@
     if (root.__ssBuilt) return;
     root.__ssBuilt = true;
 
-    var hasGsap = typeof gsap !== "undefined";
     var reduce =
       global.matchMedia &&
       global.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -123,17 +112,24 @@
 
     var items = [];
     for (var i = 0; i < list.children.length; i++) {
-      list.children[i].classList.add("ss-item");
-      /* FOUC gizleme kuralını ez (guard CSS kullanılıyorsa) */
-      list.children[i].style.opacity = "1";
-      items.push(list.children[i]);
+      var it = list.children[i];
+      it.classList.add("ss-item");
+      it.style.opacity = "1"; /* FOUC guard kuralını ez */
+      items.push(it);
     }
     if (!items.length) return;
 
-    var scale = parseFloat(root.getAttribute("data-ss-scale"));
-    if (!isNaN(scale) && scale > 0) root.style.setProperty("--ss-scale", scale);
-    var shift = parseFloat(root.getAttribute("data-ss-shift"));
-    if (!isNaN(shift)) root.style.setProperty("--ss-shift", shift + "px");
+    /* transform bu wrapper'a uygulanır (yoksa item'ın kendisi) */
+    var inners = items.map(function (it) {
+      var inner = it.firstElementChild || it;
+      inner.classList.add("ss-inner");
+      return inner;
+    });
+
+    var SCALE = parseFloat(root.getAttribute("data-ss-scale"));
+    if (isNaN(SCALE) || SCALE <= 0) SCALE = 1.036;
+    var cardW = root.getAttribute("data-ss-card-w");
+    if (cardW) root.style.setProperty("--ss-card-w", cardW);
 
     /* "Read story" oku */
     var links = root.querySelectorAll("[data-ss-link]");
@@ -145,55 +141,41 @@
       links[i].appendChild(span);
     }
 
-    /* Nav butonları */
+    /* ── Nav butonları ────────────────────────────────────────────── */
     var navHost = findNavHost(root);
     var scope = navHost ? navHost.parentElement || navHost : root;
-    var prev = scope.querySelector("[data-ss-prev]") || root.querySelector("[data-ss-prev]");
-    var next = scope.querySelector("[data-ss-next]") || root.querySelector("[data-ss-next]");
-    if (!prev || !next) {
+    var prevBtn = scope.querySelector("[data-ss-prev]") || root.querySelector("[data-ss-prev]");
+    var nextBtn = scope.querySelector("[data-ss-next]") || root.querySelector("[data-ss-next]");
+    if (!prevBtn || !nextBtn) {
       var nav = document.createElement("div");
       nav.className = "ss-nav";
-      prev = prev || makeBtn(-1, "Previous");
-      next = next || makeBtn(1, "Next");
-      nav.appendChild(prev);
-      nav.appendChild(next);
+      prevBtn = prevBtn || makeBtn(-1, "Previous");
+      nextBtn = nextBtn || makeBtn(1, "Next");
+      nav.appendChild(prevBtn);
+      nav.appendChild(nextBtn);
       if (navHost) navHost.appendChild(nav);
       else root.insertBefore(nav, list);
     }
 
-    function gapPx() {
-      var g = parseFloat(getComputedStyle(list).columnGap);
-      return isNaN(g) ? 24 : g;
-    }
     function step() {
-      return items[0].getBoundingClientRect().width + gapPx();
+      return items.length > 1
+        ? items[1].offsetLeft - items[0].offsetLeft /* kart + gap */
+        : items[0].getBoundingClientRect().width;
     }
-    function maxScroll() {
-      return list.scrollWidth - list.clientWidth;
+    function updateArrows() {
+      var max = list.scrollWidth - list.clientWidth - 1;
+      prevBtn.disabled = list.scrollLeft <= 1;
+      nextBtn.disabled = list.scrollLeft >= max;
     }
-    function update() {
-      prev.disabled = list.scrollLeft <= 1;
-      next.disabled = list.scrollLeft >= maxScroll() - 1;
-    }
-    function killThrow() {
-      if (drag && drag.tween) drag.tween.kill();
-    }
-    function go(dir) {
-      killThrow();
-      var target = Math.max(0, Math.min(maxScroll(), list.scrollLeft + dir * step()));
-      list.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
-    }
-
-    prev.addEventListener("click", function () { go(-1); });
-    next.addEventListener("click", function () { go(1); });
-
-    var raf = 0;
-    list.addEventListener("scroll", function () {
-      if (raf) return;
-      raf = requestAnimationFrame(function () { raf = 0; update(); });
-    }, { passive: true });
-    global.addEventListener("resize", update);
-    update();
+    prevBtn.addEventListener("click", function () {
+      list.scrollBy({ left: -step(), behavior: reduce ? "auto" : "smooth" });
+    });
+    nextBtn.addEventListener("click", function () {
+      list.scrollBy({ left: step(), behavior: reduce ? "auto" : "smooth" });
+    });
+    list.addEventListener("scroll", updateArrows, { passive: true });
+    global.addEventListener("resize", updateArrows);
+    updateArrows();
 
     /* ── Klavye ───────────────────────────────────────────────────── */
     list.setAttribute("tabindex", "0");
@@ -201,117 +183,108 @@
     list.setAttribute("aria-label",
       root.getAttribute("data-ss-label") || "Stories carousel");
     list.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
-      else if (e.key === "Home") { e.preventDefault(); killThrow(); list.scrollTo({ left: 0, behavior: "smooth" }); }
-      else if (e.key === "End") { e.preventDefault(); killThrow(); list.scrollTo({ left: maxScroll(), behavior: "smooth" }); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); list.scrollBy({ left: -step(), behavior: "smooth" }); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); list.scrollBy({ left: step(), behavior: "smooth" }); }
+      else if (e.key === "Home") { e.preventDefault(); list.scrollTo({ left: 0, behavior: "smooth" }); }
+      else if (e.key === "End") { e.preventDefault(); list.scrollTo({ left: list.scrollWidth, behavior: "smooth" }); }
     });
 
-    /* ── Hover koreografisi — Stripe gibi JS sürer ────────────────
-       CSS transition yerine her kart kendi GSAP tween'iyle hedefe
-       yaklaşır (expo.out): hover hızla değişince yön yarı yoldan
-       yumuşakça döner, CSS'in "baştan başlama" hissi olmaz.
-       .ss-js-hover sınıfı CSS fallback'ini kapatır. */
-    var clearHover = function () {};
-    var hoverOn = hasGsap && !reduce &&
-      global.matchMedia && global.matchMedia("(hover: hover)").matches;
-    if (hoverOn) {
-      root.classList.add("ss-js-hover");
-      var hScale = !isNaN(scale) && scale > 0 ? scale : 1.035;
-      var hShift = !isNaN(shift) ? shift : 6;
-      var hovered = -1;
-      var render = function () {
-        for (var k = 0; k < items.length; k++) {
-          var isH = k === hovered;
-          items[k].style.zIndex = isH ? "2" : "";
-          gsap.to(items[k], {
-            scale: isH ? hScale : 1,
-            x: hovered < 0 || isH ? 0 : (k < hovered ? -hShift : hShift),
-            duration: 0.6,
-            ease: "expo.out",
-            overwrite: "auto"
-          });
+    /* ── Hover: rAF + lerp → CSS değişkenleri (Stripe'ın yöntemi) ─── */
+    var canHover =
+      global.matchMedia &&
+      global.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+      !reduce;
+
+    if (canHover) {
+      /* her kart: s = anlık scale, x = anlık shift; st/xt = hedefler */
+      var state = items.map(function () { return { s: 1, st: 1, x: 0, xt: 0 }; });
+      var hovered = -1, raf = null;
+
+      var setTargets = function () {
+        var half = 0;
+        if (hovered >= 0) {
+          var w = items[hovered].getBoundingClientRect().width;
+          half = (w * (SCALE - 1)) / 2; /* 332px kartta ≈ 5.976px */
         }
+        state.forEach(function (st, k) {
+          st.st = k === hovered ? SCALE : 1;
+          /* origin "left center": hover edilen ve solundakiler sola,
+             sağındakiler sağa → büyüme simetrik, komşular ezilmez */
+          st.xt = hovered < 0 ? 0 : (k <= hovered ? -half : half);
+        });
+        if (!raf) raf = requestAnimationFrame(tick);
       };
-      clearHover = function () {
-        if (hovered > -1) { hovered = -1; render(); }
+
+      var tick = function () {
+        var busy = false;
+        state.forEach(function (st, k) {
+          st.s += (st.st - st.s) * LERP;
+          st.x += (st.xt - st.x) * LERP;
+          if (Math.abs(st.st - st.s) > 0.0004 || Math.abs(st.xt - st.x) > 0.04) {
+            busy = true;
+          } else { st.s = st.st; st.x = st.xt; }
+          inners[k].style.setProperty("--ss-s", st.s.toFixed(4));
+          inners[k].style.setProperty("--ss-x", st.x.toFixed(2) + "px");
+        });
+        raf = busy ? requestAnimationFrame(tick) : null;
       };
+
       items.forEach(function (it, k) {
-        it.addEventListener("pointerenter", function (e) {
-          if (e.pointerType && e.pointerType !== "mouse") return;
-          hovered = k; render();
-        });
-        it.addEventListener("pointerleave", function (e) {
-          if (e.pointerType && e.pointerType !== "mouse") return;
-          if (hovered === k) { hovered = -1; render(); }
+        it.addEventListener("mouseenter", function () { hovered = k; setTargets(); });
+        it.addEventListener("mouseleave", function () {
+          if (hovered === k) { hovered = -1; setTargets(); }
         });
       });
     }
 
-    /* ── Drag + inertia (Draggable proxy → native scrollLeft) ─────── */
-    var drag = null;
-    if (hasGsap && typeof Draggable !== "undefined") {
-      if (typeof InertiaPlugin !== "undefined") {
-        gsap.registerPlugin(Draggable, InertiaPlugin);
-      } else {
-        gsap.registerPlugin(Draggable);
-      }
-      var snapOn = flag(root, "data-ss-snap", true);
-      var proxy = document.createElement("div");
-      var pressX = 0, pressScroll = 0, pressStep = 1;
+    /* ── Mouse ile sürükleme (touch zaten native kayar) ───────────── */
+    var dragging = false, dragMoved = false, startX = 0, startScroll = 0;
 
-      var applyScroll = function () {
-        list.scrollLeft = pressScroll - (this.x - pressX);
+    list.addEventListener("pointerdown", function (e) {
+      if (e.pointerType !== "mouse") return;
+      dragging = true; dragMoved = false;
+      startX = e.clientX; startScroll = list.scrollLeft;
+      list.classList.add("ss-grabbing");
+    });
+    global.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) dragMoved = true;
+      list.scrollLeft = startScroll - dx;
+    });
+    global.addEventListener("pointerup", function () {
+      if (!dragging) return;
+      dragging = false;
+      list.classList.remove("ss-grabbing");
+      if (!dragMoved) return;
+      /* Bırakınca en yakın kart sınırına yumuşakça otur. CSS snap,
+         settle bitene kadar kapalı kalır (yoksa yarım kalan smooth
+         scroll'u yakalayıp geri çeker). */
+      list.classList.add("ss-settling");
+      var s = step();
+      var max = list.scrollWidth - list.clientWidth;
+      var target = Math.max(0, Math.min(max, Math.round(list.scrollLeft / s) * s));
+      list.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
+      var done = function () {
+        list.classList.remove("ss-settling");
+        list.removeEventListener("scrollend", done);
       };
+      if ("onscrollend" in global) list.addEventListener("scrollend", done);
+      else setTimeout(done, 700);
+    });
+    /* gerçek sürükleme kart linkini tetiklemesin */
+    list.addEventListener("click", function (e) {
+      if (dragMoved) { e.preventDefault(); e.stopPropagation(); dragMoved = false; }
+    }, true);
 
-      drag = Draggable.create(proxy, {
-        type: "x",
-        trigger: list,
-        inertia: typeof InertiaPlugin !== "undefined",
-        edgeResistance: 0.85,
-        cursor: "grab",
-        activeCursor: "grabbing",
-        allowNativeTouchScrolling: true, /* dikey swipe = sayfa scroll'u */
-        onPress: function () {
-          killScroll();
-          clearHover();
-          pressX = this.x;
-          pressScroll = list.scrollLeft;
-          pressStep = step();
-          /* scrollLeft ∈ [0, max] aralığını proxy-x sınırına çevir */
-          this.applyBounds({
-            minX: pressX + pressScroll - maxScroll(),
-            maxX: pressX + pressScroll
-          });
-          list.classList.add("ss-grabbing");
-        },
-        onDrag: applyScroll,
-        onThrowUpdate: applyScroll,
-        onRelease: function () { list.classList.remove("ss-grabbing"); },
-        snap: snapOn ? function (endX) {
-          /* fırlatma kart sınırında dursun */
-          var target = pressScroll - (endX - pressX);
-          var aligned = Math.round(target / pressStep) * pressStep;
-          aligned = Math.max(0, Math.min(maxScroll(), aligned));
-          return pressX + pressScroll - aligned;
-        } : undefined
-      })[0];
-    }
-    function killScroll() {
-      /* native smooth scroll'u ve süren throw'u durdur */
-      list.scrollTo({ left: list.scrollLeft, behavior: "auto" });
-    }
-
-    /* ── Giriş koreografisi: kartlar sahneye dizilir (scrub) ──────── */
+    /* ── Giriş: kartlar sahneye dizilir (scrub, sadece burada GSAP) ── */
     var enter = flag(root, "data-ss-enter", true);
-    if (enter && !reduce && hasGsap && typeof ScrollTrigger !== "undefined") {
+    if (enter && !reduce &&
+        typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
       gsap.registerPlugin(ScrollTrigger);
-      /* Hover transition .ss-item'ın transform'unda yaşıyor; çakışmasın
-         diye giriş, item'ın İÇİNDEKİ kartı oynatır. */
-      var targets = items.map(function (it) {
-        return it.firstElementChild || it;
-      });
-      gsap.fromTo(targets,
+      /* item'ı oynatır; hover transform'u .ss-inner'da yaşadığı için
+         ikisi çakışmaz. */
+      gsap.fromTo(items,
         { y: 56, opacity: 0, scale: 0.96 },
         {
           y: 0, opacity: 1, scale: 1,
