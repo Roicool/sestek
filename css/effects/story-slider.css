@@ -56,8 +56,17 @@
 [data-story-slider].swiper.ss-down a,
 [data-story-slider].swiper.ss-down { cursor: grabbing; }
 
-/* Görsel sürüklenmesi / metin seçimi drag'i bozmasın */
-[data-story-slider] img { -webkit-user-drag: none; user-select: none; }
+/* KRİTİK: link/görselin native "öğeyi sürükle" davranışı Swiper'ın
+   drag'ini çalmasın. Bu olmadan <a> üstünden tutunca tarayıcı linki
+   sürüklemeye başlar, kaydırma çalışmaz. */
+[data-story-slider] a,
+[data-story-slider] img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  user-drag: none;
+  user-select: none;
+}
 [data-story-slider].ss-down { user-select: none; }
 
 /* ── "Read story" oku: ok soldan başlar, hover'da sağa süzülürken

@@ -173,6 +173,15 @@
       list.classList.add("swiper-wrapper");
       items.forEach(function (it) { it.classList.add("swiper-slide"); });
 
+      /* Link/görsel üstünden sürüklerken tarayıcının native "öğeyi
+         sürükle" (drag-and-drop hayaleti) gesture'ı çalıp Swiper'ı
+         engellemesin — asıl "link üstünde grab çalışmıyor" sebebi bu. */
+      var dragables = root.querySelectorAll("a, img");
+      for (var d = 0; d < dragables.length; d++) {
+        dragables[d].setAttribute("draggable", "false");
+        dragables[d].addEventListener("dragstart", function (e) { e.preventDefault(); });
+      }
+
       var gap = parseFloat(root.getAttribute("data-ss-gap"));
       if (isNaN(gap)) gap = 24;
 
@@ -185,7 +194,9 @@
           momentumBounce: false
         },
         grabCursor: true,          /* link üstünde de grab (CSS destekli) */
-        touchStartPreventDefault: false,
+        simulateTouch: true,       /* fare = dokunma; sürükleme aktif */
+        preventClicks: true,       /* sürükleme sonrası link tıklanmasın */
+        preventClicksPropagation: true,
         keyboard: { enabled: true, onlyInViewport: true },
         mousewheel: { forceToAxis: true },
         navigation: { prevEl: prevBtn, nextEl: nextBtn },
