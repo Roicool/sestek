@@ -1,5 +1,5 @@
 /*!
- * story-slider.css v1.0.0
+ * story-slider.css v1.1.0
  * Stripe-style customer story slider on top of a Webflow Collection List.
  * Cards grow VERY slightly on hover (neighbours ease away), the story
  * link's arrow draws itself longer — all CSS; js/effects/story-slider.js
@@ -39,6 +39,23 @@
   margin: -16px 0;
 }
 [data-story-slider] .ss-list::-webkit-scrollbar { display: none; }
+
+/* Drag katmanı (Draggable): görsellerin native sürüklenmesi ve metin
+   seçimi drag'i bozmasın. */
+[data-story-slider] .ss-list img { -webkit-user-drag: none; user-select: none; }
+[data-story-slider] .ss-list { cursor: grab; }
+[data-story-slider] .ss-list.ss-grabbing {
+  cursor: grabbing;
+  user-select: none;
+  scroll-snap-type: none;   /* sürüklerken CSS snap araya girmesin */
+}
+
+/* Klavye odağı */
+[data-story-slider] .ss-list:focus-visible {
+  outline: 2px solid var(--brand-primary--500, #EC008C);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
 
 /* Collection Item = kart */
 [data-story-slider] .ss-item {

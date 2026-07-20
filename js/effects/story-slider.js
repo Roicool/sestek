@@ -1,14 +1,28 @@
 /*!
- * story-slider.js v1.0.0
+ * story-slider.js v1.1.0
  * Stripe-style customer story slider for a Webflow Collection List.
- * Motion is pure CSS (css/effects/story-slider.css) — this file only:
  *
  *   1. tags the Collection List / Items with .ss-list / .ss-item,
  *   2. injects (or wires) prev/next buttons + keeps disabled state,
  *   3. appends the self-drawing arrow after every [data-ss-link],
- *   4. scrolls one card per click (native smooth scrolling).
+ *   4. drag + throw — GSAP Draggable + InertiaPlugin drive the native
+ *      scroller through a proxy (grab a card, fling it, it glides and
+ *      settles on a card boundary). Touch: horizontal swipe = drag with
+ *      inertia, vertical swipe = native page scroll.
+ *   5. keyboard — the list is focusable; ←/→ move one card,
+ *      Home/End jump to the ends.
+ *   6. entrance — cards stagger into place (rise + fade), scrubbed to
+ *      scroll like scroll-fx: reversible, never one-shot. Needs
+ *      ScrollTrigger; skipped under prefers-reduced-motion.
  *
- * No GSAP needed. Touch/trackpad swipe works natively (overflow scroll).
+ * Hover motion is pure CSS (css/effects/story-slider.css).
+ * gsap + Draggable + InertiaPlugin + ScrollTrigger recommended; every
+ * layer degrades gracefully if its plugin is missing (no drag / no
+ * entrance — buttons, swipe and keyboard still work).
+ *
+ * FOUC guard (optional, pairs with the entrance):
+ *   html.w-mod-js [data-story-slider] .w-dyn-item { opacity: 0; }
+ * init reveals items the moment their start state is applied.
  *
  * API:
  *   Sestek.initStorySlider()  — wire every [data-story-slider]
@@ -21,15 +35,15 @@
  *   </div>
  *
  * Inside each item, put data-ss-link on the "Read story" text block —
- * the animated arrow is appended automatically.
- *
- * Optional own nav: put data-ss-prev / data-ss-next on any two buttons
- * inside (or around) the wrapper; if absent, default buttons are
- * injected above the list.
+ * the animated arrow is appended automatically. Own nav: data-ss-prev /
+ * data-ss-next on any two buttons inside the wrapper.
  *
  * Attributes (all optional, on [data-story-slider]):
  *   data-ss-scale="1.035"   hover scale
  *   data-ss-shift="6"       neighbour shift in px
+ *   data-ss-enter="false"   disable the entrance choreography
+ *   data-ss-snap="false"    disable card-boundary snapping after a throw
+ *   data-ss-label="Customer stories"  accessible name for the region
  *
  * https://github.com/roicool/sestek
  */
@@ -51,13 +65,17 @@
     '<path d="m6.387 2.62 4.506 4.505H1.756v1.75h9.137l-4.506 4.506 1.238 1.238 6-6L14.245 8l-.618-.62-6-6-1.239 1.24Z"></path></svg>';
 
   function findList(root) {
-    /* Öncelik: elle işaretlenmiş liste → Webflow Collection List →
-       ilk element çocuğu. */
     return (
       root.querySelector("[data-ss-list]") ||
       root.querySelector(".w-dyn-items") ||
       root.firstElementChild
     );
+  }
+
+  function flag(el, name, fallback) {
+    var v = el.getAttribute(name);
+    if (v === null || v === "") return fallback;
+    return v !== "false" && v !== "0";
   }
 
   function makeBtn(dir, label) {
@@ -73,6 +91,11 @@
     if (root.__ssBuilt) return;
     root.__ssBuilt = true;
 
+    var hasGsap = typeof gsap !== "undefined";
+    var reduce =
+      global.matchMedia &&
+      global.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     var list = findList(root);
     if (!list) return;
     list.classList.add("ss-list");
@@ -80,11 +103,12 @@
     var items = [];
     for (var i = 0; i < list.children.length; i++) {
       list.children[i].classList.add("ss-item");
+      /* FOUC gizleme kuralını ez (guard CSS kullanılıyorsa) */
+      list.children[i].style.opacity = "1";
       items.push(list.children[i]);
     }
     if (!items.length) return;
 
-    /* İnce ayar attribute'ları → CSS değişkeni */
     var scale = parseFloat(root.getAttribute("data-ss-scale"));
     if (!isNaN(scale) && scale > 0) root.style.setProperty("--ss-scale", scale);
     var shift = parseFloat(root.getAttribute("data-ss-shift"));
@@ -100,7 +124,7 @@
       links[i].appendChild(span);
     }
 
-    /* Nav butonları: kendininki varsa onu kullan, yoksa enjekte et. */
+    /* Nav butonları */
     var prev = root.querySelector("[data-ss-prev]");
     var next = root.querySelector("[data-ss-next]");
     if (!prev || !next) {
@@ -117,23 +141,23 @@
       var g = parseFloat(getComputedStyle(list).columnGap);
       return isNaN(g) ? 24 : g;
     }
-
     function step() {
       return items[0].getBoundingClientRect().width + gapPx();
     }
-
     function maxScroll() {
       return list.scrollWidth - list.clientWidth;
     }
-
     function update() {
       prev.disabled = list.scrollLeft <= 1;
       next.disabled = list.scrollLeft >= maxScroll() - 1;
     }
-
+    function killThrow() {
+      if (drag && drag.tween) drag.tween.kill();
+    }
     function go(dir) {
+      killThrow();
       var target = Math.max(0, Math.min(maxScroll(), list.scrollLeft + dir * step()));
-      list.scrollTo({ left: target, behavior: "smooth" });
+      list.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
     }
 
     prev.addEventListener("click", function () { go(-1); });
@@ -146,6 +170,96 @@
     }, { passive: true });
     global.addEventListener("resize", update);
     update();
+
+    /* ── Klavye ───────────────────────────────────────────────────── */
+    list.setAttribute("tabindex", "0");
+    list.setAttribute("role", "region");
+    list.setAttribute("aria-label",
+      root.getAttribute("data-ss-label") || "Stories carousel");
+    list.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "Home") { e.preventDefault(); killThrow(); list.scrollTo({ left: 0, behavior: "smooth" }); }
+      else if (e.key === "End") { e.preventDefault(); killThrow(); list.scrollTo({ left: maxScroll(), behavior: "smooth" }); }
+    });
+
+    /* ── Drag + inertia (Draggable proxy → native scrollLeft) ─────── */
+    var drag = null;
+    if (hasGsap && typeof Draggable !== "undefined") {
+      if (typeof InertiaPlugin !== "undefined") {
+        gsap.registerPlugin(Draggable, InertiaPlugin);
+      } else {
+        gsap.registerPlugin(Draggable);
+      }
+      var snapOn = flag(root, "data-ss-snap", true);
+      var proxy = document.createElement("div");
+      var pressX = 0, pressScroll = 0, pressStep = 1;
+
+      var applyScroll = function () {
+        list.scrollLeft = pressScroll - (this.x - pressX);
+      };
+
+      drag = Draggable.create(proxy, {
+        type: "x",
+        trigger: list,
+        inertia: typeof InertiaPlugin !== "undefined",
+        edgeResistance: 0.85,
+        cursor: "grab",
+        activeCursor: "grabbing",
+        allowNativeTouchScrolling: true, /* dikey swipe = sayfa scroll'u */
+        onPress: function () {
+          killScroll();
+          pressX = this.x;
+          pressScroll = list.scrollLeft;
+          pressStep = step();
+          /* scrollLeft ∈ [0, max] aralığını proxy-x sınırına çevir */
+          this.applyBounds({
+            minX: pressX + pressScroll - maxScroll(),
+            maxX: pressX + pressScroll
+          });
+          list.classList.add("ss-grabbing");
+        },
+        onDrag: applyScroll,
+        onThrowUpdate: applyScroll,
+        onRelease: function () { list.classList.remove("ss-grabbing"); },
+        snap: snapOn ? function (endX) {
+          /* fırlatma kart sınırında dursun */
+          var target = pressScroll - (endX - pressX);
+          var aligned = Math.round(target / pressStep) * pressStep;
+          aligned = Math.max(0, Math.min(maxScroll(), aligned));
+          return pressX + pressScroll - aligned;
+        } : undefined
+      })[0];
+    }
+    function killScroll() {
+      /* native smooth scroll'u ve süren throw'u durdur */
+      list.scrollTo({ left: list.scrollLeft, behavior: "auto" });
+    }
+
+    /* ── Giriş koreografisi: kartlar sahneye dizilir (scrub) ──────── */
+    var enter = flag(root, "data-ss-enter", true);
+    if (enter && !reduce && hasGsap && typeof ScrollTrigger !== "undefined") {
+      gsap.registerPlugin(ScrollTrigger);
+      /* Hover transition .ss-item'ın transform'unda yaşıyor; çakışmasın
+         diye giriş, item'ın İÇİNDEKİ kartı oynatır. */
+      var targets = items.map(function (it) {
+        return it.firstElementChild || it;
+      });
+      gsap.fromTo(targets,
+        { y: 56, opacity: 0, scale: 0.96 },
+        {
+          y: 0, opacity: 1, scale: 1,
+          ease: "power2.out",
+          duration: 1,
+          stagger: 0.12,
+          scrollTrigger: {
+            trigger: root,
+            start: "top 92%",
+            end: "top 45%",
+            scrub: 1
+          }
+        });
+    }
   }
 
   function initStorySlider() {
