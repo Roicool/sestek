@@ -1,77 +1,64 @@
 /*!
- * story-slider.css v2.0.0
- * Stripe-style customer story slider on top of a Webflow Collection List.
- * Hover motion is JS-driven (rAF + lerp writes --ss-s / --ss-x onto the
- * card's inner wrapper); this file holds the scroller layout, the
- * transform hook and the self-drawing arrow.
+ * story-slider.css v3.0.0
+ * Stripe-style customer story slider on Swiper + Webflow Collection List.
+ * Swiper owns the mechanics; this file holds the bleed layout, card
+ * sizing, the CSS hover (subtle grow + self-drawing arrow) and the nav.
  *
  * Hooks (set on [data-story-slider] or any ancestor):
- *   --ss-gap        gap between cards   (default 24px)
+ *   --ss-scale      hover scale         (default 1.036)
  *   --ss-card-w     card width          (default 332px, caps at 78vw)
+ *   --ss-gap        fallback gap        (Swiper varken data-ss-gap kullan)
  *   --ss-arrow-gap  text→arrow spacing  (default 0.5em)
+ *
+ * Bleed: wrapper'ı container-2xl'inin İÇİNE koy — kartlar konteynerin
+ * kenarından taşıp viewport'a akar (overflow visible). Yatay sayfa
+ * scroll'u oluşmaması için üstteki SECTION'a overflow:hidden ver.
  *
  * https://github.com/roicool/sestek
  */
 
 [data-story-slider] {
   position: relative;
-  --ss-gap: 24px;
+  --ss-scale: 1.036;
   --ss-card-w: 332px;
   --ss-ease: cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
-/* Collection List (JS .ss-list sınıfını ekler) → yatay kaydırıcı.
-   Dikey padding+negatif margin: hover'da büyüyen kart üstten/alttan
-   kırpılmasın diye nefes payı. */
-[data-story-slider] .ss-list {
-  display: flex;
-  gap: var(--ss-gap);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 16px 0;
-  margin: -16px 0;
-  cursor: grab;
-}
-[data-story-slider] .ss-list::-webkit-scrollbar { display: none; }
+/* Bleed: Swiper'ın overflow:hidden'ını aç — kartlar konteyner kenarından
+   taşar; hover büyümesi de hiçbir yerde kırpılmaz. */
+[data-story-slider].swiper { overflow: visible; }
 
-/* Sürükleme: görsellerin native drag'i ve metin seçimi araya girmesin */
-[data-story-slider] .ss-list img { -webkit-user-drag: none; user-select: none; }
-[data-story-slider] .ss-list.ss-grabbing {
-  cursor: grabbing;
-  user-select: none;
-}
-/* Sürüklerken ve kart sınırına otururken CSS snap araya girmesin */
-[data-story-slider] .ss-list.ss-grabbing,
-[data-story-slider] .ss-list.ss-settling {
-  scroll-snap-type: none;
-}
-
-/* Klavye odağı */
-[data-story-slider] .ss-list:focus-visible {
-  outline: 2px solid var(--brand-primary--500, #EC008C);
-  outline-offset: 6px;
-  border-radius: 8px;
-}
-
-/* Collection Item = kart kutusu (giriş animasyonu bunu oynatır) */
+/* Kart kutusu (Collection Item). Swiper slidesPerView:"auto" genişliği
+   buradan okur. */
 [data-story-slider] .ss-item {
   flex: 0 0 auto;
   width: min(var(--ss-card-w), 78vw);
-  scroll-snap-align: start;
+  box-sizing: border-box;
 }
 
-/* Hover transform'u iç sarmalayıcıda yaşar — JS her frame --ss-s /
-   --ss-x yazar; origin left center (komşular ezilmeden yol verir). */
+/* Hover: kart çok az büyür — sade, kesintisiz CSS transition. */
 [data-story-slider] .ss-inner {
   display: block;
-  transform: translate3d(var(--ss-x, 0px), 0, 0) scale(var(--ss-s, 1));
-  transform-origin: left center;
+  transform-origin: center center;
+  transition: transform 0.5s var(--ss-ease);
   will-change: transform;
 }
-[data-story-slider] .ss-item:hover { z-index: 1; }
+@media (hover: hover) {
+  [data-story-slider] .ss-item:hover { z-index: 1; }
+  [data-story-slider] .ss-item:hover .ss-inner {
+    transform: scale(var(--ss-scale));
+  }
+}
+
+/* Link üstünde de grab: Swiper grabCursor'u container'a verir, linkin
+   pointer'ı onu ezmesin. Basılıyken grabbing (JS .ss-down ekler). */
+[data-story-slider].swiper a { cursor: grab; }
+[data-story-slider].swiper.ss-down a,
+[data-story-slider].swiper.ss-down { cursor: grabbing; }
+
+/* Görsel sürüklenmesi / metin seçimi drag'i bozmasın */
+[data-story-slider] img { -webkit-user-drag: none; user-select: none; }
+[data-story-slider].ss-down { user-select: none; }
 
 /* ── "Read story" oku: ok soldan başlar, hover'da sağa süzülürken
       şaft kendini çizer ─────────────────────────────────────────── */
@@ -116,21 +103,35 @@
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
-.ss-nav-btn:hover:not(:disabled) {
+.ss-nav-btn:hover:not(:disabled):not(.swiper-button-disabled) {
   background: rgba(236, 0, 140, 0.08);
   color: var(--brand-primary--500, #EC008C);
 }
 .ss-nav-btn:disabled,
-[data-ss-prev]:disabled,
-[data-ss-next]:disabled {
+.ss-nav-btn.swiper-button-disabled,
+[data-ss-prev]:disabled, [data-ss-prev].swiper-button-disabled,
+[data-ss-next]:disabled, [data-ss-next].swiper-button-disabled {
   opacity: 0.3;
   cursor: default;
   pointer-events: none;
 }
 
+/* ── Fallback: Swiper yüklenmediyse native yatay scroller ─────────── */
+[data-story-slider]:not(.swiper) .ss-list {
+  display: flex;
+  gap: var(--ss-gap, 24px);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+[data-story-slider]:not(.swiper) .ss-list::-webkit-scrollbar { display: none; }
+[data-story-slider]:not(.swiper) .ss-item { scroll-snap-align: start; }
+
 @media (prefers-reduced-motion: reduce) {
   .ss-arrow,
-  .ss-arrow .ss-arrow-line { transition: none; }
-  [data-story-slider] .ss-inner { transform: none; will-change: auto; }
-  [data-story-slider] .ss-list { scroll-behavior: auto; }
+  .ss-arrow .ss-arrow-line,
+  [data-story-slider] .ss-inner { transition: none; }
+  [data-story-slider] .ss-item:hover .ss-inner { transform: none; }
 }

@@ -1,22 +1,32 @@
 /*!
- * story-slider.js v2.0.0
- * Stripe-style customer story slider for a Webflow Collection List.
- * Core mechanics are dependency-free vanilla JS (Stripe's own approach):
+ * story-slider.js v3.0.0
+ * Stripe-style customer story slider for a Webflow Collection List,
+ * powered by Swiper (11+). This file is only the glue:
  *
- *   1. Hover — rAF + lerp drives two CSS vars (--ss-s scale, --ss-x
- *      shift) on each card's inner wrapper. Target scale 1.036; the
- *      neighbour shift is computed from the real card width
- *      (w * 0.036 / 2 → 5.976px on a 332px card, Stripe's exact number).
- *      transform-origin left center: hovered card and everything to its
- *      left ease left, the rest ease right — growth reads symmetric.
- *   2. Drag — mouse pointer drag on the native scroller (touch already
- *      scrolls natively); a real drag never triggers the card link.
- *   3. Nav — prev/next buttons (injected into [data-ss-nav] or above
- *      the list), disabled at the ends, one card per click.
- *   4. Keyboard — focusable region; ←/→ one card, Home/End jump.
- *   5. Entrance — cards stagger into place scrubbed to scroll
- *      (rise+fade+scale). The ONLY part that uses GSAP/ScrollTrigger;
- *      skipped silently if GSAP is absent or reduced motion is on.
+ *   1. tags the Collection List DOM with Swiper's classes
+ *      (wrapper → swiper-wrapper, items → swiper-slide),
+ *   2. injects (or wires) prev/next buttons + the self-drawing arrow
+ *      after every [data-ss-link],
+ *   3. boots Swiper: free-mode drag with momentum that settles on a
+ *      card boundary, grab cursor (also over links), keyboard,
+ *      trackpad wheel, a11y — all Swiper's,
+ *   4. entrance — cards stagger into place scrubbed to scroll
+ *      (GSAP + ScrollTrigger; the ONLY GSAP usage, skipped silently
+ *      if GSAP is absent or reduced motion is on).
+ *
+ * Hover (subtle card grow + arrow draw) is pure CSS in
+ * css/effects/story-slider.css.
+ *
+ * Bleed layout: the wrapper sits inside your container (container-2xl);
+ * overflow is visible, so cards flow past the container edges to the
+ * viewport. Give the parent SECTION overflow:hidden so the page never
+ * scrolls horizontally.
+ *
+ * Load order: swiper-bundle.css + swiper-bundle.js BEFORE this file.
+ *   https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css
+ *   https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js
+ * If Swiper is missing, the list gracefully falls back to a plain
+ * native scroller (CSS handles it) — buttons and touch still work.
  *
  * FOUC guard (optional, pairs with the entrance):
  *   html.w-mod-js [data-story-slider] .w-dyn-item { opacity: 0; }
@@ -26,9 +36,9 @@
  *
  * DOM (Webflow) — attribute goes on the Collection List WRAPPER:
  *   <div data-story-slider>          Collection List Wrapper
- *     <div>                          Collection List      → .ss-list (scroller)
- *       <div>…</div>                 Collection Item      → .ss-item
- *         <a>…</a>                   kartın tamamı        → .ss-inner (transform)
+ *     <div>                          Collection List      → swiper-wrapper
+ *       <div>…</div>                 Collection Item      → swiper-slide
+ *         <a>…</a>                   kart                 → .ss-inner (hover)
  *     </div>
  *   </div>
  *
@@ -37,18 +47,18 @@
  * data-ss-prev / data-ss-next on your own two buttons → they get wired.
  *
  * Attributes (all optional, on [data-story-slider]):
- *   data-ss-scale="1.036"     hover scale target
+ *   data-ss-scale="1.036"     hover scale (CSS var)
  *   data-ss-card-w="360px"    card width (default 332px, caps at 78vw)
+ *   data-ss-gap="24"          px between cards (Swiper spaceBetween)
+ *   data-ss-snap="false"      free glide, don't settle on card boundaries
  *   data-ss-enter="false"     disable the entrance choreography
- *   data-ss-label="Customer stories"  accessible name for the region
+ *   data-ss-label="Customer stories"  accessible name
  *
  * https://github.com/roicool/sestek
  */
 
 (function (global) {
   "use strict";
-
-  var LERP = 0.12; /* frame başına yumuşatma — küçük = daha yumuşak */
 
   var ARROW_SVG =
     '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
@@ -119,17 +129,17 @@
     }
     if (!items.length) return;
 
-    /* transform bu wrapper'a uygulanır (yoksa item'ın kendisi) */
-    var inners = items.map(function (it) {
-      var inner = it.firstElementChild || it;
-      inner.classList.add("ss-inner");
-      return inner;
+    /* Hover transform'u bu sarmalayıcıda yaşar (CSS'ten) */
+    items.forEach(function (it) {
+      (it.firstElementChild || it).classList.add("ss-inner");
     });
 
-    var SCALE = parseFloat(root.getAttribute("data-ss-scale"));
-    if (isNaN(SCALE) || SCALE <= 0) SCALE = 1.036;
+    var scale = parseFloat(root.getAttribute("data-ss-scale"));
+    if (!isNaN(scale) && scale > 0) root.style.setProperty("--ss-scale", scale);
     var cardW = root.getAttribute("data-ss-card-w");
     if (cardW) root.style.setProperty("--ss-card-w", cardW);
+    root.setAttribute("aria-label",
+      root.getAttribute("data-ss-label") || "Stories carousel");
 
     /* "Read story" oku */
     var links = root.querySelectorAll("[data-ss-link]");
@@ -141,7 +151,7 @@
       links[i].appendChild(span);
     }
 
-    /* ── Nav butonları ────────────────────────────────────────────── */
+    /* Nav butonları */
     var navHost = findNavHost(root);
     var scope = navHost ? navHost.parentElement || navHost : root;
     var prevBtn = scope.querySelector("[data-ss-prev]") || root.querySelector("[data-ss-prev]");
@@ -157,133 +167,65 @@
       else root.insertBefore(nav, list);
     }
 
-    function step() {
-      return items.length > 1
-        ? items[1].offsetLeft - items[0].offsetLeft /* kart + gap */
-        : items[0].getBoundingClientRect().width;
-    }
-    function updateArrows() {
-      var max = list.scrollWidth - list.clientWidth - 1;
-      prevBtn.disabled = list.scrollLeft <= 1;
-      nextBtn.disabled = list.scrollLeft >= max;
-    }
-    prevBtn.addEventListener("click", function () {
-      list.scrollBy({ left: -step(), behavior: reduce ? "auto" : "smooth" });
-    });
-    nextBtn.addEventListener("click", function () {
-      list.scrollBy({ left: step(), behavior: reduce ? "auto" : "smooth" });
-    });
-    list.addEventListener("scroll", updateArrows, { passive: true });
-    global.addEventListener("resize", updateArrows);
-    updateArrows();
+    /* ── Swiper ───────────────────────────────────────────────────── */
+    if (typeof Swiper !== "undefined") {
+      root.classList.add("swiper");
+      list.classList.add("swiper-wrapper");
+      items.forEach(function (it) { it.classList.add("swiper-slide"); });
 
-    /* ── Klavye ───────────────────────────────────────────────────── */
-    list.setAttribute("tabindex", "0");
-    list.setAttribute("role", "region");
-    list.setAttribute("aria-label",
-      root.getAttribute("data-ss-label") || "Stories carousel");
-    list.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowLeft") { e.preventDefault(); list.scrollBy({ left: -step(), behavior: "smooth" }); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); list.scrollBy({ left: step(), behavior: "smooth" }); }
-      else if (e.key === "Home") { e.preventDefault(); list.scrollTo({ left: 0, behavior: "smooth" }); }
-      else if (e.key === "End") { e.preventDefault(); list.scrollTo({ left: list.scrollWidth, behavior: "smooth" }); }
-    });
+      var gap = parseFloat(root.getAttribute("data-ss-gap"));
+      if (isNaN(gap)) gap = 24;
 
-    /* ── Hover: rAF + lerp → CSS değişkenleri (Stripe'ın yöntemi) ─── */
-    var canHover =
-      global.matchMedia &&
-      global.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-      !reduce;
-
-    if (canHover) {
-      /* her kart: s = anlık scale, x = anlık shift; st/xt = hedefler */
-      var state = items.map(function () { return { s: 1, st: 1, x: 0, xt: 0 }; });
-      var hovered = -1, raf = null;
-
-      var setTargets = function () {
-        var half = 0;
-        if (hovered >= 0) {
-          var w = items[hovered].getBoundingClientRect().width;
-          half = (w * (SCALE - 1)) / 2; /* 332px kartta ≈ 5.976px */
+      root.__ssSwiper = new Swiper(root, {
+        slidesPerView: "auto",
+        spaceBetween: gap,
+        freeMode: {
+          enabled: true,
+          sticky: flag(root, "data-ss-snap", true), /* kart sınırına otur */
+          momentumBounce: false
+        },
+        grabCursor: true,          /* link üstünde de grab (CSS destekli) */
+        touchStartPreventDefault: false,
+        keyboard: { enabled: true, onlyInViewport: true },
+        mousewheel: { forceToAxis: true },
+        navigation: { prevEl: prevBtn, nextEl: nextBtn },
+        on: {
+          touchStart: function () { root.classList.add("ss-down"); },
+          touchEnd: function () { root.classList.remove("ss-down"); }
         }
-        state.forEach(function (st, k) {
-          st.st = k === hovered ? SCALE : 1;
-          /* origin "left center": hover edilen ve solundakiler sola,
-             sağındakiler sağa → büyüme simetrik, komşular ezilmez */
-          st.xt = hovered < 0 ? 0 : (k <= hovered ? -half : half);
-        });
-        if (!raf) raf = requestAnimationFrame(tick);
-      };
-
-      var tick = function () {
-        var busy = false;
-        state.forEach(function (st, k) {
-          st.s += (st.st - st.s) * LERP;
-          st.x += (st.xt - st.x) * LERP;
-          if (Math.abs(st.st - st.s) > 0.0004 || Math.abs(st.xt - st.x) > 0.04) {
-            busy = true;
-          } else { st.s = st.st; st.x = st.xt; }
-          inners[k].style.setProperty("--ss-s", st.s.toFixed(4));
-          inners[k].style.setProperty("--ss-x", st.x.toFixed(2) + "px");
-        });
-        raf = busy ? requestAnimationFrame(tick) : null;
-      };
-
-      items.forEach(function (it, k) {
-        it.addEventListener("mouseenter", function () { hovered = k; setTargets(); });
-        it.addEventListener("mouseleave", function () {
-          if (hovered === k) { hovered = -1; setTargets(); }
-        });
       });
     }
-
-    /* ── Mouse ile sürükleme (touch zaten native kayar) ───────────── */
-    var dragging = false, dragMoved = false, startX = 0, startScroll = 0;
-
-    list.addEventListener("pointerdown", function (e) {
-      if (e.pointerType !== "mouse") return;
-      dragging = true; dragMoved = false;
-      startX = e.clientX; startScroll = list.scrollLeft;
-      list.classList.add("ss-grabbing");
-    });
-    global.addEventListener("pointermove", function (e) {
-      if (!dragging) return;
-      var dx = e.clientX - startX;
-      if (Math.abs(dx) > 4) dragMoved = true;
-      list.scrollLeft = startScroll - dx;
-    });
-    global.addEventListener("pointerup", function () {
-      if (!dragging) return;
-      dragging = false;
-      list.classList.remove("ss-grabbing");
-      if (!dragMoved) return;
-      /* Bırakınca en yakın kart sınırına yumuşakça otur. CSS snap,
-         settle bitene kadar kapalı kalır (yoksa yarım kalan smooth
-         scroll'u yakalayıp geri çeker). */
-      list.classList.add("ss-settling");
-      var s = step();
-      var max = list.scrollWidth - list.clientWidth;
-      var target = Math.max(0, Math.min(max, Math.round(list.scrollLeft / s) * s));
-      list.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
-      var done = function () {
-        list.classList.remove("ss-settling");
-        list.removeEventListener("scrollend", done);
+    /* Swiper yoksa: CSS'teki :not(.swiper) fallback'i native scroller
+       olarak devrede; butonları ona bağla. */
+    else {
+      var step = function () {
+        return items.length > 1
+          ? items[1].offsetLeft - items[0].offsetLeft
+          : items[0].getBoundingClientRect().width;
       };
-      if ("onscrollend" in global) list.addEventListener("scrollend", done);
-      else setTimeout(done, 700);
-    });
-    /* gerçek sürükleme kart linkini tetiklemesin */
-    list.addEventListener("click", function (e) {
-      if (dragMoved) { e.preventDefault(); e.stopPropagation(); dragMoved = false; }
-    }, true);
+      var upd = function () {
+        var max = list.scrollWidth - list.clientWidth - 1;
+        prevBtn.disabled = list.scrollLeft <= 1;
+        nextBtn.disabled = list.scrollLeft >= max;
+      };
+      prevBtn.addEventListener("click", function () {
+        list.scrollBy({ left: -step(), behavior: "smooth" });
+      });
+      nextBtn.addEventListener("click", function () {
+        list.scrollBy({ left: step(), behavior: "smooth" });
+      });
+      list.addEventListener("scroll", upd, { passive: true });
+      upd();
+    }
 
-    /* ── Giriş: kartlar sahneye dizilir (scrub, sadece burada GSAP) ── */
+    /* ── Giriş: kartlar sahneye dizilir (scrub — tek GSAP kullanımı) ─ */
     var enter = flag(root, "data-ss-enter", true);
     if (enter && !reduce &&
         typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
       gsap.registerPlugin(ScrollTrigger);
-      /* item'ı oynatır; hover transform'u .ss-inner'da yaşadığı için
-         ikisi çakışmaz. */
+      /* Swiper wrapper'ı transform'lar, item'ları değil — item'ı
+         oynatmak güvenli; hover da .ss-inner'da yaşadığı için üçü
+         birbirine karışmaz. */
       gsap.fromTo(items,
         { y: 56, opacity: 0, scale: 0.96 },
         {
