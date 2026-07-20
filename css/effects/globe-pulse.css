@@ -1,0 +1,54 @@
+/*!
+ * globe-pulse.css v1.0.0
+ * Flat globe wireframe with light pulses travelling along the grid
+ * (Framer "Edge Network" style). Pure CSS motion — stroke-dashoffset
+ * loop; JS (js/effects/globe-pulse.js) only injects the SVG markup.
+ *
+ * Colour hooks (set on [data-globe-pulse] or any ancestor):
+ *   --gp-color   pulse colour  (default: var(--brand-primary--500, #EC008C))
+ *   --gp-grid    grid colour   (default: #212121)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-globe-pulse] {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-globe-pulse] svg {
+  display: block;
+  width: 100%;
+  height: auto;          /* viewBox 880x460 keeps the aspect ratio */
+}
+
+.gp-grid {
+  stroke: var(--gp-grid, #212121);
+  stroke-width: 1;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.gp-pulse {
+  stroke: var(--gp-color, var(--brand-primary--500, #EC008C));
+  stroke-width: 2.933;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: gp-flow var(--dur, 7s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* One full cycle = dash + gap = path length -> seamless loop. Pulse is
+   born (fade-in), travels the whole route, dies (fade-out). --peak dims
+   selected pulses for depth, like the reference. */
+@keyframes gp-flow {
+  0%   { stroke-dashoffset: 0;                     opacity: 0; }
+  6%   {                                           opacity: var(--peak, 1); }
+  94%  {                                           opacity: var(--peak, 1); }
+  100% { stroke-dashoffset: calc(var(--len) * -1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-pulse { animation: none; opacity: 0.5; }
+}
