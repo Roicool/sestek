@@ -1,5 +1,5 @@
 /*!
- * scroll-fx.js v1.0.0
+ * scroll-fx.js v1.1.0
  * Scroll-scrubbed micro effects (GSAP + ScrollTrigger). Fully reversible:
  * everything is scrub-driven, so scrolling back rewinds the animation —
  * nothing is one-shot.
@@ -10,9 +10,12 @@
  *      spans automatically; wrapping/line breaks stay natural.
  *
  *   2. Scale in — [data-scale-in]
- *      Images/sections enter the viewport scaled down (or up) and settle
- *      to their original size. Optionally the element's HEIGHT animates
- *      to its natural value too, so surrounding content eases into place.
+ *      Images/sections enter the viewport slightly scaled + lowered and
+ *      settle into place with a power2.out ease (fast rise, soft landing).
+ *      If the element wraps a single img/video, the media counter-zooms
+ *      (outside settles while the inside pulls back) — automatic.
+ *      Optionally the element's HEIGHT animates to natural value too.
+ *      The bare attribute needs NO other configuration.
  *
  * Dependencies: gsap + ScrollTrigger registered. No CSS file needed.
  *
@@ -27,15 +30,19 @@
  *   data-tf-stagger="0.6"      overlap between words (0 = all together,
  *                              1 = strictly one after another).
  *
- * Attributes — [data-scale-in] (all optional):
- *   data-si-scale="0.8"        starting scale (e.g. 1.15 = zoom-out enter).
+ * Attributes — [data-scale-in] (all optional; defaults are the look):
+ *   data-si-scale="0.94"       starting scale.
+ *   data-si-y="48"             starting rise offset in px.
+ *   data-si-fade="false"       disable the opacity fade (default: on).
+ *   data-si-zoom="false"       disable auto media counter-zoom; "true"
+ *                              forces it even for non-single-media boxes.
+ *   data-si-zoom-scale="1.15"  inner media starting scale.
  *   data-si-height="true"      also animate height from scaled → natural
  *                              (pushes surrounding layout — that's the point).
- *   data-si-origin="center top" transform-origin.
- *   data-si-start="top 90%"    ScrollTrigger start.
- *   data-si-end="top 40%"      ScrollTrigger end.
- *   data-si-scrub="0.5"        scrub smoothing ("true" = direct).
- *   data-si-fade="true"        fade opacity in alongside the scale.
+ *   data-si-origin="center bottom"  transform-origin.
+ *   data-si-start="top 92%"    ScrollTrigger start.
+ *   data-si-end="top 42%"      ScrollTrigger end.
+ *   data-si-scrub="1"          scrub smoothing in seconds ("true" = direct).
  *
  * prefers-reduced-motion: everything renders in its final state, no motion.
  *
@@ -61,9 +68,10 @@
     return v !== "false" && v !== "0";
   }
 
-  function scrubVal(el, name) {
+  function scrubVal(el, name, fallback) {
     var v = el.getAttribute(name);
-    if (v === null || v === "" || v === "true") return v === "true" ? true : 0.5;
+    if (v === "true") return true;
+    if (v === null || v === "") return fallback;
     var n = parseFloat(v);
     return isNaN(n) ? true : n;
   }
@@ -122,7 +130,7 @@
           trigger: el,
           start: str(el, "data-tf-start", "top 85%"),
           end: str(el, "data-tf-end", "top 35%"),
-          scrub: scrubVal(el, "data-tf-scrub")
+          scrub: scrubVal(el, "data-tf-scrub", 0.5)
         }
       });
   }
@@ -134,22 +142,48 @@
     el.__sfxBuilt = true;
     if (reduce) return; /* final state = orijinal boyut */
 
-    var scale = num(el.getAttribute("data-si-scale"), 0.8);
+    var scale = num(el.getAttribute("data-si-scale"), 0.94);
+    var rise = num(el.getAttribute("data-si-y"), 48);
+    var fade = flag(el, "data-si-fade", true);
     var animHeight = flag(el, "data-si-height", false);
-    var fade = flag(el, "data-si-fade", false);
 
-    var from = { scale: scale };
+    /* İç parallax zoom: kutunun tek çocuğu bir medya elemanıysa (img/
+       video/picture) dışarısı otururken içi hafifçe geri çekilir —
+       "premium reveal" hissinin asıl kaynağı. data-si-zoom ile zorla
+       aç/kapat. Metin içeren section'larda kendiliğinden devreye girmez. */
+    var media = null;
+    if (!/^(IMG|VIDEO)$/.test(el.tagName) && el.children.length === 1 &&
+        /^(IMG|VIDEO|PICTURE)$/.test(el.children[0].tagName)) {
+      media = el.children[0];
+    }
+    var zoom = flag(el, "data-si-zoom", !!media)
+      ? (media || el.querySelector("img, video, picture"))
+      : null;
+
+    var st = {
+      trigger: el,
+      start: str(el, "data-si-start", "top 92%"),
+      end: str(el, "data-si-end", "top 42%"),
+      scrub: scrubVal(el, "data-si-scrub", 1),
+      invalidateOnRefresh: true
+    };
+    if (animHeight) {
+      /* Bittikten sonra inline height'ı bırak → tekrar auto (responsive). */
+      st.onLeave = function () { el.style.height = ""; };
+    }
+
+    var tl = gsap.timeline({
+      /* power2.out: hareketin çoğu erken biter, sona doğru yumuşakça
+         "yerine oturur" — scrub'la birlikte lineer çiğliği kırar. */
+      defaults: { ease: "power2.out" },
+      scrollTrigger: st
+    });
+
+    var from = { scale: scale, y: rise };
     var to = {
       scale: 1,
-      ease: "none",
-      transformOrigin: str(el, "data-si-origin", "center top"),
-      scrollTrigger: {
-        trigger: el,
-        start: str(el, "data-si-start", "top 90%"),
-        end: str(el, "data-si-end", "top 40%"),
-        scrub: scrubVal(el, "data-si-scrub"),
-        invalidateOnRefresh: true
-      }
+      y: 0,
+      transformOrigin: str(el, "data-si-origin", "center bottom")
     };
 
     if (fade) { from.opacity = 0; to.opacity = 1; }
@@ -168,10 +202,16 @@
         el.style.height = h;
         return natural;
       };
-      to.scrollTrigger.onLeave = function () { el.style.height = ""; };
     }
 
-    gsap.fromTo(el, from, to);
+    tl.fromTo(el, from, to, 0);
+
+    if (zoom) {
+      el.style.overflow = "hidden";
+      tl.fromTo(zoom,
+        { scale: num(el.getAttribute("data-si-zoom-scale"), 1.15) },
+        { scale: 1, transformOrigin: "center center" }, 0);
+    }
   }
 
   /* ── init ─────────────────────────────────────────────────────── */
