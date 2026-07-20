@@ -1,5 +1,5 @@
 /*!
- * globe-pulse-2.css v1.0.0
+ * globe-pulse-2.css v1.1.0
  * Behavioural CSS for the GSAP DrawSVG variant of the globe-pulse visual.
  * All motion lives in js/effects/globe-pulse-2.js (DrawSVG choreography);
  * this file only reserves the box (CLS 0) and holds the colour hooks.
@@ -15,7 +15,7 @@
 [data-globe-pulse-2] {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 880 / 460;
+  aspect-ratio: 880 / 440;   /* v1.3.0: küre kutuyu birebir doldurur */
 }
 
 [data-globe-pulse-2] svg {
@@ -55,5 +55,5 @@
 
 /* aspect-ratio bilmeyen çok eski tarayıcılar: padding hack fallback */
 @supports not (aspect-ratio: 1) {
-  [data-globe-pulse-2] { height: 0; padding-bottom: 52.273%; }
+  [data-globe-pulse-2] { height: 0; padding-bottom: 50%; }
 }

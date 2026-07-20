@@ -2,10 +2,12 @@
  * globe-pulse-2.js v1.1.0
  *
  * Changelog
+ * v1.3.0 — sıfır boşluk: kürenin tepesi kutunun ÜST kenarına yapışık
+ *          (y=0), taban alt kenarla bitiyor — viewBox 880x440, çizim
+ *          kutuyu birebir dolduruyor; üstte/altta ölü boşluk yok.
  * v1.2.0 — küre KOMPLE görünür: çizim %75 ölçeklenip viewBox'a tam
- *          oturtuldu (yatayda hiçbir çizgi kesilmez, alt kesik kalır);
- *          "meet" fit — her kutu oranında tam küre, gerekirse yanlarda
- *          nefes boşluğu.
+ *          oturtuldu (yatayda hiçbir çizgi kesilmez); "meet" fit —
+ *          her kutu oranında tam küre.
  * v1.1.0 — Draw-in bir tık yavaşladı; pulse trafiği artık çizim bitmeden
  *          (draw-in'in ~0.9sn'sinde) başlıyor.
  * GSAP DrawSVG variant of the globe-pulse visual — same wireframe globe,
@@ -51,7 +53,7 @@
   "use strict";
 
   var SVGNS = "http://www.w3.org/2000/svg";
-  var VIEWBOX = "0 0 880 460";
+  var VIEWBOX = "0 0 880 440";
   var PULSE_PX = 73;      /* görünen segmentin yol üzerindeki uzunluğu */
   var BASE_SPEED = 210;   /* px/sn — easing ortalaması v1'e yakın dursun */
   var uid = 0;
@@ -138,10 +140,11 @@
       "<feMergeNode in=\"SourceGraphic\"></feMergeNode></feMerge>" +
       "</filter></defs>";
 
-    /* Çizim verisi x:-146.67..1026.67 (1173 birim) — viewBox'tan geniş.
-       0.75 ölçek + 110 kaydırma ile 0..880'e TAM oturur: kürenin sağı/solu
-       hiçbir kutuda kesilmez. (Grid'de non-scaling-stroke 1px'i korur.) */
-    var FIT = "translate(110.0025,0) scale(0.75)";
+    /* Çizim verisi x:-146.67..1026.67, y:146.67..733.33. 0.75 ölçek +
+       (110,-110) kaydırma ile x 0..880, y 0..440'a TAM oturur: tepe üst
+       kenara yapışık, taban alt kenarla bitiyor, yanlar kesilmez.
+       (Grid'de non-scaling-stroke 1px'i korur.) */
+    var FIT = "translate(110.0025,-110.0025) scale(0.75)";
 
     var gGrid = document.createElementNS(SVGNS, "g");
     gGrid.setAttribute("class", "gp2-grid");
