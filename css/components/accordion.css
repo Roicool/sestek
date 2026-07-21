@@ -79,7 +79,7 @@
    (gölge yok — sade, düz vurgu). */
 [data-accordion-card] [data-accordion-item].is-open {
   border-color: var(--brand-primary--500, #EC008C);
-  background: var(--surface--accent, var(--brand-primary--100, #fbe6f2));
+  background: var(--brand-primary--100);
 }
 [data-accordion-card] [data-accordion-item].is-open [data-accordion-trigger] {
   color: var(--brand-primary--700, #b0006a);
