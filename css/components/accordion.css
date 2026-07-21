@@ -1,7 +1,8 @@
 /*!
- * accordion.css v1.0.0
- * Accessible accordion — critical/behavioural styles only.
- * Colours, fonts, borders and spacing come from the Webflow Designer + RC tokens.
+ * accordion.css v1.1.0
+ * Accessible accordion — critical/behavioural styles + opt-in card look.
+ * Colours, fonts, borders and spacing come from the Webflow Designer + RC
+ * tokens; the card variant below is a sensible default you can override.
  * https://github.com/roicool/sestek
  */
 
@@ -47,10 +48,62 @@
   transform: rotate(180deg);
 }
 
+/* ── Kart görünümü (opt-in): root'a data-accordion-card ekle ──────
+   Her item ayrı bir kart olur; aralarında boşluk, çerçeve, yuvarlak
+   köşe. Renk/kenarlık token'lardan gelir, Designer'dan ezebilirsin. */
+[data-accordion-card] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--accordion-card-gap, 0.75rem);
+}
+
+[data-accordion-card] [data-accordion-item] {
+  background: var(--surface--base, #fff);
+  border: 1px solid var(--border--color-border-base, #e6e6e6);
+  border-radius: var(--accordion-card-radius, 14px);
+  overflow: hidden;               /* açılışta içerik köşeden taşmaz */
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
+}
+
+/* Hover: kapalı kartta hafif ipucu */
+@media (hover: hover) {
+  [data-accordion-card] [data-accordion-item]:hover {
+    border-color: var(--border--color-border-strong, #d0d0d0);
+  }
+}
+
+/* Açık kart: marka vurgusu + yumuşak yükselme */
+[data-accordion-card] [data-accordion-item].is-open {
+  border-color: var(--brand-primary--500, #EC008C);
+  box-shadow: 0 10px 30px -12px rgba(236, 0, 140, 0.28);
+}
+
+/* Kart içi boşluklar — trigger ve içerik. Panel'e ASLA padding verme
+   (0'a animate ediliyor); içerik padding'i content wrapper'a gelir. */
+[data-accordion-card] [data-accordion-trigger] {
+  padding: var(--accordion-pad-y, 1.15rem) var(--accordion-pad-x, 1.35rem);
+}
+[data-accordion-card] [data-accordion-content] {
+  padding: 0 var(--accordion-pad-x, 1.35rem) var(--accordion-pad-y, 1.15rem);
+  color: var(--color-text--muted, #555);
+}
+
+/* İkon rozeti (kart modunda daha belirgin) */
+[data-accordion-card] [data-accordion-icon] {
+  color: var(--brand-primary--500, #EC008C);
+}
+
+/* ── İçerik reveal başlangıç durumu (JS bunu GSAP'la sürer;
+      JS gelmeden önce içerik gizli kalmasın diye kapalı item'da
+      is-open yokken panel zaten height:0, görünmez) ─────────────── */
+[data-accordion-content] { will-change: opacity, transform; }
+
 /* ── Reduced motion ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   [data-accordion-panel],
-  [data-accordion-icon] {
+  [data-accordion-icon],
+  [data-accordion-card] [data-accordion-item],
+  [data-accordion-content] {
     will-change: auto;
     transition: none !important;
   }

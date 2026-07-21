@@ -1,9 +1,12 @@
 /*!
- * accordion.js v1.0.0
+ * accordion.js v1.1.0
  * Accessible, data-attribute-driven accordion (FAQ / disclosure groups).
  *   • Full ARIA: aria-expanded, aria-controls, aria-hidden, role wiring
  *   • Keyboard: Enter/Space toggle, ↑/↓/Home/End move between headers
  *   • GSAP height animation (0 ↔ auto) with clean overflow clipping
+ *   • Inner [data-accordion-content] reveals with a fade+slide overlapping
+ *     the height tween (opens) / fades out first (closes) — premium feel
+ *   • Card look opt-in: data-accordion-card on the root (see accordion.css)
  *   • Single-open (default) or allow-multiple, opt-in via attribute
  *   • prefers-reduced-motion: instant open/close, no tween
  *
@@ -80,7 +83,10 @@
       panel.setAttribute("role", "region");
       panel.setAttribute("aria-labelledby", triggerId);
 
-      return { item: item, trigger: trigger, panel: panel, open: false };
+      // Inner content wrapper — animated (fade+slide) alongside the height.
+      var content = panel.querySelector("[data-accordion-content]");
+
+      return { item: item, trigger: trigger, panel: panel, content: content, open: false };
     }).filter(Boolean);
 
     if (!entries.length) return;
@@ -91,10 +97,20 @@
       entry.trigger.setAttribute("aria-expanded", "false");
       entry.item.classList.remove("is-open");
       entry.panel.setAttribute("aria-hidden", "true");
+      gsap.killTweensOf(entry.panel);
+      if (entry.content) gsap.killTweensOf(entry.content);
 
       if (reduce || !animate) {
         gsap.set(entry.panel, { height: 0, overflow: "hidden" });
+        if (entry.content) gsap.set(entry.content, { opacity: 0, y: 8 });
         return;
+      }
+      // İçerik önce hızlıca solar, panel sonra kapanır → boş kutu görünmez.
+      if (entry.content) {
+        gsap.to(entry.content, {
+          opacity: 0, y: 8,
+          duration: Math.min(0.2, duration * 0.5), ease: "power1.in",
+        });
       }
       gsap.to(entry.panel, {
         height: 0,
@@ -110,9 +126,12 @@
       entry.trigger.setAttribute("aria-expanded", "true");
       entry.item.classList.add("is-open");
       entry.panel.setAttribute("aria-hidden", "false");
+      gsap.killTweensOf(entry.panel);
+      if (entry.content) gsap.killTweensOf(entry.content);
 
       if (reduce || !animate) {
         gsap.set(entry.panel, { height: "auto", overflow: "visible" });
+        if (entry.content) gsap.set(entry.content, { opacity: 1, y: 0 });
         return;
       }
       // Measure target height, animate 0→px, then settle to auto so the panel
@@ -128,6 +147,17 @@
           onComplete: function () { gsap.set(entry.panel, { height: "auto", overflow: "visible" }); },
         }
       );
+      // İçerik yükseklikle üst üste binerek belirir — premium "reveal".
+      if (entry.content) {
+        gsap.fromTo(entry.content,
+          { opacity: 0, y: 8 },
+          {
+            opacity: 1, y: 0,
+            duration: duration, ease: "power2.out",
+            delay: duration * 0.18,
+          }
+        );
+      }
     }
 
     function open(entry) {
