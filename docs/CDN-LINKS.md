@@ -1404,10 +1404,12 @@ Pinli, scroll-driven kart girişi: section ekrana gelince **pinlenir** ve
 kartlar **yukarıdan, teker teker** scroll'la senkron düşer; sonra pin bırakır.
 Her şey `scrub`'lı — yukarı çıkınca aynı hareket geri sarar.
 
-**İlk kart "yaklaşırken" gelir** (section daha ekrana kayarken), böylece pin
-tam oturduğu an bölüm **asla boş görünmez** — istenen "gelirken ilk kutu"
-davranışı budur. Kalan kartlar pinli timeline'da sırayla düşer. Başlık +
-alt metin yerinde durur; yalnızca `[data-cd-card]` elementleri animasyon alır.
+**İlk kart section oturur oturmaz (girişte) yukarıdan düşer**, sonra 2. ve 3.
+kart sırayla düşer. Üç kart da **aynı yönde** iner çünkü düşüş pin sırasında
+(sabit karede) olur — pin'den önce bölüm hâlâ scroll ettiği için "yukarıdan
+düşme" sayfa kaymasının içinde kaybolup "aşağıdan geliyormuş" gibi görünürdü;
+pinli = sabit = net biçimde yukarıdan. Başlık + alt metin yerinde durur;
+yalnızca `[data-cd-card]` elementleri animasyon alır.
 
 ```html
 <!-- in <head> -->
@@ -1436,15 +1438,13 @@ Webflow `</body>` öncesi:
 <!--
   Kök — tüm animasyon data-attribute'larla yönetilir:
     data-card-drop
-    data-cd-end="160%"        pin scroll mesafesi (default (kart-1)*80%)
+    data-cd-end="225%"        pin scroll mesafesi (default kart-sayısı*75%)
     data-cd-scrub="1"         scrub gecikmesi sn (default 1)
     data-cd-distance="90"     kartların yukarıdan düşme mesafesi px (default 90)
     data-cd-reveal="1"        kart başına giriş uzunluğu, birim (default 1)
     data-cd-gap="0.6"         kartlar arası bekleme, birim (default 0.6)
     data-cd-scale="0.94"      opsiyonel zoom-settle 0..1 (default 1 = kapalı)
     data-cd-ease="power3.out" düşüş ease'i
-    data-cd-intro-start="top 85%"  ilk kartın yaklaşma tetiği (default "top 85%")
-    data-cd-intro="false"     ilk kartı statik yap (yaklaşma animasyonu YOK)
     data-cd-priority="1"      ScrollTrigger refreshPriority — sayfadaki pin
                               sırasına göre ver (bkz. PROJECT.md Pinli Bölüm Kuralları)
 -->
@@ -1467,20 +1467,20 @@ Webflow `</body>` öncesi:
 
 #### Notlar
 
-- **İlk kart yaklaşırken gelir:** intro trigger'ı `data-cd-intro-start`'tan
-  (default "top 85%") başlar, section pin noktasına (`top top`) varınca kart
-  tam oturur. Pin tam o anda kilitlenir → boş kare yok. `data-cd-intro="false"`
-  ile ilk kart pin başında statik durur (yaklaşma animasyonu olmadan).
+- **Hepsi yukarıdan, pin sırasında:** kartlar tek bir pinli timeline'da düşer.
+  İlk kart section pinlenir pinlenmez (girişte) iner — bu yüzden geldiğinde
+  bölüm dolu görünür — sonra 2. ve 3. sırayla. Düşüş pinli (sabit) karede
+  olduğu için üçü de net biçimde **yukarıdan** iner. (v1.0.0'daki pin-öncesi
+  "yaklaşma" girişi kaldırıldı: pin yokken sayfa hâlâ kaydığı için ilk kart
+  "aşağıdan geliyormuş" gibi görünüyordu.)
 - **Birim sistemi:** `reveal` + `gap` göreceli birimlerdir; toplam scroll
   mesafesi `data-cd-end` ile sabittir, birimler bu mesafeyi paylaştırır
   (scroll-tabs ile aynı mantık).
-- **Tek kart** varsa pin kurulmaz — yalnızca yaklaşma girişi oynar.
 - **Pin kuralı (PROJECT.md Kural 3):** `[data-card-drop]`'un hiçbir
   ancestor'ında `transform`/`filter`/`perspective`/`will-change:transform`
   olmasın — pin'in `position:fixed`'i kayar. Webflow page-wrapper'larına dikkat.
 - **Çoklu pin:** aynı sayfada başka pinli bölüm (hero/scroll-tabs) varsa
-  `data-cd-priority`'yi konumuna göre ver; intro trigger'ı otomatik bir düşük
-  (`priority − 1`) alır.
+  `data-cd-priority`'yi konumuna göre ver.
 - Renk/font/spacing/grid Webflow Designer'da kalır; card-drop.css yalnızca
   `min-height:100svh` (pinli kare) + `will-change` (GPU) taşır.
 - `prefers-reduced-motion`: pin/animasyon kapanır, tüm kartlar anında son

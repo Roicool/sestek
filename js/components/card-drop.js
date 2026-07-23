@@ -1,21 +1,27 @@
 /*!
- * card-drop.js v1.0.0
+ * card-drop.js v1.1.0
  * Pinned, scroll-driven card reveal — the section pins and its cards drop in
  * from ABOVE, ONE BY ONE, in sync with scroll; then the pin releases and the
  * page scrolls on. Everything is scrubbed, so scrolling back up reverses the
  * exact same motion — no direction logic, fully reversible.
  *
- * The FIRST card lands during the APPROACH (while the section is still
- * scrolling up into view), so the instant the section pins it is NEVER empty —
- * that "arriving card" lead-in is the whole point. The remaining cards then
- * drop in on the pinned timeline, one after another.
+ * The FIRST card drops the instant the section pins (as you arrive / "enter"
+ * it), so it greets you from the top; the remaining cards then drop one after
+ * another as you keep scrolling. All cards fall the same way — straight down
+ * from above — because the drop happens while the section is PINNED (a fixed
+ * frame). A pre-pin "approach" reveal was tried and removed: before the pin
+ * the section is still scrolling, so a small downward drop got masked by the
+ * page scroll and read as coming from BELOW. Pinned = fixed = unambiguously
+ * from above.
  *
- * Two ScrollTriggers, one section:
- *   • intro (NOT pinned): drives card 0 in over the approach window — from
- *     data-cd-intro-start until the section reaches the pin point ("top top").
- *     Its refreshPriority sits one BELOW the pin so it measures against the
- *     post-pin document height (see PROJECT.md "Pinli Bölüm Kuralları").
- *   • pin: cards 1..n drop in sequentially while the section is pinned.
+ * Changelog
+ * v1.1.0 — tüm kartlar artık pinli karede YUKARIDAN düşer (ilk kart dahil).
+ *          v1.0.0'da ilk kart pin'den önce "yaklaşırken" geliyordu; pin yokken
+ *          bölüm hâlâ scroll ettiği için o düşüş "aşağıdan geliyormuş" gibi
+ *          görünüyordu. Artık ilk kart section oturur oturmaz, sonra 2. ve 3.
+ *          sırayla düşer — yön tutarlı, hep yukarıdan. (Kaldırılan attribute'lar:
+ *          data-cd-intro, data-cd-intro-start.)
+ * v1.0.0 — ilk sürüm (pre-pin intro + pinli kalan kartlar).
  *
  * Requires : gsap + ScrollTrigger registered, Sestek.util (js/core/utils.js).
  * CSS      : css/components/card-drop.css  (min-height:100svh on the root so the
@@ -34,17 +40,15 @@
  *                                    layout → zero reflow as they pop in).
  *
  * Root attributes (all optional):
- *   data-cd-end          pin scroll distance         (default "(n-1)*80%")
- *   data-cd-scrub        scrub lag in seconds        (default 1)
- *   data-cd-distance     drop distance from above, px(default 90)
- *   data-cd-reveal       per-card reveal length,unit (default 1)
- *   data-cd-gap          hold between cards, units   (default 0.6)
- *   data-cd-scale        optional zoom-settle 0..1   (default 1 = off)
- *   data-cd-ease         ease for the drops          (default "power3.out")
- *   data-cd-intro-start  intro trigger start         (default "top 85%")
- *   data-cd-intro        "false" → card 0 is STATIC at pin (no approach reveal)
- *   data-cd-priority     ScrollTrigger refreshPriority — set per the page's pin
- *                        stacking order (top pin = highest)      (default 1)
+ *   data-cd-end        pin scroll distance          (default "n*75%")
+ *   data-cd-scrub      scrub lag in seconds         (default 1)
+ *   data-cd-distance   drop distance from above, px (default 90)
+ *   data-cd-reveal     per-card reveal length, unit (default 1)
+ *   data-cd-gap        hold between cards, units    (default 0.6)
+ *   data-cd-scale      optional zoom-settle 0..1    (default 1 = off)
+ *   data-cd-ease       ease for the drops           (default "power3.out")
+ *   data-cd-priority   ScrollTrigger refreshPriority — set per the page's pin
+ *                      stacking order (top pin = highest)       (default 1)
  *
  * https://github.com/roicool/sestek
  */
@@ -69,16 +73,14 @@
     var n = cards.length;
 
     // ── Config from data-attributes ───────────────────────────────
-    var scrub      = attrNum(root, "data-cd-scrub", 1);
-    var distance   = attrNum(root, "data-cd-distance", 90);
-    var reveal     = attrNum(root, "data-cd-reveal", 1);
-    var gap        = attrNum(root, "data-cd-gap", 0.6);
-    var scale      = attrNum(root, "data-cd-scale", 1);
-    var priority   = attrNum(root, "data-cd-priority", 1);
-    var ease       = root.getAttribute("data-cd-ease") || "power3.out";
-    var introStart = root.getAttribute("data-cd-intro-start") || "top 85%";
-    var introOn    = root.getAttribute("data-cd-intro") !== "false";
-    var endAttr    = root.getAttribute("data-cd-end");
+    var scrub    = attrNum(root, "data-cd-scrub", 1);
+    var distance = attrNum(root, "data-cd-distance", 90);
+    var reveal   = attrNum(root, "data-cd-reveal", 1);
+    var gap      = attrNum(root, "data-cd-gap", 0.6);
+    var scale    = attrNum(root, "data-cd-scale", 1);
+    var priority = attrNum(root, "data-cd-priority", 1);
+    var ease     = root.getAttribute("data-cd-ease") || "power3.out";
+    var endAttr  = root.getAttribute("data-cd-end");
 
     // ── Reduced motion: final frame, no pin, no scrub ─────────────
     if (reduce) {
@@ -87,8 +89,7 @@
       return;
     }
 
-    var introST = null;   // approach trigger for card 0
-    var pinTL   = null;   // pinned timeline for cards 1..n-1
+    var pinTL = null;   // pinned timeline that drops every card
 
     /** Hidden starting frame: every card sits above its slot, faded out. */
     function setInitial() {
@@ -98,8 +99,7 @@
     }
 
     function build() {
-      // Tear down previous triggers/timelines before re-measuring.
-      if (introST) { introST.kill(); introST = null; }
+      // Tear down previous timeline before re-measuring.
       if (pinTL) {
         if (pinTL.scrollTrigger) pinTL.scrollTrigger.kill();
         pinTL.kill();
@@ -109,32 +109,11 @@
       gsap.set(cards, { clearProps: "all" });
       setInitial();
 
-      // ── Card 0: arrive during the approach, or sit static at the pin ──
-      if (introOn) {
-        var introTo = { y: 0, autoAlpha: 1, ease: ease, overwrite: true };
-        if (scale !== 1) introTo.scale = 1;
-        introTo.scrollTrigger = {
-          trigger: root,
-          start: introStart,
-          end: "top top",             // lands exactly as the pin engages
-          scrub: scrub,
-          // One below the pin so the pin adds its spacing FIRST, then this
-          // (non-pinning) trigger measures against the real document height.
-          refreshPriority: priority - 1,
-        };
-        introST = gsap.to(cards[0], introTo).scrollTrigger;
-      } else {
-        gsap.set(cards[0], { y: 0, autoAlpha: 1, scale: 1 });
-      }
-
-      // ── Cards 1..n-1: drop in one by one on the pinned timeline ──
-      // With a single card there is nothing left to pin for — the approach
-      // reveal (or the static set above) is the whole animation.
-      if (n < 2) return;
-
-      var revealCount = n - 1;
-      var totalUnits  = revealCount * (reveal + gap);   // trailing gap = release margin
-      var endDist     = endAttr || ("+=" + (revealCount * 80) + "%");
+      // ── All cards drop from above, one by one, WHILE PINNED ──
+      // The pin gives a fixed frame, so every card (the first included) falls
+      // straight down into its slot — same motion for all, no "from below".
+      var totalUnits = n * reveal + (n - 1) * gap;   // n drops + gaps between
+      var endDist    = endAttr || ("+=" + (n * 75) + "%");
 
       var tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -152,8 +131,10 @@
         },
       });
 
+      // Card 0 drops first (cursor 0) — it lands right as the section pins, so
+      // the frame is populated the moment you arrive. Cards 1..n follow.
       var cursor = 0;
-      for (var j = 1; j < n; j++) {
+      for (var j = 0; j < n; j++) {
         var cardTo = { y: 0, autoAlpha: 1, ease: ease, duration: reveal };
         if (scale !== 1) cardTo.scale = 1;
         tl.to(cards[j], cardTo, cursor);
