@@ -1,27 +1,31 @@
 /*!
- * card-drop.js v1.1.0
+ * card-drop.js v1.3.0
  * Pinned, scroll-driven card reveal — the section pins and its cards drop in
- * from ABOVE, ONE BY ONE, in sync with scroll; then the pin releases and the
- * page scrolls on. Everything is scrubbed, so scrolling back up reverses the
- * exact same motion — no direction logic, fully reversible.
+ * from ABOVE, ONE BY ONE, in sync with scroll; then the pin releases. Scrubbed,
+ * so scrolling back up reverses the exact same motion — fully reversible.
  *
- * The FIRST card drops the instant the section pins (as you arrive / "enter"
- * it), so it greets you from the top; the remaining cards then drop one after
- * another as you keep scrolling. All cards fall the same way — straight down
- * from above — because the drop happens while the section is PINNED (a fixed
- * frame). A pre-pin "approach" reveal was tried and removed: before the pin
- * the section is still scrolling, so a small downward drop got masked by the
- * page scroll and read as coming from BELOW. Pinned = fixed = unambiguously
- * from above.
+ * The first card drops the instant the section pins (as you arrive / enter it),
+ * so it greets you from the top; cards two and three then drop one after
+ * another as you keep scrolling. ALL cards fall the same way — straight down —
+ * because the drop happens while the section is PINNED (a fixed frame).
+ *
+ * Why not drop the first card BEFORE the pin (during the approach)? Two hard
+ * constraints kill it: (1) before the pin the section is still scrolling up, so
+ * a small downward drop is outrun by the page and reads as coming from BELOW;
+ * (2) making it travel far enough to visibly descend sends the card straight
+ * THROUGH the header above it. A fixed (pinned) frame is the only way to get a
+ * clean, collision-free "from above" — so every card drops while pinned, the
+ * first one first.
  *
  * Changelog
- * v1.1.0 — tüm kartlar artık pinli karede YUKARIDAN düşer (ilk kart dahil).
- *          v1.0.0'da ilk kart pin'den önce "yaklaşırken" geliyordu; pin yokken
- *          bölüm hâlâ scroll ettiği için o düşüş "aşağıdan geliyormuş" gibi
- *          görünüyordu. Artık ilk kart section oturur oturmaz, sonra 2. ve 3.
- *          sırayla düşer — yön tutarlı, hep yukarıdan. (Kaldırılan attribute'lar:
- *          data-cd-intro, data-cd-intro-start.)
- * v1.0.0 — ilk sürüm (pre-pin intro + pinli kalan kartlar).
+ * v1.3.0 — kesin çözüm: tüm kartlar pinli karede yukarıdan düşer, ilki section
+ *          oturur oturmaz. Pin ÖNCESİ "yukarıdan" düşüş denendi ve bırakıldı:
+ *          ya sayfa kayması yüzünden aşağıdan geliyormuş gibi görünüyor (v1.0),
+ *          ya da kart başlığın içinden geçip çakışıyor (v1.2). Pinli kare tek
+ *          temiz yol.
+ * v1.2.0 — pin öncesi yukarıdan düşüş (başlıkla çakıştı — geri alındı).
+ * v1.1.0 — tüm kartlar pinde.
+ * v1.0.0 — ilk sürüm (pin öncesi küçük düşüş → aşağıdan görünüyordu).
  *
  * Requires : gsap + ScrollTrigger registered, Sestek.util (js/core/utils.js).
  * CSS      : css/components/card-drop.css  (min-height:100svh on the root so the
@@ -91,13 +95,6 @@
 
     var pinTL = null;   // pinned timeline that drops every card
 
-    /** Hidden starting frame: every card sits above its slot, faded out. */
-    function setInitial() {
-      var from = { y: -distance, autoAlpha: 0 };
-      if (scale !== 1) from.scale = scale;
-      gsap.set(cards, from);
-    }
-
     function build() {
       // Tear down previous timeline before re-measuring.
       if (pinTL) {
@@ -107,11 +104,16 @@
       }
 
       gsap.set(cards, { clearProps: "all" });
-      setInitial();
+
+      // Hidden starting frame: every card sits `distance` above its slot, faded.
+      var from = { y: -distance, autoAlpha: 0 };
+      if (scale !== 1) from.scale = scale;
+      gsap.set(cards, from);
 
       // ── All cards drop from above, one by one, WHILE PINNED ──
       // The pin gives a fixed frame, so every card (the first included) falls
-      // straight down into its slot — same motion for all, no "from below".
+      // straight down into its slot — same motion for all, no "from below",
+      // no crossing the header.
       var totalUnits = n * reveal + (n - 1) * gap;   // n drops + gaps between
       var endDist    = endAttr || ("+=" + (n * 75) + "%");
 
