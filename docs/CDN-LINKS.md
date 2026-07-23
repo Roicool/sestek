@@ -706,6 +706,8 @@ DOM yapısı:
 | `css/components/marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/marquee.css` |
 | `js/components/scroll-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/scroll-tabs.js` |
 | `css/components/scroll-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/scroll-tabs.css` |
+| `js/components/card-drop.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-drop.js` |
+| `css/components/card-drop.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-drop.css` |
 | `js/components/fill-bars.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/fill-bars.js` |
 | `css/components/fill-bars.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/fill-bars.css` |
 | `js/components/hover-list.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hover-list.js` |
@@ -1395,6 +1397,96 @@ Webflow `</body>` öncesi:
   davranışsal CSS içerir (panel `overflow:hidden`, grid, collapse state).
 - `prefers-reduced-motion`: pin/animasyon kapanır, sekmeler tıklamayla anında
   panel değiştirir.
+
+### Card Drop
+
+Pinli, scroll-driven kart girişi: section ekrana gelince **pinlenir** ve
+kartlar **yukarıdan, teker teker** scroll'la senkron düşer; sonra pin bırakır.
+Her şey `scrub`'lı — yukarı çıkınca aynı hareket geri sarar.
+
+**İlk kart "yaklaşırken" gelir** (section daha ekrana kayarken), böylece pin
+tam oturduğu an bölüm **asla boş görünmez** — istenen "gelirken ilk kutu"
+davranışı budur. Kalan kartlar pinli timeline'da sırayla düşer. Başlık +
+alt metin yerinde durur; yalnızca `[data-cd-card]` elementleri animasyon alır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-drop.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-drop.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initLenis();     // scrub'ı premium hissettirir (opsiyonel ama önerilir)
+    Sestek.initCardDrop();  // tüm [data-card-drop] bölümlerini başlatır
+  });
+</script>
+```
+
+#### DOM yapısı
+
+```html
+<!--
+  Kök — tüm animasyon data-attribute'larla yönetilir:
+    data-card-drop
+    data-cd-end="160%"        pin scroll mesafesi (default (kart-1)*80%)
+    data-cd-scrub="1"         scrub gecikmesi sn (default 1)
+    data-cd-distance="90"     kartların yukarıdan düşme mesafesi px (default 90)
+    data-cd-reveal="1"        kart başına giriş uzunluğu, birim (default 1)
+    data-cd-gap="0.6"         kartlar arası bekleme, birim (default 0.6)
+    data-cd-scale="0.94"      opsiyonel zoom-settle 0..1 (default 1 = kapalı)
+    data-cd-ease="power3.out" düşüş ease'i
+    data-cd-intro-start="top 85%"  ilk kartın yaklaşma tetiği (default "top 85%")
+    data-cd-intro="false"     ilk kartı statik yap (yaklaşma animasyonu YOK)
+    data-cd-priority="1"      ScrollTrigger refreshPriority — sayfadaki pin
+                              sırasına göre ver (bkz. PROJECT.md Pinli Bölüm Kuralları)
+-->
+<section data-card-drop class="benefits">
+
+  <!-- Başlık + alt metin: yerinde durur, animasyon ALMAZ -->
+  <h2 class="benefits__title">Discover the key benefits</h2>
+  <p class="benefits__lead">Engineered with hybrid LLM reasoning…</p>
+
+  <!-- Kart grid'i (Webflow'da 3 kolon). Gizli kartlar hücrelerini korur
+       (autoAlpha → reflow yok). DOM sırası = düşme sırası. -->
+  <div class="benefits__grid">
+    <article data-cd-card class="bcard"> … 1. kart … </article>
+    <article data-cd-card class="bcard"> … 2. kart … </article>
+    <article data-cd-card class="bcard"> … 3. kart … </article>
+  </div>
+
+</section>
+```
+
+#### Notlar
+
+- **İlk kart yaklaşırken gelir:** intro trigger'ı `data-cd-intro-start`'tan
+  (default "top 85%") başlar, section pin noktasına (`top top`) varınca kart
+  tam oturur. Pin tam o anda kilitlenir → boş kare yok. `data-cd-intro="false"`
+  ile ilk kart pin başında statik durur (yaklaşma animasyonu olmadan).
+- **Birim sistemi:** `reveal` + `gap` göreceli birimlerdir; toplam scroll
+  mesafesi `data-cd-end` ile sabittir, birimler bu mesafeyi paylaştırır
+  (scroll-tabs ile aynı mantık).
+- **Tek kart** varsa pin kurulmaz — yalnızca yaklaşma girişi oynar.
+- **Pin kuralı (PROJECT.md Kural 3):** `[data-card-drop]`'un hiçbir
+  ancestor'ında `transform`/`filter`/`perspective`/`will-change:transform`
+  olmasın — pin'in `position:fixed`'i kayar. Webflow page-wrapper'larına dikkat.
+- **Çoklu pin:** aynı sayfada başka pinli bölüm (hero/scroll-tabs) varsa
+  `data-cd-priority`'yi konumuna göre ver; intro trigger'ı otomatik bir düşük
+  (`priority − 1`) alır.
+- Renk/font/spacing/grid Webflow Designer'da kalır; card-drop.css yalnızca
+  `min-height:100svh` (pinli kare) + `will-change` (GPU) taşır.
+- `prefers-reduced-motion`: pin/animasyon kapanır, tüm kartlar anında son
+  hâllerinde görünür.
+- Canlı örnek: [`demo/card-drop/index.html`](../demo/card-drop/index.html)
+  (ekrandaki "Discover the key benefits" bölümünün birebir yeniden inşası).
 
 ### Stack Panels 2 (pin + dissolve, premium)
 

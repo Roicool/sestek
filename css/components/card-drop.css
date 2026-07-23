@@ -1,0 +1,37 @@
+/*!
+ * card-drop.css v1.0.0
+ * Behavioural skin for js/components/card-drop.js — pinned, scroll-driven
+ * cards that drop in from above one by one. Only two things here are
+ * load-bearing; everything visual (grid, card look, colours, spacing) stays
+ * in the Webflow Designer.
+ *
+ *   1. [data-card-drop] must be at least one viewport tall so pinning it at
+ *      "top top" frames a full screen (the cards land inside that frame).
+ *   2. [data-cd-card] gets GPU hints so the scrubbed y/opacity drop stays at
+ *      60fps and never repaints layout.
+ *
+ * PIN CAVEAT (PROJECT.md Kural 3): no ancestor of [data-card-drop] may carry
+ * transform / filter / perspective / will-change:transform, or the pin's
+ * position:fixed anchors to that ancestor and the section drifts.
+ */
+
+[data-card-drop] {
+  position: relative;
+  /* Pinned frame fills the viewport. Override in the Designer if your section
+     is intentionally taller (extra header/footer room inside the pin). */
+  min-height: 100svh;
+}
+
+[data-cd-card] {
+  /* Scrubbed transform + fade — hint the compositor so it never touches layout.
+     autoAlpha (opacity + visibility:hidden) keeps the hidden cards' grid cells
+     reserved, so the row never reflows as they pop in. */
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No animation runs — drop the compositor hint so idle cards cost nothing. */
+  [data-cd-card] {
+    will-change: auto;
+  }
+}
