@@ -1,0 +1,83 @@
+/*!
+ * h-scroll.css v1.0.0
+ * Pinned horizontal-scroll card section — critical/behavioural styles only.
+ * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
+ *
+ * Desktop  : JS pins the section and translates .hscroll__track on x.
+ * Mobile / : NO pin — the track itself is a native horizontal scroller with
+ * reduced    CSS scroll-snap. JS builds nothing there (see h-scroll.js).
+ * motion
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Section ─────────────────────────────────────────────────── */
+.hscroll {
+  position: relative;
+  width: 100%;
+  /*
+   * PIN RULE (PROJECT.md Kural 3): no transform / filter / perspective /
+   * will-change:transform on this element or ANY ancestor — the pin uses
+   * position:fixed and would anchor to that ancestor instead of the viewport.
+   */
+}
+
+/* Pin target fills the viewport; track sits vertically centred inside it. */
+.hscroll__viewport {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  overflow: hidden;               /* clips the off-screen part of the track */
+}
+
+/* ── Track — the row GSAP translates ─────────────────────────── */
+.hscroll__track {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing--6);
+  width: max-content;             /* row never wraps — real overflow width */
+  padding-inline: var(--spacing--10); /* breathing room at both ends */
+  will-change: transform;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.hscroll__card {
+  flex: 0 0 auto;
+  /* Override per instance: .hscroll { --hscroll-card-w: 32rem; } */
+  width: var(--hscroll-card-w, clamp(18rem, 38vw, 30rem));
+  border-radius: var(--radius--lg);
+}
+
+/* ── Mobile & reduced motion — native scroll-snap scroller ───── */
+/*
+ * Same block twice on purpose: ≤768px AND reduced-motion at any width both
+ * fall back to native horizontal scrolling. Keep the two in sync.
+ */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .hscroll__viewport {
+    min-height: 0;                /* no pin → section is content-height */
+    overflow: visible;
+  }
+
+  .hscroll__track {
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--spacing--4);
+    padding-inline: var(--spacing--4);
+    gap: var(--spacing--4);
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+    will-change: auto;
+  }
+
+  .hscroll__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hscroll__card {
+    width: var(--hscroll-card-w-m, min(84vw, 24rem));
+    scroll-snap-align: center;
+  }
+}
