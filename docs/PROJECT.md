@@ -23,18 +23,18 @@ sestek/
 │   ├── core/        # Foundation — utils.js, lenis-init.js, nav.js
 │   ├── components/  # UI — hero.js, hero-slider.js, marquee.js, scroll-tabs.js,
 │   │                #      video-modal.js, video-inline.js, webinar-player.js,
-│   │                #      card-marquee.js, section-title.js, text-rotator.js,
-│   │                #      story.js, accordion.js, blog-utils.js, site-utils.js,
-│   │                #      sticky-utms.js, search.js, badge-swap.js, logo-marquee.js,
-│   │                #      process-flow.js
+│   │                #      card-marquee.js, card-drop.js, section-title.js,
+│   │                #      text-rotator.js, story.js, accordion.js, blog-utils.js,
+│   │                #      site-utils.js, sticky-utms.js, search.js, badge-swap.js,
+│   │                #      logo-marquee.js, process-flow.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/
 │   ├── core/        # nav.css, nav-full.css
 │   ├── components/  # per-component behavioural CSS (hero, marquee, scroll-tabs,
-│   │                #   video-modal, card-marquee, section-title, text-rotator,
-│   │                #   story, hero-slider, accordion, search, badge-swap,
-│   │                #   logo-marquee, process-flow)
+│   │                #   video-modal, card-marquee, card-drop, section-title,
+│   │                #   text-rotator, story, hero-slider, accordion, search,
+│   │                #   badge-swap, logo-marquee, process-flow)
 │   ├── effects/     # grain.css, btn-glow.css
 │   └── animations/  # reveal.css
 ├── webflow-components/  # Webflow Code Components (React → Designer, DevLink import)
@@ -182,11 +182,19 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 |---|---|---|
 | `hero.js` (pin) | En üst | `2` |
 | `scroll-tabs.js` (pin) | Orta | `1` |
+| `card-drop.js` (pin) | Orta — `data-cd-priority` | `1` (varsayılan) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
 > **kesirli değil**, mevcut değerleri yeniden numaralandırarak yerleştir
 > (örn. hero=3, yeni=2, scroll-tabs=1). Reveal her zaman en düşük kalsın.
+
+> **`card-drop.js` iki trigger kullanır:** pinli olan `data-cd-priority`
+> (varsayılan `1`) ile refresh olur; ilk kartı "yaklaşırken" getiren pinsiz
+> intro trigger'ı ise **bir düşük** (`priority − 1`) alır — pin kendi
+> spacing'ini önce ekler, intro sonra gerçek yükseklikte ölçülür. Aynı sayfada
+> `scroll-tabs` **ve** `card-drop` birlikteyse ikisine farklı `priority` ver
+> (konumlarına göre yeniden numaralandır).
 
 ### Kural 2 — Tüm pinler kurulduktan sonra TEK bir refresh
 
