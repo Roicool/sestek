@@ -1,5 +1,5 @@
 /*!
- * h-scroll.css v2.1.1
+ * h-scroll.css v2.1.2
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
@@ -129,6 +129,9 @@
   display: block;                 /* Swiper container expectations */
   position: relative;
   min-height: 0;
+  height: auto;                   /* h-screen/100vh utility'lerini swiper
+                                     modunda etkisizleştir — bölüm içerik
+                                     yüksekliğine iner */
   overflow: hidden;
   z-index: 1;
   touch-action: pan-y;            /* vertical page scroll stays native */
@@ -138,7 +141,9 @@
   position: relative;
   display: flex;
   width: 100%;
-  height: 100%;
+  height: auto;                   /* KARTLAR EKRANA UZAMAZ: yükseklik içerikten
+                                     gelir — flex stretch ile hepsi en uzun
+                                     kartın hizasında eşitlenir */
   gap: 0;                         /* Swiper spaceBetween owns spacing */
   padding-inline: 0;              /* Swiper slidesOffset owns the gutter */
   box-sizing: content-box;        /* Swiper translate math expects this */
