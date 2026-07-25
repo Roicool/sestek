@@ -1,28 +1,22 @@
 /*!
- * card-drop.js v1.3.0
- * Pinned, scroll-driven card reveal — the section pins and its cards drop in
- * from ABOVE, ONE BY ONE, in sync with scroll; then the pin releases. Scrubbed,
- * so scrolling back up reverses the exact same motion — fully reversible.
+ * card-drop.js v1.4.0
+ * Pinned, scroll-driven card reveal:
+ *   1. The FIRST card is STATIC — already in place, so the section is never
+ *      empty and the first card never "flies" in from anywhere.
+ *   2. The section PINS.
+ *   3. As you scroll, the remaining cards drop in from ABOVE, ONE BY ONE
+ *      (2nd, then 3rd, …). Scrubbed, so scrolling back up reverses it.
  *
- * The first card drops the instant the section pins (as you arrive / enter it),
- * so it greets you from the top; cards two and three then drop one after
- * another as you keep scrolling. ALL cards fall the same way — straight down —
- * because the drop happens while the section is PINNED (a fixed frame).
- *
- * Why not drop the first card BEFORE the pin (during the approach)? Two hard
- * constraints kill it: (1) before the pin the section is still scrolling up, so
- * a small downward drop is outrun by the page and reads as coming from BELOW;
- * (2) making it travel far enough to visibly descend sends the card straight
- * THROUGH the header above it. A fixed (pinned) frame is the only way to get a
- * clean, collision-free "from above" — so every card drops while pinned, the
- * first one first.
+ * The drops happen while the section is PINNED (a fixed frame), so each card
+ * falls straight down into its slot — cleanly from above, never masked by page
+ * scroll, never crossing the header. Header/subtitle and the first card stay
+ * put; only cards 2..n animate.
  *
  * Changelog
- * v1.3.0 — kesin çözüm: tüm kartlar pinli karede yukarıdan düşer, ilki section
- *          oturur oturmaz. Pin ÖNCESİ "yukarıdan" düşüş denendi ve bırakıldı:
- *          ya sayfa kayması yüzünden aşağıdan geliyormuş gibi görünüyor (v1.0),
- *          ya da kart başlığın içinden geçip çakışıyor (v1.2). Pinli kare tek
- *          temiz yol.
+ * v1.4.0 — ilk kart artık SABİT (animasyon yok); section pinlenir ve yalnızca
+ *          2., 3., … kartlar yukarıdan sırayla düşer. (İstenen davranış: ilk
+ *          kart sabit gelsin, pin sonrası diğerleri sırayla.)
+ * v1.3.0 — tüm kartlar pinde yukarıdan düşüyordu (ilk kart dahil).
  * v1.2.0 — pin öncesi yukarıdan düşüş (başlıkla çakıştı — geri alındı).
  * v1.1.0 — tüm kartlar pinde.
  * v1.0.0 — ilk sürüm (pin öncesi küçük düşüş → aşağıdan görünüyordu).
@@ -38,13 +32,14 @@
  * DOM contract (Webflow — only the attributes matter, design is yours):
  *   [data-card-drop]                 root — THIS pins. Give it min-height:100svh.
  *     … your header (title / subtitle) — stays put, NOT animated …
- *     [data-cd-card]                 one card — DOM order = drop order. Keep the
- *                                    cards in a grid/flex row so hidden ones
+ *     [data-cd-card]                 one card — DOM order matters. The FIRST is
+ *                                    static; the rest drop in that order. Keep
+ *                                    the cards in a grid/flex row so hidden ones
  *                                    still reserve their cell (autoAlpha keeps
  *                                    layout → zero reflow as they pop in).
  *
  * Root attributes (all optional):
- *   data-cd-end        pin scroll distance          (default "n*75%")
+ *   data-cd-end        pin scroll distance          (default "(n-1)*80%")
  *   data-cd-scrub      scrub lag in seconds         (default 1)
  *   data-cd-distance   drop distance from above, px (default 90)
  *   data-cd-reveal     per-card reveal length, unit (default 1)
@@ -105,17 +100,25 @@
 
       gsap.set(cards, { clearProps: "all" });
 
-      // Hidden starting frame: every card sits `distance` above its slot, faded.
+      // Card 0 is STATIC — fully in place from the start, so the section is
+      // never empty and the first card never animates in.
+      gsap.set(cards[0], { y: 0, autoAlpha: 1, scale: 1 });
+
+      // With a single card there is nothing to pin/scrub for — done.
+      if (n < 2) return;
+
+      // Cards 1..n-1 start hidden `distance` above their slot, faded — they
+      // drop in while pinned.
       var from = { y: -distance, autoAlpha: 0 };
       if (scale !== 1) from.scale = scale;
-      gsap.set(cards, from);
+      for (var k = 1; k < n; k++) gsap.set(cards[k], from);
 
-      // ── All cards drop from above, one by one, WHILE PINNED ──
-      // The pin gives a fixed frame, so every card (the first included) falls
-      // straight down into its slot — same motion for all, no "from below",
-      // no crossing the header.
-      var totalUnits = n * reveal + (n - 1) * gap;   // n drops + gaps between
-      var endDist    = endAttr || ("+=" + (n * 75) + "%");
+      // ── Pin, then drop cards 2..n from above, one by one ──
+      // The pin gives a fixed frame, so each card falls straight down into its
+      // slot — cleanly from above, never masked by scroll, never over the header.
+      var revealCount = n - 1;                          // cards 1..n-1
+      var totalUnits  = revealCount * (reveal + gap);   // trailing gap = release margin
+      var endDist     = endAttr || ("+=" + (revealCount * 80) + "%");
 
       var tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -133,10 +136,9 @@
         },
       });
 
-      // Card 0 drops first (cursor 0) — it lands right as the section pins, so
-      // the frame is populated the moment you arrive. Cards 1..n follow.
+      // Cards drop in DOM order after the static first one: 2nd, then 3rd, …
       var cursor = 0;
-      for (var j = 0; j < n; j++) {
+      for (var j = 1; j < n; j++) {
         var cardTo = { y: 0, autoAlpha: 1, ease: ease, duration: reveal };
         if (scale !== 1) cardTo.scale = 1;
         tl.to(cards[j], cardTo, cursor);

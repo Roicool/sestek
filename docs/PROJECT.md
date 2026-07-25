@@ -190,10 +190,10 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 > (örn. hero=3, yeni=2, scroll-tabs=1). Reveal her zaman en düşük kalsın.
 
 > **`card-drop.js`** tek pinli trigger kullanır; `data-cd-priority` (varsayılan
-> `1`) ile refresh olur. Tüm kartlar bu pinli timeline'da yukarıdan düşer (ilk
-> kart section oturur oturmaz, sonra kalanlar sırayla). Aynı sayfada
-> `scroll-tabs` **ve** `card-drop` birlikteyse ikisine farklı `priority` ver
-> (konumlarına göre yeniden numaralandır).
+> `1`) ile refresh olur. İlk kart sabittir; section pinlenince kalan kartlar bu
+> pinli timeline'da yukarıdan sırayla düşer. Aynı sayfada `scroll-tabs` **ve**
+> `card-drop` birlikteyse ikisine farklı `priority` ver (konumlarına göre
+> yeniden numaralandır).
 
 ### Kural 2 — Tüm pinler kurulduktan sonra TEK bir refresh
 

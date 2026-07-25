@@ -1400,16 +1400,16 @@ Webflow `</body>` öncesi:
 
 ### Card Drop
 
-Pinli, scroll-driven kart girişi: section ekrana gelince **pinlenir** ve
-kartlar **yukarıdan, teker teker** scroll'la senkron düşer; sonra pin bırakır.
-Her şey `scrub`'lı — yukarı çıkınca aynı hareket geri sarar.
+Pinli, scroll-driven kart girişi:
 
-**İlk kart section oturur oturmaz (girişte) yukarıdan düşer**, sonra 2. ve 3.
-kart sırayla düşer. Üç kart da **aynı yönde** iner çünkü düşüş pin sırasında
-(sabit karede) olur — pin'den önce bölüm hâlâ scroll ettiği için "yukarıdan
-düşme" sayfa kaymasının içinde kaybolup "aşağıdan geliyormuş" gibi görünürdü;
-pinli = sabit = net biçimde yukarıdan. Başlık + alt metin yerinde durur;
-yalnızca `[data-cd-card]` elementleri animasyon alır.
+1. **1. kart SABİT** — zaten yerindedir (animasyon yok), bölüm asla boş görünmez.
+2. Section **pinlenir**.
+3. Scroll ilerledikçe kalan kartlar **yukarıdan, teker teker** düşer
+   (önce 2., sonra 3., …). `scrub`'lı — yukarı çıkınca geri sarar.
+
+Düşüşler pin sırasında (sabit karede) olduğu için her kart temiz biçimde
+**yukarıdan** iner (sayfa kayması maskelemez, başlığın üstünden geçmez).
+Başlık + alt metin + 1. kart yerinde durur; yalnızca 2.–n. kartlar animasyon alır.
 
 ```html
 <!-- in <head> -->
@@ -1438,7 +1438,7 @@ Webflow `</body>` öncesi:
 <!--
   Kök — tüm animasyon data-attribute'larla yönetilir:
     data-card-drop
-    data-cd-end="225%"        pin scroll mesafesi (default kart-sayısı*75%)
+    data-cd-end="160%"        pin scroll mesafesi (default (kart-1)*80%)
     data-cd-scrub="1"         scrub gecikmesi sn (default 1)
     data-cd-distance="90"     kartların yukarıdan düşme mesafesi px (default 90)
     data-cd-reveal="1"        kart başına giriş uzunluğu, birim (default 1)
@@ -1467,12 +1467,13 @@ Webflow `</body>` öncesi:
 
 #### Notlar
 
-- **Hepsi yukarıdan, pin sırasında:** kartlar tek bir pinli timeline'da düşer.
-  İlk kart section pinlenir pinlenmez (girişte) iner — bu yüzden geldiğinde
-  bölüm dolu görünür — sonra 2. ve 3. sırayla. Düşüş pinli (sabit) karede
-  olduğu için üçü de net biçimde **yukarıdan** iner. (v1.0.0'daki pin-öncesi
-  "yaklaşma" girişi kaldırıldı: pin yokken sayfa hâlâ kaydığı için ilk kart
-  "aşağıdan geliyormuş" gibi görünüyordu.)
+- **1. kart sabit, kalanlar pin sırasında yukarıdan:** ilk kart hiç animasyon
+  almaz (baştan yerinde) — bölüm asla boş görünmez ve ilk kart hiçbir yerden
+  "uçmaz". Section pinlenir; sonra 2., 3., … kartlar tek bir pinli timeline'da
+  sırayla yukarıdan düşer. Düşüş pinli (sabit) karede olduğu için net biçimde
+  **yukarıdan** iner (sayfa kayması maskelemez, başlığın üstünden geçmez).
+  (Not: ilk kartı da pin öncesi "uçurmak" mümkün değil — ya sayfa kayması
+  yüzünden aşağıdan geliyormuş gibi görünür, ya da başlığın içinden geçer.)
 - **Birim sistemi:** `reveal` + `gap` göreceli birimlerdir; toplam scroll
   mesafesi `data-cd-end` ile sabittir, birimler bu mesafeyi paylaştırır
   (scroll-tabs ile aynı mantık).
