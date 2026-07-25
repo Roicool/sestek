@@ -1,5 +1,5 @@
 /*!
- * card-drop.js v1.4.0
+ * card-drop.js v1.4.1
  * Pinned, scroll-driven card reveal:
  *   1. The FIRST card is STATIC — already in place, so the section is never
  *      empty and the first card never "flies" in from anywhere.
@@ -13,6 +13,9 @@
  * put; only cards 2..n animate.
  *
  * Changelog
+ * v1.4.1 — sürüm işareti: Sestek.cardDropVersion + init'te console.info. Sayfada
+ *          hangi build'in çalıştığını doğrulamak için (bir kart ALTTAN geliyorsa
+ *          eski bir build yüklüdür — bayat script tag'lerini kaldır).
  * v1.4.0 — ilk kart artık SABİT (animasyon yok); section pinlenir ve yalnızca
  *          2., 3., … kartlar yukarıdan sırayla düşer. (İstenen davranış: ilk
  *          kart sabit gelsin, pin sonrası diğerleri sırayla.)
@@ -54,6 +57,8 @@
 
 (function (global) {
   "use strict";
+
+  var VERSION = "1.4.1";
 
   function buildOne(root) {
     if (root._cardDropInit) return;                         // idempotent
@@ -198,10 +203,15 @@
 
     var roots = document.querySelectorAll(selector || "[data-card-drop]");
     if (!roots.length) { console.warn("[Sestek CardDrop] No [data-card-drop] found."); return; }
+    // Version banner — lets you confirm which build is actually running on the
+    // page (type `Sestek.cardDropVersion` in the console). If you ever see a
+    // card come from BELOW, an OLD build is loaded — remove stale script tags.
+    console.info("[Sestek CardDrop] v" + VERSION + " — ilk kart sabit, 2..n yukarıdan düşer");
     roots.forEach(buildOne);
   }
 
   global.Sestek = global.Sestek || {};
   global.Sestek.initCardDrop = initCardDrop;
+  global.Sestek.cardDropVersion = VERSION;
 
 })(typeof window !== "undefined" ? window : this);
