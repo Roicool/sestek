@@ -1,9 +1,18 @@
 /*!
- * circle-diagram.js v2.0.0
+ * circle-diagram.js v2.1.0
  * Planhat-style circular diagram: N items (dot + label) sit evenly on a ring,
- * one item is active at a time, and a detail card (small tag + body text)
- * mirrors the active item.
+ * one item is active at a time, and either a single detail card OR a stacked
+ * card list mirrors the active item.
  *
+ * v2.1.0 — CARD LIST MODE (opsiyonel, tek-kart modu aynen durur): sağ kolona
+ *          author'ın yazdığı [data-cd-panel-card]'lar dikey bir listede üst
+ *          üste dizilir; ekranda data-cd-visible kadarı (default 3) görünür.
+ *          Aktif item'ın kartı is-active olur ve liste GSAP ile o karta kayar
+ *          (autoscroll = dönüşün kendisi). Kartlar tıklanabilir/klavyeyle
+ *          seçilebilir → uç o node'a süpürülür. Liste üstünde mouse dururken
+ *          ve klavye odağı component içindeyken dönüş DURUR (okunabilirlik).
+ *          Ayrıca: boş data-cd-spin artık default'a düşer (spin'i kapatmaz),
+ *          buton olmayan item/kartlara role="button" basılır.
  * v2.0.0 — CONSISTENT sync model. The rotating conic-gradient connector IS the
  *          autoplay: it spins clockwise at a constant speed and whenever its
  *          bright tip passes a node, that node becomes active and the card
@@ -36,9 +45,14 @@
  *                                            (0 = right, -90 = top)
  *         [data-cd-dot]                      the dot on the ring
  *         [data-cd-label]                    the label next to the dot
- *     [data-cd-card]                         detail card (bottom-right)
+ *     [data-cd-card]                         detail card (bottom-right) — TEK KART modu
  *       [data-cd-card-title]                 gets the active item's title
  *       [data-cd-card-text]                  gets the active item's text
+ *     [data-cd-cards]                        KART LİSTESİ modu (tek kart yerine):
+ *       [data-cd-cards-track]                dikey şerit — JS bunu kaydırır
+ *         [data-cd-panel-card] ×N            item sırasıyla eşleşen kartlar
+ *                                            (içerik/tasarım author'ın; aktife
+ *                                            is-active + aria-current basılır)
  *
  * JS injects the connector ring into the stage, positions each item on it
  * (evenly, starting at the top, or per data-cd-angle) and stamps
@@ -50,8 +64,9 @@
  *   data-cd-spin       seconds per revolution — the loop speed. With N evenly
  *                      spaced items each step lasts spin/N seconds.
  *                      (default 14; "0" disables the loop entirely)
- *   data-cd-resume     seconds after a tap / keyboard pick before the spin
- *                      resumes (mouse hover resumes on leave)      (default 3)
+ *   data-cd-resume     seconds after an interruption (tap, keyboard pick,
+ *                      hover leave) before the spin resumes        (default 3)
+ *   data-cd-visible    card list: kaç kart görünür                 (default 3)
  *
  * Colour tokens (used by the CSS, with fallbacks):
  *   --cd-ink (#fff) · --cd-muted (rgba(255,255,255,.45)) · --cd-line (rgba(255,255,255,.15))
@@ -72,15 +87,32 @@
     var cardTitle = card ? card.querySelector("[data-cd-card-title]") : null;
     var cardText = card ? card.querySelector("[data-cd-card-text]") : null;
 
+    // Kart listesi modu (opsiyonel) — item sırasıyla index üzerinden eşleşir.
+    var cardsWrap  = root.querySelector("[data-cd-cards]");
+    var cardsTrack = cardsWrap ? cardsWrap.querySelector("[data-cd-cards-track]") : null;
+    var panelCards = cardsTrack
+      ? Array.prototype.slice.call(cardsTrack.querySelectorAll("[data-cd-panel-card]"))
+      : [];
+    if (cardsWrap && !cardsTrack) {
+      console.warn("[Sestek CircleDiagram] [data-cd-cards] needs a [data-cd-cards-track] child.");
+    }
+
     if (!stage || !items.length) {
       console.warn("[Sestek CircleDiagram] Need [data-cd-stage] and [data-cd-item] nodes.");
       return;
     }
+    if (panelCards.length && panelCards.length !== items.length) {
+      console.warn("[Sestek CircleDiagram] " + items.length + " item / " +
+        panelCards.length + " card — sıra üzerinden eşleşebilenler bağlandı.");
+    }
 
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var spinAttr = root.getAttribute("data-cd-spin");
-    var SPIN = spinAttr === null ? 14 : parseFloat(spinAttr) || 0;
+    // Boş değer (Webflow attribute'u değersiz basabilir) default'a düşer —
+    // yalnız açıkça "0" verilirse dönüş kapanır.
+    var SPIN = spinAttr === null || spinAttr === "" ? 14 : parseFloat(spinAttr) || 0;
     var RESUME = parseFloat(root.getAttribute("data-cd-resume")) || 3;
+    var VISIBLE = Math.max(1, parseInt(root.getAttribute("data-cd-visible"), 10) || 3);
 
     // gsap is probed lazily (per call, cheap) so it still counts if it loads
     // AFTER this script — e.g. Webflow footer order. The first time gsap
@@ -120,7 +152,10 @@
       else if (norm > 115 && norm <= 245) side = "left";
       item.setAttribute("data-cd-side", side);
 
-      if (item.tagName !== "BUTTON" && item.tagName !== "A") item.setAttribute("tabindex", "0");
+      if (item.tagName !== "BUTTON" && item.tagName !== "A") {
+        item.setAttribute("tabindex", "0");
+        item.setAttribute("role", "button");                // SR'lar için etkileşim niyeti
+      }
       return deg;
     });
 
@@ -140,6 +175,31 @@
         }
       }
       return best;
+    }
+
+    // ── Card list: measure the 3-visible viewport + slide to the active card ─
+    // Yükseklik = ilk VISIBLE kartın kapladığı alan (gap dahil). Şerit
+    // transform'la kayar (paint-only); alt uçta boşluk kalmasın diye clamp'li.
+    var listH = 0, maxShift = 0;
+
+    function measureCards() {
+      if (!cardsTrack || !panelCards.length) return;
+      var lastVisible = panelCards[Math.min(VISIBLE, panelCards.length) - 1];
+      listH = lastVisible.offsetTop + lastVisible.offsetHeight;
+      cardsWrap.style.height = listH + "px";
+      maxShift = Math.max(0, cardsTrack.scrollHeight - listH);
+    }
+
+    function scrollToCard(i, animate) {
+      if (!cardsTrack || !panelCards[i]) return;
+      var y = -Math.min(panelCards[i].offsetTop, maxShift);
+      if (animate && !reduced && gs()) {
+        gsap.to(cardsTrack, { y: y, duration: 0.7, ease: "power3.inOut", overwrite: "auto" });
+      } else if (gs()) {
+        gsap.set(cardsTrack, { y: y });
+      } else {
+        cardsTrack.style.transform = "translateY(" + y + "px)";
+      }
     }
 
     // ── Active state + card swap (does NOT touch the connector) ─────────────
@@ -162,6 +222,16 @@
         else item.removeAttribute("aria-current");
       });
 
+      // Kart listesi: aktif kartı işaretle + listeyi ona kaydır (autoscroll).
+      if (panelCards.length) {
+        panelCards.forEach(function (pc, k) {
+          pc.classList.toggle("is-active", k === i);
+          if (k === i) pc.setAttribute("aria-current", "true");
+          else pc.removeAttribute("aria-current");
+        });
+        scrollToCard(i, animate);
+      }
+
       if (!card) return;
       if (animate && !reduced && gs()) {
         gsap.killTweensOf(card);
@@ -180,6 +250,8 @@
     // ── The loop: constant spin, tip drives the active item ──────────────────
     var inView = false;
     var hoverHeld = false;                                  // mouse parked on a node
+    var listHover = false;                                  // mouse over the card list
+    var focusHeld = false;                                  // keyboard focus inside root
     var spinTween = null;
     var resumeTimer = null;
     var arcRot = tipRots[0] || 0;                           // no-gsap fallback tracker
@@ -189,7 +261,8 @@
     }
 
     function startSpin() {
-      if (spinTween || !inView || hoverHeld || reduced || !gs() || SPIN <= 0) return;
+      if (spinTween || !inView || hoverHeld || listHover || focusHeld ||
+          reduced || !gs() || SPIN <= 0) return;
       if (gsap.isTweening(connector)) return;               // a sweep is running; it restarts us
       claimConnector();
       spinTween = gsap.to(connector, {
@@ -206,7 +279,7 @@
     }
     function scheduleResume() {
       clearResume();
-      if (hoverHeld || reduced || SPIN <= 0) return;
+      if (hoverHeld || listHover || focusHeld || reduced || SPIN <= 0) return;
       resumeTimer = setTimeout(startSpin, RESUME * 1000);
     }
 
@@ -257,9 +330,65 @@
       });
     });
 
+    // Kart listesi etkileşimi: kart tıkla/klavye → o item'a süpür. Mouse liste
+    // üstünde dururken dönüş DURUR (okuma alanı); ayrılınca resume sayacı işler.
+    panelCards.forEach(function (pc, i) {
+      if (!items[i]) return;                                // fazla kartlar pasif kalır
+      if (pc.tagName !== "BUTTON" && pc.tagName !== "A") {
+        pc.setAttribute("tabindex", "0");
+        pc.setAttribute("role", "button");
+      }
+      pc.addEventListener("click", function () { engage(i); });
+      pc.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); engage(i); }
+      });
+    });
+
+    if (cardsWrap) {
+      cardsWrap.addEventListener("pointerenter", function (e) {
+        if (e.pointerType !== "mouse") return;
+        listHover = true; clearResume(); stopSpin();
+      });
+      cardsWrap.addEventListener("pointerleave", function (e) {
+        if (e.pointerType !== "mouse") return;
+        listHover = false; scheduleResume();
+      });
+    }
+
+    // KLAVYE odağı component içindeyken dönüş durur — kullanıcı okurken
+    // aktif item altından kaymaz. Yalnız :focus-visible (klavye modalitesi)
+    // tutar: mouse tıklamasının bıraktığı focus autoplay'i KİLİTLEMEZ.
+    root.addEventListener("focusin", function (e) {
+      var kb = true;
+      try { kb = e.target.matches(":focus-visible"); } catch (_) { /* eski motor */ }
+      if (!kb) return;
+      focusHeld = true; clearResume(); stopSpin();
+    });
+    root.addEventListener("focusout", function (e) {
+      if (root.contains(e.relatedTarget)) return;
+      focusHeld = false; scheduleResume();
+    });
+
     // ── Initial frame: tip parked on the start item, no animation ───────────
     var start = parseInt(root.getAttribute("data-cd-start"), 10) || 0;
+    measureCards();                                          // liste yüksekliği önce
     applyActive(start, false);
+
+    // Font/görsel yüklenince ve resize'da liste geometrisi tazelenir.
+    if (cardsTrack && panelCards.length) {
+      var rsTimer = null;
+      window.addEventListener("resize", function () {
+        clearTimeout(rsTimer);
+        rsTimer = setTimeout(function () {
+          measureCards();
+          scrollToCard(active, false);
+        }, 150);
+      });
+      window.addEventListener("load", function () {
+        measureCards();
+        scrollToCard(active, false);
+      });
+    }
     arcRot = tipRots[start] || 0;
     if (gs()) { claimConnector(); gsap.set(connector, { rotation: arcRot }); }
     else connector.style.transform = "rotate(" + arcRot + "deg)";

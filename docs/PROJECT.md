@@ -27,7 +27,8 @@ sestek/
 │   │                #      card-marquee.js, section-title.js, text-rotator.js,
 │   │                #      story.js, accordion.js, blog-utils.js, site-utils.js,
 │   │                #      sticky-utms.js, search.js, badge-swap.js, logo-marquee.js,
-│   │                #      process-flow.js, h-scroll.js, card-cascade.js
+│   │                #      process-flow.js, h-scroll.js, card-cascade.js,
+│   │                #      circle-diagram.js, scroll-diagram.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/

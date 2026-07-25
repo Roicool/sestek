@@ -1,0 +1,240 @@
+/*!
+ * circle-diagram.css v1.0.0
+ * Behavioural + skin CSS for circle-diagram.js v2.1.0.
+ *
+ * Düzen: container-2xl genişlikte iki kolon — SOLDA beyaz panel kartı içinde
+ * halka diyagramı (dot + label'lar), SAĞDA üst üste dizilmiş tıklanabilir
+ * kartlar (data-cd-visible kadarı görünür, aktif karta liste otomatik kayar).
+ * ≤991px: tek kolon, diyagram üstte kartlar altta.
+ *
+ * Ring'i (.cd_connector) JS enjekte eder — HTML'e ring koyma. Kart listesi
+ * viewport yüksekliğini (3 kart) JS ölçer/basar. Renkler RC token'ları
+ * üzerinden; koyu section'da kök değişkenleri override etmen yeter.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Kök: tokenlar + container ───────────────────────────────── */
+[data-circle-diagram] {
+  --cd-ink:    var(--color-text--base, var(--neutral--950, #111));      /* aktif yazı */
+  --cd-accent: var(--brand-primary--500, #EC008C);                      /* kuyruk + aktif dot */
+  --cd-muted:  var(--color-text--muted, var(--neutral--600, #6b6b6b));  /* pasif yazılar */
+  --cd-line:   var(--border--color-border-base, var(--neutral--200, rgba(0, 0, 0, .12)));
+  --cd-bg:     var(--surface--base, var(--neutral--0, #fff));           /* panel/kart zemini */
+  position: relative;
+  max-width: var(--container--2xl, 96rem);
+  margin-inline: auto;
+  padding: var(--spacing--10, 2.5rem) var(--view--px, var(--spacing--6, 1.5rem));
+}
+
+/* ── İki kolonlu düzen ───────────────────────────────────────── */
+.cd_layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(2.5rem, 5vw, 5rem);
+  align-items: center;
+}
+
+/* ── SOL: diyagram paneli — beyaz kart ───────────────────────── */
+.cd_panel {
+  display: flex;
+  justify-content: center;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--radius--lg, .75rem);
+  /* yatayda geniş: label'lar halkanın dışına açılır, kartın içinde kalmalı */
+  padding: clamp(2.5rem, 5vw, 4rem) clamp(3rem, 6vw, 5.5rem);
+  box-shadow: 0 24px 48px -32px rgba(0, 0, 0, .16);
+}
+
+/* Sahne: ring'in boyutunu BU belirler */
+.cd_stage {
+  position: relative;
+  width: min(24rem, 100%, 72vw);
+  aspect-ratio: 1 / 1;
+}
+
+/* ── Ring + gezen çizgi — JS'in enjekte ettiği tek eleman ────────
+   conic-gradient: çemberin çoğu soluk, son 32° markaya sönümlenen
+   kuyruk. JS ucu aktif node'a döndürür.                          */
+.cd_connector {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--cd-line)   328deg,
+    var(--cd-accent) 360deg
+  );
+  /* içini boşalt → 1px ring kalsın */
+  -webkit-mask: radial-gradient(farthest-side,
+      transparent calc(100% - 1.25px), #000 calc(100% - 0.25px));
+          mask: radial-gradient(farthest-side,
+      transparent calc(100% - 1.25px), #000 calc(100% - 0.25px));
+  pointer-events: none;
+  will-change: transform;
+  /* gsap yoksa dönüşü bu transition üstlenir */
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ── Item (dot + label) — JS left/top verir, transform merkezler ─ */
+.cd_item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: none;
+  border: 0;
+  padding: .4rem;
+  cursor: pointer;
+  color: var(--cd-muted);
+  font-size: .625rem;                      /* 10px — pasif */
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color .35s;
+}
+
+/* Label'ı çemberin dışına çevir — JS'in bastığı data-cd-side ile */
+.cd_item[data-cd-side="left"]   { flex-direction: row-reverse; }
+.cd_item[data-cd-side="top"]    { flex-direction: column-reverse; gap: .45rem; }
+.cd_item[data-cd-side="bottom"] { flex-direction: column; gap: .45rem; }
+
+/* Dot: içi panel zemininde → ring çizgisini "keser" */
+.cd_dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  border: .5px solid var(--neutral--400, #9b9b9b);
+  background: var(--cd-bg);
+  transition: background .35s, border-color .35s, transform .35s;
+}
+
+/* Label scale ile büyür (font-size animasyonu janklı olur) —
+   büyüme yönü kenara göre sabitlenir ki dot'tan uzağa açılsın   */
+.cd_label {
+  transition: transform .35s, letter-spacing .35s;
+  transform-origin: left center;
+}
+.cd_item[data-cd-side="left"]   .cd_label { transform-origin: right center; }
+.cd_item[data-cd-side="top"]    .cd_label { transform-origin: center bottom; }
+.cd_item[data-cd-side="bottom"] .cd_label { transform-origin: center top; }
+
+/* Aktif item */
+.cd_item.is-active { color: var(--cd-ink); }
+.cd_item.is-active .cd_dot {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  transform: scale(1.7);
+}
+.cd_item.is-active .cd_label {
+  transform: scale(1.5);                   /* 10px → ~15px görünür */
+  text-transform: none;
+  letter-spacing: .01em;
+}
+.cd_item:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 2px;
+  border-radius: .25rem;
+}
+
+/* ── SAĞ: üst üste kart listesi ──────────────────────────────────
+   [data-cd-cards] görünür pencere (yüksekliği JS basar: VISIBLE kart),
+   [data-cd-cards-track] dikey şerit — JS transform'la kaydırır.     */
+.cd_cards {
+  position: relative;
+  overflow: hidden;
+}
+
+.cd_cards-track {
+  position: relative;                      /* offsetTop ölçümü şeride göre */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing--4, 1rem);
+  will-change: transform;
+}
+
+.cd_pcard {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--radius--lg, .75rem);
+  padding: 1.5rem 1.75rem;
+  cursor: pointer;
+  opacity: .5;                             /* pasif state */
+  transition: opacity .35s, border-color .35s, box-shadow .35s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cd_pcard.is-active {
+  opacity: 1;
+  border-color: var(--cd-accent);
+  box-shadow: 0 20px 40px -28px rgba(0, 0, 0, .25);
+}
+.cd_pcard:hover { opacity: .8; }
+.cd_pcard.is-active:hover { opacity: 1; }
+.cd_pcard:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 2px;
+}
+
+/* ── Kart içi tipografi — hem tek kartta hem liste kartlarında ── */
+.cd_card-title {
+  display: flex;
+  align-items: flex-start;
+  gap: .625rem;
+  font-size: .625rem;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  margin-bottom: .875rem;
+}
+.cd_card-title::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cd-accent);
+  flex: none;
+  margin-top: .28em;                       /* ilk satırın x-yüksekliğine hizala */
+}
+.cd_card-text {
+  color: var(--color-text--base, var(--neutral--900, #1a1a1a));
+  font-size: .9375rem;                     /* 15px */
+  line-height: 1.65;
+  letter-spacing: .005em;
+  margin: 0;
+  text-transform: none;
+}
+
+/* ── TEK KART modu (eski API — [data-cd-card] kullanan sayfalar) ─ */
+.cd_card {
+  width: min(22rem, 90vw);
+  padding: 1.75rem 2rem 2rem;
+  border-radius: var(--radius--lg, .75rem);
+  background: linear-gradient(
+    180deg,
+    var(--surface--muted, var(--neutral--050, #f7f7f5)) 0%,
+    var(--surface--base, #fff) 100%
+  );
+  border: 1px solid var(--cd-line);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, .18);
+}
+
+/* ── Tablet ve mobil: alt alta ───────────────────────────────── */
+@media (max-width: 991px) {
+  .cd_layout {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .cd_panel { padding: clamp(2rem, 8vw, 3rem) clamp(2rem, 10vw, 4rem); }
+  .cd_stage { width: min(20rem, 100%, 78vw); }
+}
+
+/* ── Reduced motion: her şey anlık ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cd_connector, .cd_item, .cd_dot, .cd_label, .cd_pcard { transition: none; }
+}
