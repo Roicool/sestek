@@ -1,5 +1,5 @@
 /*!
- * circle-diagram.js v2.1.0
+ * circle-diagram.js v2.2.0
  * Planhat-style circular diagram: N items (dot + label) sit evenly on a ring,
  * one item is active at a time, and either a single detail card OR a stacked
  * card list mirrors the active item.
@@ -192,7 +192,11 @@
 
     function scrollToCard(i, animate) {
       if (!cardsTrack || !panelCards[i]) return;
-      var y = -Math.min(panelCards[i].offsetTop, maxShift);
+      // Aktif kart görünür pencerenin ORTASINA gelir; uçlarda clamp —
+      // ilk kart(lar) üstte, son kart(lar) altta kenara yaslanır.
+      var pc = panelCards[i];
+      var centered = pc.offsetTop - (listH - pc.offsetHeight) / 2;
+      var y = -Math.max(0, Math.min(centered, maxShift));
       if (animate && !reduced && gs()) {
         gsap.to(cardsTrack, { y: y, duration: 0.7, ease: "power3.inOut", overwrite: "auto" });
       } else if (gs()) {

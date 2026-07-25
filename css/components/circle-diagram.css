@@ -1,5 +1,5 @@
 /*!
- * circle-diagram.css v1.3.0
+ * circle-diagram.css v1.4.0
  * Behavioural + skin CSS for circle-diagram.js v2.1.0.
  *
  * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
@@ -185,26 +185,26 @@
   outline-offset: 2px;
 }
 
-/* ── Kart içi tipografi — hem tek kartta hem liste kartlarında ── */
+/* ── Kart içi tipografi — hem tek kartta hem liste kartlarında ──
+   Başlık gövdeden BÜYÜK (18px/600) — hiyerarşi: başlık > metin. */
 .cd_card-title {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .625rem;
-  font-size: .625rem;
-  font-weight: 500;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--cd-muted);
-  margin-bottom: .875rem;
+  font-size: 1.125rem;                     /* 18px — gövdeden büyük */
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-transform: none;
+  color: var(--cd-ink);
+  margin-bottom: .625rem;
 }
 .cd_card-title::before {
   content: "";
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--cd-accent);
   flex: none;
-  margin-top: .28em;                       /* ilk satırın x-yüksekliğine hizala */
 }
 .cd_card-text {
   color: var(--color-text--base, var(--neutral--900, #1a1a1a));
