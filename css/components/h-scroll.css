@@ -1,5 +1,5 @@
 /*!
- * h-scroll.css v2.1.2
+ * h-scroll.css v2.1.3
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
@@ -29,8 +29,15 @@
 .hscroll__viewport {
   display: flex;
   align-items: center;
-  min-height: 100svh;
   overflow: hidden;               /* clips the off-screen part of the track */
+}
+
+/* Full-height only where the pin runs — mobile/tablet height is the
+   Designer's call (h-screen vb. utility'ler swiper modunda aynen geçerli). */
+@media (min-width: 992px) {
+  .hscroll__viewport {
+    min-height: 100svh;
+  }
 }
 
 /* ── Track — the row GSAP translates ─────────────────────────── */
@@ -126,12 +133,13 @@
  * so the token gap/padding are zeroed.
  */
 [data-hscroll].is-swiper .hscroll__viewport {
-  display: block;                 /* Swiper container expectations */
+  /*
+   * GEOMETRİYE KARIŞMA: yükseklik / display / hizalama / padding BİLEREK
+   * yönetilmez — Designer'daki h-screen, flex, padding, absolute overlay
+   * düzeni swiper modunda da aynen geçerli kalır. Swiper'ın flex container
+   * içinde çalışması sorunsuzdur (wrapper width:100% flex item olur).
+   */
   position: relative;
-  min-height: 0;
-  height: auto;                   /* h-screen/100vh utility'lerini swiper
-                                     modunda etkisizleştir — bölüm içerik
-                                     yüksekliğine iner */
   overflow: hidden;
   z-index: 1;
   touch-action: pan-y;            /* vertical page scroll stays native */
