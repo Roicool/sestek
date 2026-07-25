@@ -822,6 +822,12 @@ DOM:
 - Kart arası boşluk `--hscroll-gap` (default `var(--spacing--6)`), gutter
   `--hscroll-gutter` — JS ikisini computed style'dan px olarak ölçüp Swiper'a
   `spaceBetween` + `slidesOffsetBefore/After` diye geçer; tek kaynak token'lar.
+- **Global sayfa padding'i:** sitede `--view-px` değişkeni tanımlıysa gutter
+  tablet/mobilde otomatik onu kullanır (desktop'ta container hizasıyla
+  `max()`lenir); tanımlı değilse `--spacing--6`'ya düşer.
+- Swiper modunda track section içinde **dikey ortalanır** (viewport'a
+  `display:flex` + `align-items:center` basılır); yükseklik/padding yine
+  Designer'ındır — `h-screen` verdiysen 100vh içinde ortalar.
 - Görünürdeki karta `is-active` class'ı eklenir (desktop pin + Swiper modunda) —
   Designer'dan aktif stil verilebilir. Swiper ayrıca kendi
   `swiper-slide-active` class'ını basar.
