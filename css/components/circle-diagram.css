@@ -1,11 +1,11 @@
 /*!
- * circle-diagram.css v1.0.0
+ * circle-diagram.css v1.1.0
  * Behavioural + skin CSS for circle-diagram.js v2.1.0.
  *
- * Düzen: container-2xl genişlikte iki kolon — SOLDA beyaz panel kartı içinde
- * halka diyagramı (dot + label'lar), SAĞDA üst üste dizilmiş tıklanabilir
- * kartlar (data-cd-visible kadarı görünür, aktif karta liste otomatik kayar).
- * ≤991px: tek kolon, diyagram üstte kartlar altta.
+ * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
+ * diyagramı (panel kartı YOK; her item kendi beyaz chip kartında, okunabilirlik
+ * oradan gelir), SAĞDA üst üste dizilmiş tıklanabilir kartlar (data-cd-visible
+ * kadarı görünür, aktif karta liste otomatik kayar). ≤991px: tek kolon.
  *
  * Ring'i (.cd_connector) JS enjekte eder — HTML'e ring koyma. Kart listesi
  * viewport yüksekliğini (3 kart) JS ölçer/basar. Renkler RC token'ları
@@ -21,6 +21,7 @@
   --cd-line:   var(--border--color-border-base, var(--neutral--200, rgba(0, 0, 0, .12)));
   --cd-bg:     var(--surface--base, var(--neutral--0, #fff));           /* panel/kart zemini */
   position: relative;
+  width: 100%;                             /* flex/grid parent içinde büzülme */
   max-width: var(--container--2xl, 96rem);
   margin-inline: auto;
   padding: var(--spacing--10, 2.5rem) var(--view--px, var(--spacing--6, 1.5rem));
@@ -34,16 +35,13 @@
   align-items: center;
 }
 
-/* ── SOL: diyagram paneli — beyaz kart ───────────────────────── */
+/* ── SOL: diyagram kolonu — kart YOK, sade konum bağlamı ─────────
+   Okunabilirlik item chip'lerinden gelir; padding chip'lerin halka
+   dışına taşan kısmına alan bırakır. */
 .cd_panel {
   display: flex;
   justify-content: center;
-  background: var(--cd-bg);
-  border: 1px solid var(--cd-line);
-  border-radius: var(--radius--lg, .75rem);
-  /* yatayda geniş: label'lar halkanın dışına açılır, kartın içinde kalmalı */
-  padding: clamp(2.5rem, 5vw, 4rem) clamp(3rem, 6vw, 5.5rem);
-  box-shadow: 0 24px 48px -32px rgba(0, 0, 0, .16);
+  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 5vw, 4.5rem);
 }
 
 /* Sahne: ring'in boyutunu BU belirler */
@@ -75,16 +73,20 @@
   transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* ── Item (dot + label) — JS left/top verir, transform merkezler ─ */
+/* ── Item = beyaz CHIP kartı (dot + label) ───────────────────────
+   JS left/top verir, transform merkezler; chip halka çizgisinin
+   üstüne oturur (beyaz zemini çizgiyi keser — okunabilir). */
 .cd_item {
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: .6rem;
-  background: none;
-  border: 0;
-  padding: .4rem;
+  gap: .5rem;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: .45rem .8rem;
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, .28);
   cursor: pointer;
   color: var(--cd-muted);
   font-size: .625rem;                      /* 10px — pasif */
@@ -92,7 +94,7 @@
   letter-spacing: .14em;
   text-transform: uppercase;
   white-space: nowrap;
-  transition: color .35s;
+  transition: color .35s, border-color .35s, box-shadow .35s, transform .35s;
 }
 
 /* Label'ı çemberin dışına çevir — JS'in bastığı data-cd-side ile */
@@ -100,7 +102,7 @@
 .cd_item[data-cd-side="top"]    { flex-direction: column-reverse; gap: .45rem; }
 .cd_item[data-cd-side="bottom"] { flex-direction: column; gap: .45rem; }
 
-/* Dot: içi panel zemininde → ring çizgisini "keser" */
+/* Dot */
 .cd_dot {
   width: 7px;
   height: 7px;
@@ -111,25 +113,25 @@
   transition: background .35s, border-color .35s, transform .35s;
 }
 
-/* Label scale ile büyür (font-size animasyonu janklı olur) —
-   büyüme yönü kenara göre sabitlenir ki dot'tan uzağa açılsın   */
 .cd_label {
-  transition: transform .35s, letter-spacing .35s;
-  transform-origin: left center;
+  transition: letter-spacing .35s;
 }
-.cd_item[data-cd-side="left"]   .cd_label { transform-origin: right center; }
-.cd_item[data-cd-side="top"]    .cd_label { transform-origin: center bottom; }
-.cd_item[data-cd-side="bottom"] .cd_label { transform-origin: center top; }
 
-/* Aktif item */
-.cd_item.is-active { color: var(--cd-ink); }
+/* Aktif chip: hafif büyür, kenar markaya döner — label chip içinde kalır
+   (eski label scale'i chip'i taşırdığı için kaldırıldı) */
+.cd_item.is-active {
+  color: var(--cd-ink);
+  border-color: var(--cd-accent);
+  box-shadow: 0 14px 32px -18px rgba(0, 0, 0, .35);
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 3;
+}
 .cd_item.is-active .cd_dot {
   background: var(--cd-accent);
   border-color: var(--cd-accent);
-  transform: scale(1.7);
+  transform: scale(1.45);
 }
 .cd_item.is-active .cd_label {
-  transform: scale(1.5);                   /* 10px → ~15px görünür */
   text-transform: none;
   letter-spacing: .01em;
 }
@@ -230,7 +232,7 @@
     grid-template-columns: 1fr;
     gap: 2.5rem;
   }
-  .cd_panel { padding: clamp(2rem, 8vw, 3rem) clamp(2rem, 10vw, 4rem); }
+  .cd_panel { padding: 1.5rem clamp(1.5rem, 8vw, 3rem); }
   .cd_stage { width: min(20rem, 100%, 78vw); }
 }
 
