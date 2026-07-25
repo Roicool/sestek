@@ -822,7 +822,7 @@ DOM:
 - Kart arası boşluk `--hscroll-gap` (default `var(--spacing--6)`), gutter
   `--hscroll-gutter` — JS ikisini computed style'dan px olarak ölçüp Swiper'a
   `spaceBetween` + `slidesOffsetBefore/After` diye geçer; tek kaynak token'lar.
-- **Global sayfa padding'i:** sitede `--view-px` değişkeni tanımlıysa gutter
+- **Global sayfa padding'i:** sitede `--view--px` değişkeni tanımlıysa gutter
   tablet/mobilde otomatik onu kullanır (desktop'ta container hizasıyla
   `max()`lenir); tanımlı değilse `--spacing--6`'ya düşer.
 - Swiper modunda track section içinde **dikey ortalanır** (viewport'a

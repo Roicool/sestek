@@ -1,5 +1,5 @@
 /*!
- * h-scroll.css v2.2.0
+ * h-scroll.css v2.2.1
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
@@ -49,7 +49,7 @@
   /*
    * Gutter: aligns the first/last card with the site container. The % in
    * the calc resolves against the viewport wrapper's width; on narrow
-   * screens the token side wins. Site GLOBAL sayfa padding'i --view-px
+   * screens the token side wins. Site GLOBAL sayfa padding'i --view--px
    * olarak tanımlıysa ÖNCELİKLİDİR (tablet/mobilde gutter = view-px);
    * yoksa --spacing--6'ya düşer. Override per instance:
    *   .hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }
@@ -58,7 +58,7 @@
    * Swiper reads it as slidesOffsetBefore/After — one token, both modes.
    */
   padding-inline: var(--hscroll-gutter,
-    max(var(--view-px, var(--spacing--6)),
+    max(var(--view--px, var(--spacing--6)),
         calc((100% - var(--container--2xl, 96rem)) / 2)));
   will-change: transform;
 }
@@ -90,7 +90,7 @@
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: var(--hscroll-gutter,
-      max(var(--view-px, var(--spacing--6)),
+      max(var(--view--px, var(--spacing--6)),
           calc((100% - var(--container--2xl, 96rem)) / 2)));
     scrollbar-width: none;        /* Firefox */
     -ms-overflow-style: none;     /* IE/Edge */
