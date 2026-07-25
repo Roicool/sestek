@@ -1,0 +1,32 @@
+/*!
+ * hover-reveal.css v1.0.0
+ * Pointer-origin colour reveal — critical/behavioural styles only.
+ * The card's design (radius, border, padding, base colours) stays in the
+ * Webflow Designer + RC tokens; JS injects the layer and drives the
+ * clip-path animation (see hover-reveal.js).
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Card root ───────────────────────────────────────────────── */
+[data-hover-reveal] {
+  position: relative;
+  overflow: hidden;                    /* layer kart radius'unda kırpılır */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Injected reveal layer ───────────────────────────────────── */
+[data-hover-reveal-layer] {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  clip-path: circle(0px at 50% 50%);   /* kapalı başlar — JS origin'i basar */
+  will-change: clip-path;
+}
+
+/* İçerik renk katmanının ÜSTÜNDE kalır. Kart çocuklarına kendi z-index /
+   position değerlerini verdiysen bu kural onları ezmez (yalnız statikler). */
+[data-hover-reveal] > :not([data-hover-reveal-layer]) {
+  position: relative;
+  z-index: 1;
+}

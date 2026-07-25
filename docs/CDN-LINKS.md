@@ -2535,6 +2535,74 @@ DOM:
 | `js/effects/stagger-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/stagger-button.js` |
 | `js/effects/circle-reveal-button.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/circle-reveal-button.js` |
 | `js/effects/parallax.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/parallax.js` |
+| `js/effects/hover-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/hover-reveal.js` |
+| `css/effects/hover-reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/hover-reveal.css` |
+
+### Hover Reveal (imleç-orijinli renk reveal'ı)
+
+Kart hover'ında (desktop) veya tap'inde (dokunmatik) arka plan rengi, imlecin/
+parmağın değdiği noktadan `clip-path: circle()` ile GSAP'li büyüyerek açılır;
+işaretli yazı renkleri aynı timeline'da hafif stagger'la değişir. Klavye
+focus'unda da çalışır (ortadan açılır). Dokunmatikte tap toggle'dır: başka
+karta veya dışarı tap açık kartı kapatır (Swiper `preventClicks` sayesinde
+swipe hareketi tetiklemez). `prefers-reduced-motion`: animasyonsuz anında
+renk değişimi. Renkler token (`--brand-primary--600`), `var()` veya hex kabul
+eder — computed style'dan çözülür.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/hover-reveal.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/hover-reveal.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initHoverReveal(); // tüm [data-hover-reveal] kartlarını bağlar
+  });
+</script>
+```
+
+DOM (Webflow — mevcut kart elementine attribute ekle):
+
+```html
+<!--
+  Kök (kart) attribute'ları:
+    data-hover-reveal           işaretler — zorunlu
+    data-hover-reveal-bg        reveal katmanının rengi (token | hex | var())
+    data-hover-reveal-color     işaretli TÜM yazıların hedef rengi
+    data-hover-reveal-border    opsiyonel border-color hedefi
+    data-hover-reveal-duration  süre sn                     (default 0.7)
+    data-hover-reveal-ease      açılış GSAP ease            (default "power3.out")
+
+  Çocuklar:
+    data-hover-reveal-text      rengi değişecek yazı. Değer verilirse o renk;
+                                boş bırakılırsa kökteki ...-color kullanılır.
+-->
+<div data-hover-reveal
+     data-hover-reveal-bg="--brand-primary--600"
+     data-hover-reveal-color="--neutral--0"
+     class="card rounded-lg">
+  <h3 data-hover-reveal-text>Başlık</h3>
+  <p data-hover-reveal-text="--neutral--200">Açıklama</p>
+</div>
+```
+
+**Notlar**
+- Katmanı JS enjekte eder (ilk çocuk, `aria-hidden`); içerik CSS'le katmanın
+  üstüne kaldırılır. Kök elemente `overflow:hidden` uygulanır — dış gölge
+  kullanan kartlarda gölgeyi bir wrapper'a taşı.
+- Açıkken köke `is-active` değil **`is-revealed`** class'ı eklenir —
+  Designer'dan ek stil verilebilir.
+- İkon/görsel renkleri değişmez (yalnız CSS `color`); SVG'lerde
+  `currentColor` kullanırsan ikon da yazıyla birlikte döner.
+- h-scroll kartlarıyla birlikte kullanım: attribute'ları
+  `[data-hscroll-card]` elementinin kendisine ekle — pin ve Swiper
+  modlarının ikisinde de çalışır.
 
 ### Grain
 
