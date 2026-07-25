@@ -1,12 +1,13 @@
 /*!
- * h-scroll.css v1.0.0
+ * h-scroll.css v2.0.0
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
- * Desktop  : JS pins the section and translates .hscroll__track on x.
- * Mobile / : NO pin — the track itself is a native horizontal scroller with
- * reduced    CSS scroll-snap. JS builds nothing there (see h-scroll.js).
- * motion
+ * Desktop        : JS pins the section and translates .hscroll__track on x.
+ * Mobile (≤768px): section is HIDDEN — a separate mobile slider component
+ *                  (visible only below the breakpoint) replaces it. The old
+ *                  native scroll-snap fallback was removed in v2.0.0.
+ * Reduced motion : no pin — track becomes a native horizontal scroller.
  * https://github.com/roicool/sestek
  */
 
@@ -35,7 +36,17 @@
   align-items: stretch;
   gap: var(--spacing--6);
   width: max-content;             /* row never wraps — real overflow width */
-  padding-inline: var(--spacing--10); /* breathing room at both ends */
+  /*
+   * Gutter: aligns the first/last card with the site container. The % in
+   * the calc resolves against the viewport wrapper's width, so both ends
+   * line up with .container-2xl content edges; on narrow screens the
+   * spacing token wins. Override per instance from the Designer:
+   *   .hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }
+   * h-scroll.js measures this padding (on the track OR on the viewport),
+   * so the scroll distance always ends with the last card fully in view.
+   */
+  padding-inline: var(--hscroll-gutter,
+    max(var(--spacing--6), calc((100% - var(--container--2xl, 96rem)) / 2)));
   will-change: transform;
 }
 
@@ -47,12 +58,20 @@
   border-radius: var(--radius--lg);
 }
 
-/* ── Mobile & reduced motion — native scroll-snap scroller ───── */
+/* ── Mobile — section hidden, separate slider component takes over ── */
 /*
- * Same block twice on purpose: ≤768px AND reduced-motion at any width both
- * fall back to native horizontal scrolling. Keep the two in sync.
+ * The mobile experience is a dedicated basic slider component shown only
+ * below the breakpoint (built/hidden from the Designer). Keep this media
+ * query in sync with data-hscroll-bp if you customise the breakpoint.
  */
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+@media (max-width: 768px) {
+  .hscroll {
+    display: none;
+  }
+}
+
+/* ── Reduced motion — native horizontal scroller, no pin ─────── */
+@media (prefers-reduced-motion: reduce) {
   .hscroll__viewport {
     min-height: 0;                /* no pin → section is content-height */
     overflow: visible;
@@ -65,8 +84,6 @@
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: var(--spacing--4);
-    padding-inline: var(--spacing--4);
-    gap: var(--spacing--4);
     scrollbar-width: none;        /* Firefox */
     -ms-overflow-style: none;     /* IE/Edge */
     will-change: auto;
@@ -77,7 +94,6 @@
   }
 
   .hscroll__card {
-    width: var(--hscroll-card-w-m, min(84vw, 24rem));
     scroll-snap-align: center;
   }
 }

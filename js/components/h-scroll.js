@@ -1,14 +1,17 @@
 /*!
- * h-scroll.js v1.0.0
+ * h-scroll.js v1.1.0
  * Pinned horizontal-scroll card section:
  *   Desktop — section pins, vertical scroll drives the card track to the LEFT
  *   (content moves right-to-left, reading direction feels "scroll right").
  *   Scroll distance = exactly how far the track overflows, so speed feels 1:1.
+ *   Gutter-aware: padding-inline on the track OR its wrapper (e.g. the
+ *   container-aligned gutter in h-scroll.css) is measured, so the scroll
+ *   always ends with the last card fully inside the gutter.
  *
- * Mobile (≤768px) & prefers-reduced-motion: NO pin, NO GSAP — the track is a
- * native horizontal scroller with CSS scroll-snap (see h-scroll.css).
- * Touch scrub-pinning feels hijacked and mobile browser UI bars make
- * pin-spacing fragile; native swipe is the correct gesture there.
+ * Mobile (≤768px): NOTHING is built AND the section is hidden by h-scroll.css —
+ * a separate basic slider component (visible only below the breakpoint)
+ * replaces it. prefers-reduced-motion: no pin, track falls back to a native
+ * horizontal scroller (see h-scroll.css).
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -73,9 +76,21 @@
     var bp       = num(root, "data-hscroll-bp", 768);
     var priority = num(root, "data-hscroll-priority", 1);
 
-    /** Horizontal overflow in px — how far the track must translate. */
+    /**
+     * Horizontal overflow in px — how far the track must translate.
+     * Measured against the track's PARENT content box (clientWidth minus its
+     * inline padding), not the section width: a container-aligned gutter like
+     *   padding-inline: max(1.5rem, calc((100% - var(--container--2xl)) / 2))
+     * can live on the track or on the viewport wrapper — either way the
+     * distance lands the last card fully in view, inside the right gutter.
+     */
     function getDistance() {
-      return Math.max(0, track.scrollWidth - root.clientWidth);
+      var parent = track.parentElement || root;
+      var cs = getComputedStyle(parent);
+      var content = parent.clientWidth
+        - (parseFloat(cs.paddingLeft) || 0)
+        - (parseFloat(cs.paddingRight) || 0);
+      return Math.max(0, track.scrollWidth - content);
     }
 
     /** Toggle .is-active on the card nearest the current progress. */
@@ -97,14 +112,16 @@
       function () {
         if (getDistance() <= 0) return;                   // track fits — nothing to scroll
 
-        // Snap targets = each card's left edge as progress 0..1.
+        // Snap targets = each card's left edge as progress 0..1, measured
+        // RELATIVE to the first card so the gutter/padding cancels out.
         // Recomputed on every refresh so resize/font-load stays accurate.
         var snapPts = [0];
         function computeSnapPts() {
           var d = getDistance();
           if (d <= 0) return;
+          var base = cards[0].offsetLeft;
           snapPts = cards.map(function (c) {
-            return Math.min(1, Math.max(0, c.offsetLeft / d));
+            return Math.min(1, Math.max(0, (c.offsetLeft - base) / d));
           });
         }
 

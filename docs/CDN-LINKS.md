@@ -742,6 +742,71 @@ DOM yapısı:
 | `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
 | `js/components/leadgen-slide-in.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/leadgen-slide-in.js` |
 | `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
+| `js/components/h-scroll.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js` |
+| `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
+
+### H-Scroll (pinli yatay kart bölümü)
+
+Desktop'ta section pinlenir, dikey scroll kart şeridini sola sürer (scrub'lı,
+kartlara snap'li). **Mobil (≤768px): section CSS'ten gizlenir** — mobil
+deneyim, sadece breakpoint altında görünen ayrı bir basic slider component'idir
+(Designer'da yapılır). `prefers-reduced-motion`: pin yok, şerit native yatay
+scroller'a düşer.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initHScroll(); // tüm [data-hscroll] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök ([data-hscroll]) attribute'ları:
+    data-hscroll-scrub     scrub gecikmesi sn                    (default 0.5)
+    data-hscroll-speed     scroll mesafesi çarpanı — >1 yavaş/uzun, <1 hızlı (default 1)
+    data-hscroll-snap      kartlara snap "true"/"false"          (default true)
+    data-hscroll-bp        mobil breakpoint px                   (default 768)
+    data-hscroll-priority  ScrollTrigger refreshPriority — sayfadaki dikey
+                           konuma göre PROJECT.md tablosundan ver (default 1)
+-->
+<section data-hscroll class="hscroll">
+  <div class="hscroll__viewport">
+    <div data-hscroll-track class="hscroll__track">
+      <div data-hscroll-card class="hscroll__card">…</div>
+      <div data-hscroll-card class="hscroll__card">…</div>
+      <div data-hscroll-card class="hscroll__card">…</div>
+    </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- **Gutter (container hizası):** Şeridin başı/sonu site container'ına hizalanır —
+  varsayılan `padding-inline: max(var(--spacing--6), calc((100% - var(--container--2xl)) / 2))`.
+  Instance başına override: `.hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }`.
+  JS bu padding'i (track'te VEYA viewport wrapper'ında) ölçer — scroll her zaman
+  son kart sağ gutter'ın içinde tam görünürken biter.
+- Kart genişliği: `.hscroll { --hscroll-card-w: 32rem; }`.
+- Görünürdeki karta `is-active` class'ı eklenir — Designer'dan aktif stil verilebilir.
+- Breakpoint'i `data-hscroll-bp` ile değiştirirsen h-scroll.css'teki
+  `@media (max-width: 768px)` gizleme sorgusunu da senkron tut.
+- Pinli bölüm kuralları geçerlidir: ancestor'larda transform/filter yok,
+  `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
 
 ### Accordion
 
