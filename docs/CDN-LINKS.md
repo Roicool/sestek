@@ -747,11 +747,12 @@ DOM yapısı:
 
 ### H-Scroll (pinli yatay kart bölümü)
 
-Desktop'ta section pinlenir, dikey scroll kart şeridini sola sürer (scrub'lı,
-kartlara snap'li). **Mobil (≤768px): section CSS'ten gizlenir** — mobil
-deneyim, sadece breakpoint altında görünen ayrı bir basic slider component'idir
-(Designer'da yapılır). `prefers-reduced-motion`: pin yok, şerit native yatay
-scroller'a düşer.
+Desktop'ta (≥992px) section pinlenir, dikey scroll kart şeridini sola sürer
+(scrub'lı, kartlara snap'li). **Tablet ve altı (≤991px): pin yok — aynı track
+native scroll-snap swiper olur**, kart genişlikleri "slidesPerView" mantığıyla
+bleed'li: tablette ~2.2, mobilde ~1.2 kart/görünüm (Swiper.js yok — zero
+dependency). `prefers-reduced-motion`: her genişlikte pin yerine native
+scroller.
 
 ```html
 <!-- in <head> -->
@@ -780,7 +781,9 @@ DOM:
     data-hscroll-scrub     scrub gecikmesi sn                    (default 0.5)
     data-hscroll-speed     scroll mesafesi çarpanı — >1 yavaş/uzun, <1 hızlı (default 1)
     data-hscroll-snap      kartlara snap "true"/"false"          (default true)
-    data-hscroll-bp        mobil breakpoint px                   (default 768)
+    data-hscroll-bp        pin breakpoint px — bu genişlik ve altında native
+                           swiper devralır; h-scroll.css'teki 991px media
+                           query'leriyle senkron tut               (default 991)
     data-hscroll-priority  ScrollTrigger refreshPriority — sayfadaki dikey
                            konuma göre PROJECT.md tablosundan ver (default 1)
 -->
@@ -801,10 +804,16 @@ DOM:
   Instance başına override: `.hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }`.
   JS bu padding'i (track'te VEYA viewport wrapper'ında) ölçer — scroll her zaman
   son kart sağ gutter'ın içinde tam görünürken biter.
-- Kart genişliği: `.hscroll { --hscroll-card-w: 32rem; }`.
-- Görünürdeki karta `is-active` class'ı eklenir — Designer'dan aktif stil verilebilir.
+- Kart genişliği (desktop): `.hscroll { --hscroll-card-w: 32rem; }`.
+- **Swiper bleed:** tablet `--hscroll-spv-t` (default `2.2`), mobil
+  `--hscroll-spv-m` (default `1.2`), kart arası boşluk `--hscroll-gap`
+  (default `var(--spacing--6)`) — hepsi `.hscroll` üzerinden override edilir.
+- Görünürdeki karta `is-active` class'ı eklenir (sadece desktop pin modunda) —
+  Designer'dan aktif stil verilebilir.
 - Breakpoint'i `data-hscroll-bp` ile değiştirirsen h-scroll.css'teki
-  `@media (max-width: 768px)` gizleme sorgusunu da senkron tut.
+  `991px` media query'lerini de senkron tut.
+- Kritik CSS: h-scroll.css içeriği istenirse `<style>` olarak sayfaya inline
+  edilebilir (render-blocking harici istek sıfırlanır).
 - Pinli bölüm kuralları geçerlidir: ancestor'larda transform/filter yok,
   `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
 

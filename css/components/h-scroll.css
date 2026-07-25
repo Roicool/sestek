@@ -3,11 +3,10 @@
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
- * Desktop        : JS pins the section and translates .hscroll__track on x.
- * Mobile (≤768px): section is HIDDEN — a separate mobile slider component
- *                  (visible only below the breakpoint) replaces it. The old
- *                  native scroll-snap fallback was removed in v2.0.0.
- * Reduced motion : no pin — track becomes a native horizontal scroller.
+ * Desktop (≥992px) : JS pins the section and translates .hscroll__track on x.
+ * Tablet & mobile  : NO pin, NO GSAP — the track is a native scroll-snap
+ * (≤991px) /         SWIPER with partial-card bleed: ~2.2 cards per view on
+ * reduced motion     tablet, ~1.2 on mobile (override via custom props below).
  * https://github.com/roicool/sestek
  */
 
@@ -34,16 +33,15 @@
 .hscroll__track {
   display: flex;
   align-items: stretch;
-  gap: var(--spacing--6);
+  gap: var(--hscroll-gap, var(--spacing--6));
   width: max-content;             /* row never wraps — real overflow width */
   /*
    * Gutter: aligns the first/last card with the site container. The % in
-   * the calc resolves against the viewport wrapper's width, so both ends
-   * line up with .container-2xl content edges; on narrow screens the
-   * spacing token wins. Override per instance from the Designer:
+   * the calc resolves against the viewport wrapper's width; on narrow
+   * screens the spacing token wins. Override per instance:
    *   .hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }
    * h-scroll.js measures this padding (on the track OR on the viewport),
-   * so the scroll distance always ends with the last card fully in view.
+   * so the pinned scroll always ends with the last card fully in view.
    */
   padding-inline: var(--hscroll-gutter,
     max(var(--spacing--6), calc((100% - var(--container--2xl, 96rem)) / 2)));
@@ -58,20 +56,12 @@
   border-radius: var(--radius--lg);
 }
 
-/* ── Mobile — section hidden, separate slider component takes over ── */
+/* ── Tablet & mobile + reduced motion — native scroll-snap swiper ── */
 /*
- * The mobile experience is a dedicated basic slider component shown only
- * below the breakpoint (built/hidden from the Designer). Keep this media
- * query in sync with data-hscroll-bp if you customise the breakpoint.
+ * Same block for ≤991px AND reduced-motion at any width: no pin, the track
+ * itself scrolls with snap. JS builds nothing here (see h-scroll.js).
  */
-@media (max-width: 768px) {
-  .hscroll {
-    display: none;
-  }
-}
-
-/* ── Reduced motion — native horizontal scroller, no pin ─────── */
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 991px), (prefers-reduced-motion: reduce) {
   .hscroll__viewport {
     min-height: 0;                /* no pin → section is content-height */
     overflow: visible;
@@ -83,7 +73,8 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--spacing--4);
+    scroll-padding-inline: var(--hscroll-gutter,
+      max(var(--spacing--6), calc((100% - var(--container--2xl, 96rem)) / 2)));
     scrollbar-width: none;        /* Firefox */
     -ms-overflow-style: none;     /* IE/Edge */
     will-change: auto;
@@ -94,6 +85,28 @@
   }
 
   .hscroll__card {
-    scroll-snap-align: center;
+    scroll-snap-align: start;     /* bleed reads left→right, next card peeks */
+  }
+}
+
+/* ── Swiper bleed widths (width queries only — NOT reduced-motion desktop) ── */
+/*
+ * slidesPerView mantığı: N kart/görünüm → kart = (içerik − görünür gap'ler) / N.
+ * Küsurat (0.2) sağdan taşan "bleed" kartıdır. Override per instance:
+ *   .hscroll { --hscroll-spv-t: 2.4; --hscroll-spv-m: 1.15; }
+ */
+@media (max-width: 991px) {
+  .hscroll__card {
+    /* tablet: 2 tam kart + 2 gap + 0.2 bleed */
+    width: calc((100% - 2 * var(--hscroll-gap, var(--spacing--6)))
+                / var(--hscroll-spv-t, 2.2));
+  }
+}
+
+@media (max-width: 767px) {
+  .hscroll__card {
+    /* mobil: 1 tam kart + 1 gap + 0.2 bleed */
+    width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
+                / var(--hscroll-spv-m, 1.2));
   }
 }

@@ -8,10 +8,11 @@
  *   container-aligned gutter in h-scroll.css) is measured, so the scroll
  *   always ends with the last card fully inside the gutter.
  *
- * Mobile (≤768px): NOTHING is built AND the section is hidden by h-scroll.css —
- * a separate basic slider component (visible only below the breakpoint)
- * replaces it. prefers-reduced-motion: no pin, track falls back to a native
- * horizontal scroller (see h-scroll.css).
+ * Tablet & mobile (≤991px) & prefers-reduced-motion: NO pin, NO GSAP — the
+ * track is a native scroll-snap SWIPER with partial-card bleed (~2.2 cards
+ * per view on tablet, ~1.2 on mobile — see h-scroll.css). Touch scrub-pinning
+ * feels hijacked and mobile browser UI bars make pin-spacing fragile; native
+ * swipe is the correct gesture there.
  *
  * Requires : gsap + ScrollTrigger registered.
  *
@@ -38,7 +39,9 @@
    *   data-hscroll-speed     scroll-distance multiplier —
    *                          >1 slower/longer, <1 faster    (default 1)
    *   data-hscroll-snap      snap to cards "true"/"false"   (default true)
-   *   data-hscroll-bp        mobile breakpoint in px        (default 768)
+   *   data-hscroll-bp        pin breakpoint in px — at/below this width the
+   *                          native swiper takes over. Keep in sync with the
+   *                          991px media queries in h-scroll.css (default 991)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
    *
@@ -73,7 +76,7 @@
     var scrub    = num(root, "data-hscroll-scrub", 0.5);
     var speed    = num(root, "data-hscroll-speed", 1);
     var snapOn   = root.getAttribute("data-hscroll-snap") !== "false";
-    var bp       = num(root, "data-hscroll-bp", 768);
+    var bp       = num(root, "data-hscroll-bp", 991);
     var priority = num(root, "data-hscroll-priority", 1);
 
     /**
@@ -103,9 +106,9 @@
       }
     }
 
-    // Desktop only + motion allowed. Below the breakpoint (or reduced motion)
-    // NOTHING is built — h-scroll.css turns the track into a native
-    // scroll-snap scroller, so there is no trigger to manage there.
+    // Desktop only + motion allowed. At/below the breakpoint (or reduced
+    // motion) NOTHING is built — h-scroll.css turns the track into a native
+    // scroll-snap swiper (2.2 / 1.2 bleed), so no trigger to manage there.
     var mm = gsap.matchMedia();
     mm.add(
       "(min-width: " + (bp + 1) + "px) and (prefers-reduced-motion: no-preference)",
