@@ -811,7 +811,11 @@ DOM:
   Instance başına override: `.hscroll { --hscroll-gutter: max(1.5rem, calc((100% - var(--container--2xl)) / 2)); }`.
   JS bu padding'i (track'te VEYA viewport wrapper'ında) ölçer — scroll her zaman
   son kart sağ gutter'ın içinde tam görünürken biter.
-- Kart genişliği (desktop): `.hscroll { --hscroll-card-w: 32rem; }`.
+- **Kök element için `hscroll` class'ı ŞART DEĞİL** — CSS mod seçicileri
+  `[data-hscroll]` attribute'una bağlıdır (v2.1.1+). Çocuklardaki
+  `hscroll__viewport` / `hscroll__track` / `hscroll__card` class'ları gereklidir.
+- Kart genişliği (desktop): `.hscroll__card`'a etkiyen `--hscroll-card-w`
+  custom prop'u — örn. kök elemente `style="--hscroll-card-w: 32rem"`.
 - **Swiper bleed:** `data-hscroll-spv-t` / `data-hscroll-spv-m` ile ayarlanır;
   JS bu değerleri `--hscroll-spv-t` / `--hscroll-spv-m` olarak CSS fallback'e
   de yansıtır (hidrasyon öncesi kare ile Swiper birebir aynı görünür).

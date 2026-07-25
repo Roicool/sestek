@@ -1,5 +1,5 @@
 /*!
- * h-scroll.css v2.1.0
+ * h-scroll.css v2.1.1
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
@@ -15,7 +15,7 @@
  */
 
 /* ── Section ─────────────────────────────────────────────────── */
-.hscroll {
+[data-hscroll] {
   position: relative;
   width: 100%;
   /*
@@ -68,12 +68,12 @@
  * ≤991px AND reduced-motion at any width.
  */
 @media (max-width: 991px), (prefers-reduced-motion: reduce) {
-  .hscroll:not(.is-swiper) .hscroll__viewport {
+  [data-hscroll]:not(.is-swiper) .hscroll__viewport {
     min-height: 0;                /* no pin → section is content-height */
     overflow: visible;
   }
 
-  .hscroll:not(.is-swiper) .hscroll__track {
+  [data-hscroll]:not(.is-swiper) .hscroll__track {
     width: auto;
     max-width: 100%;
     overflow-x: auto;
@@ -86,11 +86,11 @@
     will-change: auto;
   }
 
-  .hscroll:not(.is-swiper) .hscroll__track::-webkit-scrollbar {
+  [data-hscroll]:not(.is-swiper) .hscroll__track::-webkit-scrollbar {
     display: none;
   }
 
-  .hscroll:not(.is-swiper) .hscroll__card {
+  [data-hscroll]:not(.is-swiper) .hscroll__card {
     scroll-snap-align: start;     /* bleed reads left→right, next card peeks */
   }
 }
@@ -102,7 +102,7 @@
  * --hscroll-spv-t / --hscroll-spv-m olarak buraya yansıtır.
  */
 @media (max-width: 991px) {
-  .hscroll:not(.is-swiper) .hscroll__card {
+  [data-hscroll]:not(.is-swiper) .hscroll__card {
     /* tablet: 2 tam kart + 2 gap + 0.2 bleed */
     width: calc((100% - 2 * var(--hscroll-gap, var(--spacing--6)))
                 / var(--hscroll-spv-t, 2.2));
@@ -110,7 +110,7 @@
 }
 
 @media (max-width: 767px) {
-  .hscroll:not(.is-swiper) .hscroll__card {
+  [data-hscroll]:not(.is-swiper) .hscroll__card {
     /* mobil: 1 tam kart + 1 gap + 0.2 bleed */
     width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
                 / var(--hscroll-spv-m, 1.2));
@@ -125,7 +125,7 @@
  * spacing moves to Swiper params (spaceBetween + slidesOffsetBefore/After),
  * so the token gap/padding are zeroed.
  */
-.hscroll.is-swiper .hscroll__viewport {
+[data-hscroll].is-swiper .hscroll__viewport {
   display: block;                 /* Swiper container expectations */
   position: relative;
   min-height: 0;
@@ -134,7 +134,7 @@
   touch-action: pan-y;            /* vertical page scroll stays native */
 }
 
-.hscroll.is-swiper .hscroll__track {
+[data-hscroll].is-swiper .hscroll__track {
   position: relative;
   display: flex;
   width: 100%;
@@ -146,7 +146,7 @@
   will-change: transform;
 }
 
-.hscroll.is-swiper .hscroll__card {
+[data-hscroll].is-swiper .hscroll__card {
   flex-shrink: 0;
   position: relative;
   height: auto;                   /* equal-height cards via flex stretch */
