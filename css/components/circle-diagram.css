@@ -1,5 +1,5 @@
 /*!
- * circle-diagram.css v1.1.0
+ * circle-diagram.css v1.2.0
  * Behavioural + skin CSS for circle-diagram.js v2.1.0.
  *
  * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
@@ -41,13 +41,13 @@
 .cd_panel {
   display: flex;
   justify-content: center;
-  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 5vw, 4.5rem);
+  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 5vw, 5rem);
 }
 
 /* Sahne: ring'in boyutunu BU belirler */
 .cd_stage {
   position: relative;
-  width: min(24rem, 100%, 72vw);
+  width: min(28rem, 100%, 76vw);
   aspect-ratio: 1 / 1;
 }
 
@@ -81,31 +81,30 @@
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .6rem;
   background: var(--cd-bg);
   border: 1px solid var(--cd-line);
   border-radius: 999px;
-  padding: .45rem .8rem;
+  padding: .55rem 1.05rem;
   box-shadow: 0 10px 24px -18px rgba(0, 0, 0, .28);
   cursor: pointer;
   color: var(--cd-muted);
-  font-size: .625rem;                      /* 10px — pasif */
-  font-weight: 500;
-  letter-spacing: .14em;
+  font-size: .8125rem;                     /* 13px */
+  font-weight: 600;
+  letter-spacing: .08em;
   text-transform: uppercase;
   white-space: nowrap;
   transition: color .35s, border-color .35s, box-shadow .35s, transform .35s;
 }
 
-/* Label'ı çemberin dışına çevir — JS'in bastığı data-cd-side ile */
+/* Tüm chip'ler YATAY (dot yanında). Sol yarıdakilerde dot sağda —
+   halkaya bakan tarafta dursun diye; tepe/alt da yatay kalır. */
 .cd_item[data-cd-side="left"]   { flex-direction: row-reverse; }
-.cd_item[data-cd-side="top"]    { flex-direction: column-reverse; gap: .45rem; }
-.cd_item[data-cd-side="bottom"] { flex-direction: column; gap: .45rem; }
 
 /* Dot */
 .cd_dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   flex: none;
   border-radius: 50%;
   border: .5px solid var(--neutral--400, #9b9b9b);
@@ -233,7 +232,7 @@
     gap: 2.5rem;
   }
   .cd_panel { padding: 1.5rem clamp(1.5rem, 8vw, 3rem); }
-  .cd_stage { width: min(20rem, 100%, 78vw); }
+  .cd_stage { width: min(22rem, 100%, 82vw); }
 }
 
 /* ── Reduced motion: her şey anlık ───────────────────────────── */
