@@ -1,5 +1,5 @@
 /*!
- * circle-diagram.css v1.2.0
+ * circle-diagram.css v1.3.0
  * Behavioural + skin CSS for circle-diagram.js v2.1.0.
  *
  * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
@@ -19,6 +19,10 @@
   --cd-accent: var(--brand-primary--500, #EC008C);                      /* kuyruk + aktif dot */
   --cd-muted:  var(--color-text--muted, var(--neutral--600, #6b6b6b));  /* pasif yazılar */
   --cd-line:   var(--border--color-border-base, var(--neutral--200, rgba(0, 0, 0, .12)));
+  --cd-ring:   var(--neutral--300, rgba(0, 0, 0, .22));                 /* halka çizgisi — kart
+                                                                           border'ından BAĞIMSIZ,
+                                                                           zemine göre ayarla */
+  --cd-ring-w: 2px;                                                     /* halka kalınlığı */
   --cd-bg:     var(--surface--base, var(--neutral--0, #fff));           /* panel/kart zemini */
   position: relative;
   width: 100%;                             /* flex/grid parent içinde büzülme */
@@ -59,14 +63,14 @@
   inset: 0;
   border-radius: 50%;
   background: conic-gradient(
-    var(--cd-line)   328deg,
+    var(--cd-ring)   328deg,
     var(--cd-accent) 360deg
   );
-  /* içini boşalt → 1px ring kalsın */
+  /* içini boşalt → --cd-ring-w kalınlığında ring kalsın */
   -webkit-mask: radial-gradient(farthest-side,
-      transparent calc(100% - 1.25px), #000 calc(100% - 0.25px));
+      transparent calc(100% - var(--cd-ring-w, 2px) - .25px), #000 calc(100% - .25px));
           mask: radial-gradient(farthest-side,
-      transparent calc(100% - 1.25px), #000 calc(100% - 0.25px));
+      transparent calc(100% - var(--cd-ring-w, 2px) - .25px), #000 calc(100% - .25px));
   pointer-events: none;
   will-change: transform;
   /* gsap yoksa dönüşü bu transition üstlenir */
