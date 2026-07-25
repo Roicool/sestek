@@ -748,17 +748,20 @@ DOM yapısı:
 ### H-Scroll (pinli yatay kart bölümü)
 
 Desktop'ta (≥992px) section pinlenir, dikey scroll kart şeridini sola sürer
-(scrub'lı, kartlara snap'li). **Tablet ve altı (≤991px): pin yok — aynı track
-native scroll-snap swiper olur**, kart genişlikleri "slidesPerView" mantığıyla
-bleed'li: tablette ~2.2, mobilde ~1.2 kart/görünüm (Swiper.js yok — zero
-dependency). `prefers-reduced-motion`: her genişlikte pin yerine native
-scroller.
+(scrub'lı, kartlara snap'li). **Tablet ve altı (≤991px): pin yok — aynı DOM
+Swiper carousel'e dönüşür** (h-scroll.js sınıfları basıp instance kurar):
+tablette ~2.2, mobilde ~1.2 kart/görünüm (bleed). Swiper'ın kendi CSS'i
+YÜKLENMEZ — gereken çekirdek stiller h-scroll.css'te gömülü. Swiper script'i
+yüklenmezse/başarısız olursa aynı bleed genişlikli native scroll-snap
+fallback devrede kalır. `prefers-reduced-motion`: desktop'ta pin yok (native
+scroller), tablet/mobilde Swiper `speed: 0` (anında snap).
 
 ```html
 <!-- in <head> -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js" defer></script>
 ```
 
@@ -781,9 +784,13 @@ DOM:
     data-hscroll-scrub     scrub gecikmesi sn                    (default 0.5)
     data-hscroll-speed     scroll mesafesi çarpanı — >1 yavaş/uzun, <1 hızlı (default 1)
     data-hscroll-snap      kartlara snap "true"/"false"          (default true)
-    data-hscroll-bp        pin breakpoint px — bu genişlik ve altında native
-                           swiper devralır; h-scroll.css'teki 991px media
-                           query'leriyle senkron tut               (default 991)
+    data-hscroll-bp        pin breakpoint px — bu genişlik ve altında Swiper
+                           devralır; h-scroll.css'teki 991px media
+                           query'leriyle senkron tut             (default 991)
+    data-hscroll-bp-m      mobil breakpoint px — altında mobil
+                           slidesPerView uygulanır               (default 768)
+    data-hscroll-spv-t     tablet kart/görünüm (bleed)           (default 2.2)
+    data-hscroll-spv-m     mobil kart/görünüm (bleed)            (default 1.2)
     data-hscroll-priority  ScrollTrigger refreshPriority — sayfadaki dikey
                            konuma göre PROJECT.md tablosundan ver (default 1)
 -->
@@ -805,15 +812,22 @@ DOM:
   JS bu padding'i (track'te VEYA viewport wrapper'ında) ölçer — scroll her zaman
   son kart sağ gutter'ın içinde tam görünürken biter.
 - Kart genişliği (desktop): `.hscroll { --hscroll-card-w: 32rem; }`.
-- **Swiper bleed:** tablet `--hscroll-spv-t` (default `2.2`), mobil
-  `--hscroll-spv-m` (default `1.2`), kart arası boşluk `--hscroll-gap`
-  (default `var(--spacing--6)`) — hepsi `.hscroll` üzerinden override edilir.
-- Görünürdeki karta `is-active` class'ı eklenir (sadece desktop pin modunda) —
-  Designer'dan aktif stil verilebilir.
+- **Swiper bleed:** `data-hscroll-spv-t` / `data-hscroll-spv-m` ile ayarlanır;
+  JS bu değerleri `--hscroll-spv-t` / `--hscroll-spv-m` olarak CSS fallback'e
+  de yansıtır (hidrasyon öncesi kare ile Swiper birebir aynı görünür).
+- Kart arası boşluk `--hscroll-gap` (default `var(--spacing--6)`), gutter
+  `--hscroll-gutter` — JS ikisini computed style'dan px olarak ölçüp Swiper'a
+  `spaceBetween` + `slidesOffsetBefore/After` diye geçer; tek kaynak token'lar.
+- Görünürdeki karta `is-active` class'ı eklenir (desktop pin + Swiper modunda) —
+  Designer'dan aktif stil verilebilir. Swiper ayrıca kendi
+  `swiper-slide-active` class'ını basar.
+- Klavye desteği açık (`keyboard.onlyInViewport`), a11y modülü swiper-bundle
+  ile gelir.
 - Breakpoint'i `data-hscroll-bp` ile değiştirirsen h-scroll.css'teki
   `991px` media query'lerini de senkron tut.
 - Kritik CSS: h-scroll.css içeriği istenirse `<style>` olarak sayfaya inline
-  edilebilir (render-blocking harici istek sıfırlanır).
+  edilebilir (render-blocking harici istek sıfırlanır) — Swiper CSS'i zaten
+  gerekmez.
 - Pinli bölüm kuralları geçerlidir: ancestor'larda transform/filter yok,
   `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
 

@@ -1,20 +1,28 @@
 /*!
- * h-scroll.js v1.1.0
+ * h-scroll.js v2.0.0
  * Pinned horizontal-scroll card section:
- *   Desktop — section pins, vertical scroll drives the card track to the LEFT
- *   (content moves right-to-left, reading direction feels "scroll right").
- *   Scroll distance = exactly how far the track overflows, so speed feels 1:1.
- *   Gutter-aware: padding-inline on the track OR its wrapper (e.g. the
- *   container-aligned gutter in h-scroll.css) is measured, so the scroll
+ *   Desktop (≥992px) — section pins, vertical scroll drives the card track to
+ *   the LEFT (content moves right-to-left, reading direction feels "scroll
+ *   right"). Scroll distance = exactly how far the track overflows, so speed
+ *   feels 1:1. Gutter-aware: padding-inline on the track OR its wrapper (e.g.
+ *   the container-aligned gutter in h-scroll.css) is measured, so the scroll
  *   always ends with the last card fully inside the gutter.
  *
- * Tablet & mobile (≤991px) & prefers-reduced-motion: NO pin, NO GSAP — the
- * track is a native scroll-snap SWIPER with partial-card bleed (~2.2 cards
- * per view on tablet, ~1.2 on mobile — see h-scroll.css). Touch scrub-pinning
- * feels hijacked and mobile browser UI bars make pin-spacing fragile; native
- * swipe is the correct gesture there.
+ *   Tablet & mobile (≤991px) — the SAME DOM becomes a Swiper carousel:
+ *   ~2.2 cards per view on tablet, ~1.2 on mobile (partial-card bleed).
+ *   Gutter + gap are read from the computed CSS (RC tokens), so spacing stays
+ *   token-driven. Swiper's own stylesheet is NOT needed — the required core
+ *   styles ship inside h-scroll.css under .is-swiper.
+ *
+ *   If Swiper is not loaded, the CSS scroll-snap fallback in h-scroll.css
+ *   takes over with the same bleed widths — nothing breaks.
+ *
+ * prefers-reduced-motion: desktop → no pin, native scroller (CSS); tablet &
+ * mobile → Swiper with speed 0 (instant, no animated snapping).
  *
  * Requires : gsap + ScrollTrigger registered.
+ *            Swiper 11 (swiper-bundle) for the tablet/mobile carousel —
+ *            optional; CSS fallback covers its absence.
  *
  * All behaviour is data-attribute driven — DOM contract below.
  * https://github.com/roicool/sestek
@@ -32,7 +40,7 @@
   }
 
   /**
-   * Initializes every pinned h-scroll section on the page.
+   * Initializes every h-scroll section on the page.
    *
    * Root element  [data-hscroll] supports:
    *   data-hscroll-scrub     scrub lag in seconds           (default 0.5)
@@ -40,14 +48,20 @@
    *                          >1 slower/longer, <1 faster    (default 1)
    *   data-hscroll-snap      snap to cards "true"/"false"   (default true)
    *   data-hscroll-bp        pin breakpoint in px — at/below this width the
-   *                          native swiper takes over. Keep in sync with the
-   *                          991px media queries in h-scroll.css (default 991)
+   *                          Swiper carousel takes over. Keep in sync with
+   *                          the 991px media queries in h-scroll.css
+   *                                                         (default 991)
+   *   data-hscroll-bp-m      mobile breakpoint in px — below this width the
+   *                          mobile slidesPerView applies   (default 768)
+   *   data-hscroll-spv-t     slides per view on tablet      (default 2.2)
+   *   data-hscroll-spv-m     slides per view on mobile      (default 1.2)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
    *
    * Children:
+   *   .hscroll__viewport     wrapper around the track (Swiper container)
    *   [data-hscroll-track]   the flex row that translates on x
-   *   [data-hscroll-card]    a card inside the track (6 expected, any count works)
+   *   [data-hscroll-card]    a card inside the track (any count works)
    *
    * @param {string} [selector="[data-hscroll]"]
    */
@@ -71,12 +85,16 @@
       console.warn("[Sestek HScroll] Need [data-hscroll-track] with [data-hscroll-card] children.");
       return;
     }
+    var viewport = track.parentElement || root;           // .hscroll__viewport
 
     // ── Config from data-attributes ───────────────────────────────
     var scrub    = num(root, "data-hscroll-scrub", 0.5);
     var speed    = num(root, "data-hscroll-speed", 1);
     var snapOn   = root.getAttribute("data-hscroll-snap") !== "false";
     var bp       = num(root, "data-hscroll-bp", 991);
+    var bpM      = num(root, "data-hscroll-bp-m", 768);
+    var spvT     = num(root, "data-hscroll-spv-t", 2.2);
+    var spvM     = num(root, "data-hscroll-spv-m", 1.2);
     var priority = num(root, "data-hscroll-priority", 1);
 
     /**
@@ -106,10 +124,85 @@
       }
     }
 
-    // Desktop only + motion allowed. At/below the breakpoint (or reduced
-    // motion) NOTHING is built — h-scroll.css turns the track into a native
-    // scroll-snap swiper (2.2 / 1.2 bleed), so no trigger to manage there.
     var mm = gsap.matchMedia();
+
+    // ── Tablet & mobile (≤bp) — Swiper carousel ───────────────────
+    mm.add("(max-width: " + bp + "px)", function () {
+      // Mirror the configured slidesPerView into the CSS fallback widths so
+      // the no-Swiper scroll-snap fallback shows the same bleed.
+      root.style.setProperty("--hscroll-spv-t", String(spvT));
+      root.style.setProperty("--hscroll-spv-m", String(spvM));
+
+      if (typeof Swiper === "undefined") {
+        console.warn("[Sestek HScroll] Swiper not found — CSS scroll-snap fallback active.");
+        return;
+      }
+
+      /**
+       * Gutter + gap in px, resolved from the token-driven CSS. .is-swiper
+       * zeroes both (Swiper owns spacing), so drop the class for one sync
+       * style read — no paint happens in between.
+       */
+      function measure() {
+        root.classList.remove("is-swiper");
+        var cs = getComputedStyle(track);
+        var m = {
+          gap:    parseFloat(cs.columnGap)   || 0,
+          gutter: parseFloat(cs.paddingLeft) || 0,
+        };
+        root.classList.add("is-swiper");
+        return m;
+      }
+
+      var m = measure();                                  // ends with .is-swiper set
+      viewport.classList.add("swiper");
+      track.classList.add("swiper-wrapper");
+      cards.forEach(function (c) { c.classList.add("swiper-slide"); });
+
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      var breakpoints = {};
+      breakpoints[bpM] = { slidesPerView: spvT };         // ≥bpM → tablet spv
+
+      var sw = new Swiper(viewport, {
+        slidesPerView: spvM,                              // <bpM → mobile spv
+        spaceBetween: m.gap,
+        slidesOffsetBefore: m.gutter,
+        slidesOffsetAfter: m.gutter,
+        breakpoints: breakpoints,
+        speed: reduced ? 0 : 400,
+        grabCursor: true,
+        watchOverflow: true,
+        keyboard: { enabled: true, onlyInViewport: true },
+        on: {
+          activeIndexChange: function (s) { setActive(s.activeIndex); },
+          resize: function (s) {
+            // Tokens are fluid clamp()s — re-resolve px on resize. Write to
+            // originalParams too so breakpoint re-application keeps them.
+            var r = measure();
+            s.params.spaceBetween = s.originalParams.spaceBetween = r.gap;
+            s.params.slidesOffsetBefore = s.originalParams.slidesOffsetBefore = r.gutter;
+            s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutter;
+            s.update();
+          },
+        },
+      });
+
+      setActive(0);
+
+      // matchMedia cleanup — crossing above the breakpoint: tear Swiper down
+      // and hand the untouched DOM back to the pin setup below.
+      return function () {
+        sw.destroy(true, true);                           // true,true → inline styles cleaned
+        root.classList.remove("is-swiper");
+        viewport.classList.remove("swiper");
+        track.classList.remove("swiper-wrapper");
+        cards.forEach(function (c) { c.classList.remove("swiper-slide", "is-active"); });
+        curActive = -1;
+      };
+    });
+
+    // ── Desktop (>bp) + motion allowed — GSAP pin + scrub ─────────
     mm.add(
       "(min-width: " + (bp + 1) + "px) and (prefers-reduced-motion: no-preference)",
       function () {
@@ -177,7 +270,7 @@
         setActive(0);
 
         // matchMedia cleanup — fires when dropping below the breakpoint or
-        // when reduced-motion flips on: kill the pin, hand back to native CSS.
+        // when reduced-motion flips on: kill the pin, hand back to CSS/Swiper.
         return function () {
           tween.scrollTrigger && tween.scrollTrigger.kill();
           tween.kill();

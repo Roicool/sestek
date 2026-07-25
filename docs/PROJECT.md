@@ -11,6 +11,7 @@
 | Smooth Scroll | [Lenis](https://github.com/darkroomengineering/lenis) | ^1.1.x | Frame-perfect smooth scroll |
 | Animation | [GSAP](https://gsap.com) | ^3.12.x | Industry-standard animation engine |
 | Scroll Trigger | [GSAP ScrollTrigger](https://gsap.com/docs/v3/Plugins/ScrollTrigger/) | ^3.12.x | Scroll-driven animations, pinning |
+| Touch Slider | [Swiper](https://swiperjs.com) | ^11.x | Yalnız dokunmatik carousel gereken component'lerde (h-scroll tablet/mobil); CSS'i yüklenmez — gereken çekirdek stiller component CSS'ine gömülü |
 | Bundler | Vanilla / CDN | — | No build step required, CDN-first |
 
 ---
@@ -86,7 +87,7 @@ Version is declared in the file header comment and bumped on every release.
 1. **Performance first** — 60fps always. No jank, no layout thrash. Target: PageSpeed 90+.
 2. **Premium feel** — Smooth easing curves, intentional timing.
 3. **Zero render-blocking scripts** — Every `<script src>` tag must use `defer`. No exceptions.
-4. **Zero dependencies beyond declared stack** — Lenis + GSAP only.
+4. **Zero dependencies beyond declared stack** — Lenis + GSAP; Swiper yalnızca dokunmatik carousel gereken component'in kullanıldığı sayfada yüklenir (defer) ve yokluğunda component CSS fallback'iyle çalışmaya devam eder.
 5. **CDN-first** — Every file is consumable via jsDelivr without a build step.
 6. **RC Structure first** — Always reach for `RC-STRUCTURE-REFERENCE.css` classes and variables before writing custom CSS.
 
