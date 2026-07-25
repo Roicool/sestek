@@ -1,0 +1,40 @@
+/*!
+ * card-cascade.css v1.0.0
+ * Anti-flash / pre-entrance hidden state for the card-cascade component.
+ * The cards fade + rise into view ONE BY ONE on scroll — but ONLY at tablet
+ * & up (default min-width 991px). This file just owns the hidden start state
+ * (so a deferred script can't flash the cards fully visible for one frame)
+ * and the will-change hint; js/components/card-cascade.js drives the motion.
+ *
+ * GATING — three conditions must all hold for a card to start hidden:
+ *   1. html.cc-armed          → JS ran (no-JS pages show the cards normally)
+ *   2. min-width: 991px       → tablet & up only; phones show them in place
+ *   3. motion is allowed      → reduced-motion users always see them in place
+ * The 991px value must match the default in card-cascade.js (data-cc-min).
+ * If you override data-cc-min in Webflow, override this media query to match.
+ *
+ * Drives: js/components/card-cascade.js
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-card-cascade] [data-cc-item] {
+  will-change: transform, opacity;
+}
+
+/* Hidden start state — armed + tablet-and-up only. JS then animates
+   opacity 0 → 1 and translateY(rise) → 0, staggered per card. */
+@media (min-width: 991px) {
+  html.cc-armed [data-card-cascade] [data-cc-item] {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: never hide, never animate — cards stay in place, full
+   opacity, at every width. Wins over the armed hidden state above. */
+@media (prefers-reduced-motion: reduce) {
+  html.cc-armed [data-card-cascade] [data-cc-item] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

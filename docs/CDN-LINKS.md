@@ -742,6 +742,8 @@ DOM yapısı:
 | `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
 | `js/components/leadgen-slide-in.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/leadgen-slide-in.js` |
 | `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
+| `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
+| `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 
 ### Accordion
 
@@ -2421,6 +2423,82 @@ DOM:
 - `prefers-reduced-motion` veya GSAP yoksa: ilk logo kutunun içinde sabit
   kalır, kayma/otomatik ilerleme olmaz.
 - `Sestek.initLogoMarquee()` her kökteki şeridi tek çağrıda bağlar.
+
+---
+
+### Card Cascade
+
+Scroll ile **sıra sıra (stagger)** giren kart grubu — kartlar aşağıdan hafifçe
+yükselerek, DOM sırasına göre tek tek ekrana gelir. **Yalnızca tablet ve üstünde**
+çalışır (varsayılan 991px ve üstü); altında (telefon) kartlar hiç dokunulmadan,
+yerinde, normal gösterilir — gizli başlangıç, transform veya ScrollTrigger yok.
+Breakpoint geçişi `gsap.matchMedia()` ile yönetildiği için resize'da her iki yöne
+temiz revert eder. Kaç kart olursa olsun çalışır (3, 4, …).
+
+```html
+<!-- in <head> — anti-flash guard'ı CSS'ten ÖNCE arm et (above-the-fold ise) -->
+<script>document.documentElement.classList.add('cc-armed')</script>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initCardCascade(); // tüm [data-card-cascade] gruplarını başlatır
+  });
+</script>
+```
+
+> **Anti-flash:** Kartlar genelde ekranın altında (below-the-fold) olduğu için
+> `cc-armed` script'i şart değildir — JS de bu sınıfı ekler. Grup ekranın üst
+> kısmındaysa, bir kare tam görünür flash'ı engellemek için yukarıdaki tek satırlık
+> script'i `<head>`'e (CSS'ten önce) ekle. Script çalışmazsa kartlar normal görünür
+> (graceful no-JS fallback).
+
+DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
+
+```html
+<!--
+  Kök ([data-card-cascade]) attribute'ları (hepsi opsiyonel):
+    data-cc-min        animasyonun çalıştığı min viewport px   (default 991)
+                       altında kartlar yerinde, animasyonsuz gösterilir
+    data-cc-y          yükselme mesafesi px (aşağıdan)          (default 40)
+    data-cc-duration   her kartın giriş süresi sn               (default 0.8)
+    data-cc-stagger    kartlar arası gecikme sn                 (default 0.15)
+    data-cc-ease       GSAP ease                                (default "power3.out")
+    data-cc-start      ScrollTrigger tetik noktası              (default "top 80%")
+    data-cc-once       "false" → çift yönlü: her girişte oynar, her çıkışta geri
+                       sarar. Default true: bir kez oynar, açık kalır.
+-->
+<div data-card-cascade class="cards">
+  <div data-cc-item class="card">…</div>
+  <div data-cc-item class="card">…</div>
+  <div data-cc-item class="card">…</div>
+</div>
+```
+
+**Notlar**
+- **991px kuralı iki yerde:** JS varsayılanı `data-cc-min` ile değiştirirsen,
+  `card-cascade.css`'teki `@media (min-width: 991px)` sorgusunu da eşleştir
+  (anti-flash gizli state o media içinde). Değiştirmiyorsan ikisi de 991'dir.
+- Kart sırası **DOM sırasıdır** — Designer'da yukarıdan aşağı/sola sağa hangi
+  sırada duruyorsa o sırayla girer. Grid layout'ta görsel sıra ≠ DOM sırası
+  olabilir; sırayı DOM'dan ayarla.
+- CSS **yalnızca davranışsal** (kritik anti-flash state) — renk, radius, gölge,
+  layout Designer'dan; RC Structure token'larıyla.
+- `prefers-reduced-motion` veya GSAP yoksa: kartlar anında, yerinde gösterilir.
+- `refreshPriority: -1` — reveal/count-up ile aynı katman; pinli bölümlerden
+  sonra refresh eder, pin sıraları bozulmaz.
+- `Sestek.initCardCascade()` sayfadaki tüm grupları tek çağrıda bağlar.
 
 ---
 
