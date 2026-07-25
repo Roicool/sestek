@@ -744,6 +744,8 @@ DOM yapısı:
 | `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
 | `js/components/h-scroll.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js` |
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
+| `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
+| `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2519,6 +2521,98 @@ DOM:
 - `prefers-reduced-motion` veya GSAP yoksa: ilk logo kutunun içinde sabit
   kalır, kayma/otomatik ilerleme olmaz.
 - `Sestek.initLogoMarquee()` her kökteki şeridi tek çağrıda bağlar.
+
+---
+
+### Card Cascade
+
+**Pinli** scroll-cascade — section ekrana **yapışır (pin)** ve sen scroll ettikçe
+kartlar aşağıdan yükselerek, DOM sırasına göre **tek tek, scroll pozisyonuna
+kilitli (scrub)** gelir. Tüm kartlar gelince pin bırakır, sayfa normal devam eder;
+geri scroll'da aynı scrub tersine sarar. **Yalnızca tablet ve üstünde** pinlenir
+(varsayılan 991px ve üstü); altında (telefon) pin YOK, kartlar hiç dokunulmadan
+yerinde gösterilir. Breakpoint geçişi `gsap.matchMedia()` ile yönetildiği için
+resize'da pin + stiller iki yöne temiz revert eder. Kaç kart olursa olsun çalışır.
+
+> **Pin kuralları (ÖNEMLİ):** `[data-card-cascade]`'in hiçbir **üst elementinde**
+> `transform` / `filter` / `perspective` / `will-change:transform` olmasın (pin
+> `position:fixed` kullanır, kayar). Aynı sayfada başka pinli bölüm varsa
+> `data-cc-priority`'yi sayfadaki dikey konuma göre ver. Detay:
+> [`PROJECT.md` → ScrollTrigger Pinli Bölüm Kuralları](./PROJECT.md#scrolltrigger--pinli-bölüm-kuralları-önemli).
+> Section'a Designer'da yükseklik ver (örn. `min-height:100svh`) — pin sırasında
+> tutacak bir ekran olsun.
+
+```html
+<!-- in <head> — anti-flash guard'ı CSS'ten ÖNCE arm et (above-the-fold ise) -->
+<script>document.documentElement.classList.add('cc-armed')</script>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initCardCascade(); // tüm [data-card-cascade] gruplarını başlatır
+  });
+</script>
+```
+
+> **Anti-flash:** Kartlar genelde ekranın altında (below-the-fold) olduğu için
+> `cc-armed` script'i şart değildir — JS de bu sınıfı ekler. Grup ekranın üst
+> kısmındaysa, bir kare tam görünür flash'ı engellemek için yukarıdaki tek satırlık
+> script'i `<head>`'e (CSS'ten önce) ekle. Script çalışmazsa kartlar normal görünür
+> (graceful no-JS fallback).
+
+DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
+
+```html
+<!--
+  Kök ([data-card-cascade]) — THIS pinlenir; Designer'da yükseklik ver:
+    data-cc-min        pin + animasyonun çalıştığı min viewport px  (default 991)
+                       altında pin yok, kartlar yerinde gösterilir
+    data-cc-y          yükselme mesafesi px (aşağıdan)              (default 40)
+    data-cc-start      ScrollTrigger start (pin başı)               (default "top top")
+    data-cc-end        pin scroll mesafesi              (default "+=<kart*50>%")
+    data-cc-scrub      scrub gecikmesi sn                           (default 0.8)
+    data-cc-duration   her kartın reveal uzunluğu, timeline birimi  (default 1)
+    data-cc-stagger    kartlar arası boşluk, timeline birimi        (default 0.7)
+    data-cc-ease       GSAP ease (kart başına)                      (default "power3.out")
+    data-cc-priority   bu pin'in refreshPriority'si — sayfadaki diğer
+                       pinlere göre ver (üstteki büyük)             (default 1)
+-->
+<div data-card-cascade class="cards" style="min-height:100svh">
+  <div data-cc-item class="card">…</div>
+  <div data-cc-item class="card">…</div>
+  <div data-cc-item class="card">…</div>
+</div>
+```
+
+**Notlar**
+- **Pin yüksekliği:** section'a Designer'da yükseklik ver (`min-height:100svh`) —
+  pin sırasında ekranı tutacak alan olsun. `data-cc-end` pin mesafesini uzatır
+  (daha uzun = kartlar daha yavaş/geniş aralıkta gelir).
+- **Pin ancestor kuralı:** `[data-card-cascade]`'in üstünde `transform`/`filter`/
+  `perspective`/`will-change:transform` olan bir element olmasın (pin kayar).
+- **Birden fazla pin:** sayfada hero/scroll-tabs gibi başka pin varsa
+  `data-cc-priority`'yi konuma göre ver (PROJECT.md pin tablosu). Init sırası
+  değil, `refreshPriority` çözer.
+- **991px kuralı iki yerde:** JS varsayılanı `data-cc-min` ile değiştirirsen,
+  `card-cascade.css`'teki `@media (min-width: 991px)` sorgusunu da eşleştir.
+  Değiştirmiyorsan ikisi de 991'dir.
+- Kart sırası **DOM sırasıdır** — grid layout'ta görsel sıra ≠ DOM sırası olabilir;
+  sırayı DOM'dan ayarla.
+- CSS **yalnızca davranışsal** (kritik anti-flash state) — renk, radius, gölge,
+  layout Designer'dan; RC Structure token'larıyla.
+- `prefers-reduced-motion` veya GSAP yoksa: pin yok, kartlar yerinde (final kare).
+- `Sestek.initCardCascade()` sayfadaki tüm grupları tek çağrıda bağlar.
 
 ---
 

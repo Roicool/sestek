@@ -27,7 +27,7 @@ sestek/
 │   │                #      card-marquee.js, section-title.js, text-rotator.js,
 │   │                #      story.js, accordion.js, blog-utils.js, site-utils.js,
 │   │                #      sticky-utms.js, search.js, badge-swap.js, logo-marquee.js,
-│   │                #      process-flow.js, h-scroll.js
+│   │                #      process-flow.js, h-scroll.js, card-cascade.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/
@@ -184,6 +184,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `hero.js` (pin) | En üst | `2` |
 | `scroll-tabs.js` (pin) | Orta | `1` |
 | `h-scroll.js` (pin, sadece desktop) | Sayfaya göre değişir | `data-hscroll-priority` ile ver (default `1`) |
+| `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
