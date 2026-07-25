@@ -8,6 +8,10 @@
  * design (layout, spacing, colours) stays in Webflow Designer.
  *
  * Changelog
+ * v2.0.1 — pin no longer "seats" harshly. anticipatePin (which pins early based
+ *          on scroll velocity) mis-predicts under Lenis' smoothed velocity and
+ *          snapped the section into place; it's now OFF by default and opt-in
+ *          via data-cc-anticipate.
  * v2.0.0 — pinned + scrub. Cards now come in tied to scroll position while the
  *          section is pinned (was: one-shot stagger on enter, no pin).
  *
@@ -47,6 +51,11 @@
  *   data-cc-priority   refreshPriority for this pin — set relative to other
  *                      pinned sections on the page (higher = earlier in the
  *                      page). See PROJECT.md pin table.         (default 1)
+ *   data-cc-anticipate ScrollTrigger anticipatePin — pins slightly early to
+ *                      hide the pin "jump". OFF by default (0) because under
+ *                      Lenis' smoothed velocity it over-predicts and makes the
+ *                      section snap in harshly. Try 0.5–1 only if you see a
+ *                      1-frame jump on a native (non-smooth) scroller. (default 0)
  *
  * Accessibility: prefers-reduced-motion → no pin, no scrub. The section renders
  * as its final frame (all cards visible, in place). CSS mirrors this so it holds
@@ -67,6 +76,7 @@
     stagger: 0.7,
     ease: "power3.out",
     priority: 1,
+    anticipate: 0,
   };
 
   function buildOne(root) {
@@ -89,6 +99,7 @@
     var DURATION = attrNum(root, "data-cc-duration", DEFAULTS.duration);
     var STAGGER  = attrNum(root, "data-cc-stagger", DEFAULTS.stagger);
     var PRIORITY = attrNum(root, "data-cc-priority", DEFAULTS.priority);
+    var ANTICIPATE = attrNum(root, "data-cc-anticipate", DEFAULTS.anticipate);
     var EASE     = root.getAttribute("data-cc-ease") || DEFAULTS.ease;
     var START    = root.getAttribute("data-cc-start") || DEFAULTS.start;
     // Default pin distance scales with card count so more cards get more room.
@@ -116,7 +127,7 @@
           end: END,
           scrub: SCRUB,
           pin: true,
-          anticipatePin: 1,
+          anticipatePin: ANTICIPATE,                          // 0 = off (smooth-scroll friendly)
           refreshPriority: PRIORITY,
         },
       });

@@ -2665,6 +2665,10 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
     data-cc-ease       GSAP ease (kart başına)                      (default "power3.out")
     data-cc-priority   bu pin'in refreshPriority'si — sayfadaki diğer
                        pinlere göre ver (üstteki büyük)             (default 1)
+    data-cc-anticipate anticipatePin — pin'i erken devreye sokup jump'ı gizler.
+                       Varsayılan KAPALI (0): Lenis'in yumuşatılmış hızıyla fazla
+                       tahmin edip section'ı sert oturtuyor. Native (smooth
+                       olmayan) scroller'da 1 karelik jump görürsen 0.5–1 dene.
 -->
 <div data-card-cascade class="cards" style="min-height:100svh">
   <div data-cc-item class="card">…</div>
