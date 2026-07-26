@@ -816,6 +816,10 @@ DOM:
 ```
 
 **Notlar**
+- MOBİL (<1200px) düzeni CSS'te bilerek yok (v2.3.0) — mobil tasarım Webflow
+  Designer breakpoint'lerinde yapılır. Base'ten mobile taşan tek şey davranışsal
+  state'ler: word-to / to-katmanı gizli, `--clarity` kartı gizli. Clarity'yi
+  mobilde göstermek için Designer'da combo'ya display ver (combo kazanır).
 - Geometri kökten `--benefits-*` değişkenleriyle ayarlanır: `--benefits-max`
   (container 2xl), `--benefits-gap` (kart arası — serbest, JS ölçer),
   `--benefits-pad` (kart içi), `--benefits-min-h` (desktop satır boyu),
