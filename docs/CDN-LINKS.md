@@ -746,6 +746,82 @@ DOM yapısı:
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
 | `js/components/circle-diagram.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/circle-diagram.js` |
 | `css/components/circle-diagram.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/circle-diagram.css` |
+| `js/components/benefits.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/benefits.js` |
+| `css/components/benefits.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/benefits.css` |
+
+### Benefits (kaos → clarity pinli bölümü)
+
+Ortadaki kart scroll'la sola sürüklenir; kaos SVG'leri sönerken clarity
+katmanı belirir, "Chaos" kelimesi "Clarity"ye flip olur, soldaki Challenge
+soluklaşıp sağdaki Solution öne çıkar. ≥1200px'te pin + scrub; altında ve
+`prefers-reduced-motion`'da statik alt alta düzen. Kart içi tipografi/buton
+stilleri Designer'ındır — component yalnız davranış taşır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/benefits.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/benefits.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initBenefits(); // tüm [data-benefits] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-benefits-bp        pin breakpoint px (default 1200; CSS'teki 1200px
+                          media query ile senkron tut)
+    data-benefits-start     ScrollTrigger start      (default "top 10%")
+    data-benefits-end       ScrollTrigger end        (default "bottom top")
+    data-benefits-priority  refreshPriority — PROJECT.md tablosu (default 1)
+-->
+<section data-benefits class="benefits">
+  <div class="benefits__grid">
+    <div class="benefits__card benefits__card--challenge">
+      <div data-benefits-challenge class="benefits__content">…sol içerik…</div>
+    </div>
+    <div class="benefits__card benefits__card--solution">
+      <div data-benefits-solution class="benefits__content">…sağ içerik…</div>
+    </div>
+    <div data-benefits-card class="benefits__card benefits__card--float">
+      <div class="benefits__stage">
+        <div class="benefits__type">
+          <p>Data</p>
+          <div class="benefits__flip">
+            <p data-benefits-word-from>Chaos</p>
+            <p data-benefits-word-to>Clarity</p>
+          </div>
+        </div>
+        <svg data-benefits-from viewBox="0 0 1133 714">…</svg>
+        <svg data-benefits-parallax viewBox="0 0 371 229">…</svg>
+        <svg data-benefits-to viewBox="0 0 229 450">…</svg>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- Geometri kökten `--benefits-*` değişkenleriyle ayarlanır: `--benefits-max`
+  (1200px), `--benefits-min-h` (660px), `--benefits-grid-h` (500px),
+  `--benefits-card-w` (44%), `--benefits-float-w` (40%).
+- Pinli bölüm kuralları geçerli: ancestor'larda transform yok,
+  `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
+- Scrub'lı pin, scroll alanını section yüksekliğinden üretir — `end`
+  varsayılanı `"bottom top"`; daha uzun anlatım için `data-benefits-end`
+  değerini büyüt (örn. `"+=150%"`).
 | `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
 | `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 | `js/components/case-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js` |
