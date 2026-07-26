@@ -746,6 +746,82 @@ DOM yapısı:
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
 | `js/components/circle-diagram.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/circle-diagram.js` |
 | `css/components/circle-diagram.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/circle-diagram.css` |
+| `js/components/data-chaos.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/data-chaos.js` |
+| `css/components/data-chaos.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/data-chaos.css` |
+
+### Data Chaos (kaos → clarity pinli bölümü)
+
+Ortadaki kart scroll'la sola sürüklenir; kaos SVG'leri sönerken clarity
+katmanı belirir, "Chaos" kelimesi "Clarity"ye flip olur, soldaki Challenge
+soluklaşıp sağdaki Solution öne çıkar. ≥1200px'te pin + scrub; altında ve
+`prefers-reduced-motion`'da statik alt alta düzen. Kart içi tipografi/buton
+stilleri Designer'ındır — component yalnız davranış taşır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/data-chaos.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/data-chaos.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initDataChaos(); // tüm [data-dchaos] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-dchaos-bp        pin breakpoint px (default 1200; CSS'teki 1200px
+                          media query ile senkron tut)
+    data-dchaos-start     ScrollTrigger start      (default "top 10%")
+    data-dchaos-end       ScrollTrigger end        (default "bottom top")
+    data-dchaos-priority  refreshPriority — PROJECT.md tablosu (default 1)
+-->
+<section data-dchaos class="dchaos">
+  <div class="dchaos__grid">
+    <div class="dchaos__card dchaos__card--challenge">
+      <div data-dchaos-challenge class="dchaos__content">…sol içerik…</div>
+    </div>
+    <div class="dchaos__card dchaos__card--solution">
+      <div data-dchaos-solution class="dchaos__content">…sağ içerik…</div>
+    </div>
+    <div data-dchaos-card class="dchaos__card dchaos__card--float">
+      <div class="dchaos__stage">
+        <div class="dchaos__type">
+          <p>Data</p>
+          <div class="dchaos__flip">
+            <p data-dchaos-word-chaos>Chaos</p>
+            <p data-dchaos-word-clarity>Clarity</p>
+          </div>
+        </div>
+        <svg data-dchaos-chaos viewBox="0 0 1133 714">…</svg>
+        <svg data-dchaos-parallax viewBox="0 0 371 229">…</svg>
+        <svg data-dchaos-clarity viewBox="0 0 229 450">…</svg>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- Geometri kökten `--dchaos-*` değişkenleriyle ayarlanır: `--dchaos-max`
+  (1200px), `--dchaos-min-h` (660px), `--dchaos-grid-h` (500px),
+  `--dchaos-card-w` (44%), `--dchaos-float-w` (40%).
+- Pinli bölüm kuralları geçerli: ancestor'larda transform yok,
+  `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
+- Scrub'lı pin, scroll alanını section yüksekliğinden üretir — `end`
+  varsayılanı `"bottom top"`; daha uzun anlatım için `data-dchaos-end`
+  değerini büyüt (örn. `"+=150%"`).
 | `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
 | `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 | `js/components/case-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js` |
