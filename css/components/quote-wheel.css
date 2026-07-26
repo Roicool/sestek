@@ -1,5 +1,7 @@
 /*!
- * quote-wheel.css v1.0.0
+ * quote-wheel.css v1.1.0
+ * v1.1.0: scroll-snap fallback mirrors the bleed carousel (1.2 / 2.2 per view,
+ *         start-aligned) instead of the old centered 80% slide.
  * Behavioural / critical CSS for the quote-wheel component — the rotating
  * testimonial wheel (desktop) + tilted Swiper carousel (mobile). Owns the
  * wheel geometry (viewport / rotor / cards), the card colour states, the
@@ -126,10 +128,18 @@ html.qwheel-armed [data-qw-quotes] {
   position: relative;
 }
 
-/* No-Swiper fallback: native scroll-snap, same layout. */
+/* No-Swiper fallback: native scroll-snap with the same bleed widths. */
 [data-qw-mobile] .swiper.is-fallback { overflow-x: auto; scroll-snap-type: x mandatory; }
 [data-qw-mobile] .swiper.is-fallback .swiper-wrapper { gap: 1rem; }
-[data-qw-mobile] .swiper.is-fallback .swiper-slide { width: 80%; scroll-snap-align: center; }
+[data-qw-mobile] .swiper.is-fallback .swiper-slide {
+  width: calc(100% / 1.2 - 0.85rem);      /* phone bleed ≈ data-qw-spv-m */
+  scroll-snap-align: start;
+}
+@media (min-width: 768px) {
+  [data-qw-mobile] .swiper.is-fallback .swiper-slide {
+    width: calc(100% / 2.2 - 0.6rem);     /* tablet bleed ≈ data-qw-spv-t */
+  }
+}
 
 /* Mobile card + tilted neighbours. */
 [data-qw-mcard] {

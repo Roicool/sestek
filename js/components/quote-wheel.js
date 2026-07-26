@@ -1,5 +1,13 @@
 /*!
- * quote-wheel.js v1.0.2
+ * quote-wheel.js v1.1.0
+ * v1.1.0: RESPONSIVE. Desktop wheel: the card size now CLAMPS to the wheel
+ *         column (fixed 485px got clipped on narrow desktops) — width shrinks
+ *         to fit, height scales proportionally, radius follows, and the wheel
+ *         rebuilds on resize (debounced). Mobile: proper h-scroll-style BLEED
+ *         carousel — left-aligned partial-slide layout, data-qw-spv-t (2.2)
+ *         per view on tablet and data-qw-spv-m (1.2) on phones (breakpoint
+ *         data-qw-bp-m, 768); replaces the centered 1.15 setup. The
+ *         scroll-snap fallback mirrors the same bleed widths in CSS.
  * v1.0.2: the [data-qw-mobile] host is force-shown (inline display:block) while
  *         the mobile carousel is active and released on desktop — authors hide
  *         the empty host with display:none in Designer so it can't take up
@@ -57,7 +65,12 @@
  *   data-qw-ease       GSAP ease                         (default "back.out(1.4)")
  *   data-qw-min        wheel min viewport px; below it the Swiper carousel
  *                      renders instead                   (default 992)
- *   data-qw-spv        mobile slides per view            (default 1.15)
+ *   data-qw-spv-t      tablet slides per view (bleed)    (default 2.2)
+ *   data-qw-spv-m      phone slides per view (bleed)     (default 1.2)
+ *   data-qw-bp-m       phone breakpoint px within the carousel range (default 768)
+ *   Desktop card size: data-qw-card-w/-h are MAXIMUMS — the card clamps to
+ *   the wheel column and scales proportionally on narrow desktops (rebuilt
+ *   on resize), so it can never be clipped.
  *
  * Reduced motion: no autoplay, no tween — nav still works with instant turns.
  *
@@ -76,7 +89,9 @@
     duration: 0.55,
     ease: "back.out(1.4)",
     min: 992,
-    spv: 1.15,
+    spvT: 2.2,     // tablet slides per view (bleed)
+    spvM: 1.2,     // phone slides per view (bleed)
+    bpM: 768,      // phone breakpoint inside the carousel range
   };
 
   function buildOne(root) {
@@ -105,12 +120,13 @@
     var INTERVAL = attrNum(root, "data-qw-interval", DEFAULTS.interval);
     var DUR      = attrNum(root, "data-qw-duration", DEFAULTS.duration);
     var MIN      = attrNum(root, "data-qw-min", DEFAULTS.min);
-    var SPV      = attrNum(root, "data-qw-spv", DEFAULTS.spv);
+    var SPV_T    = attrNum(root, "data-qw-spv-t", DEFAULTS.spvT);
+    var SPV_M    = attrNum(root, "data-qw-spv-m", DEFAULTS.spvM);
+    var BP_M     = attrNum(root, "data-qw-bp-m", DEFAULTS.bpM);
     var EASE     = root.getAttribute("data-qw-ease") || DEFAULTS.ease;
 
     var STEP = 360 / SLOTS;
     var C = SIZE / 2;                                         // circle centre
-    var R = C - CARD_W / 2;                                   // rim radius
 
     var wheel = root.querySelector("[data-qw-wheel]");
     var prevBtn = root.querySelector("[data-qw-prev]");
@@ -146,12 +162,25 @@
       var timer = null, leaveTimer = null;
       var cardsBySlot = {};
 
+      // Responsive card size: the author values are MAXIMUMS — the card
+      // clamps to the wheel column (minus the nav allowance) so it can never
+      // be clipped on narrow desktops. Height scales proportionally, the rim
+      // radius follows. Re-measured on every rebuild.
+      var CW = CARD_W, CH = CARD_H, RW = C - CW / 2;
+      function measure() {
+        var w = wheel.clientWidth || 0;
+        var avail = Math.max(260, w - 112);                   // 5rem nav pay + nefes
+        CW = Math.min(CARD_W, avail);
+        CH = Math.round(CARD_H * (CW / CARD_W));
+        RW = C - CW / 2;
+      }
+
       function slotPos(a) {
         var r = -(STEP * a);
         var l = (r * Math.PI) / 180;
         return {
-          left: C + R * Math.cos(l) - CARD_W / 2,
-          top: C + R * Math.sin(l) - CARD_H / 2,
+          left: C + RW * Math.cos(l) - CW / 2,
+          top: C + RW * Math.sin(l) - CH / 2,
           rot: r,
         };
       }
@@ -168,7 +197,7 @@
             var card = document.createElement("div");
             card.setAttribute("data-qw-card", "");
             card.style.cssText = "left:" + p.left + "px;top:" + p.top +
-              "px;width:" + CARD_W + "px;height:" + CARD_H + "px;";
+              "px;width:" + CW + "px;height:" + CH + "px;";
             gsap.set(card, { rotation: p.rot });
             var span = document.createElement("span");
             span.setAttribute("data-qw-text", "");
@@ -245,13 +274,32 @@
       if (prevBtn) prevBtn.addEventListener("click", onPrev);
       if (nextBtn) nextBtn.addEventListener("click", onNext);
 
+      // Full rebuild: re-measure the column, re-place every card. Cheap (≤5
+      // cards) — run on init and on every (debounced) resize.
+      function rebuildAll() {
+        measure();
+        rotor.innerHTML = "";
+        cardsBySlot = {};
+        ensureCards();
+      }
+      var resizeTimer = null;
+      function onResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(rebuildAll, 180);
+      }
+      window.addEventListener("resize", onResize);
+      window.addEventListener("load", onResize);
+
       gsap.set(rotor, { rotation: A });
-      ensureCards();
+      rebuildAll();
       schedule();
 
       return function () {                                    // matchMedia cleanup
         clearTimeout(timer);
         clearTimeout(leaveTimer);
+        clearTimeout(resizeTimer);
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("load", onResize);
         document.removeEventListener("visibilitychange", onVis);
         if (io) io.disconnect();
         wheel.removeEventListener("pointerenter", onEnter);
@@ -301,11 +349,16 @@
 
       var swiper = null;
       if (typeof Swiper !== "undefined") {
+        // h-scroll-style BLEED: left-aligned, a slice of the next card always
+        // peeks in. Phone = SPV_M (1.2), tablet (BP_M and up) = SPV_T (2.2).
         swiper = new Swiper(el, {
-          slidesPerView: SPV,
-          centeredSlides: true,
+          slidesPerView: SPV_M,
           spaceBetween: 16,
-          loop: quotes.length > 2,
+          breakpoints: (function () {
+            var b = {};
+            b[BP_M] = { slidesPerView: SPV_T };
+            return b;
+          })(),
           grabCursor: true,
           keyboard: { enabled: true, onlyInViewport: true },
           speed: reduce ? 0 : 300,

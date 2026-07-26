@@ -2926,7 +2926,11 @@ DOM (Webflow — grid/başlık Designer'da; çemberi/karuseli JS üretir):
     data-qw-ease       GSAP ease                            (default "back.out(1.4)")
     data-qw-min        çemberin min viewport'u; altında
                        Swiper carousel                      (default 992)
-    data-qw-spv        mobil kart/görünüm                   (default 1.15)
+    data-qw-spv-t      tablet kart/görünüm (bleed)          (default 2.2)
+    data-qw-spv-m      mobil kart/görünüm (bleed)           (default 1.2)
+    data-qw-bp-m       carousel içi mobil breakpoint px     (default 768)
+    NOT: data-qw-card-w/-h MAKSİMUMDUR — dar desktop'ta kart kolona
+    sığacak şekilde orantılı küçülür, resize'da yeniden kurulur.
 -->
 <section data-quote-wheel>
 
