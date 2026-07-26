@@ -1,5 +1,5 @@
 /*!
- * case-switch.js v2.1.0
+ * case-switch.js v2.1.1
  * CMS-driven case-study switcher: customer LOGOS act as tabs, and a STACKED DECK
  * of cards shows the selected case study. The deck auto-advances every 5s, can be
  * GRABBED and thrown to change cards, and whichever card lands on top always
@@ -7,6 +7,12 @@
  * change was triggered.
  *
  * Changelog
+ * v2.1.1 — audit fixes: native image-drag no longer hijacks the card grab
+ *          (dragstart suppressed on card content; pair with user-drag:none in
+ *          CSS); links inside non-front (aria-hidden) cards are removed from
+ *          the tab order; hover-pause now applies to MOUSE pointers only so a
+ *          tap on touch devices can't stall autoplay; _destroy removes the
+ *          document visibilitychange listener it added.
  * v2.1.0 — real deck feel: behind cards fan out with a slight ROTATION
  *          (data-cswitch-rotate) so the actual next case studies peek out
  *          angled, like a physical stack. Drag is now CLAMPED to the stack
@@ -169,7 +175,15 @@
         if (items[i]) items[i].classList.toggle("is-active", on);
       });
       cards.forEach(function (card, i) {
-        card.setAttribute("aria-hidden", i === active ? "false" : "true");
+        var on = i === active;
+        card.setAttribute("aria-hidden", on ? "false" : "true");
+        // aria-hidden alone doesn't stop keyboard focus — pull links/buttons
+        // inside the non-front cards out of the tab order (restore on front).
+        var focusables = card.querySelectorAll("a, button");
+        Array.prototype.forEach.call(focusables, function (f) {
+          if (on) f.removeAttribute("tabindex");
+          else f.tabIndex = -1;
+        });
       });
       applyPointerEvents();
     }
@@ -276,20 +290,32 @@
       });
     }
 
-    // Pause autoplay on hover / focus / tab-hidden.
-    root.addEventListener("pointerenter", function () { paused.hover = true; schedule(); });
-    root.addEventListener("pointerleave", function () { paused.hover = false; schedule(); });
+    // Pause autoplay on hover / focus / tab-hidden. Hover-pause is MOUSE-only:
+    // on touch, pointerenter fires on tap but pointerleave may never come, so
+    // a touch "hover" would stall autoplay permanently.
+    root.addEventListener("pointerenter", function (e) {
+      if (e.pointerType === "mouse") { paused.hover = true; schedule(); }
+    });
+    root.addEventListener("pointerleave", function (e) {
+      if (e.pointerType === "mouse") { paused.hover = false; schedule(); }
+    });
     root.addEventListener("focusin", function () { paused.hover = true; schedule(); });
     root.addEventListener("focusout", function () {
       if (!root.contains(document.activeElement)) { paused.hover = false; schedule(); }
     });
-    document.addEventListener("visibilitychange", function () {
-      paused.hidden = document.hidden; schedule();
-    });
+    function onVisibility() { paused.hidden = document.hidden; schedule(); }
+    document.addEventListener("visibilitychange", onVisibility);
 
     // ── Drag to throw (delegated on the front card) ──────────────────────────
     if (DRAG_ON && !reduce && n > 1) {
       root.classList.add("is-draggable");
+
+      // Kill the browser's native image/text drag inside cards — it steals the
+      // pointer mid-grab (a "ghost image" follows the cursor and our drag
+      // freezes). Paired with user-drag:none in the CSS.
+      root.addEventListener("dragstart", function (e) {
+        if (e.target.closest && e.target.closest("[data-cswitch-card]")) e.preventDefault();
+      });
       var dragging = false, decided = false, horiz = false;
       var startX = 0, startY = 0, dx = 0, moved = 0, w = 0;
 
@@ -357,7 +383,10 @@
       to: function (i) { jumpTo(i); restart(); },
       next: function () { throwOut(-1); restart(); },
       prev: function () { pullIn(); restart(); },
-      _destroy: function () { clearTimeout(timer); },
+      _destroy: function () {
+        clearTimeout(timer);
+        document.removeEventListener("visibilitychange", onVisibility);
+      },
     };
   }
 

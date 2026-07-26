@@ -1,5 +1,5 @@
 /*!
- * case-switch.css v2.0.0
+ * case-switch.css v2.1.0
  * Behavioural / critical CSS for the case-switch component (ONE CMS Collection
  * List: each item = a logo tab + a card; logos flow in the list as the tab grid,
  * cards are pulled out and stacked into the deck region). Owns ONLY what the
@@ -10,6 +10,9 @@
  * drives the motion.
  *
  * Changelog
+ * v2.1.0 — native image drag disabled inside cards (user-drag:none +
+ *          pointer-events:none on card imgs) so grabbing the card never starts
+ *          the browser's ghost-image drag; pairs with the dragstart guard in JS.
  * v2.0.0 — single-list model. Cards now anchor to [data-cswitch] (not a deck
  *          container) since each card lives inside its Collection Item.
  *
@@ -45,6 +48,16 @@ html.cswitch-armed [data-cswitch-card] {
   touch-action: pan-y; /* let vertical scroll through; JS claims horizontal drags */
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Images inside cards must never start the browser's own drag (the ghost
+   image steals the pointer mid-grab) and never be the pointer target —
+   clicks pass through to the card / its link. Pairs with the JS dragstart
+   guard. */
+[data-cswitch-card] img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
 }
 [data-cswitch].is-draggable [data-cswitch-card]:active {
   cursor: grabbing;
