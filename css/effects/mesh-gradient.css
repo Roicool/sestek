@@ -1,5 +1,5 @@
 /*!
- * mesh-gradient.css v2.0.0
+ * mesh-gradient.css v2.1.0
  * Sestek mesh gradient — 3 marka renginin (pembe / viyole / cyan) yumuşak,
  * temiz mesh'i.
  *
@@ -16,6 +16,13 @@
  *   --mesh-base                          zemin (default surface base / beyaz)
  *   --mesh-soft                          statik mesh yoğunluğu % (default 20%)
  *   --mesh-soft-live                     canlı katman yoğunluğu % (default 24%)
+ *
+ * v2.1.0 — KOYU TEMA (data-mesh-theme="dark"): zemin koyu token'a döner,
+ * lekeler koyu zeminde SCREEN karışımıyla parlar (açık temadaki pastel
+ * karışım yerine derin glow). Tamamen CSS — JS değişikliği gerektirmez;
+ * statik fallback ve canlı katmanlar aynı attribute'la döner. Yoğunluk
+ * yine --mesh-soft/--mesh-soft-live ile ayarlanır (koyu default'ları bir
+ * tık yüksektir).
  * https://github.com/roicool/sestek
  */
 
@@ -43,6 +50,22 @@
 /* JS katmanları kurdu → statik mesh kapanır, zemin kalır */
 [data-mesh-gradient].is-live {
   background: var(--mesh-base);
+}
+
+/* ── KOYU TEMA — data-mesh-theme="dark" ───────────────────────────
+   Zemin koyu, lekeler screen ile parlar. isolation: karışım section'ın
+   arkasındaki içeriğe sızmasın. */
+[data-mesh-gradient][data-mesh-theme="dark"] {
+  --mesh-base: var(--surface--inverted, var(--neutral--900, #16171d));
+  --mesh-soft: 28%;
+  --mesh-soft-live: 34%;
+  isolation: isolate;
+  /* statik fallback: 4 radial screen ile zemine karışır, zemin normal */
+  background-blend-mode: screen, screen, screen, screen, normal;
+}
+
+[data-mesh-gradient][data-mesh-theme="dark"] > [data-mesh-layer] > span {
+  mix-blend-mode: screen;
 }
 
 /* ── Canlı renk lekesi (JS enjekte eder) ──────────────────────────
