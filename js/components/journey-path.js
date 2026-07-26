@@ -1,5 +1,5 @@
 /*!
- * journey-path.js v2.0.0
+ * journey-path.js v2.1.0
  * PINNED scroll-driven CURVY progress path through a row of step items. The
  * section pins to the viewport; as you keep scrolling, a gradient progress
  * line FILLS along a meandering dashed track that runs through every step's
@@ -8,6 +8,13 @@
  * When the fill completes, the pin releases and the page scrolls on.
  *
  * Changelog
+ * v2.1.0 — DrawSVG + MotionPath. The fill is now drawn with DrawSVGPlugin
+ *          (project standard, docs/gsap-svg.md §5) and a glowing accent DOT
+ *          rides the curve tip via MotionPathPlugin — both free on the GSAP
+ *          3.13+ CDN. BOTH ARE OPTIONAL: without DrawSVG the fill falls back
+ *          to the stroke-dashoffset draw (identical result); without
+ *          MotionPath the dot is positioned per-frame via getPointAtLength.
+ *          data-jp-dot sets the dot radius (0 = off).
  * v2.0.0 — PIN by default. The section now pins (start "top top") for
  *          data-jp-distance % of viewport scroll while the line fills.
  *          data-jp-pin="false" restores the v1 non-pinned in-flow scrub.
@@ -48,6 +55,8 @@
  *                      (default "top top" pinned · "top 70%" unpinned)
  *   data-jp-end        ScrollTrigger end — unpinned mode only  (default "bottom 75%")
  *   data-jp-scrub      scrub lag in seconds                   (default 1)
+ *   data-jp-dot        radius px of the accent dot riding the line tip;
+ *                      0 = no dot                             (default 5)
  *   data-jp-min        min viewport px for pin + line + scrub — below this the
  *                      svg is hidden, no pin, icons render lit (default 992)
  *
@@ -131,6 +140,22 @@
     svg.appendChild(basePath);
     svg.appendChild(fillPath);
 
+    // Accent dot riding the tip of the fill (data-jp-dot px radius, 0 = off).
+    var DOT_R = attrNum(root, "data-jp-dot", 5);
+    var dot = null;
+    if (DOT_R > 0) {
+      dot = document.createElementNS(SVGNS, "circle");
+      dot.setAttribute("class", "jp-dot");
+      dot.setAttribute("r", DOT_R);
+      svg.appendChild(dot);
+    }
+    function placeDot(len) {
+      if (!dot) return;
+      var p = fillPath.getPointAtLength(len);
+      dot.setAttribute("cx", p.x);
+      dot.setAttribute("cy", p.y);
+    }
+
     function measureLen(d) {
       var p = document.createElementNS(SVGNS, "path");
       p.setAttribute("d", d);
@@ -213,6 +238,7 @@
       var geo = buildGeometry();
       basePath.setAttribute("d", geo.d);
       fillPath.setAttribute("d", geo.d);
+      placeDot(geo.total);
       setActive(1, geo.fractions);
       return;
     }
@@ -220,13 +246,16 @@
     // ── Breakpoint gate: line + scrub at data-jp-min and up only ────────────
     var mm = gsap.matchMedia();
     mm.add("(min-width: " + MIN + "px)", function () {
-      var tween = null, resizeTimer = null;
+      var tl = null, resizeTimer = null;
+      var hasDraw = typeof DrawSVGPlugin !== "undefined";
+      var hasMotion = typeof MotionPathPlugin !== "undefined";
 
       function build() {
-        if (tween) { if (tween.scrollTrigger) tween.scrollTrigger.kill(); tween.kill(); tween = null; }
+        if (tl) { if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.kill(); tl = null; }
         var geo = buildGeometry();
         basePath.setAttribute("d", geo.d);
         fillPath.setAttribute("d", geo.d);
+
         var st = PIN ? {
           // Pinned: the section sticks and the fill consumes DIST% of scroll.
           trigger: root,
@@ -235,7 +264,6 @@
           scrub: SCRUB,
           pin: true,
           refreshPriority: PRIORITY,                          // pin: page order (PROJECT.md)
-          onUpdate: function (self) { setActive(self.progress, geo.fractions); },
         } : {
           // Unpinned (v1): in-flow scrub while the section crosses the viewport.
           trigger: root,
@@ -243,12 +271,36 @@
           end: END,
           scrub: SCRUB,
           refreshPriority: -1,                                // non-pinned: after pins
-          onUpdate: function (self) { setActive(self.progress, geo.fractions); },
         };
-        tween = gsap.fromTo(fillPath,
-          { strokeDasharray: geo.total, strokeDashoffset: geo.total },
-          { strokeDashoffset: 0, ease: "none", scrollTrigger: st });
-        setActive(tween.scrollTrigger ? tween.scrollTrigger.progress : 0, geo.fractions);
+        st.onUpdate = function (self) {
+          setActive(self.progress, geo.fractions);
+          // Without MotionPath the dot is placed per-frame along the path.
+          if (!hasMotion) placeDot(self.progress * geo.total);
+        };
+
+        tl = gsap.timeline({ scrollTrigger: st });
+
+        // The fill draw — DrawSVGPlugin (project standard, docs/gsap-svg.md §5)
+        // with an identical stroke-dashoffset fallback when it isn't loaded.
+        if (hasDraw) {
+          tl.fromTo(fillPath, { drawSVG: "0%" }, { drawSVG: "0% 100%", ease: "none" }, 0);
+        } else {
+          tl.fromTo(fillPath,
+            { strokeDasharray: geo.total, strokeDashoffset: geo.total },
+            { strokeDashoffset: 0, ease: "none" }, 0);
+        }
+
+        // The accent dot rides the tip — MotionPathPlugin when available.
+        if (dot && hasMotion) {
+          tl.to(dot, {
+            motionPath: { path: fillPath, align: fillPath, alignOrigin: [0.5, 0.5] },
+            ease: "none",
+          }, 0);
+        } else if (dot) {
+          placeDot(0);                                        // start point; onUpdate drives it
+        }
+
+        setActive(tl.scrollTrigger ? tl.scrollTrigger.progress : 0, geo.fractions);
       }
 
       function onResize() {
@@ -264,7 +316,7 @@
         clearTimeout(resizeTimer);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("load", onResize);
-        if (tween) { if (tween.scrollTrigger) tween.scrollTrigger.kill(); tween.kill(); }
+        if (tl) { if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.kill(); }
         icons.forEach(function (icon, i) {
           icon.classList.remove("is-active");
           items[i].classList.remove("is-active");
@@ -298,6 +350,8 @@
       console.error("[Sestek JourneyPath] Sestek.util (js/core/utils.js) required."); return;
     }
     gsap.registerPlugin(ScrollTrigger);
+    if (typeof DrawSVGPlugin !== "undefined") gsap.registerPlugin(DrawSVGPlugin);
+    if (typeof MotionPathPlugin !== "undefined") gsap.registerPlugin(MotionPathPlugin);
 
     // Arm the CSS dim state (no-op if already added in <head>). Without JS the
     // icons render lit — graceful fallback.

@@ -1,5 +1,7 @@
 /*!
- * journey-path.css v1.1.0
+ * journey-path.css v1.2.0
+ * v1.2.0: .jp-dot — the accent dot riding the fill tip (journey-path.js v2.1,
+ *         MotionPathPlugin / getPointAtLength fallback).
  * v1.1.0: icon BOX default (border/radius/bg hooks) + accent state — the lit
  *         icon takes --jp-accent (Sestek pink): currentColor svgs colourise,
  *         the box border/glow follows. Matches journey-path.js v2 (pinned).
@@ -64,7 +66,13 @@
   /* stroke colour = gradient url, set by JS */
   stroke-width: calc(var(--jp-line-w) + 0.5px);
   stroke-linecap: round;
-  /* dasharray/dashoffset = draw progress, driven by JS */
+  /* draw progress (DrawSVG / dashoffset) driven by JS */
+}
+
+/* Accent dot riding the tip of the fill (radius via data-jp-dot). */
+[data-jp-svg] .jp-dot {
+  fill: var(--jp-accent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--jp-accent) 60%, transparent));
 }
 
 /* ── Icon BOX — the icon sits in a bordered tile; override in Designer ───── */

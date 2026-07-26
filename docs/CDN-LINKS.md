@@ -2801,11 +2801,15 @@ yok, ikonlar renkli düz stack. `data-jp-pin="false"` → pinsiz v1 akışı.
 > `data-jp-priority`'yi PROJECT.md pin tablosuna göre ver.
 
 ```html
-<!-- in <head> -->
+<!-- in <head> — DrawSVG + MotionPath GSAP 3.13+ CDN'de ücretsizdir.
+     İkisi de OPSİYONEL: yoksa dashoffset + getPointAtLength fallback'i
+     aynı sonucu verir. Sayfadaki gsap sürümünü 3.13'e hizala. -->
 <script>document.documentElement.classList.add('jpath-armed')</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/journey-path.css">
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/MotionPathPlugin.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/journey-path.js" defer></script>
 ```
@@ -2835,6 +2839,7 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
     data-jp-start     ScrollTrigger start (pinli "top top" · pinsiz "top 70%")
     data-jp-end       ScrollTrigger end — sadece pinsiz mod  (default "bottom 75%")
     data-jp-scrub     scrub gecikmesi sn                          (default 1)
+    data-jp-dot       çizgi ucunda akan nokta yarıçapı px; 0=yok  (default 5)
     data-jp-min       pin + çizgi için min viewport px            (default 992)
 -->
 <section data-journey-path>
