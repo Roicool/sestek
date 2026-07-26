@@ -1,5 +1,5 @@
 /*!
- * waveline.js v1.0.0
+ * waveline.js v1.1.0
  * "Voiceprint timeline" — adım adım section'lar için SES DALGASI zaman
  * çizgisi. Nötr bir eksen çizgisi (tik noktalı) track boyunca uzanır;
  * scroll'la üstünde marka gradient'li (pembe→viyole→cyan) bir ses dalgası
@@ -17,6 +17,16 @@
  *
  * Draw mekaniği: stroke-dasharray/dashoffset (plugin gerektirmez) — scrub
  * 0→1 tek SAYI sürer (proxy), her frame offset o sayıdan kurulur.
+ *
+ * v1.1.0 — CANLI MOD (data-waveline-live): çizim TAMAMLANINCA dalga
+ * yaşamaya başlar — taşıyıcı sinüsün fazı zamanla kayar, dalgalar
+ * patlamaların İÇİNDEN sağa doğru akar (zarf sabittir: patlamalar kolon
+ * merkezlerinde çakılı kalır, sinyal hattın üstünden geçer). Ekran
+ * dışındayken durur (IntersectionObserver), geri sarınca faz sıfırlanıp
+ * kontrol scrub'a temiz devredilir, reduced-motion'da hiç açılmaz.
+ * Idle'a girerken dasharray kaldırılır (faz kayması path uzunluğunu
+ * oynatır; dash kalsa kuyruk kırpılırdı), çıkarken kanonik geometri +
+ * dash restore edilir.
  *
  * DOM sözleşmesi (Webflow — düzen Designer'ın):
  *   [data-waveline]                    ← section kökü
@@ -36,6 +46,9 @@
  *   data-waveline-scrub     scrub yumuşatması sn                (default true)
  *   data-waveline-pin       "true" → section pinlenir           (default false)
  *   data-waveline-distance  pin scroll mesafesi, % viewport     (default 120)
+ *   data-waveline-live      çizim bitince loop'lu canlı dalga —
+ *                           "true" = açık, sayı = hız çarpanı
+ *                           (örn "1.5"); yok/"false" = kapalı  (default kapalı)
  *   data-waveline-priority  refreshPriority (pin'de PROJECT.md tablosundan;
  *                           default: pin'liyse 1, değilse -1)
  *
@@ -89,14 +102,22 @@
     var pin      = root.getAttribute("data-waveline-pin") === "true";
     var distance = num(root, "data-waveline-distance", 120);
     var priority = num(root, "data-waveline-priority", pin ? 1 : -1);
+    var liveRaw  = root.getAttribute("data-waveline-live");
+    var live     = liveRaw !== null && liveRaw !== "false";
+    var liveSpd  = (liveRaw && parseFloat(liveRaw)) || 1;
     var uid      = "wl" + (UID++);
 
     // ── Geometri + SVG — her build'de ölçülüp yeniden üretilir ──
     var svg = null, glowPath = null, mainPath = null, dot = null, dotGlow = null;
-    var pathLen = 0, thresholds = [];
+    var pathLen = 0, thresholds = [], geo = null;
 
-    function waveD(W, H, centers) {
-      // Zarf: sakin taban + her merkezde gauss patlaması.
+    // Canlı mod durumu (data-waveline-live).
+    var idle = { on: false, visible: true, phase: 0, io: null };
+
+    function waveD(W, H, centers, ph1, ph2) {
+      // Zarf: sakin taban + her merkezde gauss patlaması. ph1/ph2 canlı
+      // modun faz kaymaları — zarf SABİT kalır, yalnız taşıyıcı akar.
+      ph1 = ph1 || 0; ph2 = ph2 || 0;
       var base = H / 2;
       var sigma = Math.max(36, Math.min(90, W * 0.045));
       var calm = H * calmR, burst = H * ampR;
@@ -109,8 +130,8 @@
           env += burst * Math.exp(-(dx * dx) / (2 * sigma * sigma));
         }
         var y = base
-          - env * Math.sin(x * 0.055)
-          - env * 0.28 * Math.sin(x * 0.021 + 1.3);
+          - env * Math.sin(x * 0.055 - ph1)
+          - env * 0.28 * Math.sin(x * 0.021 + 1.3 - ph2);
         if (x === 0) d = "M0," + y.toFixed(1);
         else {
           d += " L" + x + "," + y.toFixed(1);
@@ -125,6 +146,39 @@
         return 1;
       });
       return { d: d, thresholds: th };
+    }
+
+    function setWave(d) {
+      glowPath.setAttribute("d", d);
+      mainPath.setAttribute("d", d);
+    }
+
+    // ── Canlı mod: faz zamanla kayar, dalga hattın üstünden akar ──
+    function tick(time, deltaMs) {
+      if (!idle.on || !idle.visible || !geo || !mainPath) return;
+      idle.phase += (deltaMs / 1000) * 1.5 * liveSpd;
+      setWave(waveD(geo.W, geo.H, geo.centers, idle.phase, idle.phase * 0.6).d);
+    }
+
+    function startIdle() {
+      if (idle.on || !mainPath) return;
+      idle.on = true;
+      // Faz kayması path uzunluğunu oynatır — dash kalsa kuyruk kırpılır.
+      glowPath.style.strokeDasharray = "none";
+      mainPath.style.strokeDasharray = "none";
+      gsap.ticker.add(tick);
+    }
+
+    function stopIdle() {
+      if (!idle.on) return;
+      idle.on = false;
+      gsap.ticker.remove(tick);
+      idle.phase = 0;
+      if (!mainPath || !geo) return;
+      setWave(waveD(geo.W, geo.H, geo.centers, 0, 0).d);   // kanonik geometri
+      pathLen = mainPath.getTotalLength();
+      glowPath.style.strokeDasharray = pathLen;
+      mainPath.style.strokeDasharray = pathLen;
     }
 
     function build() {
@@ -176,13 +230,19 @@
         axis.setAttribute("x2", W); axis.setAttribute("y1", H / 2); axis.setAttribute("y2", H / 2);
       }
 
-      var wave = waveD(W, H, centers);
-      glowPath.setAttribute("d", wave.d);
-      mainPath.setAttribute("d", wave.d);
+      geo = { W: W, H: H, centers: centers };
+      var wave = waveD(W, H, centers, 0, 0);
+      setWave(wave.d);
       thresholds = wave.thresholds;
       pathLen = mainPath.getTotalLength();
-      glowPath.style.strokeDasharray = pathLen;
-      mainPath.style.strokeDasharray = pathLen;
+      if (idle.on) {
+        // Refresh idle sırasında geldi: dash'siz kal, faz tick'te devam eder.
+        glowPath.style.strokeDasharray = "none";
+        mainPath.style.strokeDasharray = "none";
+      } else {
+        glowPath.style.strokeDasharray = pathLen;
+        mainPath.style.strokeDasharray = pathLen;
+      }
       return true;
     }
 
@@ -198,9 +258,13 @@
     function apply() {
       if (!mainPath) return;
       var p = proxy.p;
-      var off = pathLen * (1 - p);
-      glowPath.style.strokeDashoffset = off;
-      mainPath.style.strokeDashoffset = off;
+      // Canlı mod: çizim tamamken yaşat, geri sarılınca scrub'a devret.
+      if (live) (p >= 0.999 ? startIdle : stopIdle)();
+      if (!idle.on) {
+        var off = pathLen * (1 - p);
+        glowPath.style.strokeDashoffset = off;
+        mainPath.style.strokeDashoffset = off;
+      }
       if (dot) {
         var on = p > 0.004 && p < 0.996;
         dot.setAttribute("opacity", on ? "1" : "0");
@@ -223,6 +287,14 @@
       function () {
         if (!build()) return function () {};
         root.setAttribute("data-waveline-ready", "");
+
+        // Canlı mod ekran dışında boşa çalışmasın.
+        if (live && typeof IntersectionObserver !== "undefined") {
+          idle.io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) { idle.visible = en.isIntersecting; });
+          }, { threshold: 0 });
+          idle.io.observe(root);
+        }
 
         var st = {
           trigger: root,
@@ -248,6 +320,9 @@
         return function () {
           t.scrollTrigger && t.scrollTrigger.kill();
           t.kill();
+          gsap.ticker.remove(tick);
+          idle.on = false; idle.phase = 0;
+          if (idle.io) { idle.io.disconnect(); idle.io = null; }
           proxy.p = 0;
           teardown();
         };

@@ -3141,6 +3141,8 @@ DOM (Webflow — düzen Designer'ın, yalnız attribute'lar önemli):
     data-waveline-pin       "true" → section pinlenir           (default false)
     data-waveline-distance  pin scroll mesafesi % viewport      (default 120)
     data-waveline-priority  refreshPriority (default: pin 1, değilse -1)
+    data-waveline-live      çizim bitince loop'lu canlı dalga — "true" = açık,
+                            sayı = hız çarpanı (örn "1.5")      (default kapalı)
 -->
 <section data-waveline>
   <div>…başlık bloğu…</div>
@@ -3159,6 +3161,14 @@ DOM (Webflow — düzen Designer'ın, yalnız attribute'lar önemli):
 - Track genişliği = dalganın genişliği; container'a hizalamak için track'e
   max-width/margin ver. Adım sayısı serbest (N ≥ 2), patlamalar merkezlere oturur.
 - Eksen bandın dikey ortasıdır; adım grid'ini bandın hemen altına koy.
+- CANLI MOD (v1.1.0, `data-waveline-live`): çizim tamamlanınca taşıyıcı faz
+  kayar, dalga patlamaların içinden sağa akar (zarf sabit — patlamalar
+  kolonlarda çakılı). Ekran dışında durur (IO), geri sarınca scrub'a temiz
+  devreder, reduced-motion'da hiç açılmaz. Attr yoksa maliyeti sıfır.
+- PİN + FLEX UYARISI: pinlenen `[data-waveline]` section'ını flex YAPMA —
+  100vh ortalama için içine bir sarmalayıcı div koy (flex column + justify
+  center + min-height 100vh onda). Flex içinde track/grid'e `width:100%` ver:
+  auto-margin stretch'i iptal eder, boş track 0 genişliğe düşer.
 
 ### Section Shrink (full-bleed → container oturması)
 
