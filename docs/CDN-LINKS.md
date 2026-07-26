@@ -2805,15 +2805,19 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
 
 ### Section Shrink (full-bleed → container oturması)
 
-Section viewport'a girerken TAM GENİŞLİK başlar; scroll'la hedef container
+Element viewport'a girerken TAM GENİŞLİK başlar; scroll'la hedef container
 genişliğine (default `--container--2xl`) büzülür, kenarlarına radius gelir.
-Geri sarınca açılır. Genişlik/max-width ANİMASYONU YOKTUR — kutu akışta tam
+Geri sarınca açılır. `[data-shrink]` HERHANGİ BİR ELEMENTE verilebilir
+(v2.0.0): section'ın kendisi ya da — ÖNERİLEN — içindeki full-bleed
+medya/arka plan sarmalayıcısı; metin container'ı dışarıda kalır, kırpılan
+yalnız medya olur. Genişlik/max-width ANİMASYONU YOKTUR — kutu akışta tam
 genişlik kalır, yalnız boyası `clip-path: inset(0 Xpx round R)` ile kırpılır:
-her frame reflow yok, komşu section'lar oynamaz, pin kurallarıyla çakışmaz.
-Bu yüzden section İÇİNDEKİ içerik zaten bir container'da durmalı — kırpılan
-yalnız arka plandır. Hedef görünür genişlik diğer container'larla aynı
+her frame reflow yok, komşular oynamaz, pin kurallarıyla çakışmaz. v2.0.0
+clip string'ini TWEEN'LEMEZ: 0→1 tek sayı scrub'lanır, clip her frame o
+sayıdan kurulur — tarayıcı serileştirme farklarından doğan "sona atlama"
+yapısal olarak imkânsız. Hedef görünür genişlik diğer container'larla aynı
 matematik: `min(max, genişlik − 2×gutter)` (gutter default `--view--px`).
-CSS DOSYASI YOK — JS'siz sayfada section tam genişlik kalır. bp altı (mobil)
+CSS DOSYASI YOK — JS'siz sayfada element tam genişlik kalır. bp altı (mobil)
 efekt kapalı; reduced-motion'da animasyonsuz durgun son hal uygulanır.
 
 ```html
@@ -2849,6 +2853,13 @@ DOM (Webflow — full-bleed section'a attribute ekle, o kadar):
     data-shrink-priority  refreshPriority     (default -1 — pinlerden sonra ölç)
     data-shrink-lift    "false" → relative + z-index:1 yükseltmesi kapalı
 -->
+<!-- ÖNERİLEN: attribute içteki full-bleed medya sarmalayıcısında -->
+<section class="media-section">
+  <div data-shrink class="media-bg">… görsel / video / gradient …</div>
+  <div class="container-2xl">… metin içerik …</div>
+</section>
+
+<!-- ALTERNATİF: section'ın kendisinde (içerik zaten container'daysa) -->
 <section data-shrink class="media-section">
   <div class="container-2xl">… içerik …</div>
 </section>
@@ -2867,6 +2878,8 @@ DOM (Webflow — full-bleed section'a attribute ekle, o kadar):
   pin yoksa görünür etkisi yoktur. bp altında ikisi de temizlenir.
 - Arka planı görsel/video olan section'larda görsel full-bleed kalmalı
   (container'a alma) — kırpılma efekti onun üstünde çalışır.
+- Kırpılan elemente CSS transition VERME (özellikle `all`) — her frame
+  yazılan clip-path ile yarışıp takılma/atlama hissi yaratır.
 
 ### Mesh Gradient (canlı marka mesh'i)
 
