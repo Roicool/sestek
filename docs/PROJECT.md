@@ -185,7 +185,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `hero.js` (pin) | En üst | `2` |
 | `scroll-tabs.js` (pin) | Orta | `1` |
 | `h-scroll.js` (pin, sadece desktop) | Sayfaya göre değişir | `data-hscroll-priority` ile ver (default `1`) |
-| `data-chaos.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-dchaos-priority` ile ver (default `1`) |
+| `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 

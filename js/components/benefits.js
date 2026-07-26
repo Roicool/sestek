@@ -1,5 +1,5 @@
 /*!
- * data-chaos.js v1.0.0
+ * benefits.js v1.0.0
  * "Data Chaos → Clarity" pinli scroll bölümü. Ortadaki kart scroll'la sola
  * sürüklenir; kaos SVG katmanları sönerken clarity katmanı belirir, "Chaos"
  * kelimesi "Clarity"ye flip olur, soldaki Challenge kartı soluklaşıp sağdaki
@@ -15,29 +15,29 @@
  *
  * ── DOM (yapı orijinalle aynı — yalnız isimler Sestek) ───────────
  *
- *   [data-dchaos]                          ← pinlenecek kök section
- *     .dchaos__grid
- *       .dchaos__card--challenge
- *         [data-dchaos-challenge]          ← sol içerik (soluklaşan)
- *       .dchaos__card--solution
- *         [data-dchaos-solution]           ← sağ içerik (öne çıkan)
- *       [data-dchaos-card]                 ← hareketli üst kart
- *         .dchaos__stage
- *           .dchaos__type
+ *   [data-benefits]                          ← pinlenecek kök section
+ *     .benefits__grid
+ *       .benefits__card--challenge
+ *         [data-benefits-challenge]          ← sol içerik (soluklaşan)
+ *       .benefits__card--solution
+ *         [data-benefits-solution]           ← sağ içerik (öne çıkan)
+ *       [data-benefits-card]                 ← hareketli üst kart
+ *         .benefits__stage
+ *           .benefits__type
  *             <p>Data</p>
- *             .dchaos__flip
- *               [data-dchaos-word-chaos]   ← "Chaos"
- *               [data-dchaos-word-clarity] ← "Clarity"
- *           [data-dchaos-chaos]            ← kaos SVG (başta görünür)
- *           [data-dchaos-parallax]         ← kaos parallax SVG (başta görünür)
- *           [data-dchaos-clarity]          ← clarity SVG (başta gizli)
+ *             .benefits__flip
+ *               [data-benefits-word-from]   ← "Chaos"
+ *               [data-benefits-word-to] ← "Clarity"
+ *           [data-benefits-from]            ← kaos SVG (başta görünür)
+ *           [data-benefits-parallax]         ← kaos parallax SVG (başta görünür)
+ *           [data-benefits-to]          ← clarity SVG (başta gizli)
  *
  * Kök attribute'ları (hepsi opsiyonel):
- *   data-dchaos-bp        pin breakpoint px — altında statik   (default 1200;
- *                         data-chaos.css'teki 1199px media'yla senkron tut)
- *   data-dchaos-start     ScrollTrigger start                  (default "top 10%")
- *   data-dchaos-end       ScrollTrigger end                    (default "bottom top")
- *   data-dchaos-priority  refreshPriority — sayfadaki dikey
+ *   data-benefits-bp        pin breakpoint px — altında statik   (default 1200;
+ *                         benefits.css'teki 1199px media'yla senkron tut)
+ *   data-benefits-start     ScrollTrigger start                  (default "top 10%")
+ *   data-benefits-end       ScrollTrigger end                    (default "bottom top")
+ *   data-benefits-priority  refreshPriority — sayfadaki dikey
  *                         konuma göre PROJECT.md tablosundan   (default 1)
  *
  * https://github.com/roicool/sestek
@@ -54,28 +54,28 @@
   }
 
   function setup(root) {
-    if (root._dchaosInit) return;                         // idempotent
-    root._dchaosInit = true;
+    if (root._benefitsInit) return;                         // idempotent
+    root._benefitsInit = true;
 
-    var card        = root.querySelector("[data-dchaos-card]");
-    var chaosBg     = root.querySelector("[data-dchaos-chaos]");
-    var parallax    = root.querySelector("[data-dchaos-parallax]");
-    var clarity     = root.querySelector("[data-dchaos-clarity]");
-    var wordChaos   = root.querySelector("[data-dchaos-word-chaos]");
-    var wordClarity = root.querySelector("[data-dchaos-word-clarity]");
-    var challenge   = root.querySelector("[data-dchaos-challenge]");
-    var solution    = root.querySelector("[data-dchaos-solution]");
+    var card        = root.querySelector("[data-benefits-card]");
+    var chaosBg     = root.querySelector("[data-benefits-from]");
+    var parallax    = root.querySelector("[data-benefits-parallax]");
+    var clarity     = root.querySelector("[data-benefits-to]");
+    var wordChaos   = root.querySelector("[data-benefits-word-from]");
+    var wordClarity = root.querySelector("[data-benefits-word-to]");
+    var challenge   = root.querySelector("[data-benefits-challenge]");
+    var solution    = root.querySelector("[data-benefits-solution]");
 
     if (!card || !chaosBg || !parallax || !clarity ||
         !wordChaos || !wordClarity || !challenge || !solution) {
-      console.warn("[Sestek DataChaos] Eksik parça — DOM sözleşmesine bak.", root);
+      console.warn("[Sestek Benefits] Eksik parça — DOM sözleşmesine bak.", root);
       return;
     }
 
-    var bp       = num(root, "data-dchaos-bp", 1200);
-    var priority = num(root, "data-dchaos-priority", 1);
-    var startAt  = root.getAttribute("data-dchaos-start") || "top 10%";
-    var endAt    = root.getAttribute("data-dchaos-end") || "bottom top";
+    var bp       = num(root, "data-benefits-bp", 1200);
+    var priority = num(root, "data-benefits-priority", 1);
+    var startAt  = root.getAttribute("data-benefits-start") || "top 10%";
+    var endAt    = root.getAttribute("data-benefits-end") || "bottom top";
 
     var mm = gsap.matchMedia();
     mm.add(
@@ -125,20 +125,20 @@
   }
 
   /**
-   * Sayfadaki her [data-dchaos] bölümünü bağlar.
-   * @param {string} [selector="[data-dchaos]"]
+   * Sayfadaki her [data-benefits] bölümünü bağlar.
+   * @param {string} [selector="[data-benefits]"]
    */
-  function initDataChaos(selector) {
-    var roots = document.querySelectorAll(selector || "[data-dchaos]");
-    if (!roots.length) { console.warn("[Sestek DataChaos] No [data-dchaos] found."); return; }
+  function initBenefits(selector) {
+    var roots = document.querySelectorAll(selector || "[data-benefits]");
+    if (!roots.length) { console.warn("[Sestek Benefits] No [data-benefits] found."); return; }
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-      console.error("[Sestek DataChaos] GSAP + ScrollTrigger required."); return;
+      console.error("[Sestek Benefits] GSAP + ScrollTrigger required."); return;
     }
     gsap.registerPlugin(ScrollTrigger);
     roots.forEach(setup);
   }
 
   global.Sestek = global.Sestek || {};
-  global.Sestek.initDataChaos = initDataChaos;
+  global.Sestek.initBenefits = initBenefits;
 
 })(typeof window !== "undefined" ? window : this);
