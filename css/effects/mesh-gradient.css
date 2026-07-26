@@ -17,12 +17,14 @@
  *   --mesh-soft                          statik mesh yoğunluğu % (default 20%)
  *   --mesh-soft-live                     canlı katman yoğunluğu % (default 24%)
  *
- * v2.1.0 — KOYU TEMA (data-mesh-theme="dark"): zemin koyu token'a döner,
- * lekeler koyu zeminde SCREEN karışımıyla parlar (açık temadaki pastel
- * karışım yerine derin glow). Tamamen CSS — JS değişikliği gerektirmez;
- * statik fallback ve canlı katmanlar aynı attribute'la döner. Yoğunluk
- * yine --mesh-soft/--mesh-soft-live ile ayarlanır (koyu default'ları bir
- * tık yüksektir).
+ * v2.2.0 — KOYU TEMA (data-mesh-theme="dark") MARKA MORUNDAN: zemin siyah
+ * değil, secondary'nin koyu tonlarından color-mix ile türetilen bir
+ * GRADIENT'tir (derin mor → patlıcan moru, 160deg). Lekeler screen
+ * karışımıyla parlar; viyole leke koyu morda kaybolmasın diye c2 açık
+ * lavantaya çekilir. Tonlar token'dan türediği için marka rengi değişirse
+ * tema da takip eder. Tamamen CSS — JS değişikliği gerektirmez; statik
+ * fallback ve canlı katmanlar aynı attribute'la döner. İnce ayar:
+ * --mesh-deep-a/-b (zemin uçları), --mesh-soft/--mesh-soft-live (yoğunluk).
  * https://github.com/roicool/sestek
  */
 
@@ -53,12 +55,17 @@
 }
 
 /* ── KOYU TEMA — data-mesh-theme="dark" ───────────────────────────
-   Zemin koyu, lekeler screen ile parlar. isolation: karışım section'ın
-   arkasındaki içeriğe sızmasın. */
+   Zemin SİYAH DEĞİL: secondary'nin koyu tonlarından türeyen mor gradient.
+   Lekeler screen ile parlar; isolation: karışım section dışına sızmasın. */
 [data-mesh-gradient][data-mesh-theme="dark"] {
-  --mesh-base: var(--surface--inverted, var(--neutral--900, #16171d));
-  --mesh-soft: 28%;
-  --mesh-soft-live: 34%;
+  /* zemin uçları — secondary'den color-mix ile türetilir (token'ı izler) */
+  --mesh-deep-a: color-mix(in oklab, var(--brand-secondary--500, #9d4bff) 34%, #0b0714);
+  --mesh-deep-b: color-mix(in oklab, var(--brand-secondary--500, #9d4bff) 13%, #0b0714);
+  --mesh-base: linear-gradient(160deg, var(--mesh-deep-a), var(--mesh-deep-b));
+  /* viyole leke koyu morda kaybolur → açık lavanta bloom'a çekilir */
+  --mesh-c2: color-mix(in oklab, var(--brand-secondary--500, #9d4bff) 62%, #fff);
+  --mesh-soft: 26%;
+  --mesh-soft-live: 32%;
   isolation: isolate;
   /* statik fallback: 4 radial screen ile zemine karışır, zemin normal */
   background-blend-mode: screen, screen, screen, screen, normal;
