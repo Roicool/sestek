@@ -2846,6 +2846,8 @@ DOM (Webflow — full-bleed section'a attribute ekle, o kadar):
     data-shrink-start   ScrollTrigger start   (default "top bottom")
     data-shrink-end     ScrollTrigger end     (default "top 30%")
     data-shrink-scrub   scrub yumuşatması sn — örn "0.5" (default true = kilitli)
+    data-shrink-priority  refreshPriority     (default -1 — pinlerden sonra ölç)
+    data-shrink-lift    "false" → relative + z-index:1 yükseltmesi kapalı
 -->
 <section data-shrink class="media-section">
   <div class="container-2xl">… içerik …</div>
@@ -2856,8 +2858,13 @@ DOM (Webflow — full-bleed section'a attribute ekle, o kadar):
 - Hedefler CSS uzunluğu olarak verilir (`var()`/rem/px/vw) ve her
   ScrollTrigger refresh'inde prob ile px'e yeniden çevrilir — resize'da
   hedef güncel kalır (`invalidateOnRefresh`).
-- Pin YOK → `refreshPriority` gerekmez; sayfadaki pinli bölümlerle güvenle
-  yan yana kullanılır.
+- ÜSTTE PİNLİ BÖLÜM VARSA (v1.1.0): iki koruma otomatik devrede. (1) default
+  `refreshPriority: -1` — pin değiliz, tüm pinler spacer'larını oturttuktan
+  SONRA ölçülürüz; start/end üstteki pin mesafeleri kadar erken kalamaz.
+  (2) Lift: köke `position:relative + z-index:1` basılır — viewport'tan uzun
+  pinli bir bölümün ardından giriş, pinli (transform'lu) elementin arkasında
+  kaybolmaz, önünden perde gibi görünür. `data-shrink-lift="false"` kapatır;
+  pin yoksa görünür etkisi yoktur. bp altında ikisi de temizlenir.
 - Arka planı görsel/video olan section'larda görsel full-bleed kalmalı
   (container'a alma) — kırpılma efekti onun üstünde çalışır.
 

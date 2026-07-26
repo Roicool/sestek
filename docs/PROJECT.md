@@ -188,6 +188,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
+| `section-shrink.js` (pin değil) | Her yerde | `-1` (default, `data-shrink-priority`) |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
 > **kesirli değil**, mevcut değerleri yeniden numaralandırarak yerleştir
