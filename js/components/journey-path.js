@@ -1,5 +1,5 @@
 /*!
- * journey-path.js v2.1.0
+ * journey-path.js v2.2.0
  * PINNED scroll-driven CURVY progress path through a row of step items. The
  * section pins to the viewport; as you keep scrolling, a gradient progress
  * line FILLS along a meandering dashed track that runs through every step's
@@ -8,6 +8,12 @@
  * When the fill completes, the pin releases and the page scrolls on.
  *
  * Changelog
+ * v2.2.0 — SYMMETRIC waves. The curve is no longer a Catmull-Rom spline
+ *          (which overshot unevenly around offset icons); every point is now
+ *          a crest with a horizontal tangent and each bow mirrors itself —
+ *          clean, even, professional meander. Extra wave midpoints are only
+ *          inserted between anchors that sit at (nearly) the same height;
+ *          icons placed at different heights in Designer ARE the wave.
  * v2.1.0 — DrawSVG + MotionPath. The fill is now drawn with DrawSVGPlugin
  *          (project standard, docs/gsap-svg.md §5) and a glowing accent DOT
  *          rides the curve tip via MotionPathPlugin — both free on the GSAP
@@ -183,9 +189,12 @@
         pts.push({ x: rr.width, y: anchors[anchors.length - 1].y });
       }
 
-      // Insert a perpendicular-offset midpoint between every pair — this is
-      // what makes the line MEANDER even when all icons sit at one height.
-      var alt = 1;
+      // Meander points: when two neighbouring anchors sit at (nearly) the
+      // same height, ONE midpoint offset by ±wave keeps the line bowing
+      // between them. Anchors at different heights (icons offset in
+      // Designer) ARE the wave — no extra point is inserted there.
+      var alt = WAVE < 0 ? -1 : 1;
+      var amp = Math.abs(WAVE);
       var wavePts = [];
       var anchorIdx = [];                                     // anchor → index in wavePts
       pts.forEach(function (p, i) {
@@ -194,24 +203,23 @@
         if (ai >= 0 && ai < anchors.length) anchorIdx[ai] = wavePts.length - 1;
         var q = pts[i + 1];
         if (!q) return;
-        var dx = q.x - p.x, dy = q.y - p.y;
-        var len = Math.sqrt(dx * dx + dy * dy) || 1;
-        var amp = Math.min(Math.abs(WAVE), len * 0.35) * (WAVE < 0 ? -1 : 1) * alt;
-        alt = -alt;
-        wavePts.push({ x: (p.x + q.x) / 2 - (dy / len) * amp, y: (p.y + q.y) / 2 + (dx / len) * amp });
+        if (Math.abs(q.y - p.y) < amp) {
+          wavePts.push({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 + amp * alt });
+          alt = -alt;
+        }
       });
 
-      // Catmull-Rom → cubic beziers (smooth through every point).
-      var P = [wavePts[0]].concat(wavePts, [wavePts[wavePts.length - 1]]);
+      // SYMMETRIC smooth curve: every point is a crest — the tangent is
+      // horizontal there — and each bow mirrors itself (control points at
+      // half the horizontal span). Even, professional waves; no spline
+      // overshoot.
       var segs = [];
-      for (var i = 1; i < P.length - 2; i++) {
-        var c1x = P[i].x + (P[i + 1].x - P[i - 1].x) / 6;
-        var c1y = P[i].y + (P[i + 1].y - P[i - 1].y) / 6;
-        var c2x = P[i + 1].x - (P[i + 2].x - P[i].x) / 6;
-        var c2y = P[i + 1].y - (P[i + 2].y - P[i].y) / 6;
-        segs.push("C" + c1x.toFixed(1) + "," + c1y.toFixed(1) + " " +
-                  c2x.toFixed(1) + "," + c2y.toFixed(1) + " " +
-                  P[i + 1].x.toFixed(1) + "," + P[i + 1].y.toFixed(1));
+      for (var i = 0; i < wavePts.length - 1; i++) {
+        var p = wavePts[i], q = wavePts[i + 1];
+        var hx = (q.x - p.x) / 2;
+        segs.push("C" + (p.x + hx).toFixed(1) + "," + p.y.toFixed(1) + " " +
+                  (q.x - hx).toFixed(1) + "," + q.y.toFixed(1) + " " +
+                  q.x.toFixed(1) + "," + q.y.toFixed(1));
       }
       var head = "M" + wavePts[0].x.toFixed(1) + "," + wavePts[0].y.toFixed(1);
       var d = head + segs.join("");

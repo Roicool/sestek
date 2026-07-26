@@ -1,5 +1,8 @@
 /*!
- * journey-path.css v1.2.0
+ * journey-path.css v1.3.0
+ * v1.3.0: lit state redesigned — no neon glow. The active box gets the Sestek
+ *         PURPLE (--jp-active-bg) background and the icon inside turns WHITE
+ *         (currentColor svgs). Boxes are opaque so the line passes BEHIND them.
  * v1.2.0: .jp-dot — the accent dot riding the fill tip (journey-path.js v2.1,
  *         MotionPathPlugin / getPointAtLength fallback).
  * v1.1.0: icon BOX default (border/radius/bg hooks) + accent state — the lit
@@ -28,8 +31,9 @@
 
 [data-journey-path] {
   --jp-track: var(--border--color-border-muted, #d9d8e2);
-  --jp-accent: var(--brand-primary--500, #EC008C);   /* Sestek pink — lit icons */
-  --jp-grad-from: #EC008C;
+  --jp-accent: var(--brand-primary--500, #EC008C);     /* Sestek pink — dot */
+  --jp-active-bg: var(--brand-secondary--500, #9d4bff);/* Sestek purple — lit box */
+  --jp-grad-from: #EC008C;                             /* Sestek gradient */
   --jp-grad-to: #9d4bff;
   --jp-line-w: 2.5px;
 
@@ -75,29 +79,30 @@
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--jp-accent) 60%, transparent));
 }
 
-/* ── Icon BOX — the icon sits in a bordered tile; override in Designer ───── */
+/* ── Icon BOX — an OPAQUE tile the line passes behind; override in Designer ── */
 [data-jp-icon] {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--surface--card, #ffffff);   /* opaque: the line stays behind */
   border: 1px solid var(--jp-track);
   border-radius: var(--radius--md, 0.75rem);
   transition: filter .45s ease, opacity .45s ease, transform .45s ease,
-              color .45s ease, border-color .45s ease, box-shadow .45s ease;
+              color .45s ease, background-color .45s ease, border-color .45s ease;
 }
 
 /* ── Icon states — dim until the fill reaches them (desktop + armed only).
-   Lit = Sestek pink: currentColor svgs take --jp-accent, the box follows. ── */
+   Lit = Sestek PURPLE box + WHITE icon (currentColor svgs). No glow. ──────── */
 @media (min-width: 992px) {
   html.jpath-armed [data-jp-icon]:not(.is-active) {
     filter: grayscale(1);
-    opacity: 0.35;
-    transform: scale(0.92);
+    opacity: 0.45;
+    transform: scale(0.94);
   }
   html.jpath-armed [data-jp-icon].is-active {
-    color: var(--jp-accent);
-    border-color: var(--jp-accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--jp-accent) 15%, transparent);
+    color: #ffffff;
+    background: var(--jp-active-bg);
+    border-color: var(--jp-active-bg);
   }
 }
 /* Below the breakpoint the svg is hidden — icons render lit, section is
