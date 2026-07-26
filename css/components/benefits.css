@@ -1,5 +1,5 @@
 /*!
- * benefits.css v2.2.0
+ * benefits.css v2.3.0
  * "Benefits (kaos → clarity)" pinli bölümün davranışsal CSS'i — GERÇEK site
  * düzenine göre yeniden yazıldı:
  *   · Kartlar absolute değil, 2 kolonlu GRID item'ları.
@@ -8,8 +8,12 @@
  *     (başlangıcı CSS'te: y100px + opacity 0 — timeline bunun üstüne çalışır).
  *   · Flip kelimeleri NORMAL AKIŞTA (absolute değil) — üst üste bindirmeyi
  *     GSAP'in translateY değerleri yapar; absolute yapmak matematiği bozar.
- *   · Mobilde animasyon yok: kaos kartı üstte (order -1, 50vh), ayrı statik
- *     Clarity kartı (--clarity, 50vh) listede; desktop'ta gizlidir.
+ *   · v2.3.0: MOBİL (<1200px) DÜZENİ BİLEREK YOK — mobil tasarım Webflow
+ *     Designer breakpoint'lerinde yapılır; bu dosya <1200'e düzen dayatmaz.
+ *     Base'te kalan tek mobil etki davranışsal başlangıç state'leridir
+ *     (word-to / to-katmanı gizli, clarity kartı gizli). Clarity kartını
+ *     mobilde göstermek Designer'ın işi: combo class'a display ver —
+ *     combo (.benefits__card.benefits__card--clarity) özgüllükte kazanır.
  * Renk/tipografi Designer + RC token'larından; timeline benefits.js'te.
  * https://github.com/roicool/sestek
  */
@@ -64,7 +68,8 @@
 .benefits__content ul { list-style: square; padding: 0 1em; margin-bottom: 3rem; }
 .benefits__content ul li + li { margin-top: .5rem; }
 
-/* Statik Clarity kartı: yalnız mobil — desktop'ta gizli */
+/* Statik Clarity kartı: embed her yerde gizler — mobilde göstermek
+   Designer'ın kararı (combo'ya display ver; combo özgüllükte kazanır) */
 .benefits__card--clarity { display: none; }
 
 /* ── Hareketli kartın içi ────────────────────────────────────── */
@@ -127,7 +132,7 @@
 }
 
 /* ── DESKTOP (≥1200px): Solution + hareketli kart aynı hücrede ──
- * data-benefits-bp'yi değiştirirsen buradaki 1200/1199'u senkron tut. */
+ * data-benefits-bp'yi değiştirirsen buradaki 1200'ü senkron tut. */
 @media (min-width: 1200px) {
   /* premium boy: satır yüksekliği — kartlar stretch ile doldurur */
   .benefits__grid { min-height: var(--benefits-min-h); }
@@ -146,14 +151,4 @@
   .benefits__card--float { will-change: transform; }
 }
 
-/* ── MOBİL (<1200px): animasyon yok, dikey dizilim ───────────── */
-@media (max-width: 1199px) {
-  [data-benefits] { padding: var(--spacing--10, 3rem) 0; }
-
-  .benefits__grid { grid-template-columns: 1fr; }
-
-  .benefits__content { padding: var(--spacing--6, 1.5rem); }
-
-  .benefits__card--float   { height: 50vh; order: -1; }
-  .benefits__card--clarity { height: 50vh; display: flex; }
-}
+/* <1200px için kural YOK — mobil düzen Webflow Designer'da tasarlanır. */
