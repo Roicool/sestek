@@ -2713,6 +2713,58 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
 | `js/effects/parallax.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/parallax.js` |
 | `js/effects/hover-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/hover-reveal.js` |
 | `css/effects/hover-reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/hover-reveal.css` |
+| `js/effects/mesh-gradient.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js` |
+| `css/effects/mesh-gradient.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css` |
+
+### Mesh Gradient (marka mesh'i + mouse ışığı)
+
+Sestek'in 3 ana renginin (pembe `#EC008C` / viyole `#9d4bff` / cyan `#00FFEB`)
+yumuşak mesh gradient'i. Statik katman SAF CSS (4 radial + zemin, tek paint,
+JS'siz çalışır); mouse'u yumuşak lag'le takip eden ışık blob'unu JS enjekte
+eder ve yalnız transform'la taşır (repaint yok). İmleç çıkınca blob merkeze
+süzülür. Dokunmatik ve `prefers-reduced-motion`: blob kurulmaz, statik mesh
+kalır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initMeshGradient(); // tüm [data-mesh-gradient] kökleri
+  });
+</script>
+```
+
+DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-mesh-follow      "false" → mouse blob'u kurulmaz     (default true)
+    data-mesh-lag         takip gecikmesi sn                  (default 0.55)
+    data-mesh-blob-size   blob çapı, CSS uzunluğu             (default 34rem)
+    data-mesh-blob-color  blob rengi — token | hex | var()    (default --mesh-c1)
+    data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
+-->
+<section data-mesh-gradient class="hero">
+  … içerik …
+</section>
+```
+
+**Notlar**
+- Renk yoğunluğu kökten: `--mesh-soft` (default `20%` — soft). Koyu tema
+  için `--mesh-base`'i koyu bir token'a çek, yoğunluğu bir tık artır.
+- İçerik otomatik olarak blob'un üstüne kaldırılır (statik çocuklara
+  `position:relative; z-index:1`).
+- `filter: blur` bilinçli KULLANILMAZ — falloff radial'ın kendisinden gelir,
+  paint maliyeti tek seferliktir; blob compositor-only gezer.
 
 ### Hover Reveal (imleç-orijinli renk reveal'ı)
 
