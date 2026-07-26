@@ -1,0 +1,50 @@
+<svg viewBox="0 0 640 400" width="560" fill="none">
+  <defs>
+    <linearGradient id="cg1m" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="var(--brand-primary--500,#EC008C)"/>
+      <stop offset="1" stop-color="var(--brand-secondary--500,#9d4bff)"/>
+    </linearGradient>
+    <linearGradient id="cg2m" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="var(--brand-secondary--500,#9d4bff)"/>
+      <stop offset="1" stop-color="var(--brand-tertiary--500,#00d5c4)"/>
+    </linearGradient>
+    <radialGradient id="cveilm" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="var(--surface--muted,#f5f5f5)" stop-opacity=".6"/>
+      <stop offset=".6" stop-color="var(--surface--muted,#f5f5f5)" stop-opacity=".4"/>
+      <stop offset="1" stop-color="var(--surface--muted,#f5f5f5)" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cfadem" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".12" stop-color="#fff"/>
+      <stop offset=".88" stop-color="#fff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="cmaskm">
+      <rect width="640" height="400" fill="url(#cfadem)"/>
+    </mask>
+    <path id="cw1m" d="M0,200.0 L8,183.5 L16,167.5 L24,152.4 L32,138.8 L40,127.0 L48,117.4 L56,110.2 L64,105.7 L72,104.0 L80,105.2 L88,109.2 L96,115.9 L104,125.1 L112,136.5 L120,149.8 L128,164.7 L136,180.5 L144,197.0 L152,213.5 L160,229.7 L168,244.9 L176,258.8 L184,271.0 L192,281.1 L200,288.7 L208,293.7 L216,295.9 L224,295.2 L232,291.8 L240,285.5 L248,276.8 L256,265.7 L264,252.7 L272,238.1 L280,222.4 L288,206.0 L296,189.5 L304,173.2 L312,157.8 L320,143.6 L328,131.1 L336,120.6 L344,112.5 L352,107.0 L360,104.3 L368,104.4 L376,107.4 L384,113.1 L392,121.5 L400,132.1 L408,144.8 L416,159.1 L424,174.7 L432,191.0 L440,207.5 L448,223.9 L456,239.5 L464,254.0 L472,266.8 L480,277.7 L488,286.2 L496,292.2 L504,295.4 L512,295.8 L520,293.3 L528,288.1 L536,280.2 L544,270.0 L552,257.6 L560,243.6 L568,228.2 L576,212.0 L584,195.5 L592,179.1 L600,163.3 L608,148.6 L616,135.4 L624,124.1 L632,115.2 L640,108.7"/>
+    <path id="cw2m" d="M0,153.0 L8,147.3 L16,143.1 L24,140.7 L32,140.0 L40,141.1 L48,144.0 L56,148.5 L64,154.6 L72,162.0 L80,170.5 L88,179.9 L96,190.0 L104,200.3 L112,210.6 L120,220.6 L128,230.0 L136,238.5 L144,245.8 L152,251.8 L160,256.2 L168,259.0 L176,260.0 L184,259.2 L192,256.7 L200,252.4 L208,246.7 L216,239.5 L224,231.1 L232,221.8 L240,211.9 L248,201.6 L256,191.3 L264,181.2 L272,171.7 L280,163.0 L288,155.4 L296,149.2 L304,144.5 L312,141.4 L320,140.1 L328,140.5 L336,142.7 L344,146.7 L352,152.2 L360,159.1 L368,167.3 L376,176.4 L384,186.3 L392,196.5 L400,206.9 L408,217.0 L416,226.6 L424,235.5 L432,243.3 L440,249.8 L448,254.8 L456,258.2 L464,259.8 L472,259.7 L480,257.8 L488,254.2 L496,248.9 L504,242.2 L512,234.3 L520,225.3 L528,215.6 L536,205.4 L544,195.0 L552,184.8 L560,175.1 L568,166.0 L576,158.0 L584,151.3 L592,146.0 L600,142.3 L608,140.3 L616,140.1 L624,141.7 L632,145.0 L640,150.0"/>
+    <path id="cw3m" d="M0,166.9 L8,168.7 L16,171.5 L24,175.1 L32,179.4 L40,184.4 L48,189.8 L56,195.5 L64,201.4 L72,207.2 L80,212.8 L88,218.0 L96,222.7 L104,226.7 L112,229.9 L120,232.3 L128,233.6 L136,234.0 L144,233.3 L152,231.7 L160,229.1 L168,225.6 L176,221.4 L184,216.6 L192,211.2 L200,205.5 L208,199.7 L216,193.8 L224,188.2 L232,182.9 L240,178.1 L248,173.9 L256,170.6 L264,168.1 L272,166.5 L280,166.0 L288,166.5 L296,167.9 L304,170.4 L312,173.7 L320,177.8 L328,182.5 L336,187.8 L344,193.4 L352,199.2 L360,205.1 L368,210.8 L376,216.2 L384,221.1 L392,225.4 L400,228.9 L408,231.5 L416,233.2 L424,234.0 L432,233.7 L440,232.4 L448,230.1 L456,227.0 L464,223.0 L472,218.4 L480,213.2 L488,207.6 L496,201.8 L504,196.0 L512,190.2 L520,184.8 L528,179.8 L536,175.4 L544,171.7 L552,168.9 L560,167.0 L568,166.1 L576,166.2 L584,167.3 L592,169.4 L600,172.4 L608,176.2 L616,180.7 L624,185.8 L632,191.3 L640,197.1"/>
+  </defs>
+  <g mask="url(#cmaskm)">
+    <line x1="0" y1="200" x2="640" y2="200" stroke="var(--neutral--400,#aab0ba)" stroke-opacity=".5"/>
+    <circle cx="80" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="160" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="240" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="320" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="400" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="480" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <circle cx="560" cy="200" r="2.5" fill="var(--neutral--400,#aab0ba)" fill-opacity=".55"/>
+    <g stroke-width="10" stroke-linecap="round">
+      <use href="#cw1m" stroke="url(#cg1m)" stroke-opacity=".08"/>
+      <use href="#cw2m" stroke="url(#cg2m)" stroke-opacity=".07"/>
+      <use href="#cw3m" stroke="url(#cg1m)" stroke-opacity=".05"/>
+    </g>
+    <g stroke-width="2" stroke-linecap="round">
+      <use href="#cw1m" stroke="url(#cg1m)" stroke-opacity=".6"/>
+      <use href="#cw2m" stroke="url(#cg2m)" stroke-opacity=".48"/>
+      <use href="#cw3m" stroke="url(#cg1m)" stroke-opacity=".35"/>
+    </g>
+    <ellipse cx="320" cy="200" rx="205" ry="100" fill="url(#cveilm)"/>
+  </g>
+</svg>
