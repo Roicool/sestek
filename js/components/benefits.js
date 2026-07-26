@@ -1,5 +1,5 @@
 /*!
- * benefits.js v1.2.0
+ * benefits.js v1.3.0
  * "Data Chaos → Clarity" pinli scroll bölümü. Ortadaki kart scroll'la sola
  * sürüklenir; kaos SVG katmanları sönerken clarity katmanı belirir, "Chaos"
  * kelimesi "Clarity"ye flip olur, soldaki Challenge kartı soluklaşıp sağdaki
@@ -10,7 +10,10 @@
  * inme mesafesi (iki kelimenin akıştaki dikey farkı) her refresh'te ölçülür
  * — Sestek tipografisi ne olursa olsun hizalar. v1.2.0: kartın sola iniş
  * telafisi de ölçülü — sabit -20px yerine grid'in gerçek column-gap'i
- * okunur; --benefits-gap artık serbestçe değiştirilebilir. Kalan timeline (kart
+ * okunur; --benefits-gap artık serbestçe değiştirilebilir. v1.3.0: parallax
+ * katmanı adını hak etti — kart sola kayarken şerit data-benefits-parallax-drift
+ * px kadar GERİDE kalır (fark hızı = derinlik); önceden yalnız opacity
+ * fade'i vardı ve katman kaosun içinde hiç seçilmiyordu. Kalan timeline (kart
  * sürüklenmesi, SVG geçişleri, içerik fade'leri) orijinal oran ve
  * sürelerle aynıdır. refreshPriority (pinli bölüm kuralı),
  * reduced-motion'da statik düzen, idempotent init, çoklu instance.
@@ -43,6 +46,9 @@
  *   data-benefits-end       ScrollTrigger end                    (default "bottom top")
  *   data-benefits-priority  refreshPriority — sayfadaki dikey
  *                         konuma göre PROJECT.md tablosundan   (default 1)
+ *   data-benefits-parallax-drift  kart kayarken parallax SVG'nin geride
+ *                         kalma miktarı px — 0 = kapalı        (default 150;
+ *                         taban konum CSS --benefits-parallax-x'ten px okunur)
  *
  * https://github.com/roicool/sestek
  */
@@ -78,6 +84,7 @@
 
     var bp       = num(root, "data-benefits-bp", 1200);
     var priority = num(root, "data-benefits-priority", 1);
+    var drift    = num(root, "data-benefits-parallax-drift", 150);
     var startAt  = root.getAttribute("data-benefits-start") || "top 10%";
     var endAt    = root.getAttribute("data-benefits-end") || "bottom top";
 
@@ -112,9 +119,18 @@
           return -(parseFloat(getComputedStyle(grid).columnGap) || 20);
         };
 
+        // Parallax hedefi MUTLAK hesaplanır ("+=" değil): invalidateOnRefresh
+        // relatif tween'i her refresh'te yeniden toplayıp kaydırırdı. Taban,
+        // CSS --benefits-parallax-x değişkeninden okunur (px bekler).
+        var parallaxX = function () {
+          var raw = parseFloat(getComputedStyle(root).getPropertyValue("--benefits-parallax-x"));
+          return (isNaN(raw) ? -360 : raw) + drift;
+        };
+
         // ── TIMELINE — orijinal oran/süreler; flip mesafeleri ölçülü ─
         t.addLabel("split");
         t.to(card, { x: "-50%", duration: 4 });
+        if (drift) t.to(parallax, { x: parallaxX, duration: 4 }, "split");
         t.to(chaosBg, { opacity: 0, duration: 2 }, "split+=2");
         t.to(parallax, { opacity: 0, duration: 2 }, "split+=2");
         t.to(wordClarity, { opacity: 0.5, y: function () { return -lift() * 0.4; }, duration: 2 }, "split+=2");

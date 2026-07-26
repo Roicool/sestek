@@ -786,6 +786,8 @@ DOM:
     data-benefits-start     ScrollTrigger start      (default "top 10%")
     data-benefits-end       ScrollTrigger end        (default "bottom top")
     data-benefits-priority  refreshPriority — PROJECT.md tablosu (default 1)
+    data-benefits-parallax-drift  kart kayarken parallax SVG'nin geride
+                          kalma miktarı px — 0 = kapalı (default 150)
 -->
 <section data-benefits class="benefits">
   <div class="benefits__grid">
@@ -804,9 +806,9 @@ DOM:
             <p data-benefits-word-to>Clarity</p>
           </div>
         </div>
-        <svg data-benefits-from viewBox="0 0 1133 714">…</svg>
-        <svg data-benefits-parallax viewBox="0 0 371 229">…</svg>
-        <svg data-benefits-to viewBox="0 0 229 450">…</svg>
+        <svg data-benefits-from viewBox="0 0 1133 714">…</svg>      <!-- svg/benefits/wave-from.svg -->
+        <svg data-benefits-parallax viewBox="0 0 380 240">…</svg>   <!-- svg/benefits/wave-parallax.svg -->
+        <svg data-benefits-to viewBox="0 0 640 400">…</svg>         <!-- svg/benefits/wave-to.svg -->
       </div>
     </div>
   </div>
@@ -815,8 +817,13 @@ DOM:
 
 **Notlar**
 - Geometri kökten `--benefits-*` değişkenleriyle ayarlanır: `--benefits-max`
-  (1200px), `--benefits-min-h` (660px), `--benefits-grid-h` (500px),
-  `--benefits-card-w` (44%), `--benefits-float-w` (40%).
+  (container 2xl), `--benefits-gap` (kart arası — serbest, JS ölçer),
+  `--benefits-pad` (kart içi), `--benefits-min-h` (desktop satır boyu),
+  `--benefits-parallax-x/-y` (parallax SVG konumu, x px olmalı — JS drift
+  tabanını buradan okur).
+- Hazır dalga SVG'leri `svg/benefits/` altında (wave-from / wave-parallax /
+  wave-to); embed'lere kod olarak yapıştırılır. Aynı sayfada wave-to iki kez
+  kullanılıyorsa ikinci kopya id'lerine `m` eki verilmiş hazır varyantı kullan.
 - Pinli bölüm kuralları geçerli: ancestor'larda transform yok,
   `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
 - Scrub'lı pin, scroll alanını section yüksekliğinden üretir — `end`
