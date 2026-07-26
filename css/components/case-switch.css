@@ -1,0 +1,78 @@
+/*!
+ * case-switch.css v1.0.0
+ * Behavioural / critical CSS for the case-switch component (logo tabs + a
+ * grabbable, auto-advancing deck of CMS case-study cards). Owns ONLY what the
+ * effect needs to work — the deck stacking geometry, the grab cursor, the
+ * active-logo colour toggle, and the anti-flash guard. All look & feel
+ * (colours, radius, shadow, layout, sizing) stays in Webflow Designer, using
+ * RC Structure tokens. js/components/case-switch.js drives the motion.
+ *
+ * Drives: js/components/case-switch.js
+ *
+ * ANTI-FLASH: the stacked deck only collapses onto itself once html.cswitch-armed
+ * is set (JS adds it). Without JS the cards render normally (graceful fallback).
+ *
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Deck stacking ──────────────────────────────────────────────────────────
+   The Collection List is the deck; its items are the cards. The FIRST card
+   stays in normal flow so it gives the deck its height (no JS height needed);
+   the rest are absolutely stacked directly over it. JS then transforms each
+   card into its slot. */
+[data-cswitch-deck] {
+  position: relative;
+}
+
+html.cswitch-armed [data-cswitch-card] {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+html.cswitch-armed [data-cswitch-card]:first-child {
+  position: relative; /* in-flow → sizes the deck; transforms still apply */
+}
+
+/* Grab affordance on the draggable deck (JS adds .is-draggable). */
+[data-cswitch-deck].is-draggable {
+  cursor: grab;
+  touch-action: pan-y; /* let vertical scroll through; JS claims horizontal drags */
+  -webkit-user-select: none;
+  user-select: none;
+}
+[data-cswitch-deck].is-draggable:active {
+  cursor: grabbing;
+}
+
+/* ── Logo tabs ──────────────────────────────────────────────────────────────
+   Selected logo is shown in colour; the rest are desaturated + dimmed. This is
+   the single-image default (one logo field in the CMS); override .is-active in
+   Designer, or remove this block if you supply separate colour/mono images. */
+[data-cswitch-tab] {
+  cursor: pointer;
+  filter: grayscale(1);
+  opacity: 0.55;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+[data-cswitch-tab].is-active {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
+/* Keyboard focus stays visible (roving tabindex means only the active tab is
+   tabbable — never remove the ring). */
+[data-cswitch-tab]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Reduced motion: no deck transitions, no transforms fighting the layout —
+   just show the active card. JS already skips autoplay + drag here. */
+@media (prefers-reduced-motion: reduce) {
+  html.cswitch-armed [data-cswitch-card] {
+    transition: none !important;
+  }
+  [data-cswitch-tab] {
+    transition: none !important;
+  }
+}

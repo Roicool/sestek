@@ -746,6 +746,8 @@ DOM yapısı:
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
 | `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
 | `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
+| `js/components/case-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js` |
+| `css/components/case-switch.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/case-switch.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2617,6 +2619,100 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
   layout Designer'dan; RC Structure token'larıyla.
 - `prefers-reduced-motion` veya GSAP yoksa: pin yok, kartlar yerinde (final kare).
 - `Sestek.initCardCascade()` sayfadaki tüm grupları tek çağrıda bağlar.
+
+---
+
+### Case Switch (logo tab + CMS kart destesi)
+
+Müşteri **logoları tab** gibi çalışır; diğer tarafta seçili case study'yi gösteren
+**üst üste kart destesi** durur. Deste **5 saniyede bir otomatik ilerler**, fareyle
+**tutulup atılarak** (drag) da değiştirilir, ve hangi kart öne gelirse (otomatik /
+tıklama / sürükleme) **aktif logo senkron olur ve renklenir**. İki Collection List
+(logolar + kartlar) **aynı koleksiyona ve aynı sıralamaya** bağlanır — DOM sırasıyla
+index eşleşir (item i ↔ kart i). Görünüm Designer'da; script yalnızca davranış + senkron.
+
+```html
+<!-- in <head> — anti-flash guard'ı CSS'ten ÖNCE arm et -->
+<script>document.documentElement.classList.add('cswitch-armed')</script>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/case-switch.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initCaseSwitch(); // tüm [data-cswitch] switcher'larını başlatır
+  });
+</script>
+```
+
+DOM (Webflow — iki Collection List, ikisi de **aynı** Case Studies koleksiyonundan):
+
+```html
+<!--
+  Kök ([data-cswitch]) attribute'ları (hepsi opsiyonel):
+    data-cswitch-interval   otomatik geçiş ms, 0 = kapalı        (default 5000)
+    data-cswitch-duration   geçiş süresi sn                      (default 0.6)
+    data-cswitch-ease       GSAP ease                            (default "power3.out")
+    data-cswitch-stack      arkada görünen kart sayısı           (default 3)
+    data-cswitch-offset-x   arka kartların yana taşması px       (default 18)
+    data-cswitch-offset-y   arka kartların yukarı(−)/aşağı px    (default -16)
+    data-cswitch-scale      derinlik başına küçülme              (default 0.05)
+    data-cswitch-drag       "false" → sürükleme kapalı           (default true)
+-->
+<div data-cswitch>
+
+  <!-- SOL: logo tab'ları — Collection List (Case Studies) -->
+  <div data-cswitch-tabs class="w-dyn-list">
+    <div role="list" class="w-dyn-items">
+      <!-- Collection Item: her item bir tab -->
+      <div role="listitem" data-cswitch-tab class="w-dyn-item">
+        <img src="logo.svg" alt="Müşteri logosu">
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ: kart destesi — AYNI koleksiyondan ikinci Collection List -->
+  <div data-cswitch-deck class="w-dyn-list">
+    <div role="list" class="w-dyn-items">
+      <!-- Collection Item: her item bir kart -->
+      <div role="listitem" data-cswitch-card class="w-dyn-item">
+        <img src="cover.jpg" alt="">
+        <h3>Başlık / quote</h3>
+        <a href="/case/x">See how X uses …</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
+**Notlar**
+- **İki liste = aynı koleksiyon + aynı sıralama.** Sıra/adet uyuşmazsa JS uyarır ve
+  kısa olana göre eşler. En temizi: aynı koleksiyonu iki Collection List olarak
+  bağla, ikisinde de aynı sort.
+- **Deste stacking CSS'ten:** ilk kart normal akışta kalıp desteye yükseklik verir,
+  diğerleri üstüne absolute yığılır — JS transform'la yerleştirir. Kart tasarımı
+  (radius, gölge, boyut) Designer'da; kartların eşit boyutlu olması beklenir.
+- **Aktif logo renkli:** varsayılan CSS pasif logoyu `grayscale(1)+opacity`, aktifi
+  renkli yapar (`.is-active`). CMS'te tek logo alanı yeterli. Ayrı renkli/mono
+  görsel istersen bu bloğu Designer'da ez.
+- **Sürükleme:** sola at → sıradaki, sağa çek → önceki; eşik altında bırakılırsa
+  geri oturur. Dikey hareket sayfayı scroll eder (yatay niyet algılanınca drag
+  devralır). Gerçek sürükleme, karttaki linke tıklamayı yutmaz.
+- **Otomatik döngü** hover/focus'ta, sürüklerken ve sekme arka plandayken durur;
+  sonsuz döngüdür.
+- **Erişilebilirlik:** `role="tablist"` + roving tabindex, `aria-selected`, ←/→/
+  Home/End ile gezinme; kartlar `role="tabpanel"` + non-front'ta `aria-hidden`.
+- `prefers-reduced-motion`: otomatik + drag kapalı, geçişler anında; sadece manuel tab.
+- `Sestek.initCaseSwitch()` her switcher'a bir controller döndürür:
+  `{ el, to(i), next(), prev(), _destroy() }`.
 
 ---
 
