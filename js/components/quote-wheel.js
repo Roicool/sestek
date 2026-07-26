@@ -1,5 +1,9 @@
 /*!
- * quote-wheel.js v1.0.1
+ * quote-wheel.js v1.0.2
+ * v1.0.2: the [data-qw-mobile] host is force-shown (inline display:block) while
+ *         the mobile carousel is active and released on desktop — authors hide
+ *         the empty host with display:none in Designer so it can't take up
+ *         space on desktop, and JS re-opens it only when it has content.
  * v1.0.1: nav clicks preventDefault — authors build the buttons as <a href="#">
  *         link blocks in Webflow; without it every click jumped the page to #.
  * Rotating testimonial WHEEL (incident.io style): quote cards sit on the rim
@@ -271,6 +275,10 @@
         root.appendChild(host);
         created = true;
       }
+      // Authors hide the empty host with display:none in Designer (it must not
+      // take up space on desktop). Force it open while the carousel lives here;
+      // the cleanup below releases it back to the Designer value.
+      host.style.display = "block";
 
       var el = document.createElement("div");
       el.className = "swiper";
@@ -310,6 +318,7 @@
       return function () {
         if (swiper) swiper.destroy(true, true);
         host.removeChild(el);
+        host.style.display = "";                  // release to the Designer value
         if (created) root.removeChild(host);
       };
     });
