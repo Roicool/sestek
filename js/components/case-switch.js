@@ -1,5 +1,5 @@
 /*!
- * case-switch.js v2.0.0
+ * case-switch.js v2.1.0
  * CMS-driven case-study switcher: customer LOGOS act as tabs, and a STACKED DECK
  * of cards shows the selected case study. The deck auto-advances every 5s, can be
  * GRABBED and thrown to change cards, and whichever card lands on top always
@@ -7,6 +7,14 @@
  * change was triggered.
  *
  * Changelog
+ * v2.1.0 — real deck feel: behind cards fan out with a slight ROTATION
+ *          (data-cswitch-rotate) so the actual next case studies peek out
+ *          angled, like a physical stack. Drag is now CLAMPED to the stack
+ *          area (rubber-band past ~40% card width — the card can no longer be
+ *          carried across the page); releasing past the threshold TUCKS the
+ *          card behind the deck (slides out slightly, drops under, settles
+ *          into the back slot) instead of flying off-screen. Both drag
+ *          directions tuck-behind; autoplay uses the same tuck animation.
  * v2.0.0 — SINGLE Collection List. One list, one CMS query: each Collection Item
  *          holds BOTH its logo (tab) and its card, so index alignment is
  *          guaranteed (was two lists bound by DOM order). Logos flow in the list
@@ -44,8 +52,10 @@
  *   data-cswitch-ease       GSAP ease for settles            (default "power3.out")
  *   data-cswitch-stack      how many behind-cards are visible (default 3)
  *   data-cswitch-offset-x   px each behind card peeks sideways (default 18)
- *   data-cswitch-offset-y   px each behind card peeks up (−) / down (default -16)
- *   data-cswitch-scale      scale falloff per depth           (default 0.05)
+ *   data-cswitch-offset-y   px each behind card peeks up (−) / down (default -10)
+ *   data-cswitch-scale      scale falloff per depth           (default 0.04)
+ *   data-cswitch-rotate     degrees of tilt per depth — the "slightly angled"
+ *                           physical-stack look                (default 2.5)
  *   data-cswitch-drag       "false" disables grab/throw       (default true)
  *
  * Deck region: cards are position:absolute (CSS) and anchor to [data-cswitch]
@@ -69,9 +79,10 @@
     duration: 0.6,
     ease: "power3.out",
     stack: 3,
-    offsetX: 18,
-    offsetY: -16,
-    scale: 0.05,
+    offsetX: 22,
+    offsetY: -10,
+    scale: 0.04,
+    rotate: 2.5,
   };
 
   function mod(n, m) { return ((n % m) + m) % m; }
@@ -103,6 +114,7 @@
     var OFFX     = attrNum(root, "data-cswitch-offset-x", DEFAULTS.offsetX);
     var OFFY     = attrNum(root, "data-cswitch-offset-y", DEFAULTS.offsetY);
     var SCALE    = attrNum(root, "data-cswitch-scale", DEFAULTS.scale);
+    var ROT      = attrNum(root, "data-cswitch-rotate", DEFAULTS.rotate);
     var EASE     = root.getAttribute("data-cswitch-ease") || DEFAULTS.ease;
     var DRAG_ON  = root.getAttribute("data-cswitch-drag") !== "false";
 
@@ -124,14 +136,16 @@
     });
 
     // ── Deck slot geometry ───────────────────────────────────────────────────
-    // depth 0 = front; higher = further back. Cards past STACK are hidden.
+    // depth 0 = front (straight); higher = further back, each peeking out to
+    // the side with a slight TILT — a real physical stack, so the actual next
+    // case studies' visuals show behind the front card. Past STACK → hidden.
     function slotProps(card) {
       var d = mod(cards.indexOf(card) - active, n);
       var shown = d < STACK;
       return {
         x: d * OFFX,
         y: d * OFFY,
-        rotation: 0,
+        rotation: d * ROT,
         scale: 1 - d * SCALE,
         autoAlpha: shown ? 1 : 0,
         zIndex: 100 - d,
@@ -175,35 +189,48 @@
     }
 
     // ── Transitions ──────────────────────────────────────────────────────────
-    // Throw the front card off to `dir` and advance to the next case study.
+    // TUCK-BEHIND: the front card slides out a little to `dir` (stays inside
+    // the stack area — it never crosses the page), drops UNDER the deck, and
+    // settles into the back slot while everyone else glides forward one.
     function throwOut(dir) {
       if (animating || n < 2) return;
       animating = true;
       var leaving = cards[active];
       active = mod(active + 1, n);
-      var dist = cardWidth() * 1.15;
-      gsap.to(leaving, {
-        x: dir * dist, y: -24, rotation: dir * 12, autoAlpha: 0,
-        duration: DUR * 0.55, ease: "power2.in",
-        onComplete: function () { gsap.set(leaving, slotProps(leaving)); },
+      var w = cardWidth();
+      var tl = gsap.timeline();
+      tl.to(leaving, {                                        // 1. peel out sideways
+        x: dir * w * 0.55, y: -14, rotation: dir * 7, scale: 0.97,
+        duration: DUR * 0.4, ease: "power2.in",
       });
-      cards.forEach(function (card) {
+      tl.set(leaving, { zIndex: 1 });                         // 2. slip UNDER the deck
+      tl.to(leaving, Object.assign(                           // 3. settle into back slot
+        { duration: DUR * 0.6, ease: EASE }, slotProps(leaving)));
+      cards.forEach(function (card) {                         // others move up a slot
         if (card !== leaving) gsap.to(card, Object.assign({ duration: DUR, ease: EASE }, slotProps(card)));
       });
       syncActive();
       gsap.delayedCall(DUR, function () { animating = false; });
     }
 
-    // Pull the previous case study in from the left and recede the old front.
+    // Reverse tuck: the card at the BACK of the deck peels out sideways, rises
+    // over the stack and settles in front (previous case study).
     function pullIn() {
       if (animating || n < 2) return;
       animating = true;
       active = mod(active - 1, n);
       var incoming = cards[active];
-      var dist = cardWidth() * 1.15;
-      gsap.set(incoming, { x: -dist, y: -24, rotation: -10, scale: 1, autoAlpha: 1, zIndex: 200 });
-      cards.forEach(function (card) {
-        gsap.to(card, Object.assign({ duration: DUR, ease: EASE }, slotProps(card)));
+      var w = cardWidth();
+      var tl = gsap.timeline();
+      tl.to(incoming, {                                       // 1. peel out from behind
+        x: w * 0.55, y: -14, rotation: 7, autoAlpha: 1, scale: 0.97,
+        duration: DUR * 0.4, ease: "power2.in",
+      });
+      tl.set(incoming, { zIndex: 200 });                      // 2. rise OVER the deck
+      tl.to(incoming, Object.assign(                          // 3. settle in front
+        { duration: DUR * 0.6, ease: EASE }, slotProps(incoming)));
+      cards.forEach(function (card) {                         // others recede a slot
+        if (card !== incoming) gsap.to(card, Object.assign({ duration: DUR, ease: EASE }, slotProps(card)));
       });
       syncActive();
       gsap.delayedCall(DUR, function () { animating = false; });
@@ -275,6 +302,13 @@
         w = cardWidth();
         paused.drag = true; schedule();
       });
+      // Rubber-band: free movement up to `limit`, heavy resistance past it —
+      // the card stays INSIDE the stack area, it can never cross the page.
+      function rubber(v, limit) {
+        if (v > limit) return limit + (v - limit) * 0.12;
+        if (v < -limit) return -limit - (-v - limit) * 0.12;
+        return v;
+      }
       root.addEventListener("pointermove", function (e) {
         if (!dragging) return;
         dx = e.clientX - startX;
@@ -288,15 +322,19 @@
         }
         if (!horiz) return;
         e.preventDefault();
-        gsap.set(cards[active], { x: dx, rotation: dx * 0.03 });
+        var shown = rubber(dx, w * 0.4);
+        gsap.set(cards[active], { x: shown, rotation: shown * 0.03 });
       });
       function endDrag() {
         if (!dragging) return;
         dragging = false;
         paused.drag = false;
         var threshold = Math.max(w * 0.18, 60);
-        if (horiz && dx <= -threshold) throwOut(-1);          // toss left → next
-        else if (horiz && dx >= threshold) pullIn();          // pull right → previous
+        // Past the threshold (either direction) → the card TUCKS BEHIND the
+        // deck, following the drag direction. You always see it join the back
+        // of the stack — it never leaves the stack area.
+        if (horiz && dx <= -threshold) throwOut(-1);
+        else if (horiz && dx >= threshold) throwOut(1);
         else gsap.to(cards[active], { x: 0, rotation: 0, duration: 0.35, ease: "power3.out" }); // snap back
         schedule();
       }

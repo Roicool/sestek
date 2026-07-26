@@ -2741,7 +2741,9 @@ DOM (Webflow — **TEK** Collection List; her item hem logo hem kart içerir):
     data-cswitch-stack      arkada görünen kart sayısı           (default 3)
     data-cswitch-offset-x   arka kartların yana taşması px       (default 18)
     data-cswitch-offset-y   arka kartların yukarı(−)/aşağı px    (default -16)
-    data-cswitch-scale      derinlik başına küçülme              (default 0.05)
+    data-cswitch-scale      derinlik başına küçülme              (default 0.04)
+    data-cswitch-rotate     derinlik başına eğim, derece —
+                            "hafif açılı" fiziksel deste hissi   (default 2.5)
     data-cswitch-drag       "false" → sürükleme kapalı           (default true)
 -->
 <div data-cswitch>
