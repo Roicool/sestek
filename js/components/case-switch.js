@@ -1,5 +1,5 @@
 /*!
- * case-switch.js v2.1.1
+ * case-switch.js v2.2.0
  * CMS-driven case-study switcher: customer LOGOS act as tabs, and a STACKED DECK
  * of cards shows the selected case study. The deck auto-advances every 5s, can be
  * GRABBED and thrown to change cards, and whichever card lands on top always
@@ -7,6 +7,13 @@
  * change was triggered.
  *
  * Changelog
+ * v2.2.0 — deck height → CSS var: the cards are absolute (out of flow), so the
+ *          root can't size itself from them and the left column (header + logo
+ *          grid, justify-between) could over/undershoot the deck. The script
+ *          now measures the TALLEST card and writes it to --cswitch-deck-h on
+ *          the root (kept fresh on resize + window load); the critical CSS
+ *          uses it as the root min-height, so the logo grid always ends flush
+ *          with the deck bottom — no manual calibration.
  * v2.1.1 — audit fixes: native image-drag no longer hijacks the card grab
  *          (dragstart suppressed on card content; pair with user-drag:none in
  *          CSS); links inside non-front (aria-hidden) cards are removed from
@@ -374,8 +381,29 @@
       }, true);
     }
 
+    // ── Deck height → CSS var ────────────────────────────────────────────────
+    // Cards are absolute (out of flow) — the root can't size itself from them.
+    // Measure the TALLEST card and expose it as --cswitch-deck-h; the critical
+    // CSS uses it as the root's min-height so the left column (header + logo
+    // grid, justify-between) ends flush with the deck bottom, every viewport.
+    // aspect-ratio on the cover reserves image height pre-load, so the measure
+    // is correct even before images arrive; re-measured on resize + load.
+    function setDeckHeight() {
+      var h = 0;
+      cards.forEach(function (card) { h = Math.max(h, card.offsetHeight); });
+      if (h) root.style.setProperty("--cswitch-deck-h", h + "px");
+    }
+    var resizeTimer = null;
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(setDeckHeight, 150);
+    }
+    window.addEventListener("resize", onResize);
+    window.addEventListener("load", setDeckHeight, { once: true });
+
     // ── Init state ───────────────────────────────────────────────────────────
     render(false);                                            // instant lay-out of the deck
+    setDeckHeight();
     schedule();                                               // start autoplay (no-op if disabled)
 
     root._caseSwitch = {
@@ -385,6 +413,8 @@
       prev: function () { pullIn(); restart(); },
       _destroy: function () {
         clearTimeout(timer);
+        clearTimeout(resizeTimer);
+        window.removeEventListener("resize", onResize);
         document.removeEventListener("visibilitychange", onVisibility);
       },
     };
