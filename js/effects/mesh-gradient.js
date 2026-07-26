@@ -1,5 +1,5 @@
 /*!
- * mesh-gradient.js v2.0.0
+ * mesh-gradient.js v2.1.0
  * Sestek mesh gradient'inin CANLI katmanı: 4 renk lekesini (pembe / viyole
  * / cyan / viyole-eko) ayrı transform-only katmanlar olarak enjekte eder.
  *
@@ -8,8 +8,9 @@
  *              tepki verir (kimisi doğru, kimisi ters → "mash" hissi);
  *              gsap quickTo ile ağır bir lag'le süzülür, imleç çıkınca
  *              yerine döner.
- *   İÇ span  — IDLE drift: her leke kendi ritminde (10-13sn yoyo) yavaşça
- *              gezinir — mouse olmasa da renkler canlıdır.
+ *   İÇ span  — IDLE drift: x ve y FARKLI sürelerde salınır (yörüngeli,
+ *              Lissajous benzeri gezinme) + yavaş scale nefesi — mouse
+ *              olmasa da mesh gözle görünür şekilde akar (v2.1.0).
  *
  * Katmanlar kurulunca köke .is-live basılır (CSS statik mesh'i kapatır).
  * Kurulmama halleri → statik CSS mesh aynen kalır:
@@ -23,6 +24,7 @@
  *   data-mesh-drift     "false" → idle drift kapalı           (default true)
  *   data-mesh-lag       mouse takip gecikmesi sn              (default 0.8)
  *   data-mesh-strength  mouse etki çarpanı — 0.5 hafif, 2 sert (default 1)
+ *   data-mesh-speed     idle drift hız çarpanı — 2 = iki kat hızlı (default 1)
  *   data-mesh-c1/-c2/-c3  renk override'ları (token | hex | var())
  *
  * https://github.com/roicool/sestek
@@ -39,13 +41,31 @@
   }
 
   // Leke reçetesi: konum (%), renk değişkeni, ölçek, mouse faktörü (işaret =
-  // yön; zıt işaretler mash hissini verir), drift genliği (% / sn) ve faz.
+  // yön; zıt işaretler mash hissini verir), yörünge genlikleri (xPercent /
+  // yPercent, FARKLI sürelerle → dairesel-organik gezinme), scale nefesi
+  // aralığı ve faz dağılımı.
   var LAYERS = [
-    { x: "14%", y: "18%", c: "--mesh-c3", s: 1.00, f:  0.10, dx:  6, dy:  5, dur: 11, phase: 0.00 },
-    { x: "84%", y: "12%", c: "--mesh-c2", s: 0.95, f: -0.07, dx: -5, dy:  6, dur: 13, phase: 0.35 },
-    { x: "82%", y: "86%", c: "--mesh-c1", s: 1.15, f:  0.13, dx:  5, dy: -6, dur: 12, phase: 0.60 },
-    { x: "22%", y: "88%", c: "--mesh-c2", s: 0.80, f: -0.11, dx: -6, dy: -5, dur: 10, phase: 0.85 },
+    { x: "14%", y: "18%", c: "--mesh-c3", s: 1.00, f:  0.18, ax:  16, ay:  12, da: 7.5, db: 9.5, s0: 0.92, s1: 1.12, dc: 8.5, phase: 0.00 },
+    { x: "84%", y: "12%", c: "--mesh-c2", s: 0.95, f: -0.13, ax: -13, ay:  15, da: 8.5, db: 6.5, s0: 1.10, s1: 0.94, dc: 10,  phase: 0.30 },
+    { x: "82%", y: "86%", c: "--mesh-c1", s: 1.15, f:  0.22, ax:  14, ay: -16, da: 9,   db: 7,   s0: 0.94, s1: 1.15, dc: 9,   phase: 0.55 },
+    { x: "22%", y: "88%", c: "--mesh-c2", s: 0.80, f: -0.17, ax: -18, ay: -12, da: 6.5, db: 8.5, s0: 1.08, s1: 0.90, dc: 7.5, phase: 0.80 },
   ];
+
+  /** -amp → +amp arasında sonsuz sine salınımı (fazlı başlar). */
+  function sway(el, prop, amp, dur, phase, store) {
+    var vars0 = {}, vars1 = {};
+    vars0[prop] = -amp;
+    vars1[prop] = amp;
+    vars1.duration = dur;
+    vars1.ease = "sine.inOut";
+    vars1.repeat = -1;
+    vars1.yoyo = true;
+    vars1.paused = true;
+    var t = gsap.fromTo(el, vars0, vars1);
+    t.progress(phase).play();
+    store.push(t);
+    return t;
+  }
 
   function setup(root, hoverable, reduced) {
     if (root._meshInit) return;                           // idempotent
@@ -70,6 +90,7 @@
     var driftOn  = root.getAttribute("data-mesh-drift") !== "false";
     var lag      = parseFloat(root.getAttribute("data-mesh-lag")) || 0.8;
     var strength = parseFloat(root.getAttribute("data-mesh-strength")) || 1;
+    var speed    = parseFloat(root.getAttribute("data-mesh-speed")) || 1;
 
     var outers = [], driftTweens = [], quicks = [];
 
@@ -87,15 +108,17 @@
       outers.push(outer);
 
       if (driftOn) {
-        // Kendi ritminde yoyo süzülme; phase ile fazlar dağıtılır — dört
-        // leke asla senkron nefes almaz (organik his).
-        var t = gsap.to(inner, {
-          xPercent: L.dx, yPercent: L.dy,
-          duration: L.dur, ease: "sine.inOut",
+        // Yörüngeli gezinme: x ve y farklı sürelerde salınır (kapalı bir
+        // sekiz/elips çizer), scale nefesi renk karışımını görünür kılar.
+        // Fazlar dağıtılır — dört leke asla senkron hareket etmez.
+        sway(inner, "xPercent", L.ax, L.da / speed, L.phase, driftTweens);
+        sway(inner, "yPercent", L.ay, L.db / speed, (L.phase + 0.4) % 1, driftTweens);
+        var st = gsap.fromTo(inner, { scale: L.s0 }, {
+          scale: L.s1, duration: L.dc / speed, ease: "sine.inOut",
           repeat: -1, yoyo: true, paused: true,
         });
-        t.progress(L.phase).play();
-        driftTweens.push(t);
+        st.progress((L.phase + 0.7) % 1).play();
+        driftTweens.push(st);
       }
 
       if (follow) {
