@@ -1,0 +1,245 @@
+/*!
+ * circle-diagram.css v1.4.0
+ * Behavioural + skin CSS for circle-diagram.js v2.1.0.
+ *
+ * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
+ * diyagramı (panel kartı YOK; her item kendi beyaz chip kartında, okunabilirlik
+ * oradan gelir), SAĞDA üst üste dizilmiş tıklanabilir kartlar (data-cd-visible
+ * kadarı görünür, aktif karta liste otomatik kayar). ≤991px: tek kolon.
+ *
+ * Ring'i (.cd_connector) JS enjekte eder — HTML'e ring koyma. Kart listesi
+ * viewport yüksekliğini (3 kart) JS ölçer/basar. Renkler RC token'ları
+ * üzerinden; koyu section'da kök değişkenleri override etmen yeter.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Kök: tokenlar + container ───────────────────────────────── */
+[data-circle-diagram] {
+  --cd-ink:    var(--color-text--base, var(--neutral--950, #111));      /* aktif yazı */
+  --cd-accent: var(--brand-primary--500, #EC008C);                      /* kuyruk + aktif dot */
+  --cd-muted:  var(--color-text--muted, var(--neutral--600, #6b6b6b));  /* pasif yazılar */
+  --cd-line:   var(--border--color-border-base, var(--neutral--200, rgba(0, 0, 0, .12)));
+  --cd-ring:   var(--neutral--300, rgba(0, 0, 0, .22));                 /* halka çizgisi — kart
+                                                                           border'ından BAĞIMSIZ,
+                                                                           zemine göre ayarla */
+  --cd-ring-w: 2px;                                                     /* halka kalınlığı */
+  --cd-bg:     var(--surface--base, var(--neutral--0, #fff));           /* panel/kart zemini */
+  position: relative;
+  width: 100%;                             /* flex/grid parent içinde büzülme */
+  max-width: var(--container--2xl, 96rem);
+  margin-inline: auto;
+  padding: var(--spacing--10, 2.5rem) var(--view--px, var(--spacing--6, 1.5rem));
+}
+
+/* ── İki kolonlu düzen ───────────────────────────────────────── */
+.cd_layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(2.5rem, 5vw, 5rem);
+  align-items: center;
+}
+
+/* ── SOL: diyagram kolonu — kart YOK, sade konum bağlamı ─────────
+   Okunabilirlik item chip'lerinden gelir; padding chip'lerin halka
+   dışına taşan kısmına alan bırakır. */
+.cd_panel {
+  display: flex;
+  justify-content: center;
+  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 5vw, 5rem);
+}
+
+/* Sahne: ring'in boyutunu BU belirler */
+.cd_stage {
+  position: relative;
+  width: min(28rem, 100%, 76vw);
+  aspect-ratio: 1 / 1;
+}
+
+/* ── Ring + gezen çizgi — JS'in enjekte ettiği tek eleman ────────
+   conic-gradient: çemberin çoğu soluk, son 32° markaya sönümlenen
+   kuyruk. JS ucu aktif node'a döndürür.                          */
+.cd_connector {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--cd-ring)   328deg,
+    var(--cd-accent) 360deg
+  );
+  /* içini boşalt → --cd-ring-w kalınlığında ring kalsın */
+  -webkit-mask: radial-gradient(farthest-side,
+      transparent calc(100% - var(--cd-ring-w, 2px) - .25px), #000 calc(100% - .25px));
+          mask: radial-gradient(farthest-side,
+      transparent calc(100% - var(--cd-ring-w, 2px) - .25px), #000 calc(100% - .25px));
+  pointer-events: none;
+  will-change: transform;
+  /* gsap yoksa dönüşü bu transition üstlenir */
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ── Item = beyaz CHIP kartı (dot + label) ───────────────────────
+   JS left/top verir, transform merkezler; chip halka çizgisinin
+   üstüne oturur (beyaz zemini çizgiyi keser — okunabilir). */
+.cd_item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: .55rem 1.05rem;
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, .28);
+  cursor: pointer;
+  color: var(--cd-muted);
+  font-size: .8125rem;                     /* 13px */
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color .35s, border-color .35s, box-shadow .35s, transform .35s;
+}
+
+/* Tüm chip'ler YATAY (dot yanında). Sol yarıdakilerde dot sağda —
+   halkaya bakan tarafta dursun diye; tepe/alt da yatay kalır. */
+.cd_item[data-cd-side="left"]   { flex-direction: row-reverse; }
+
+/* Dot */
+.cd_dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  border: .5px solid var(--neutral--400, #9b9b9b);
+  background: var(--cd-bg);
+  transition: background .35s, border-color .35s, transform .35s;
+}
+
+.cd_label {
+  transition: letter-spacing .35s;
+}
+
+/* Aktif chip: hafif büyür, kenar markaya döner — label chip içinde kalır
+   (eski label scale'i chip'i taşırdığı için kaldırıldı) */
+.cd_item.is-active {
+  color: var(--cd-ink);
+  border-color: var(--cd-accent);
+  box-shadow: 0 14px 32px -18px rgba(0, 0, 0, .35);
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 3;
+}
+.cd_item.is-active .cd_dot {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  transform: scale(1.45);
+}
+.cd_item.is-active .cd_label {
+  text-transform: none;
+  letter-spacing: .01em;
+}
+.cd_item:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 2px;
+  border-radius: .25rem;
+}
+
+/* ── SAĞ: üst üste kart listesi ──────────────────────────────────
+   [data-cd-cards] görünür pencere (yüksekliği JS basar: VISIBLE kart),
+   [data-cd-cards-track] dikey şerit — JS transform'la kaydırır.     */
+.cd_cards {
+  position: relative;
+  overflow: hidden;
+}
+
+.cd_cards-track {
+  position: relative;                      /* offsetTop ölçümü şeride göre */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing--4, 1rem);
+  will-change: transform;
+}
+
+.cd_pcard {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--radius--lg, .75rem);
+  padding: 1.5rem 1.75rem;
+  cursor: pointer;
+  opacity: .5;                             /* pasif state */
+  transition: opacity .35s, border-color .35s, box-shadow .35s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cd_pcard.is-active {
+  opacity: 1;
+  border-color: var(--cd-accent);
+  box-shadow: 0 20px 40px -28px rgba(0, 0, 0, .25);
+}
+.cd_pcard:hover { opacity: .8; }
+.cd_pcard.is-active:hover { opacity: 1; }
+.cd_pcard:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 2px;
+}
+
+/* ── Kart içi tipografi — hem tek kartta hem liste kartlarında ──
+   Başlık gövdeden BÜYÜK (18px/600) — hiyerarşi: başlık > metin. */
+.cd_card-title {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  font-size: 1.125rem;                     /* 18px — gövdeden büyük */
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-transform: none;
+  color: var(--cd-ink);
+  margin-bottom: .625rem;
+}
+.cd_card-title::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cd-accent);
+  flex: none;
+}
+.cd_card-text {
+  color: var(--color-text--base, var(--neutral--900, #1a1a1a));
+  font-size: .9375rem;                     /* 15px */
+  line-height: 1.65;
+  letter-spacing: .005em;
+  margin: 0;
+  text-transform: none;
+}
+
+/* ── TEK KART modu (eski API — [data-cd-card] kullanan sayfalar) ─ */
+.cd_card {
+  width: min(22rem, 90vw);
+  padding: 1.75rem 2rem 2rem;
+  border-radius: var(--radius--lg, .75rem);
+  background: linear-gradient(
+    180deg,
+    var(--surface--muted, var(--neutral--050, #f7f7f5)) 0%,
+    var(--surface--base, #fff) 100%
+  );
+  border: 1px solid var(--cd-line);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, .18);
+}
+
+/* ── Tablet ve mobil: alt alta ───────────────────────────────── */
+@media (max-width: 991px) {
+  .cd_layout {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .cd_panel { padding: 1.5rem clamp(1.5rem, 8vw, 3rem); }
+  .cd_stage { width: min(22rem, 100%, 82vw); }
+}
+
+/* ── Reduced motion: her şey anlık ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cd_connector, .cd_item, .cd_dot, .cd_label, .cd_pcard { transition: none; }
+}

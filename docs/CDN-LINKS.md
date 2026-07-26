@@ -744,6 +744,8 @@ DOM yapısı:
 | `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
 | `js/components/h-scroll.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js` |
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
+| `js/components/circle-diagram.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/circle-diagram.js` |
+| `css/components/circle-diagram.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/circle-diagram.css` |
 | `js/components/card-cascade.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-cascade.js` |
 | `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 | `js/components/case-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js` |
@@ -844,6 +846,82 @@ DOM:
   gerekmez.
 - Pinli bölüm kuralları geçerlidir: ancestor'larda transform/filter yok,
   `refreshPriority` sayfa sırasına göre (PROJECT.md tablosu).
+
+### Circle Diagram (dönen halka + kart listesi)
+
+Planhat tarzı halka diyagramı: solda beyaz panel kartı içinde ring (dot +
+label'lar), sağda üst üste tıklanabilir kartlar. Dönen conic-gradient uç
+autoplay'dir — geçtiği node aktifleşir, kart listesi aktif karta kayar
+(`data-cd-visible` kadar kart görünür, default 3). Kart/item tıklaması ucu o
+node'a süpürür; mouse liste üstündeyken ve klavye odağı içerideyken dönüş
+durur. ≤991px tek kolon (diyagram üstte, kartlar altta). GSAP'siz de çalışır
+(dönüş hariç); `prefers-reduced-motion`: dönüş yok, anında geçiş.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/circle-diagram.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/circle-diagram.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initCircleDiagram(); // tüm [data-circle-diagram] köklerini bağlar
+  });
+</script>
+```
+
+DOM (kart listesi modu — önerilen):
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-cd-spin     tam tur süresi sn; N item → adım spin/N. "0" kapatır,
+                     boş değer default'a düşer                    (default 14)
+    data-cd-resume   kesintiden (tap/klavye/hover çıkışı) sonra dönüşün
+                     devam süresi sn                              (default 3)
+    data-cd-visible  listede görünen kart sayısı                  (default 3)
+    data-cd-start    başlangıç aktif index                        (default 0)
+  Item attribute'ları: data-cd-angle (derece override, -90 = tepe),
+    data-cd-title / data-cd-text (tek-kart modu metinleri)
+-->
+<section data-circle-diagram data-cd-spin="14" class="">
+  <div class="cd_layout">
+    <div class="cd_panel">
+      <div data-cd-stage class="cd_stage">
+        <button data-cd-item class="cd_item">
+          <span data-cd-dot class="cd_dot"></span>
+          <span data-cd-label class="cd_label">Input</span>
+        </button>
+        <!-- istediğin kadar item — halkaya eşit dağıtılır -->
+      </div>
+    </div>
+    <div data-cd-cards class="cd_cards">
+      <div data-cd-cards-track class="cd_cards-track">
+        <div data-cd-panel-card class="cd_pcard">
+          <div class="cd_card-title">Input</div>
+          <p class="cd_card-text">Açıklama…</p>
+        </div>
+        <!-- kartlar item SIRASIYLA eşleşir (1. kart ↔ 1. item) -->
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- Ring'i (`.cd_connector`) JS enjekte eder — HTML'e ring koyma. Liste
+  penceresinin yüksekliğini de JS ölçer/basar (görünen kart sayısı kadar).
+- Aktif item'a ve kartına `is-active` + `aria-current` basılır; buton olmayan
+  item/kartlara `tabindex` + `role="button"` verilir.
+- Eski **tek-kart modu** (`[data-cd-card]` + `data-cd-card-title/text`)
+  aynen çalışır — kart listesi verilmeyen sayfalar etkilenmez.
+- Renkler kökteki `--cd-*` değişkenleriyle; koyu section'da 5 değişkeni
+  override etmek yeter. Kritik CSS olarak inline edilebilir.
+- Dönüş yalnız section viewport'tayken çalışır (IntersectionObserver).
 
 ### Accordion
 
