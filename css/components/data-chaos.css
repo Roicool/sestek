@@ -1,0 +1,111 @@
+/*!
+ * data-chaos.css v1.0.0
+ * "Data Chaos → Clarity" pinli bölümün davranışsal CSS'i — geometri
+ * orijinalle birebir aynı (px değerleri korunmuştur, animasyon bunlara
+ * bağlı). Renk/tipografi Designer + RC token'larından gelir; kart içi
+ * Label/Header/List/Buttons stillerine bu dosya KARIŞMAZ.
+ *
+ * Taban düzen = STATİK (alt alta) — 1199px altı ve reduced-motion böyle
+ * kalır. Pinli absolute düzen yalnız ≥1200px + motion-allowed'da kurulur
+ * (data-chaos.js'in matchMedia'sıyla aynı koşul).
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Kök — pin edilen section ────────────────────────────────── */
+[data-dchaos] {
+  --dchaos-max: 1200px;          /* grid genişliği */
+  --dchaos-min-h: 660px;         /* section yüksekliği (orijinal) */
+  --dchaos-grid-h: 500px;        /* grid / sahne yüksekliği */
+  --dchaos-card-w: 44%;          /* metin kartları */
+  --dchaos-float-w: 40%;         /* hareketli kart */
+  position: relative;
+  width: 100%;
+  padding: 80px 0;
+  box-sizing: border-box;
+  overflow: hidden;              /* sola çıkan kart taşmasın */
+  background: var(--surface--base, #fff);
+  /*
+   * PIN RULE (PROJECT.md Kural 3): bu elementte ve hiçbir ancestor'da
+   * transform / filter / perspective / will-change:transform olmasın.
+   */
+}
+
+.dchaos__grid {
+  position: relative;
+  max-width: var(--dchaos-max);
+  margin: 0 auto;
+}
+
+/* ── TABAN: statik akış (mobil / tablet / reduced-motion) ────── */
+.dchaos__card { width: 100%; }
+
+/* Hareketli kartın içi: SVG katmanları ve yazılar burada istiflenir */
+.dchaos__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: var(--dchaos-grid-h);
+}
+
+/* SVG katmanları: üst üste, tam ortalı */
+[data-dchaos-chaos],
+[data-dchaos-parallax],
+[data-dchaos-clarity] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Başlangıç durumları (JS bunları scroll'la değiştirir) */
+[data-dchaos-chaos]    { opacity: 1; }   /* kaos görünür  */
+[data-dchaos-parallax] { opacity: 1; }   /* kaos görünür  */
+[data-dchaos-clarity]  { opacity: 0; }   /* clarity gizli */
+
+/* Kelime flip: Chaos ve Clarity üst üste */
+.dchaos__type { position: relative; z-index: 2; text-align: center; }
+.dchaos__flip { position: relative; height: 1.1em; overflow: visible; }
+[data-dchaos-word-chaos],
+[data-dchaos-word-clarity] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  will-change: transform, opacity;
+}
+[data-dchaos-word-chaos]   { opacity: 1; }   /* başta Chaos görünür */
+[data-dchaos-word-clarity] { opacity: 0; }   /* başta Clarity gizli */
+
+/* JS'in transform'la oynadığı içerik sarmalayıcıları */
+[data-dchaos-challenge],
+[data-dchaos-solution] { will-change: transform, opacity; }
+
+/* ── DESKTOP + motion: pinli absolute düzen ──────────────────────
+ * data-dchaos-bp'yi değiştirirsen buradaki 1200px'i de senkron tut. */
+@media (min-width: 1200px) and (prefers-reduced-motion: no-preference) {
+  [data-dchaos] { min-height: var(--dchaos-min-h); }
+
+  .dchaos__grid { min-height: var(--dchaos-grid-h); }
+
+  .dchaos__card--challenge,
+  .dchaos__card--solution {
+    position: absolute;
+    top: 0;
+    width: var(--dchaos-card-w);
+  }
+  .dchaos__card--challenge { left: 0; }
+  .dchaos__card--solution  { right: 0; }
+
+  /* HAREKETLİ KART: en üstte, ortada; JS -50% → -100% sola sürükler */
+  [data-dchaos-card] {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);   /* JS bunu ezerek animasyon yapar */
+    z-index: 3;
+    width: var(--dchaos-float-w);
+    will-change: transform;
+  }
+}
