@@ -191,6 +191,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `journey-path.js` (pin, ≥992px) | Sayfaya göre değişir | `data-jp-priority` ile ver (default `1`) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 | `section-shrink.js` (pin değil) | Her yerde | `-1` (default, `data-shrink-priority`) |
+| `waveline.js` (pin opsiyonel) | Sayfaya göre değişir | pin'liyse `data-waveline-priority` ile ver (default `1`); pin'siz default `-1` |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
 > **kesirli değil**, mevcut değerleri yeniden numaralandırarak yerleştir
