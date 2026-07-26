@@ -2996,6 +2996,8 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
     data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
     data-mesh-speed       idle drift hız çarpanı                 (default 1)
     data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
+    data-mesh-theme       "dark" → koyu zemin varyantı: taban koyu token,
+                          lekeler screen karışımıyla glow (CSS-only)
 -->
 <section data-mesh-gradient class="hero">
   … içerik …
@@ -3004,8 +3006,12 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
 
 **Notlar**
 - Yoğunluk kökten: statik `--mesh-soft` (default `20%`), canlı katmanlar
-  `--mesh-soft-live` (default `24%`). Koyu tema için `--mesh-base`'i koyu
-  token'a çek, yoğunluğu bir tık artır.
+  `--mesh-soft-live` (default `24%`).
+- KOYU TEMA (v2.1.0): `data-mesh-theme="dark"` — zemin
+  `--surface--inverted → --neutral--900` zincirinden gelir, lekeler screen
+  karışımıyla parlar (statikte `background-blend-mode`, canlıda
+  `mix-blend-mode`), koyu default yoğunluklar 28%/34%. JS değişikliği yok;
+  ince ayar yine `--mesh-base/-soft/-soft-live` ile.
 - İçerik otomatik olarak lekelerin üstüne kaldırılır (statik çocuklara
   `position:relative; z-index:1`).
 - `filter: blur` bilinçli KULLANILMAZ — falloff radial'ın kendisinden gelir,
