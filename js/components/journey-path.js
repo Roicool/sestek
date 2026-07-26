@@ -1,0 +1,292 @@
+/*!
+ * journey-path.js v1.0.0
+ * Scroll-driven CURVY progress path through a row of step items — the modern
+ * take on the classic "dashed journey line" section. A faint dashed track
+ * meanders edge-to-edge through every step's icon; as you scroll, a gradient
+ * progress line FILLS along the same curve (scrubbed, fully reversible) and
+ * each icon lights up from its dimmed state the moment the fill reaches it.
+ *
+ * The path is GENERATED from the real layout: the script measures each icon's
+ * centre and draws a smooth spline through the points (with a gentle
+ * alternating wave between them), so any Webflow grid/spacing works and the
+ * curve survives every breakpoint — nothing is hardcoded. Re-measured on
+ * resize and window load.
+ *
+ * Requires : gsap + ScrollTrigger (registered here), Sestek.util
+ *            (js/core/utils.js) loaded first. No other plugins — the draw is
+ *            stroke-dashoffset, not DrawSVG.
+ * CSS      : css/components/journey-path.css  (dim/lit icon states + svg layer)
+ *
+ * DOM contract (Webflow — only the attributes matter, design is yours):
+ *   [data-journey-path]              section root (position:relative via CSS)
+ *     [data-jp-item]                 one step (icon + title + copy, N ≥ 2)
+ *       [data-jp-icon]               the icon block that dims/lights up
+ *                                    (falls back to the item itself if absent)
+ *   <svg data-jp-svg>                injected by JS if absent — the two paths
+ *                                    (dashed track + gradient fill) live here
+ *
+ * Root attributes (all optional):
+ *   data-jp-wave       px of sideways bow between steps; negative flips the
+ *                      meander direction                       (default 56)
+ *   data-jp-bleed      "edge" = run the line to the section edges ·
+ *                      "none" = start/stop at the first/last icon (default edge)
+ *   data-jp-start      ScrollTrigger start                    (default "top 70%")
+ *   data-jp-end        ScrollTrigger end                      (default "bottom 75%")
+ *   data-jp-scrub      scrub lag in seconds                   (default 1)
+ *   data-jp-min        min viewport px for the line + scrub — below this the
+ *                      svg is hidden and icons render lit     (default 992)
+ *
+ * Colour / geometry tokens (CSS custom properties on the root — see the CSS):
+ *   --jp-track · --jp-grad-from · --jp-grad-to · --jp-line-w
+ *
+ * Accessibility: purely decorative — the svg is aria-hidden and pointer-blind.
+ * prefers-reduced-motion: no scrub; the line renders fully filled and every
+ * icon is lit. Below data-jp-min the same final state shows (CSS).
+ *
+ * https://github.com/roicool/sestek
+ */
+
+(function (global) {
+  "use strict";
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var uid = 0;
+
+  var DEFAULTS = {
+    wave: 56,
+    start: "top 70%",
+    end: "bottom 75%",
+    scrub: 1,
+    min: 992,
+  };
+
+  function buildOne(root) {
+    if (root._journeyPathInit) return;                        // idempotent
+    root._journeyPathInit = true;
+
+    var util = global.Sestek.util;
+    var attrNum = util.attrNum;
+    var toArray = gsap.utils.toArray;
+
+    var items = toArray(root.querySelectorAll("[data-jp-item]"));
+    var icons = items.map(function (it) { return it.querySelector("[data-jp-icon]") || it; });
+    if (items.length < 2) {
+      console.warn("[Sestek JourneyPath] Need at least two [data-jp-item] steps.");
+      return;
+    }
+
+    var WAVE  = attrNum(root, "data-jp-wave", DEFAULTS.wave);
+    var SCRUB = attrNum(root, "data-jp-scrub", DEFAULTS.scrub);
+    var MIN   = attrNum(root, "data-jp-min", DEFAULTS.min);
+    var START = root.getAttribute("data-jp-start") || DEFAULTS.start;
+    var END   = root.getAttribute("data-jp-end") || DEFAULTS.end;
+    var BLEED = (root.getAttribute("data-jp-bleed") || "edge") !== "none";
+
+    // ── SVG scaffolding (injected once) ─────────────────────────────────────
+    var svg = root.querySelector("[data-jp-svg]");
+    if (!svg) {
+      svg = document.createElementNS(SVGNS, "svg");
+      svg.setAttribute("data-jp-svg", "");
+      root.insertBefore(svg, root.firstChild);
+    }
+    svg.setAttribute("aria-hidden", "true");
+
+    var gradId = "jp-grad-" + (++uid);
+    var cs = getComputedStyle(root);
+    var gFrom = (cs.getPropertyValue("--jp-grad-from") || "#EC008C").trim();
+    var gTo   = (cs.getPropertyValue("--jp-grad-to") || "#9d4bff").trim();
+    var defs = document.createElementNS(SVGNS, "defs");
+    defs.innerHTML =
+      '<linearGradient id="' + gradId + '" x1="0%" y1="0%" x2="100%" y2="0%">' +
+      '<stop offset="0%" stop-color="' + gFrom + '"/>' +
+      '<stop offset="100%" stop-color="' + gTo + '"/></linearGradient>';
+    svg.appendChild(defs);
+
+    var basePath = document.createElementNS(SVGNS, "path");
+    basePath.setAttribute("class", "jp-base");
+    var fillPath = document.createElementNS(SVGNS, "path");
+    fillPath.setAttribute("class", "jp-fill");
+    fillPath.setAttribute("stroke", "url(#" + gradId + ")");
+    svg.appendChild(basePath);
+    svg.appendChild(fillPath);
+
+    function measureLen(d) {
+      var p = document.createElementNS(SVGNS, "path");
+      p.setAttribute("d", d);
+      svg.appendChild(p);
+      var L = p.getTotalLength();
+      svg.removeChild(p);
+      return L;
+    }
+
+    // ── Geometry: spline through the icon centres with an alternating wave ──
+    // Returns { d, fractions } — fractions[i] = how far along the path icon i
+    // sits (0..1), used to light icons up as the fill passes them.
+    function buildGeometry() {
+      var rr = root.getBoundingClientRect();
+      var anchors = icons.map(function (icon) {
+        var r = icon.getBoundingClientRect();
+        return { x: r.left + r.width / 2 - rr.left, y: r.top + r.height / 2 - rr.top };
+      });
+
+      // Optional edge bleed: run in from the section edges at the outer
+      // anchors' height (horizontal layouts; harmless on odd layouts).
+      var pts = anchors.slice();
+      if (BLEED) {
+        pts.unshift({ x: 0, y: anchors[0].y });
+        pts.push({ x: rr.width, y: anchors[anchors.length - 1].y });
+      }
+
+      // Insert a perpendicular-offset midpoint between every pair — this is
+      // what makes the line MEANDER even when all icons sit at one height.
+      var alt = 1;
+      var wavePts = [];
+      var anchorIdx = [];                                     // anchor → index in wavePts
+      pts.forEach(function (p, i) {
+        wavePts.push(p);
+        var ai = BLEED ? i - 1 : i;
+        if (ai >= 0 && ai < anchors.length) anchorIdx[ai] = wavePts.length - 1;
+        var q = pts[i + 1];
+        if (!q) return;
+        var dx = q.x - p.x, dy = q.y - p.y;
+        var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        var amp = Math.min(Math.abs(WAVE), len * 0.35) * (WAVE < 0 ? -1 : 1) * alt;
+        alt = -alt;
+        wavePts.push({ x: (p.x + q.x) / 2 - (dy / len) * amp, y: (p.y + q.y) / 2 + (dx / len) * amp });
+      });
+
+      // Catmull-Rom → cubic beziers (smooth through every point).
+      var P = [wavePts[0]].concat(wavePts, [wavePts[wavePts.length - 1]]);
+      var segs = [];
+      for (var i = 1; i < P.length - 2; i++) {
+        var c1x = P[i].x + (P[i + 1].x - P[i - 1].x) / 6;
+        var c1y = P[i].y + (P[i + 1].y - P[i - 1].y) / 6;
+        var c2x = P[i + 1].x - (P[i + 2].x - P[i].x) / 6;
+        var c2y = P[i + 1].y - (P[i + 2].y - P[i].y) / 6;
+        segs.push("C" + c1x.toFixed(1) + "," + c1y.toFixed(1) + " " +
+                  c2x.toFixed(1) + "," + c2y.toFixed(1) + " " +
+                  P[i + 1].x.toFixed(1) + "," + P[i + 1].y.toFixed(1));
+      }
+      var head = "M" + wavePts[0].x.toFixed(1) + "," + wavePts[0].y.toFixed(1);
+      var d = head + segs.join("");
+
+      svg.setAttribute("viewBox", "0 0 " + Math.max(rr.width, 1) + " " + Math.max(rr.height, 1));
+
+      var total = measureLen(d) || 1;
+      var fractions = anchorIdx.map(function (wi) {
+        return wi === 0 ? 0 : measureLen(head + segs.slice(0, wi).join("")) / total;
+      });
+      return { d: d, total: total, fractions: fractions };
+    }
+
+    function setActive(progress, fractions) {
+      icons.forEach(function (icon, i) {
+        var on = progress >= fractions[i] - 0.001;
+        icon.classList.toggle("is-active", on);
+        items[i].classList.toggle("is-active", on);
+      });
+    }
+
+    // ── Reduced motion: final frame — full line, everything lit ─────────────
+    if (util.prefersReducedMotion()) {
+      var geo = buildGeometry();
+      basePath.setAttribute("d", geo.d);
+      fillPath.setAttribute("d", geo.d);
+      setActive(1, geo.fractions);
+      return;
+    }
+
+    // ── Breakpoint gate: line + scrub at data-jp-min and up only ────────────
+    var mm = gsap.matchMedia();
+    mm.add("(min-width: " + MIN + "px)", function () {
+      var tween = null, resizeTimer = null;
+
+      function build() {
+        if (tween) { if (tween.scrollTrigger) tween.scrollTrigger.kill(); tween.kill(); tween = null; }
+        var geo = buildGeometry();
+        basePath.setAttribute("d", geo.d);
+        fillPath.setAttribute("d", geo.d);
+        tween = gsap.fromTo(fillPath,
+          { strokeDasharray: geo.total, strokeDashoffset: geo.total },
+          {
+            strokeDashoffset: 0,
+            ease: "none",
+            scrollTrigger: {
+              trigger: root,
+              start: START,
+              end: END,
+              scrub: SCRUB,
+              refreshPriority: -1,                            // non-pinned: after pins
+              onUpdate: function (self) { setActive(self.progress, geo.fractions); },
+            },
+          });
+        setActive(tween.scrollTrigger ? tween.scrollTrigger.progress : 0, geo.fractions);
+      }
+
+      function onResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () { build(); ScrollTrigger.refresh(); }, 180);
+      }
+
+      build();
+      window.addEventListener("resize", onResize);
+      window.addEventListener("load", onResize);
+
+      return function () {                                    // matchMedia cleanup
+        clearTimeout(resizeTimer);
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("load", onResize);
+        if (tween) { if (tween.scrollTrigger) tween.scrollTrigger.kill(); tween.kill(); }
+        icons.forEach(function (icon, i) {
+          icon.classList.remove("is-active");
+          items[i].classList.remove("is-active");
+        });
+      };
+    });
+
+    root._journeyPathMM = mm;
+  }
+
+  /**
+   * Initialise every [data-journey-path] section on the page in one call.
+   * @param {string} [selector="[data-journey-path]"] narrow the scope if needed
+   */
+  function initJourneyPath(selector) {
+    if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+      var waited = 0;
+      var poll = setInterval(function () {
+        if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+          clearInterval(poll);
+          initJourneyPath(selector);
+        } else if ((waited += 100) >= 4000) {
+          clearInterval(poll);
+          console.error("[Sestek JourneyPath] gsap + ScrollTrigger required — " +
+            "load gsap.min.js AND ScrollTrigger.min.js before this script.");
+        }
+      }, 100);
+      return;
+    }
+    if (!(global.Sestek && global.Sestek.util)) {
+      console.error("[Sestek JourneyPath] Sestek.util (js/core/utils.js) required."); return;
+    }
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Arm the CSS dim state (no-op if already added in <head>). Without JS the
+    // icons render lit — graceful fallback.
+    document.documentElement.classList.add("jpath-armed");
+
+    var roots = document.querySelectorAll(selector || "[data-journey-path]");
+    if (!roots.length) { console.warn("[Sestek JourneyPath] No [data-journey-path] found."); return; }
+    Array.prototype.forEach.call(roots, buildOne);
+
+    if (document.readyState === "complete") {
+      ScrollTrigger.refresh();
+    } else {
+      window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
+    }
+  }
+
+  global.Sestek = global.Sestek || {};
+  global.Sestek.initJourneyPath = initJourneyPath;
+
+})(typeof window !== "undefined" ? window : this);

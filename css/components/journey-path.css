@@ -1,0 +1,92 @@
+/*!
+ * journey-path.css v1.0.0
+ * Behavioural / critical CSS for the journey-path component — the scroll-drawn
+ * curvy progress line through step icons. Owns ONLY the mechanics: the svg
+ * overlay layer, the two path strokes (dashed track + gradient fill) and the
+ * dim → lit icon states. Icon design, typography, and the step grid layout
+ * stay in Webflow Designer with RC Structure tokens.
+ *
+ * Drives: js/components/journey-path.js
+ *
+ * ANTI-FLASH / NO-JS: the dimmed icon state is gated on html.jpath-armed
+ * (added by JS) AND the desktop media query — no-JS pages and small screens
+ * always render the icons lit and skip the line entirely.
+ *
+ * Colour / geometry tokens (override per instance on [data-journey-path]):
+ *   --jp-track      dashed track colour        (default: muted border token)
+ *   --jp-grad-from  fill gradient start        (default #EC008C — Sestek pink)
+ *   --jp-grad-to    fill gradient end          (default #9d4bff)
+ *   --jp-line-w     stroke width               (default 2.5px)
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-journey-path] {
+  --jp-track: var(--border--color-border-muted, #d9d8e2);
+  --jp-grad-from: #EC008C;
+  --jp-grad-to: #9d4bff;
+  --jp-line-w: 2.5px;
+
+  position: relative;   /* svg overlay + item z-order anchor */
+}
+
+/* ── SVG overlay — decorative, never intercepts the pointer ──────────────── */
+[data-jp-svg] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Steps render above the line. */
+[data-jp-item] {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── The two strokes ─────────────────────────────────────────────────────── */
+[data-jp-svg] .jp-base {
+  fill: none;
+  stroke: var(--jp-track);
+  stroke-width: var(--jp-line-w);
+  stroke-dasharray: 2 9;            /* the dotted/dashed track look */
+  stroke-linecap: round;
+}
+[data-jp-svg] .jp-fill {
+  fill: none;
+  /* stroke colour = gradient url, set by JS */
+  stroke-width: calc(var(--jp-line-w) + 0.5px);
+  stroke-linecap: round;
+  /* dasharray/dashoffset = draw progress, driven by JS */
+}
+
+/* ── Icon states — dim until the fill reaches them (desktop + armed only) ── */
+[data-jp-icon] {
+  transition: filter .45s ease, opacity .45s ease, transform .45s ease;
+}
+@media (min-width: 992px) {
+  html.jpath-armed [data-jp-icon]:not(.is-active) {
+    filter: grayscale(1);
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+}
+/* Below the breakpoint the svg is hidden — icons render lit, section is
+   a plain stacked layout from Designer. */
+@media (max-width: 991px) {
+  [data-jp-svg] { display: none; }
+}
+
+/* Reduced motion: no transitions, everything lit (JS renders the final
+   frame — full line + active icons). */
+@media (prefers-reduced-motion: reduce) {
+  [data-jp-icon] {
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

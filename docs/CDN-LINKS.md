@@ -826,6 +826,8 @@ DOM:
 | `css/components/card-cascade.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-cascade.css` |
 | `js/components/case-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/case-switch.js` |
 | `css/components/case-switch.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/case-switch.css` |
+| `js/components/journey-path.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/journey-path.js` |
+| `css/components/journey-path.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/journey-path.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2773,6 +2775,80 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
   layout Designer'dan; RC Structure token'larıyla.
 - `prefers-reduced-motion` veya GSAP yoksa: pin yok, kartlar yerinde (final kare).
 - `Sestek.initCardCascade()` sayfadaki tüm grupları tek çağrıda bağlar.
+
+---
+
+### Journey Path (scroll ile dolan kıvrımlı çizgi)
+
+"How We Can Help" tarzı adım bölümleri için modern journey çizgisi: step
+ikonlarının merkezinden geçen **kıvrımlı** (meander) kesikli bir taban çizgisi
+ve scroll ile üzerine **scrub'lı dolan gradient** progress çizgisi. Dolum bir
+ikona ulaştığında ikon **silik halden renkli hale** geçer (geri scroll'da geri
+söner). Path gerçek layout'tan üretilir — ikonların merkezleri ölçülüp spline
+çizilir; her grid/spacing/breakpoint'te çalışır, resize'da yeniden ölçülür.
+≤991px'te çizgi gizlenir, ikonlar renkli düz stack olur. Pin YOK.
+
+```html
+<!-- in <head> -->
+<script>document.documentElement.classList.add('jpath-armed')</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/journey-path.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/journey-path.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initJourneyPath(); // tüm [data-journey-path] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
+
+```html
+<!--
+  Kök ([data-journey-path]) attribute'ları (hepsi opsiyonel):
+    data-jp-wave    adımlar arası yana bükülme px; negatif → yön ters (default 56)
+    data-jp-bleed   "edge" → çizgi section kenarlarına uzanır ·
+                    "none" → ilk/son ikonda başlar-biter          (default edge)
+    data-jp-start   ScrollTrigger start                    (default "top 70%")
+    data-jp-end     ScrollTrigger end                      (default "bottom 75%")
+    data-jp-scrub   scrub gecikmesi sn                     (default 1)
+    data-jp-min     çizgi + scrub için min viewport px     (default 992)
+-->
+<section data-journey-path>
+  <div class="grid-3col">
+    <div data-jp-item>
+      <div data-jp-icon> …ikon/svg… </div>
+      <h3>Identify The Customer</h3>
+      <p>Açıklama…</p>
+    </div>
+    <div data-jp-item> … </div>
+    <div data-jp-item> … </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- Renk/geometri token'ları kökte override edilir: `--jp-track` (kesikli taban),
+  `--jp-grad-from` / `--jp-grad-to` (dolum gradient'i), `--jp-line-w` (kalınlık).
+- Kıvrım, ikon merkezleri arasına dönüşümlü dik offset'li ara nokta eklenerek
+  üretilir — ikonlar aynı hizada olsa bile çizgi dalgalanır. İkonları Designer'da
+  farklı yüksekliklere koyarsan spline onların içinden akar (referans görseldeki
+  gibi). `data-jp-wave` ile şiddeti/yönü ayarla.
+- `data-jp-min`'i değiştirirsen `journey-path.css`'teki `992/991px` media
+  query'lerini de eşleştir.
+- SVG dekoratiftir: `aria-hidden` + `pointer-events:none`. İçerik normal DOM'da
+  kaldığı için erişilebilirlik etkilenmez.
+- `prefers-reduced-motion` veya no-JS: çizgi tam dolu / hiç yok, ikonlar renkli.
+- `refreshPriority: -1` — pinli bölümlerden sonra refresh eder.
+- `Sestek.initJourneyPath()` sayfadaki tüm bölümleri tek çağrıda bağlar.
 
 ---
 
