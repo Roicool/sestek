@@ -1,5 +1,7 @@
 /*!
- * quote-wheel.js v1.0.0
+ * quote-wheel.js v1.0.1
+ * v1.0.1: nav clicks preventDefault — authors build the buttons as <a href="#">
+ *         link blocks in Webflow; without it every click jumped the page to #.
  * Rotating testimonial WHEEL (incident.io style): quote cards sit on the rim
  * of a huge off-screen circle anchored to the section's right edge; the wheel
  * auto-rotates one slot at a time with a springy settle (GSAP back.out), the
@@ -232,9 +234,10 @@
         io.observe(root);
       }
 
-      // Nav → manual mode (autoplay stops, like the original).
-      function onPrev() { manual = true; clearTimeout(timer); turn(-1, true); }
-      function onNext() { manual = true; clearTimeout(timer); turn(1, true); }
+      // Nav → manual mode (autoplay stops, like the original). preventDefault:
+      // Webflow link-block buttons are <a href="#"> — don't jump the page.
+      function onPrev(e) { if (e) e.preventDefault(); manual = true; clearTimeout(timer); turn(-1, true); }
+      function onNext(e) { if (e) e.preventDefault(); manual = true; clearTimeout(timer); turn(1, true); }
       if (prevBtn) prevBtn.addEventListener("click", onPrev);
       if (nextBtn) nextBtn.addEventListener("click", onNext);
 
