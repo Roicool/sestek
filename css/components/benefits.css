@@ -1,5 +1,5 @@
 /*!
- * benefits.css v2.0.0
+ * benefits.css v2.1.0
  * "Benefits (kaos → clarity)" pinli bölümün davranışsal CSS'i — GERÇEK site
  * düzenine göre yeniden yazıldı:
  *   · Kartlar absolute değil, 2 kolonlu GRID item'ları.
@@ -16,7 +16,7 @@
 
 /* ── Kök — pin edilen section ────────────────────────────────── */
 [data-benefits] {
-  --benefits-max: 1200px;                        /* grid genişliği */
+  --benefits-max: var(--container--2xl, 96rem); /* grid genişliği — site container'ı */
   --benefits-gap: 1.25rem;                       /* kart arası boşluk — timeline'daki
                                                     x:-20 bu 20px'i telafi eder;
                                                     değiştirirsen iniş noktası kayar */

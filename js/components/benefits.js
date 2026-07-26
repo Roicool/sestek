@@ -1,15 +1,17 @@
 /*!
- * benefits.js v1.0.0
+ * benefits.js v1.1.0
  * "Data Chaos → Clarity" pinli scroll bölümü. Ortadaki kart scroll'la sola
  * sürüklenir; kaos SVG katmanları sönerken clarity katmanı belirir, "Chaos"
  * kelimesi "Clarity"ye flip olur, soldaki Challenge kartı soluklaşıp sağdaki
  * Solution kartı öne çıkar.
  *
- * TIMELINE ORİJİNALİN BİREBİR AYNISIDIR — label'lar, süreler, pozisyonlar ve
- * değerler değiştirilmemiştir; yalnız seçiciler data-attribute'a ve kök
- * scope'una çevrilmiştir. Eklenenler animasyonu değiştirmez:
- * refreshPriority (pinli bölüm kuralı), prefers-reduced-motion'da pin'siz
- * statik düzen, idempotent init, çoklu instance.
+ * v1.1.0 — Kelime flip mesafeleri ÖLÇÜME dayalı: orijinaldeki -25/-75/-87px
+ * sabitleri o sitenin fontuna bağlıydı; şimdi Clarity'nin Chaos satırına
+ * inme mesafesi (iki kelimenin akıştaki dikey farkı) her refresh'te ölçülür
+ * — Sestek tipografisi ne olursa olsun hizalar. Kalan timeline (kart
+ * sürüklenmesi, SVG geçişleri, içerik fade'leri) orijinal oran ve
+ * sürelerle aynıdır. refreshPriority (pinli bölüm kuralı),
+ * reduced-motion'da statik düzen, idempotent init, çoklu instance.
  *
  * Requires : gsap + ScrollTrigger.
  *
@@ -88,29 +90,37 @@
             end: endAt,
             pin: true,
             scrub: true,
+            invalidateOnRefresh: true,           // ölçülen flip mesafeleri tazelensin
             // Pin, dokümana pin-spacing ekler — sayfadaki diğer pinlerle
             // doğru sıralanması için (PROJECT.md refreshPriority tablosu).
             refreshPriority: priority,
           },
         });
 
-        // ── ORİJİNAL TIMELINE — birebir, DOKUNULMADI ────────────────
+        // Flip mesafesi: Clarity akışta Chaos'un ALTINDA durur; aradaki
+        // dikey fark = tam iniş mesafesi. Function-based değerler
+        // invalidateOnRefresh ile her refresh'te yeniden ölçülür.
+        var lift = function () {
+          return Math.max(0, wordClarity.offsetTop - wordChaos.offsetTop);
+        };
+
+        // ── TIMELINE — orijinal oran/süreler; flip mesafeleri ölçülü ─
         t.addLabel("split");
         t.to(card, { x: "-50%", duration: 4 });
         t.to(chaosBg, { opacity: 0, duration: 2 }, "split+=2");
         t.to(parallax, { opacity: 0, duration: 2 }, "split+=2");
-        t.to(wordClarity, { opacity: 0.5, transform: "translateY(-25px) translateX(0)", duration: 2 }, "split+=2");
-        t.to(wordChaos, { opacity: 0.5, transform: "translateY(-25px) translateX(0)", duration: 2 }, "split+=2");
-        t.to(challenge, { opacity: 0.5, transform: "translateY(50px) translateX(0)", duration: 2 }, "split+=2");
-        t.to(solution, { opacity: 0.5, transform: "translateY(50px) translateX(0)", duration: 2 }, "split+=2");
+        t.to(wordClarity, { opacity: 0.5, y: function () { return -lift() * 0.4; }, duration: 2 }, "split+=2");
+        t.to(wordChaos, { opacity: 0.5, y: function () { return -lift() * 0.4; }, duration: 2 }, "split+=2");
+        t.to(challenge, { opacity: 0.5, y: 50, duration: 2 }, "split+=2");
+        t.to(solution, { opacity: 0.5, y: 50, duration: 2 }, "split+=2");
 
         t.addLabel("final");
         t.to(card, { xPercent: -100, x: -20, duration: 5 }, "final");
-        t.to(solution, { opacity: 1, transform: "translateY(0) translateX(0)", duration: 2 }, "final+=1");
-        t.to(wordChaos, { opacity: 0, transform: "translateY(-75px) translateX(0)", duration: 2 }, "final+=1");
-        t.to(wordClarity, { opacity: 1, transform: "translateY(-87px) translateX(0)", duration: 2 }, "final+=1");
+        t.to(solution, { opacity: 1, y: 0, duration: 2 }, "final+=1");
+        t.to(wordChaos, { opacity: 0, y: function () { return -lift() * 1.35; }, duration: 2 }, "final+=1");
+        t.to(wordClarity, { opacity: 1, y: function () { return -lift(); }, duration: 2 }, "final+=1");
         t.to(clarity, { opacity: 1, duration: 3 }, "final+=2");
-        // ── /orijinal timeline ──────────────────────────────────────
+        // ── /timeline ───────────────────────────────────────────────
 
         // matchMedia cleanup — bp altına inince veya reduced-motion açılınca:
         // pin sökülür, inline state temizlenir, CSS statik düzeni devralır.
