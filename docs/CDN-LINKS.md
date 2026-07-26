@@ -3089,6 +3089,64 @@ DOM (Webflow — **TEK** Collection List; her item hem logo hem kart içerir):
 | `js/effects/mesh-gradient.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js` |
 | `css/effects/mesh-gradient.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css` |
 
+### Section Shrink (full-bleed → container oturması)
+
+Section viewport'a girerken TAM GENİŞLİK başlar; scroll'la hedef container
+genişliğine (default `--container--2xl`) büzülür, kenarlarına radius gelir.
+Geri sarınca açılır. Genişlik/max-width ANİMASYONU YOKTUR — kutu akışta tam
+genişlik kalır, yalnız boyası `clip-path: inset(0 Xpx round R)` ile kırpılır:
+her frame reflow yok, komşu section'lar oynamaz, pin kurallarıyla çakışmaz.
+Bu yüzden section İÇİNDEKİ içerik zaten bir container'da durmalı — kırpılan
+yalnız arka plandır. Hedef görünür genişlik diğer container'larla aynı
+matematik: `min(max, genişlik − 2×gutter)` (gutter default `--view--px`).
+CSS DOSYASI YOK — JS'siz sayfada section tam genişlik kalır. bp altı (mobil)
+efekt kapalı; reduced-motion'da animasyonsuz durgun son hal uygulanır.
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/section-shrink.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initSectionShrink(); // tüm [data-shrink] section'ları
+  });
+</script>
+```
+
+DOM (Webflow — full-bleed section'a attribute ekle, o kadar):
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-shrink-max     hedef genişlik (CSS uzunluğu)
+                                     (default var(--container--2xl, 96rem))
+    data-shrink-gutter  min kenar boşluğu (default var(--view--px, 16px))
+    data-shrink-radius  bitiş border-radius (default var(--radius--xl, 1.25rem))
+    data-shrink-bp      efekt breakpoint'i px — altında kapalı (default 992)
+    data-shrink-start   ScrollTrigger start   (default "top bottom")
+    data-shrink-end     ScrollTrigger end     (default "top 30%")
+    data-shrink-scrub   scrub yumuşatması sn — örn "0.5" (default true = kilitli)
+-->
+<section data-shrink class="media-section">
+  <div class="container-2xl">… içerik …</div>
+</section>
+```
+
+**Notlar**
+- Hedefler CSS uzunluğu olarak verilir (`var()`/rem/px/vw) ve her
+  ScrollTrigger refresh'inde prob ile px'e yeniden çevrilir — resize'da
+  hedef güncel kalır (`invalidateOnRefresh`).
+- Pin YOK → `refreshPriority` gerekmez; sayfadaki pinli bölümlerle güvenle
+  yan yana kullanılır.
+- Arka planı görsel/video olan section'larda görsel full-bleed kalmalı
+  (container'a alma) — kırpılma efekti onun üstünde çalışır.
+
 ### Mesh Gradient (canlı marka mesh'i)
 
 Sestek'in 3 ana renginin (pembe `#EC008C` / viyole `#9d4bff` / cyan `#00FFEB`)
