@@ -1,5 +1,5 @@
 /*!
- * benefits.js v1.1.0
+ * benefits.js v1.2.0
  * "Data Chaos → Clarity" pinli scroll bölümü. Ortadaki kart scroll'la sola
  * sürüklenir; kaos SVG katmanları sönerken clarity katmanı belirir, "Chaos"
  * kelimesi "Clarity"ye flip olur, soldaki Challenge kartı soluklaşıp sağdaki
@@ -8,7 +8,9 @@
  * v1.1.0 — Kelime flip mesafeleri ÖLÇÜME dayalı: orijinaldeki -25/-75/-87px
  * sabitleri o sitenin fontuna bağlıydı; şimdi Clarity'nin Chaos satırına
  * inme mesafesi (iki kelimenin akıştaki dikey farkı) her refresh'te ölçülür
- * — Sestek tipografisi ne olursa olsun hizalar. Kalan timeline (kart
+ * — Sestek tipografisi ne olursa olsun hizalar. v1.2.0: kartın sola iniş
+ * telafisi de ölçülü — sabit -20px yerine grid'in gerçek column-gap'i
+ * okunur; --benefits-gap artık serbestçe değiştirilebilir. Kalan timeline (kart
  * sürüklenmesi, SVG geçişleri, içerik fade'leri) orijinal oran ve
  * sürelerle aynıdır. refreshPriority (pinli bölüm kuralı),
  * reduced-motion'da statik düzen, idempotent init, çoklu instance.
@@ -104,6 +106,12 @@
           return Math.max(0, wordClarity.offsetTop - wordChaos.offsetTop);
         };
 
+        // Kartın sola inişinde grid gap'i kadar telafi — ölçülü, gap serbest.
+        var gapComp = function () {
+          var grid = card.parentElement;
+          return -(parseFloat(getComputedStyle(grid).columnGap) || 20);
+        };
+
         // ── TIMELINE — orijinal oran/süreler; flip mesafeleri ölçülü ─
         t.addLabel("split");
         t.to(card, { x: "-50%", duration: 4 });
@@ -115,7 +123,7 @@
         t.to(solution, { opacity: 0.5, y: 50, duration: 2 }, "split+=2");
 
         t.addLabel("final");
-        t.to(card, { xPercent: -100, x: -20, duration: 5 }, "final");
+        t.to(card, { xPercent: -100, x: gapComp, duration: 5 }, "final");
         t.to(solution, { opacity: 1, y: 0, duration: 2 }, "final+=1");
         t.to(wordChaos, { opacity: 0, y: function () { return -lift() * 1.35; }, duration: 2 }, "final+=1");
         t.to(wordClarity, { opacity: 1, y: function () { return -lift(); }, duration: 2 }, "final+=1");
