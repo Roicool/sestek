@@ -2814,6 +2814,63 @@ DOM (Webflow — **TEK** Collection List; her item hem logo hem kart içerir):
 | `js/effects/parallax.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/parallax.js` |
 | `js/effects/hover-reveal.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/hover-reveal.js` |
 | `css/effects/hover-reveal.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/hover-reveal.css` |
+| `js/effects/mesh-gradient.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js` |
+| `css/effects/mesh-gradient.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css` |
+
+### Mesh Gradient (canlı marka mesh'i)
+
+Sestek'in 3 ana renginin (pembe `#EC008C` / viyole `#9d4bff` / cyan `#00FFEB`)
+yumuşak, CANLI mesh'i. Renk lekelerinin kendisi JS'in enjekte ettiği
+transform-only katmanlardır: her leke kendi ritminde süzülür (idle drift) ve
+mouse'a FARKLI yön/kuvvetle tepki verir — renkler yoğrulur (mash). İmleç
+çıkınca lekeler yerine döner; ekran dışında drift durur (IO). JS yoksa veya
+`prefers-reduced-motion` açıksa saf CSS statik mesh fallback'i görünür;
+dokunmatikte drift çalışır, mouse kısmı atlanır.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initMeshGradient(); // tüm [data-mesh-gradient] kökleri
+  });
+</script>
+```
+
+DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-mesh-follow      "false" → mouse parallax'ı kapalı   (default true)
+    data-mesh-drift       "false" → idle drift kapalı         (default true)
+    data-mesh-lag         mouse takip gecikmesi sn            (default 0.8)
+    data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
+    data-mesh-speed       idle drift hız çarpanı                 (default 1)
+    data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
+-->
+<section data-mesh-gradient class="hero">
+  … içerik …
+</section>
+```
+
+**Notlar**
+- Yoğunluk kökten: statik `--mesh-soft` (default `20%`), canlı katmanlar
+  `--mesh-soft-live` (default `24%`). Koyu tema için `--mesh-base`'i koyu
+  token'a çek, yoğunluğu bir tık artır.
+- İçerik otomatik olarak lekelerin üstüne kaldırılır (statik çocuklara
+  `position:relative; z-index:1`).
+- `filter: blur` bilinçli KULLANILMAZ — falloff radial'ın kendisinden gelir,
+  paint maliyeti tek seferliktir; lekeler compositor-only gezer.
+- v2.0.0: v1'deki tekil ışık blob'u ve `data-mesh-blob-*` attribute'ları
+  kaldırıldı — hareket artık lekelerin kendisinde.
 
 ### Hover Reveal (imleç-orijinli renk reveal'ı)
 

@@ -1,0 +1,81 @@
+/*!
+ * mesh-gradient.css v2.0.0
+ * Sestek mesh gradient — 3 marka renginin (pembe / viyole / cyan) yumuşak,
+ * temiz mesh'i.
+ *
+ * v2.0.0 — Renkler CANLI: ayrı ışık blob'u yok; mesh'in renk lekelerinin
+ *          kendisi JS'in enjekte ettiği transform-only katmanlardır
+ *          ([data-mesh-layer]). Her leke kendi ritminde süzülür (idle drift)
+ *          ve mouse'a farklı yön/kuvvetle tepki verir (mash hissi). JS
+ *          katmanları kurunca köke .is-live basar → buradaki STATİK mesh
+ *          kapanır, aynı görünümü katmanlar devralır. JS yoksa / reduced
+ *          motion'da statik mesh olduğu gibi kalır.
+ *
+ * Ayar — kökten override edilebilen değişkenler:
+ *   --mesh-c1 / --mesh-c2 / --mesh-c3   üç renk (default: Sestek pembe/viyole/cyan)
+ *   --mesh-base                          zemin (default surface base / beyaz)
+ *   --mesh-soft                          statik mesh yoğunluğu % (default 20%)
+ *   --mesh-soft-live                     canlı katman yoğunluğu % (default 24%)
+ * https://github.com/roicool/sestek
+ */
+
+[data-mesh-gradient] {
+  --mesh-c1:   var(--brand-primary--500, #EC008C);      /* Sestek pembe   */
+  --mesh-c2:   var(--brand-secondary--500, #9d4bff);    /* viyole         */
+  --mesh-c3:   var(--brand-tertiary--500, #00FFEB);     /* cyan           */
+  --mesh-base: var(--surface--base, var(--neutral--0, #fff));
+  --mesh-soft: 20%;                                     /* statik yoğunluk */
+  position: relative;
+  overflow: hidden;                                     /* katman taşmasın */
+  /* JS'siz / reduced-motion fallback: statik soft mesh */
+  background:
+    radial-gradient(52% 46% at 12% 16%,
+      color-mix(in oklab, var(--mesh-c3) var(--mesh-soft), transparent), transparent 70%),
+    radial-gradient(48% 44% at 86% 10%,
+      color-mix(in oklab, var(--mesh-c2) var(--mesh-soft), transparent), transparent 70%),
+    radial-gradient(58% 52% at 84% 88%,
+      color-mix(in oklab, var(--mesh-c1) var(--mesh-soft), transparent), transparent 72%),
+    radial-gradient(42% 38% at 20% 90%,
+      color-mix(in oklab, var(--mesh-c2) calc(var(--mesh-soft) * .55), transparent), transparent 70%),
+    var(--mesh-base);
+}
+
+/* JS katmanları kurdu → statik mesh kapanır, zemin kalır */
+[data-mesh-gradient].is-live {
+  background: var(--mesh-base);
+}
+
+/* ── Canlı renk lekesi (JS enjekte eder) ──────────────────────────
+   Dış span: konum + MOUSE parallax'ı (quickTo x/y).
+   İç span : radial'ın kendisi + IDLE drift (yoyo tween).
+   İkisi de yalnız transform'la oynar — bir kez paint, sonra compositor. */
+[data-mesh-layer] {
+  position: absolute;
+  left: var(--mesh-lx, 50%);
+  top: var(--mesh-ly, 50%);
+  width: calc(var(--mesh-ls, 1) * 72%);
+  aspect-ratio: 1;
+  /* merkezleme: %margin daima genişliğe referanslıdır; katman kare olduğu
+     için -yarı genişlik hem x hem y merkezlemesini verir */
+  margin-left: calc(var(--mesh-ls, 1) * -36%);
+  margin-top:  calc(var(--mesh-ls, 1) * -36%);
+  pointer-events: none;
+  will-change: transform;
+  z-index: 0;
+}
+
+[data-mesh-layer] > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    color-mix(in oklab, var(--mesh-lc, var(--mesh-c1)) var(--mesh-soft-live, 24%), transparent) 0%,
+    transparent 72%);
+  will-change: transform;
+}
+
+/* İçerik lekelerin ÜSTÜNDE kalır (yalnız statik çocuklar). */
+[data-mesh-gradient] > :not([data-mesh-layer]) {
+  position: relative;
+  z-index: 1;
+}
