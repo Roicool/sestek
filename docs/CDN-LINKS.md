@@ -835,6 +835,8 @@ DOM:
 | `css/components/case-switch.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/case-switch.css` |
 | `js/components/journey-path.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/journey-path.js` |
 | `css/components/journey-path.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/journey-path.css` |
+| `js/components/quote-wheel.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/quote-wheel.js` |
+| `css/components/quote-wheel.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/quote-wheel.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2869,6 +2871,98 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
 - `prefers-reduced-motion` veya no-JS: çizgi tam dolu / hiç yok, ikonlar renkli.
 - `refreshPriority: -1` — pinli bölümlerden sonra refresh eder.
 - `Sestek.initJourneyPath()` sayfadaki tüm bölümleri tek çağrıda bağlar.
+
+---
+
+### Quote Wheel (dönen alıntı çemberi)
+
+incident.io tarzı testimonial çemberi: alıntı kartları section'ın sağ kenarına
+demirlenmiş dev bir çemberin yayında durur; çember slot slot **otomatik döner**
+(yaylı `back.out` oturma, GSAP), aktif kart **Sestek pembesi** olur, hover'da
+prev/next belirir ve otomatik durur (mouse-only; nav'a basınca kalıcı manuel
+mod). Üst/alt fade maskesi kartları yumuşak keser. **≤991px'te aynı alıntılar
+Swiper carousel'e döner** (komşu kartlar eğik; Swiper yoksa scroll-snap
+fallback). Alıntılar **DOM'dan okunur** — `[data-qw-quote]` elemanlarına bir
+CMS Collection List bağlanabilir; kaynak liste ekran okuyucuya açık kalır
+(sr-only), çember dekoratiftir (`aria-hidden`). Otomatik dönüş sekme
+gizliyken ve section viewport dışındayken de durur.
+
+```html
+<!-- in <head> -->
+<script>document.documentElement.classList.add('qwheel-armed')</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/quote-wheel.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/quote-wheel.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initQuoteWheel(); // tüm [data-quote-wheel] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM (Webflow — grid/başlık Designer'da; çemberi/karuseli JS üretir):
+
+```html
+<!--
+  Kök ([data-quote-wheel]) attribute'ları (hepsi opsiyonel):
+    data-qw-size       çember konteyneri px                 (default 3000)
+    data-qw-slots      çemberdeki slot sayısı               (default 30)
+    data-qw-card-w     kart genişliği px                    (default 485)
+    data-qw-card-h     kart yüksekliği px                   (default 173)
+    data-qw-interval   otomatik dönüş ms, 0 = kapalı        (default 3000;
+                       ilk dönüş yarı sürede gelir)
+    data-qw-duration   dönüş süresi sn                      (default 0.55)
+    data-qw-ease       GSAP ease                            (default "back.out(1.4)")
+    data-qw-min        çemberin min viewport'u; altında
+                       Swiper carousel                      (default 992)
+    data-qw-spv        mobil kart/görünüm                   (default 1.15)
+-->
+<section data-quote-wheel>
+
+  <!-- SOL: başlık + dekoratif ok — Designer içeriği, JS karışmaz -->
+  <div><h2>We're running in production…</h2></div>
+
+  <!-- Alıntı kaynağı (Collection List olabilir) — armed olunca sr-only -->
+  <div data-qw-quotes>
+    <div data-qw-quote>This investigation was very very strong. Thanks</div>
+    <div data-qw-quote>It pointed me to a SQL query I reused…</div>
+    <!-- … -->
+  </div>
+
+  <!-- SAĞ: çember bölgesi — viewport/rotor/kart/fade JS'ten gelir -->
+  <div data-qw-wheel>
+    <div data-qw-nav>
+      <button data-qw-prev aria-label="Önceki alıntı">←</button>
+      <button data-qw-next aria-label="Sonraki alıntı">→</button>
+    </div>
+  </div>
+
+  <!-- Mobil carousel hedefi (opsiyonel — yoksa JS oluşturur) -->
+  <div data-qw-mobile></div>
+
+</section>
+```
+
+**Notlar**
+- Renk token'ları kökte override edilir: `--qw-card-bg`, `--qw-card-ink`,
+  `--qw-active-bg` (Sestek pembe), `--qw-active-ink`, `--qw-fade`
+  (**section arka planıyla aynı renk olmalı** — fade maskesi odur).
+- İki kolonlu layout (sol başlık / sağ çember) ve section yüksekliği
+  (örn. `min-height: 40rem`) **Designer'da** verilir; `[data-qw-wheel]`
+  sağ kolonda `height:100%` ile durur.
+- Kartlar aktif ±2 slot için render edilir; içerik değişimi fade maskesinin
+  arkasında olur. Rotor `aria-hidden` — erişilebilir içerik kaynak listededir.
+- Swiper CSS'i YÜKLENMEZ — çekirdek stiller quote-wheel.css'te gömülü
+  (h-scroll konvansiyonu). Swiper yüklenmezse scroll-snap fallback.
+- `prefers-reduced-motion`: otomatik dönüş yok, nav anında çevirir.
+- `Sestek.initQuoteWheel()` sayfadaki tüm bölümleri tek çağrıda bağlar.
 
 ---
 

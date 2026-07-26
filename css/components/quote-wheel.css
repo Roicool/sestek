@@ -1,0 +1,160 @@
+/*!
+ * quote-wheel.css v1.0.0
+ * Behavioural / critical CSS for the quote-wheel component — the rotating
+ * testimonial wheel (desktop) + tilted Swiper carousel (mobile). Owns the
+ * wheel geometry (viewport / rotor / cards), the card colour states, the
+ * top/bottom fade mask, the hover-revealed nav, the visually-hidden quote
+ * source, and the embedded Swiper core styles (Swiper's own stylesheet is
+ * NOT loaded — project convention, see h-scroll). Layout (the 2-column grid,
+ * heading typography, section height) stays in Webflow Designer.
+ *
+ * Drives: js/components/quote-wheel.js
+ *
+ * Colour tokens (override per instance on [data-quote-wheel]):
+ *   --qw-card-bg     idle card background      (default neutral token)
+ *   --qw-card-ink    idle card text            (default text token)
+ *   --qw-active-bg   active card background    (default Sestek pink)
+ *   --qw-active-ink  active card text          (default #fff)
+ *   --qw-fade        fade mask colour — match the SECTION background
+ *                    (default surface token / #fff)
+ *
+ * NO-JS / SR: the [data-qw-quotes] source list is only hidden once
+ * html.qwheel-armed is set (JS adds it) — without JS the plain quote list
+ * renders; with JS it stays available to screen readers (the wheel itself is
+ * aria-hidden, decorative).
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-quote-wheel] {
+  --qw-card-bg: var(--neutral--100, #f4f2ef);
+  --qw-card-ink: var(--color-text--900, #161618);
+  --qw-active-bg: var(--brand-primary--500, #EC008C);
+  --qw-active-ink: #ffffff;
+  --qw-fade: var(--surface--page, #ffffff);
+
+  position: relative;
+  overflow-y: clip;         /* the 3000px wheel bleeds top/bottom — clip it */
+}
+
+/* ── Quote source: visually hidden once armed, still read by SR ──────────── */
+html.qwheel-armed [data-qw-quotes] {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ── Wheel region (desktop only — JS gates ≥ data-qw-min anyway) ─────────── */
+[data-qw-wheel] {
+  position: relative;
+  height: 100%;
+}
+
+/* Huge circle container — right-anchored, vertically centred; the parent
+   section clips the vertical bleed. Size is set inline by JS. */
+[data-qw-viewport] {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+[data-qw-rotor] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* rotation is a GSAP tween — no CSS transition here */
+}
+
+/* One card on the rim (left/top/size inline, rotation via GSAP). */
+[data-qw-card] {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: var(--spacing--5, 2.5rem);
+  border-radius: var(--radius--lg, 1rem);
+  overflow: hidden;
+  background: var(--qw-card-bg);
+  color: var(--qw-card-ink);
+  transition: background-color .3s ease, color .3s ease, box-shadow .3s ease;
+}
+[data-qw-card].is-active {
+  background: var(--qw-active-bg);
+  color: var(--qw-active-ink);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1);
+}
+
+/* Curly quotes around every quote text (wheel + mobile). */
+[data-qw-text]::before { content: "\201C"; margin-left: -0.35em; }
+[data-qw-text]::after  { content: "\201D"; }
+
+/* Top/bottom fade mask — colour must match the section background. */
+[data-qw-fade] {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom,
+    var(--qw-fade),
+    color-mix(in srgb, var(--qw-fade) 0%, transparent) 20%,
+    color-mix(in srgb, var(--qw-fade) 0%, transparent) 80%,
+    var(--qw-fade) 100%);
+}
+
+/* ── Nav — hidden until the wheel is hovered (JS toggles is-hover) ───────── */
+[data-qw-nav] {
+  opacity: 0;
+  transition: opacity .3s ease-in-out, transform .3s ease-in-out;
+  pointer-events: none;
+}
+[data-quote-wheel].is-hover [data-qw-nav] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Mobile carousel (JS builds it below data-qw-min) ────────────────────── */
+/* Embedded Swiper core — Swiper's stylesheet is not loaded. */
+[data-qw-mobile] .swiper { overflow: hidden; }
+[data-qw-mobile] .swiper-wrapper {
+  display: flex;
+  box-sizing: content-box;
+}
+[data-qw-mobile] .swiper-slide {
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* No-Swiper fallback: native scroll-snap, same layout. */
+[data-qw-mobile] .swiper.is-fallback { overflow-x: auto; scroll-snap-type: x mandatory; }
+[data-qw-mobile] .swiper.is-fallback .swiper-wrapper { gap: 1rem; }
+[data-qw-mobile] .swiper.is-fallback .swiper-slide { width: 80%; scroll-snap-align: center; }
+
+/* Mobile card + tilted neighbours. */
+[data-qw-mcard] {
+  aspect-ratio: 260 / 136;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing--4, 1.5rem);
+  border-radius: var(--radius--lg, 1rem);
+  background: var(--qw-card-bg);
+  color: var(--qw-card-ink);
+  transition: background-color .3s ease-in-out, color .3s ease-in-out,
+              transform .3s ease-in-out, box-shadow .3s ease-in-out;
+}
+[data-qw-mobile] .swiper-slide-active [data-qw-mcard] {
+  background: var(--qw-active-bg);
+  color: var(--qw-active-ink);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1);
+}
+[data-qw-mobile] .swiper-slide-prev [data-qw-mcard] { transform: rotate(3deg) translateY(-12px); }
+[data-qw-mobile] .swiper-slide-next [data-qw-mcard] { transform: rotate(-3deg) translateY(-12px); }
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-qw-card],
+  [data-qw-mcard],
+  [data-qw-nav] { transition: none !important; }
+}
