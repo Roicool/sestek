@@ -1,53 +1,59 @@
 /*!
- * case-switch.css v1.0.0
- * Behavioural / critical CSS for the case-switch component (logo tabs + a
- * grabbable, auto-advancing deck of CMS case-study cards). Owns ONLY what the
- * effect needs to work — the deck stacking geometry, the grab cursor, the
- * active-logo colour toggle, and the anti-flash guard. All look & feel
- * (colours, radius, shadow, layout, sizing) stays in Webflow Designer, using
- * RC Structure tokens. js/components/case-switch.js drives the motion.
+ * case-switch.css v2.0.0
+ * Behavioural / critical CSS for the case-switch component (ONE CMS Collection
+ * List: each item = a logo tab + a card; logos flow in the list as the tab grid,
+ * cards are pulled out and stacked into the deck region). Owns ONLY what the
+ * effect needs to work — cards becoming an absolutely-stacked deck, the grab
+ * cursor, and the active-logo colour toggle. All look & feel (colours, radius,
+ * shadow, the two-column layout, WHERE the deck sits and its size) stays in
+ * Webflow Designer, using RC Structure tokens. js/components/case-switch.js
+ * drives the motion.
+ *
+ * Changelog
+ * v2.0.0 — single-list model. Cards now anchor to [data-cswitch] (not a deck
+ *          container) since each card lives inside its Collection Item.
  *
  * Drives: js/components/case-switch.js
  *
- * ANTI-FLASH: the stacked deck only collapses onto itself once html.cswitch-armed
- * is set (JS adds it). Without JS the cards render normally (graceful fallback).
+ * ANTI-FLASH: cards only pull out into the stacked deck once html.cswitch-armed
+ * is set (JS adds it). Without JS the cards render in normal flow (graceful
+ * fallback — content stays visible).
+ *
+ * DECK PLACEMENT (design, not here): give [data-cswitch-card] its position +
+ * size in Designer (e.g. the right column). Every card shares that place, so
+ * they overlap into a deck; this file only makes them absolute so they can stack.
  *
  * https://github.com/roicool/sestek
  */
 
-/* ── Deck stacking ──────────────────────────────────────────────────────────
-   The Collection List is the deck; its items are the cards. The FIRST card
-   stays in normal flow so it gives the deck its height (no JS height needed);
-   the rest are absolutely stacked directly over it. JS then transforms each
-   card into its slot. */
-[data-cswitch-deck] {
+/* Positioning context the absolute cards anchor to. */
+[data-cswitch] {
   position: relative;
 }
 
+/* Cards become an absolutely-stacked deck once armed. Designer decides WHERE
+   (inset / offsets / size) — all cards share it, so they overlap and JS fans
+   them by depth via transforms. */
 html.cswitch-armed [data-cswitch-card] {
   position: absolute;
-  inset: 0;
   will-change: transform, opacity;
 }
-html.cswitch-armed [data-cswitch-card]:first-child {
-  position: relative; /* in-flow → sizes the deck; transforms still apply */
-}
 
-/* Grab affordance on the draggable deck (JS adds .is-draggable). */
-[data-cswitch-deck].is-draggable {
+/* Grab affordance on the front card (JS adds .is-draggable to the root). */
+[data-cswitch].is-draggable [data-cswitch-card] {
   cursor: grab;
   touch-action: pan-y; /* let vertical scroll through; JS claims horizontal drags */
   -webkit-user-select: none;
   user-select: none;
 }
-[data-cswitch-deck].is-draggable:active {
+[data-cswitch].is-draggable [data-cswitch-card]:active {
   cursor: grabbing;
 }
 
 /* ── Logo tabs ──────────────────────────────────────────────────────────────
    Selected logo is shown in colour; the rest are desaturated + dimmed. This is
-   the single-image default (one logo field in the CMS); override .is-active in
-   Designer, or remove this block if you supply separate colour/mono images. */
+   the single-image default (one logo per item); override .is-active in Designer,
+   or remove this block if you supply separate colour/mono images. */
 [data-cswitch-tab] {
   cursor: pointer;
   filter: grayscale(1);
@@ -66,8 +72,7 @@ html.cswitch-armed [data-cswitch-card]:first-child {
   outline-offset: 2px;
 }
 
-/* Reduced motion: no deck transitions, no transforms fighting the layout —
-   just show the active card. JS already skips autoplay + drag here. */
+/* Reduced motion: no deck transitions. JS already skips autoplay + drag here. */
 @media (prefers-reduced-motion: reduce) {
   html.cswitch-armed [data-cswitch-card] {
     transition: none !important;

@@ -1,32 +1,42 @@
 /*!
- * case-switch.js v1.0.0
- * CMS-driven case-study switcher: a column of customer LOGOS acts as tabs, and
- * a STACKED DECK of cards on the other side shows the selected case study. The
- * deck auto-advances every 5s, can be GRABBED and thrown to change cards, and
- * whichever card lands on top always drives the active (coloured) logo — the
- * two stay in perfect sync no matter how the change was triggered.
+ * case-switch.js v2.0.0
+ * CMS-driven case-study switcher: customer LOGOS act as tabs, and a STACKED DECK
+ * of cards shows the selected case study. The deck auto-advances every 5s, can be
+ * GRABBED and thrown to change cards, and whichever card lands on top always
+ * drives the active (coloured) logo — logo ⇄ card stay in sync no matter how the
+ * change was triggered.
+ *
+ * Changelog
+ * v2.0.0 — SINGLE Collection List. One list, one CMS query: each Collection Item
+ *          holds BOTH its logo (tab) and its card, so index alignment is
+ *          guaranteed (was two lists bound by DOM order). Logos flow in the list
+ *          (the left tab grid); cards are pulled out and absolutely stacked into
+ *          the deck region. Selectors changed: [data-cswitch-tabs]/[-deck]
+ *          containers are gone; use one [data-cswitch-list] + per-item
+ *          [data-cswitch-item] wrapping [data-cswitch-tab] + [data-cswitch-card].
  *
  * Change triggers (all keep logo ⇄ card in sync):
  *   • autoplay          — advances every data-cswitch-interval ms (default 5s)
  *   • click a logo tab  — jumps the deck to that case study
  *   • keyboard on tabs  — ←/→/Home/End move + select (roving tabindex)
- *   • drag the deck     — throw left → next, pull right → previous, snap back
+ *   • drag a card       — throw left → next, pull right → previous, snap back
  *                         if released below threshold
- *
- * Two SAME-collection Webflow Collection Lists (logos + cards) are bound by DOM
- * order: item i in the tabs list matches item i in the deck list. Design lives
- * in Designer; this file only wires behaviour + sync.
  *
  * Requires : gsap (core; no plugins — drag is pointer-event based, deps stay
  *            Lenis + GSAP only). Sestek.util (js/core/utils.js) loaded first.
  * CSS      : css/components/case-switch.css  (deck stacking + logo active state)
  *
  * DOM contract (Webflow — attributes matter, visual design is yours):
- *   [data-cswitch]                      root; config attrs below
- *     [data-cswitch-tabs]   (Collection List)  logo tabs — same collection
- *       [data-cswitch-tab]  (Collection Item)  one logo per case study
- *     [data-cswitch-deck]   (Collection List)  card deck — same collection/order
- *       [data-cswitch-card] (Collection Item)  one card per case study
+ *   [data-cswitch]                       root; config attrs below
+ *     [data-cswitch-list] (Collection List)  ONE list bound to the collection —
+ *                                            also the role="tablist" container
+ *       [data-cswitch-item] (Collection Item) one case study (logo + card)
+ *         [data-cswitch-tab]   the logo — flows in the list (the tab grid)
+ *         [data-cswitch-card]  the card — pulled out, stacked in the deck region
+ *
+ * The tab (logo) and card of the SAME item share an index automatically — no
+ * second list to keep in sync. [data-cswitch-item] is optional (used only to
+ * mirror the is-active class onto the item); tab↔card pairing is by index.
  *
  * Root config attributes (all optional):
  *   data-cswitch-interval   autoplay ms, 0 = off             (default 5000)
@@ -37,6 +47,11 @@
  *   data-cswitch-offset-y   px each behind card peeks up (−) / down (default -16)
  *   data-cswitch-scale      scale falloff per depth           (default 0.05)
  *   data-cswitch-drag       "false" disables grab/throw       (default true)
+ *
+ * Deck region: cards are position:absolute (CSS) and anchor to [data-cswitch]
+ * (position:relative). Where the deck SITS (e.g. the right column) is design —
+ * give [data-cswitch-card] its place + size in Designer; every card shares it,
+ * so they overlap into a deck and this script fans them by depth via transforms.
  *
  * Accessibility: tabs are a real role="tablist" (roving tabindex, aria-selected);
  * cards are role="tabpanel" with aria-hidden on the non-front cards. Autoplay
@@ -69,18 +84,15 @@
     var attrNum = util.attrNum;
     var toArray = gsap.utils.toArray;
 
+    // One list: tab i and card i belong to the SAME Collection Item → index-aligned.
     var tabs = toArray(root.querySelectorAll("[data-cswitch-tab]"));
     var cards = toArray(root.querySelectorAll("[data-cswitch-card]"));
-    var deck = root.querySelector("[data-cswitch-deck]");
+    var items = toArray(root.querySelectorAll("[data-cswitch-item]"));
 
     var n = Math.min(tabs.length, cards.length);
     if (n < 1) {
-      console.warn("[Sestek CaseSwitch] Need matching [data-cswitch-tab] and [data-cswitch-card] items (same collection).");
+      console.warn("[Sestek CaseSwitch] Need [data-cswitch-tab] + [data-cswitch-card] inside each [data-cswitch-item].");
       return;
-    }
-    if (tabs.length !== cards.length) {
-      console.warn("[Sestek CaseSwitch] tab count (" + tabs.length + ") ≠ card count (" +
-        cards.length + "). Bind both Collection Lists to the SAME collection + sort. Using first " + n + ".");
     }
     tabs = tabs.slice(0, n);
     cards = cards.slice(0, n);
@@ -99,7 +111,8 @@
     var animating = false;
 
     // ── ARIA wiring ──────────────────────────────────────────────────────────
-    var tablist = root.querySelector("[data-cswitch-tabs]") || tabs[0].parentNode;
+    var tablist = root.querySelector("[data-cswitch-list]") ||
+                  (tabs[0] && tabs[0].parentNode) || root;
     if (tablist) tablist.setAttribute("role", "tablist");
     tabs.forEach(function (tab, i) {
       tab.setAttribute("role", "tab");
@@ -139,6 +152,7 @@
         tab.classList.toggle("is-active", on);          // Designer styles the coloured state
         tab.setAttribute("aria-selected", on ? "true" : "false");
         tab.tabIndex = on ? 0 : -1;                     // roving tabindex
+        if (items[i]) items[i].classList.toggle("is-active", on);
       });
       cards.forEach(function (card, i) {
         card.setAttribute("aria-hidden", i === active ? "false" : "true");
@@ -156,6 +170,10 @@
       syncActive();
     }
 
+    function cardWidth() {
+      return (cards[active] && cards[active].offsetWidth) || root.offsetWidth || 400;
+    }
+
     // ── Transitions ──────────────────────────────────────────────────────────
     // Throw the front card off to `dir` and advance to the next case study.
     function throwOut(dir) {
@@ -163,7 +181,7 @@
       animating = true;
       var leaving = cards[active];
       active = mod(active + 1, n);
-      var dist = (deck ? deck.offsetWidth : root.offsetWidth || 400) * 1.15;
+      var dist = cardWidth() * 1.15;
       gsap.to(leaving, {
         x: dir * dist, y: -24, rotation: dir * 12, autoAlpha: 0,
         duration: DUR * 0.55, ease: "power2.in",
@@ -182,7 +200,7 @@
       animating = true;
       active = mod(active - 1, n);
       var incoming = cards[active];
-      var dist = (deck ? deck.offsetWidth : root.offsetWidth || 400) * 1.15;
+      var dist = cardWidth() * 1.15;
       gsap.set(incoming, { x: -dist, y: -24, rotation: -10, scale: 1, autoAlpha: 1, zIndex: 200 });
       cards.forEach(function (card) {
         gsap.to(card, Object.assign({ duration: DUR, ease: EASE }, slotProps(card)));
@@ -194,8 +212,7 @@
     // Jump to an arbitrary index (tab click / keyboard) — smooth deck reshuffle.
     function jumpTo(i) {
       i = mod(i, n);
-      if (i === active) return;
-      if (animating) return;
+      if (i === active || animating) return;
       animating = true;
       active = i;
       render(true);
@@ -220,9 +237,9 @@
     });
     if (tablist) {
       tablist.addEventListener("keydown", function (e) {
-        var cur = active, next = null;
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = mod(cur + 1, n);
-        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = mod(cur - 1, n);
+        var next = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = mod(active + 1, n);
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = mod(active - 1, n);
         else if (e.key === "Home") next = 0;
         else if (e.key === "End") next = n - 1;
         else return;
@@ -243,20 +260,22 @@
       paused.hidden = document.hidden; schedule();
     });
 
-    // ── Drag to throw ────────────────────────────────────────────────────────
-    if (DRAG_ON && !reduce && n > 1 && deck) {
-      deck.classList.add("is-draggable");
+    // ── Drag to throw (delegated on the front card) ──────────────────────────
+    if (DRAG_ON && !reduce && n > 1) {
+      root.classList.add("is-draggable");
       var dragging = false, decided = false, horiz = false;
-      var startX = 0, startY = 0, dx = 0, moved = 0, deckW = 0;
+      var startX = 0, startY = 0, dx = 0, moved = 0, w = 0;
 
-      deck.addEventListener("pointerdown", function (e) {
+      root.addEventListener("pointerdown", function (e) {
         if (animating) return;
+        var card = e.target.closest && e.target.closest("[data-cswitch-card]");
+        if (!card || cards.indexOf(card) !== active) return;  // only the front card drags
         dragging = true; decided = false; horiz = false;
         startX = e.clientX; startY = e.clientY; dx = 0; moved = 0;
-        deckW = deck.offsetWidth || 400;
+        w = cardWidth();
         paused.drag = true; schedule();
       });
-      deck.addEventListener("pointermove", function (e) {
+      root.addEventListener("pointermove", function (e) {
         if (!dragging) return;
         dx = e.clientX - startX;
         var dy = e.clientY - startY;
@@ -265,7 +284,7 @@
         if (!decided && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
           decided = true;
           horiz = Math.abs(dx) > Math.abs(dy);
-          if (horiz && deck.setPointerCapture) { try { deck.setPointerCapture(e.pointerId); } catch (err) {} }
+          if (horiz && root.setPointerCapture) { try { root.setPointerCapture(e.pointerId); } catch (err) {} }
         }
         if (!horiz) return;
         e.preventDefault();
@@ -275,17 +294,19 @@
         if (!dragging) return;
         dragging = false;
         paused.drag = false;
-        var threshold = Math.max(deckW * 0.18, 60);
+        var threshold = Math.max(w * 0.18, 60);
         if (horiz && dx <= -threshold) throwOut(-1);          // toss left → next
         else if (horiz && dx >= threshold) pullIn();          // pull right → previous
         else gsap.to(cards[active], { x: 0, rotation: 0, duration: 0.35, ease: "power3.out" }); // snap back
         schedule();
       }
-      deck.addEventListener("pointerup", endDrag);
-      deck.addEventListener("pointercancel", endDrag);
+      root.addEventListener("pointerup", endDrag);
+      root.addEventListener("pointercancel", endDrag);
       // A real drag must not fire the card's link click.
-      deck.addEventListener("click", function (e) {
-        if (moved > 8) { e.preventDefault(); e.stopPropagation(); moved = 0; }
+      root.addEventListener("click", function (e) {
+        if (moved > 8 && e.target.closest && e.target.closest("[data-cswitch-card]")) {
+          e.preventDefault(); e.stopPropagation(); moved = 0;
+        }
       }, true);
     }
 
@@ -293,7 +314,6 @@
     render(false);                                            // instant lay-out of the deck
     schedule();                                               // start autoplay (no-op if disabled)
 
-    // Expose a small controller for programmatic control / teardown.
     root._caseSwitch = {
       el: root,
       to: function (i) { jumpTo(i); restart(); },
@@ -308,7 +328,6 @@
    * @param {string} [selector="[data-cswitch]"] narrow the scope if needed
    */
   function initCaseSwitch(selector) {
-    // Tolerate late-loading gsap (async/defer order): poll for ~4s.
     if (typeof gsap === "undefined") {
       var waited = 0;
       var poll = setInterval(function () {
@@ -324,8 +343,6 @@
       console.error("[Sestek CaseSwitch] Sestek.util (js/core/utils.js) required."); return;
     }
 
-    // Arm the CSS anti-flash guard (no-op if already added in <head>). Gated on
-    // this class so no-JS pages just show the cards stacked (graceful fallback).
     document.documentElement.classList.add("cswitch-armed");
 
     var roots = document.querySelectorAll(selector || "[data-cswitch]");

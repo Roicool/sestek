@@ -2730,7 +2730,7 @@ Webflow `</body>` öncesi:
 </script>
 ```
 
-DOM (Webflow — iki Collection List, ikisi de **aynı** Case Studies koleksiyonundan):
+DOM (Webflow — **TEK** Collection List; her item hem logo hem kart içerir):
 
 ```html
 <!--
@@ -2746,25 +2746,27 @@ DOM (Webflow — iki Collection List, ikisi de **aynı** Case Studies koleksiyon
 -->
 <div data-cswitch>
 
-  <!-- SOL: logo tab'ları — Collection List (Case Studies) -->
-  <div data-cswitch-tabs class="w-dyn-list">
+  <!-- TEK Collection List (Case Studies) — hem tab ızgarası hem tablist -->
+  <div data-cswitch-list class="w-dyn-list">
     <div role="list" class="w-dyn-items">
-      <!-- Collection Item: her item bir tab -->
-      <div role="listitem" data-cswitch-tab class="w-dyn-item">
-        <img src="logo.svg" alt="Müşteri logosu">
-      </div>
-    </div>
-  </div>
 
-  <!-- SAĞ: kart destesi — AYNI koleksiyondan ikinci Collection List -->
-  <div data-cswitch-deck class="w-dyn-list">
-    <div role="list" class="w-dyn-items">
-      <!-- Collection Item: her item bir kart -->
-      <div role="listitem" data-cswitch-card class="w-dyn-item">
-        <img src="cover.jpg" alt="">
-        <h3>Başlık / quote</h3>
-        <a href="/case/x">See how X uses …</a>
+      <!-- Collection Item: her item bir case study (logo + kart) -->
+      <div role="listitem" data-cswitch-item class="w-dyn-item">
+
+        <!-- Logo = tab (listede akar, sol ızgarayı oluşturur) -->
+        <a data-cswitch-tab href="#">
+          <img src="logo.svg" alt="Müşteri logosu">
+        </a>
+
+        <!-- Kart = deste (absolute çekilir, sağ deck bölgesinde yığılır) -->
+        <div data-cswitch-card>
+          <img src="cover.jpg" alt="">
+          <h3>Başlık / quote</h3>
+          <a href="/case/x">See how X uses …</a>
+        </div>
+
       </div>
+
     </div>
   </div>
 
@@ -2772,12 +2774,15 @@ DOM (Webflow — iki Collection List, ikisi de **aynı** Case Studies koleksiyon
 ```
 
 **Notlar**
-- **İki liste = aynı koleksiyon + aynı sıralama.** Sıra/adet uyuşmazsa JS uyarır ve
-  kısa olana göre eşler. En temizi: aynı koleksiyonu iki Collection List olarak
-  bağla, ikisinde de aynı sort.
-- **Deste stacking CSS'ten:** ilk kart normal akışta kalıp desteye yükseklik verir,
-  diğerleri üstüne absolute yığılır — JS transform'la yerleştirir. Kart tasarımı
-  (radius, gölge, boyut) Designer'da; kartların eşit boyutlu olması beklenir.
+- **Tek liste, tek CMS sorgusu:** aynı item'ın logosu ve kartı otomatik aynı
+  index'e sahiptir — senkron için ikinci listeye gerek yok. `[data-cswitch-item]`
+  opsiyoneldir (yalnız aktif class'ı item'a da yansıtmak için); tab↔kart eşleşmesi
+  index iledir.
+- **Deck yerleşimi = tasarım:** kartlar `[data-cswitch]`'e göre `position:absolute`.
+  Kartın NEREYE oturacağını (örn. sağ kolon, inset/boyut) Designer'da
+  `[data-cswitch-card]`'a ver — tüm kartlar aynı yeri paylaşır, üst üste binip
+  deste olur; JS derinliğe göre transform'la açar. Deck logo ızgarasından uzunsa
+  `[data-cswitch]`'e Designer'dan `min-height` ver.
 - **Aktif logo renkli:** varsayılan CSS pasif logoyu `grayscale(1)+opacity`, aktifi
   renkli yapar (`.is-active`). CMS'te tek logo alanı yeterli. Ayrı renkli/mono
   görsel istersen bu bloğu Designer'da ez.
