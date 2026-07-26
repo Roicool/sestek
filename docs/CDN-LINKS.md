@@ -2752,6 +2752,7 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
     data-mesh-drift       "false" → idle drift kapalı         (default true)
     data-mesh-lag         mouse takip gecikmesi sn            (default 0.8)
     data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
+    data-mesh-speed       idle drift hız çarpanı                 (default 1)
     data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
 -->
 <section data-mesh-gradient class="hero">
