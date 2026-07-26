@@ -1,5 +1,5 @@
 /*!
- * section-shrink.js v1.0.0
+ * section-shrink.js v1.1.0
  * Full-bleed → container "oturma" efekti: section viewport'a girerken tam
  * genişlik başlar, scroll'la hedef container genişliğine (default
  * --container--2xl) büzülür; kenarlarına radius gelir. Geri sarınca açılır.
@@ -22,6 +22,17 @@
  * bp altı (mobil) → efekt yok, Designer düzeni neyse o. Reduced motion →
  * animasyonsuz, DURGUN SON HAL (container'a oturmuş) uygulanır.
  *
+ * v1.1.0 — ÜSTTEKİ PİNLİ BÖLÜMLERLE UYUM:
+ *   · refreshPriority default -1 (reveal.js kuralı): pin DEĞİLİZ; tüm
+ *     pinler ölçülüp spacer'ları yerine oturDUKTAN SONRA ölçülürüz. Aksi
+ *     halde start/end üstteki pin mesafeleri kadar erken hesaplanır ve
+ *     section görünmeden animasyon bitmiş olur ("hep küçük geliyor" bug'ı).
+ *   · Lift: köke position:relative + z-index:1 basılır (varsa dokunulmaz) —
+ *     viewport'tan uzun pinli bir bölümün ardından gelirken giriş, pinli
+ *     elementin (transform'lu → üstte boyanır) arkasında kaybolmasın,
+ *     önünden perde gibi görünsün. data-shrink-lift="false" ile kapanır;
+ *     pin yoksa görünür bir etkisi zaten olmaz.
+ *
  * Requires : gsap + ScrollTrigger.
  *
  * Kök [data-shrink] attribute'ları (hepsi opsiyonel):
@@ -33,6 +44,8 @@
  *   data-shrink-start   ScrollTrigger start   (default "top bottom")
  *   data-shrink-end     ScrollTrigger end     (default "top 30%")
  *   data-shrink-scrub   scrub yumuşatması sn — örn "0.5" (default true = kilitli)
+ *   data-shrink-priority  refreshPriority     (default -1 — pinlerden sonra ölç)
+ *   data-shrink-lift    "false" → relative + z-index:1 yükseltmesi kapalı
  *
  * https://github.com/roicool/sestek
  */
@@ -74,6 +87,8 @@
     var endAt     = root.getAttribute("data-shrink-end")    || "top 30%";
     var scrubRaw  = root.getAttribute("data-shrink-scrub");
     var scrub     = scrubRaw ? (parseFloat(scrubRaw) || true) : true;
+    var priority  = num(root, "data-shrink-priority", -1);
+    var lift      = root.getAttribute("data-shrink-lift") !== "false";
 
     // Bitiş clip'i — her refresh'te yeniden ölçülür (function-based).
     var endClip = function () {
@@ -91,6 +106,14 @@
     mm.add(
       "(min-width: " + bp + "px) and (prefers-reduced-motion: no-preference)",
       function () {
+        // Lift: üstteki pinli (transform'lu) elementin önünden görünür giriş.
+        var lifted = [];
+        if (lift) {
+          var cs = getComputedStyle(root);
+          if (cs.position === "static") { root.style.position = "relative"; lifted.push("position"); }
+          if (cs.zIndex === "auto")     { root.style.zIndex = "1";          lifted.push("zIndex"); }
+        }
+
         var t = gsap.fromTo(root,
           { clipPath: "inset(0px 0px round 0px)" },
           {
@@ -102,6 +125,9 @@
               end: endAt,
               scrub: scrub,
               invalidateOnRefresh: true,           // hedef px'ler tazelensin
+              // Pin DEĞİLİZ: tüm pinler spacer'larını oturttuktan SONRA
+              // ölçülmeliyiz — yoksa üstte pin varsa start/end erken kalır.
+              refreshPriority: priority,
             },
           }
         );
@@ -109,6 +135,7 @@
           t.scrollTrigger && t.scrollTrigger.kill();
           t.kill();
           gsap.set(root, { clearProps: "clipPath" });
+          lifted.forEach(function (p) { root.style[p] = ""; });
         };
       }
     );
