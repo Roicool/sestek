@@ -1,41 +1,48 @@
 /*!
- * section-shrink.js v1.1.0
- * Full-bleed → container "oturma" efekti: section viewport'a girerken tam
+ * section-shrink.js v2.0.0
+ * Full-bleed → container "oturma" efekti: element viewport'a girerken tam
  * genişlik başlar, scroll'la hedef container genişliğine (default
  * --container--2xl) büzülür; kenarlarına radius gelir. Geri sarınca açılır.
  *
+ * [data-shrink] ARTIK HERHANGİ BİR ELEMENTE verilebilir (v2.0.0): section'ın
+ * kendisi YA DA içindeki full-bleed medya/arka plan sarmalayıcısı — önerilen
+ * ikincisi: metin container'ı dışarıda kalır, kırpılan yalnız medya olur.
+ * Trigger elementin kendisidir (kendi viewport girişi).
+ *
  * MEKANİZMA — clip-path: inset(0 Xpx round R):
  *   Genişlik/max-width ANİMASYONU YOK — her frame reflow tetiklerdi ve
- *   çevresindeki akışı oynatırdı. Bunun yerine kutu akışta tam genişlik
- *   kalır, yalnız BOYASI kırpılır: komşu section'lar hiç etkilenmez,
- *   pin'li bölüm kurallarıyla da çakışmaz (transform kullanılmaz).
- *   Bu yüzden section İÇİNDEKİ içerik zaten bir container'da durmalı
- *   (site deseninde öyle) — kırpılan yalnız arka plandır.
+ *   çevresindeki akışı oynatırdı. Kutu akışta tam genişlik kalır, yalnız
+ *   BOYASI kırpılır: komşular etkilenmez, pin kurallarıyla çakışmaz.
+ *
+ *   v2.0.0: clip-path STRING'İ TWEEN'LENMEZ. Tarayıcı inset kısaltması
+ *   ("inset(0px 0px round 0px)" → "inset(0px)") gibi serileştirmeler GSAP
+ *   string eşleştirmesini bozup ara değersiz SON DEĞERE ATLAMAYA yol
+ *   açabiliyordu. Artık 0→1 arası tek bir SAYI scrub'lanır; clip-path her
+ *   frame o sayıdan kurulur — atlama yapısal olarak imkânsız.
  *
  * Hedef görünür genişlik diğer container'larla AYNI matematik:
- *   min(max, sectionGenişliği − 2×gutter)  → kenar boşluğu view-px ile eş.
- * Değerler CSS uzunluğu olarak verilir (var()/rem/px…), px'e prob ile
- * çevrilir ve her ScrollTrigger refresh'inde YENİDEN ölçülür
- * (invalidateOnRefresh) — resize/breakpoint'te hedef güncel kalır.
+ *   min(max, elementGenişliği − 2×gutter)  → kenar boşluğu view-px ile eş.
+ * Değerler CSS uzunluğu olarak verilir (var()/rem/px…), prob ile px'e
+ * çevrilir ve her ScrollTrigger refresh'inde YENİDEN ölçülür.
+ *
+ * ÜSTTEKİ PİNLİ BÖLÜMLERLE UYUM (v1.1.0):
+ *   · refreshPriority default -1 (reveal.js kuralı): pin DEĞİLİZ; tüm
+ *     pinler spacer'larını oturttuktan SONRA ölçülürüz.
+ *   · Lift: elemente position:relative + z-index:1 basılır (varsa
+ *     dokunulmaz) — viewport'tan uzun pinli (transform'lu → üstte boyanan)
+ *     bölümün ardından giriş arkada kaybolmaz, önünden perde gibi görünür.
+ *     data-shrink-lift="false" kapatır; pin yoksa görünür etkisi yoktur.
  *
  * Kurulmama halleri: JS yok → tam genişlik kalır (çizime engel yok).
  * bp altı (mobil) → efekt yok, Designer düzeni neyse o. Reduced motion →
  * animasyonsuz, DURGUN SON HAL (container'a oturmuş) uygulanır.
  *
- * v1.1.0 — ÜSTTEKİ PİNLİ BÖLÜMLERLE UYUM:
- *   · refreshPriority default -1 (reveal.js kuralı): pin DEĞİLİZ; tüm
- *     pinler ölçülüp spacer'ları yerine oturDUKTAN SONRA ölçülürüz. Aksi
- *     halde start/end üstteki pin mesafeleri kadar erken hesaplanır ve
- *     section görünmeden animasyon bitmiş olur ("hep küçük geliyor" bug'ı).
- *   · Lift: köke position:relative + z-index:1 basılır (varsa dokunulmaz) —
- *     viewport'tan uzun pinli bir bölümün ardından gelirken giriş, pinli
- *     elementin (transform'lu → üstte boyanır) arkasında kaybolmasın,
- *     önünden perde gibi görünsün. data-shrink-lift="false" ile kapanır;
- *     pin yoksa görünür bir etkisi zaten olmaz.
+ * DİKKAT: kırpılan elemente CSS transition VERME (özellikle "all") — her
+ * frame yazılan clip-path ile yarışıp takılma/atlama hissi yaratır.
  *
  * Requires : gsap + ScrollTrigger.
  *
- * Kök [data-shrink] attribute'ları (hepsi opsiyonel):
+ * [data-shrink] attribute'ları (hepsi opsiyonel):
  *   data-shrink-max     hedef genişlik (CSS uzunluğu)
  *                                    (default var(--container--2xl, 96rem))
  *   data-shrink-gutter  min kenar boşluğu (default var(--view--px, 16px))
@@ -62,16 +69,18 @@
 
   /**
    * CSS uzunluğunu (var()/rem/px/vw…) elementin bağlamında px'e çevirir.
-   * Prob: köke eklenen görünmez bir div'e width olarak basılır, ölçülür.
+   * Prob ebeveyne eklenir (element <img> gibi çocuk alamayan bir şey
+   * olabilir); CSS değişkenleri kalıtımla aynı çözülür.
    */
-  function toPx(root, cssLen) {
+  function toPx(el, cssLen) {
+    var host = el.parentElement || el;
     var probe = document.createElement("div");
     probe.style.cssText =
       "position:absolute;visibility:hidden;pointer-events:none;height:0;" +
       "width:" + cssLen + ";";
-    root.appendChild(probe);
+    host.appendChild(probe);
     var px = probe.getBoundingClientRect().width;
-    root.removeChild(probe);
+    host.removeChild(probe);
     return px;
   }
 
@@ -90,15 +99,23 @@
     var priority  = num(root, "data-shrink-priority", -1);
     var lift      = root.getAttribute("data-shrink-lift") !== "false";
 
-    // Bitiş clip'i — her refresh'te yeniden ölçülür (function-based).
-    var endClip = function () {
-      var w      = root.clientWidth;
-      var maxPx  = toPx(root, maxLen);
-      var gutPx  = toPx(root, gutterLen);
-      var radPx  = toPx(root, radiusLen);
-      var target = Math.min(maxPx, w - 2 * gutPx);
-      var inset  = Math.max(0, (w - target) / 2);
-      return "inset(0px " + inset.toFixed(2) + "px round " + radPx.toFixed(2) + "px)";
+    // Hedef px'ler — refresh'te yeniden ölçülür.
+    var target = { inset: 0, radius: 0 };
+    var measure = function () {
+      var w     = root.clientWidth;
+      var maxPx = toPx(root, maxLen);
+      var gutPx = toPx(root, gutterLen);
+      target.radius = toPx(root, radiusLen);
+      var vis = Math.min(maxPx, w - 2 * gutPx);
+      target.inset = Math.max(0, (w - vis) / 2);
+    };
+
+    // Scrub'lanan şey SAYI (0→1); clip her frame bu sayıdan kurulur.
+    var proxy = { p: 0 };
+    var apply = function () {
+      root.style.clipPath = "inset(0px " +
+        (target.inset  * proxy.p).toFixed(2) + "px round " +
+        (target.radius * proxy.p).toFixed(2) + "px)";
     };
 
     var mm = gsap.matchMedia();
@@ -114,27 +131,30 @@
           if (cs.zIndex === "auto")     { root.style.zIndex = "1";          lifted.push("zIndex"); }
         }
 
-        var t = gsap.fromTo(root,
-          { clipPath: "inset(0px 0px round 0px)" },
-          {
-            clipPath: endClip,
-            ease: "none",
-            scrollTrigger: {
-              trigger: root,
-              start: startAt,
-              end: endAt,
-              scrub: scrub,
-              invalidateOnRefresh: true,           // hedef px'ler tazelensin
-              // Pin DEĞİLİZ: tüm pinler spacer'larını oturttuktan SONRA
-              // ölçülmeliyiz — yoksa üstte pin varsa start/end erken kalır.
-              refreshPriority: priority,
-            },
-          }
-        );
+        measure();
+        var t = gsap.fromTo(proxy, { p: 0 }, {
+          p: 1,
+          ease: "none",
+          onUpdate: apply,
+          scrollTrigger: {
+            trigger: root,
+            start: startAt,
+            end: endAt,
+            scrub: scrub,
+            // Pin DEĞİLİZ: tüm pinler spacer'larını oturttuktan SONRA
+            // ölçülmeliyiz — yoksa üstte pin varsa start/end erken kalır.
+            refreshPriority: priority,
+            // Konumlar tazelenince hedef px'leri de tazele ve mevcut
+            // progress'le yeniden uygula (resize/font yüklenmesi).
+            onRefresh: function () { measure(); apply(); },
+          },
+        });
+
         return function () {
           t.scrollTrigger && t.scrollTrigger.kill();
           t.kill();
-          gsap.set(root, { clearProps: "clipPath" });
+          proxy.p = 0;
+          root.style.clipPath = "";
           lifted.forEach(function (p) { root.style[p] = ""; });
         };
       }
@@ -144,14 +164,16 @@
     mm.add(
       "(min-width: " + bp + "px) and (prefers-reduced-motion: reduce)",
       function () {
-        gsap.set(root, { clipPath: endClip() });
-        return function () { gsap.set(root, { clearProps: "clipPath" }); };
+        measure();
+        proxy.p = 1;
+        apply();
+        return function () { proxy.p = 0; root.style.clipPath = ""; };
       }
     );
   }
 
   /**
-   * Sayfadaki her [data-shrink] section'ını bağlar.
+   * Sayfadaki her [data-shrink] elementini bağlar.
    * @param {string} [selector="[data-shrink]"]
    */
   function initSectionShrink(selector) {
