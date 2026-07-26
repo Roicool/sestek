@@ -17,7 +17,9 @@
 /* ── Kök — pin edilen section ────────────────────────────────── */
 [data-benefits] {
   --benefits-max: 1200px;                        /* grid genişliği */
-  --benefits-gap: var(--spacing--4, 1.25rem);    /* kart arası boşluk */
+  --benefits-gap: 1.25rem;                       /* kart arası boşluk — timeline'daki
+                                                    x:-20 bu 20px'i telafi eder;
+                                                    değiştirirsen iniş noktası kayar */
   --benefits-pad: clamp(2rem, 5vw, 5rem);        /* kart içi padding */
   --benefits-parallax-x: -360px;                 /* parallax SVG ofseti */
   --benefits-parallax-y: 27%;
