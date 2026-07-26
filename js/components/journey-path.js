@@ -1,10 +1,19 @@
 /*!
- * journey-path.js v1.0.0
- * Scroll-driven CURVY progress path through a row of step items — the modern
- * take on the classic "dashed journey line" section. A faint dashed track
- * meanders edge-to-edge through every step's icon; as you scroll, a gradient
- * progress line FILLS along the same curve (scrubbed, fully reversible) and
- * each icon lights up from its dimmed state the moment the fill reaches it.
+ * journey-path.js v2.0.0
+ * PINNED scroll-driven CURVY progress path through a row of step items. The
+ * section pins to the viewport; as you keep scrolling, a gradient progress
+ * line FILLS along a meandering dashed track that runs through every step's
+ * icon (scrubbed, fully reversible), and each icon lights up from its dimmed
+ * state — takes the accent (Sestek pink) — the moment the fill reaches it.
+ * When the fill completes, the pin releases and the page scrolls on.
+ *
+ * Changelog
+ * v2.0.0 — PIN by default. The section now pins (start "top top") for
+ *          data-jp-distance % of viewport scroll while the line fills.
+ *          data-jp-pin="false" restores the v1 non-pinned in-flow scrub.
+ *          Pinned sections must follow PROJECT.md pin rules: refreshPriority
+ *          via data-jp-priority, and NO transform/filter/perspective on any
+ *          ancestor of [data-journey-path].
  *
  * The path is GENERATED from the real layout: the script measures each icon's
  * centre and draws a smooth spline through the points (with a gentle
@@ -30,11 +39,17 @@
  *                      meander direction                       (default 56)
  *   data-jp-bleed      "edge" = run the line to the section edges ·
  *                      "none" = start/stop at the first/last icon (default edge)
- *   data-jp-start      ScrollTrigger start                    (default "top 70%")
- *   data-jp-end        ScrollTrigger end                      (default "bottom 75%")
+ *   data-jp-pin        "false" → no pin: in-flow scrub between data-jp-start
+ *                      and data-jp-end (v1 behaviour)          (default true)
+ *   data-jp-distance   pin scroll distance, % of viewport      (default 160)
+ *   data-jp-priority   refreshPriority for the pin — set relative to other
+ *                      pinned sections (PROJECT.md pin table)  (default 1)
+ *   data-jp-start      ScrollTrigger start
+ *                      (default "top top" pinned · "top 70%" unpinned)
+ *   data-jp-end        ScrollTrigger end — unpinned mode only  (default "bottom 75%")
  *   data-jp-scrub      scrub lag in seconds                   (default 1)
- *   data-jp-min        min viewport px for the line + scrub — below this the
- *                      svg is hidden and icons render lit     (default 992)
+ *   data-jp-min        min viewport px for pin + line + scrub — below this the
+ *                      svg is hidden, no pin, icons render lit (default 992)
  *
  * Colour / geometry tokens (CSS custom properties on the root — see the CSS):
  *   --jp-track · --jp-grad-from · --jp-grad-to · --jp-line-w
@@ -54,8 +69,11 @@
 
   var DEFAULTS = {
     wave: 56,
-    start: "top 70%",
-    end: "bottom 75%",
+    startFlow: "top 70%",     // unpinned mode
+    end: "bottom 75%",        // unpinned mode
+    startPin: "top top",      // pinned mode
+    distance: 160,            // pinned mode: % of viewport scroll
+    priority: 1,
     scrub: 1,
     min: 992,
   };
@@ -78,7 +96,10 @@
     var WAVE  = attrNum(root, "data-jp-wave", DEFAULTS.wave);
     var SCRUB = attrNum(root, "data-jp-scrub", DEFAULTS.scrub);
     var MIN   = attrNum(root, "data-jp-min", DEFAULTS.min);
-    var START = root.getAttribute("data-jp-start") || DEFAULTS.start;
+    var PIN   = root.getAttribute("data-jp-pin") !== "false";
+    var DIST  = attrNum(root, "data-jp-distance", DEFAULTS.distance);
+    var PRIORITY = attrNum(root, "data-jp-priority", DEFAULTS.priority);
+    var START = root.getAttribute("data-jp-start") || (PIN ? DEFAULTS.startPin : DEFAULTS.startFlow);
     var END   = root.getAttribute("data-jp-end") || DEFAULTS.end;
     var BLEED = (root.getAttribute("data-jp-bleed") || "edge") !== "none";
 
@@ -206,20 +227,27 @@
         var geo = buildGeometry();
         basePath.setAttribute("d", geo.d);
         fillPath.setAttribute("d", geo.d);
+        var st = PIN ? {
+          // Pinned: the section sticks and the fill consumes DIST% of scroll.
+          trigger: root,
+          start: START,
+          end: "+=" + DIST + "%",
+          scrub: SCRUB,
+          pin: true,
+          refreshPriority: PRIORITY,                          // pin: page order (PROJECT.md)
+          onUpdate: function (self) { setActive(self.progress, geo.fractions); },
+        } : {
+          // Unpinned (v1): in-flow scrub while the section crosses the viewport.
+          trigger: root,
+          start: START,
+          end: END,
+          scrub: SCRUB,
+          refreshPriority: -1,                                // non-pinned: after pins
+          onUpdate: function (self) { setActive(self.progress, geo.fractions); },
+        };
         tween = gsap.fromTo(fillPath,
           { strokeDasharray: geo.total, strokeDashoffset: geo.total },
-          {
-            strokeDashoffset: 0,
-            ease: "none",
-            scrollTrigger: {
-              trigger: root,
-              start: START,
-              end: END,
-              scrub: SCRUB,
-              refreshPriority: -1,                            // non-pinned: after pins
-              onUpdate: function (self) { setActive(self.progress, geo.fractions); },
-            },
-          });
+          { strokeDashoffset: 0, ease: "none", scrollTrigger: st });
         setActive(tween.scrollTrigger ? tween.scrollTrigger.progress : 0, geo.fractions);
       }
 

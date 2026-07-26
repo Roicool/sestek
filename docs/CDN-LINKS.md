@@ -2778,15 +2778,20 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
 
 ---
 
-### Journey Path (scroll ile dolan kıvrımlı çizgi)
+### Journey Path (pinli, scroll ile dolan kıvrımlı çizgi)
 
-"How We Can Help" tarzı adım bölümleri için modern journey çizgisi: step
-ikonlarının merkezinden geçen **kıvrımlı** (meander) kesikli bir taban çizgisi
-ve scroll ile üzerine **scrub'lı dolan gradient** progress çizgisi. Dolum bir
-ikona ulaştığında ikon **silik halden renkli hale** geçer (geri scroll'da geri
-söner). Path gerçek layout'tan üretilir — ikonların merkezleri ölçülüp spline
-çizilir; her grid/spacing/breakpoint'te çalışır, resize'da yeniden ölçülür.
-≤991px'te çizgi gizlenir, ikonlar renkli düz stack olur. Pin YOK.
+"How We Can Help" tarzı adım bölümleri için modern journey çizgisi. **Section
+pinlenir**; scroll ettikçe step ikonlarının merkezinden geçen **kıvrımlı**
+kesikli taban çizgisinin üzerine **scrub'lı gradient dolum** akar. Dolum bir
+ikona ulaştığında ikon **silik halden Sestek pembesine** döner (kutu border +
+glow + currentColor svg; geri scroll'da geri söner). Dolum bitince pin bırakır.
+Path gerçek layout'tan üretilir — ikon merkezleri ölçülüp spline çizilir; her
+grid/breakpoint'te çalışır, resize'da yeniden ölçülür. ≤991px'te pin + çizgi
+yok, ikonlar renkli düz stack. `data-jp-pin="false"` → pinsiz v1 akışı.
+
+> **Pin kuralları:** `[data-journey-path]`'ın hiçbir üst elementinde
+> `transform`/`filter`/`perspective` olmasın; sayfada başka pin varsa
+> `data-jp-priority`'yi PROJECT.md pin tablosuna göre ver.
 
 ```html
 <!-- in <head> -->
@@ -2814,13 +2819,16 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
 ```html
 <!--
   Kök ([data-journey-path]) attribute'ları (hepsi opsiyonel):
-    data-jp-wave    adımlar arası yana bükülme px; negatif → yön ters (default 56)
-    data-jp-bleed   "edge" → çizgi section kenarlarına uzanır ·
-                    "none" → ilk/son ikonda başlar-biter          (default edge)
-    data-jp-start   ScrollTrigger start                    (default "top 70%")
-    data-jp-end     ScrollTrigger end                      (default "bottom 75%")
-    data-jp-scrub   scrub gecikmesi sn                     (default 1)
-    data-jp-min     çizgi + scrub için min viewport px     (default 992)
+    data-jp-wave      adımlar arası yana bükülme px; negatif → ters (default 56)
+    data-jp-bleed     "edge" → çizgi section kenarlarına uzanır ·
+                      "none" → ilk/son ikonda başlar-biter        (default edge)
+    data-jp-pin       "false" → pin yok, v1 in-flow scrub         (default true)
+    data-jp-distance  pin scroll mesafesi, viewport %             (default 160)
+    data-jp-priority  pin refreshPriority (PROJECT.md tablosu)    (default 1)
+    data-jp-start     ScrollTrigger start (pinli "top top" · pinsiz "top 70%")
+    data-jp-end       ScrollTrigger end — sadece pinsiz mod  (default "bottom 75%")
+    data-jp-scrub     scrub gecikmesi sn                          (default 1)
+    data-jp-min       pin + çizgi için min viewport px            (default 992)
 -->
 <section data-journey-path>
   <div class="grid-3col">

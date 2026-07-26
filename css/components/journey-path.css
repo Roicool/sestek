@@ -1,5 +1,8 @@
 /*!
- * journey-path.css v1.0.0
+ * journey-path.css v1.1.0
+ * v1.1.0: icon BOX default (border/radius/bg hooks) + accent state — the lit
+ *         icon takes --jp-accent (Sestek pink): currentColor svgs colourise,
+ *         the box border/glow follows. Matches journey-path.js v2 (pinned).
  * Behavioural / critical CSS for the journey-path component — the scroll-drawn
  * curvy progress line through step icons. Owns ONLY the mechanics: the svg
  * overlay layer, the two path strokes (dashed track + gradient fill) and the
@@ -23,6 +26,7 @@
 
 [data-journey-path] {
   --jp-track: var(--border--color-border-muted, #d9d8e2);
+  --jp-accent: var(--brand-primary--500, #EC008C);   /* Sestek pink — lit icons */
   --jp-grad-from: #EC008C;
   --jp-grad-to: #9d4bff;
   --jp-line-w: 2.5px;
@@ -63,15 +67,29 @@
   /* dasharray/dashoffset = draw progress, driven by JS */
 }
 
-/* ── Icon states — dim until the fill reaches them (desktop + armed only) ── */
+/* ── Icon BOX — the icon sits in a bordered tile; override in Designer ───── */
 [data-jp-icon] {
-  transition: filter .45s ease, opacity .45s ease, transform .45s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--jp-track);
+  border-radius: var(--radius--md, 0.75rem);
+  transition: filter .45s ease, opacity .45s ease, transform .45s ease,
+              color .45s ease, border-color .45s ease, box-shadow .45s ease;
 }
+
+/* ── Icon states — dim until the fill reaches them (desktop + armed only).
+   Lit = Sestek pink: currentColor svgs take --jp-accent, the box follows. ── */
 @media (min-width: 992px) {
   html.jpath-armed [data-jp-icon]:not(.is-active) {
     filter: grayscale(1);
     opacity: 0.35;
     transform: scale(0.92);
+  }
+  html.jpath-armed [data-jp-icon].is-active {
+    color: var(--jp-accent);
+    border-color: var(--jp-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--jp-accent) 15%, transparent);
   }
 }
 /* Below the breakpoint the svg is hidden — icons render lit, section is

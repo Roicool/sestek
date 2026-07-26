@@ -188,6 +188,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `h-scroll.js` (pin, sadece desktop) | Sayfaya göre değişir | `data-hscroll-priority` ile ver (default `1`) |
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
+| `journey-path.js` (pin, ≥992px) | Sayfaya göre değişir | `data-jp-priority` ile ver (default `1`) |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
