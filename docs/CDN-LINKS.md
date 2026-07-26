@@ -2716,14 +2716,15 @@ DOM (Webflow — kök ve kartlara attribute ekle; görsel tasarım Designer'da):
 | `js/effects/mesh-gradient.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js` |
 | `css/effects/mesh-gradient.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css` |
 
-### Mesh Gradient (marka mesh'i + mouse ışığı)
+### Mesh Gradient (canlı marka mesh'i)
 
 Sestek'in 3 ana renginin (pembe `#EC008C` / viyole `#9d4bff` / cyan `#00FFEB`)
-yumuşak mesh gradient'i. Statik katman SAF CSS (4 radial + zemin, tek paint,
-JS'siz çalışır); mouse'u yumuşak lag'le takip eden ışık blob'unu JS enjekte
-eder ve yalnız transform'la taşır (repaint yok). İmleç çıkınca blob merkeze
-süzülür. Dokunmatik ve `prefers-reduced-motion`: blob kurulmaz, statik mesh
-kalır.
+yumuşak, CANLI mesh'i. Renk lekelerinin kendisi JS'in enjekte ettiği
+transform-only katmanlardır: her leke kendi ritminde süzülür (idle drift) ve
+mouse'a FARKLI yön/kuvvetle tepki verir — renkler yoğrulur (mash). İmleç
+çıkınca lekeler yerine döner; ekran dışında drift durur (IO). JS yoksa veya
+`prefers-reduced-motion` açıksa saf CSS statik mesh fallback'i görünür;
+dokunmatikte drift çalışır, mouse kısmı atlanır.
 
 ```html
 <!-- in <head> -->
@@ -2747,10 +2748,10 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
 ```html
 <!--
   Kök attribute'ları (hepsi opsiyonel):
-    data-mesh-follow      "false" → mouse blob'u kurulmaz     (default true)
-    data-mesh-lag         takip gecikmesi sn                  (default 0.55)
-    data-mesh-blob-size   blob çapı, CSS uzunluğu             (default 34rem)
-    data-mesh-blob-color  blob rengi — token | hex | var()    (default --mesh-c1)
+    data-mesh-follow      "false" → mouse parallax'ı kapalı   (default true)
+    data-mesh-drift       "false" → idle drift kapalı         (default true)
+    data-mesh-lag         mouse takip gecikmesi sn            (default 0.8)
+    data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
     data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
 -->
 <section data-mesh-gradient class="hero">
@@ -2759,12 +2760,15 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
 ```
 
 **Notlar**
-- Renk yoğunluğu kökten: `--mesh-soft` (default `20%` — soft). Koyu tema
-  için `--mesh-base`'i koyu bir token'a çek, yoğunluğu bir tık artır.
-- İçerik otomatik olarak blob'un üstüne kaldırılır (statik çocuklara
+- Yoğunluk kökten: statik `--mesh-soft` (default `20%`), canlı katmanlar
+  `--mesh-soft-live` (default `24%`). Koyu tema için `--mesh-base`'i koyu
+  token'a çek, yoğunluğu bir tık artır.
+- İçerik otomatik olarak lekelerin üstüne kaldırılır (statik çocuklara
   `position:relative; z-index:1`).
 - `filter: blur` bilinçli KULLANILMAZ — falloff radial'ın kendisinden gelir,
-  paint maliyeti tek seferliktir; blob compositor-only gezer.
+  paint maliyeti tek seferliktir; lekeler compositor-only gezer.
+- v2.0.0: v1'deki tekil ışık blob'u ve `data-mesh-blob-*` attribute'ları
+  kaldırıldı — hareket artık lekelerin kendisinde.
 
 ### Hover Reveal (imleç-orijinli renk reveal'ı)
 
