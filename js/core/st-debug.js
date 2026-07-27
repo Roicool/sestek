@@ -1,5 +1,8 @@
 /*!
- * st-debug.js v1.0.0
+ * st-debug.js v1.0.1
+ * v1.0.1 — kompakt döküm: yalnız PIN'li trigger'lar tek tek listelenir,
+ * pin olmayanlar tek satır sayı özetidir (kalabalık sayfada panel ekrana
+ * sığar); panel gerekirse kendi içinde scroll eder.
  * UZAKTAN TEŞHİS PANELİ — erişemediğin bir bilgisayarda sayfa bozuk
  * görünüyorsa: bu script'i siteye (geçici) ekle, kişiye ?stdebug'lı link
  * gönder, tek EKRAN GÖRÜNTÜSÜ iste. URL'de "stdebug" yoksa HİÇBİR ŞEY
@@ -101,6 +104,7 @@
     box = document.createElement("div");
     box.style.cssText =
       "position:fixed;top:8px;right:8px;z-index:2147483647;max-width:580px;" +
+      "max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;" +
       "background:rgba(8,10,16,.95);color:#8ef29a;font:11px/1.55 ui-monospace,Menlo,Consolas,monospace;" +
       "padding:10px 12px;border-radius:8px;white-space:pre-wrap;word-break:break-all;" +
       "box-shadow:0 8px 30px rgba(0,0,0,.55);pointer-events:auto";
