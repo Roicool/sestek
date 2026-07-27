@@ -1,5 +1,9 @@
 /*!
- * card-spread.js v1.9.1
+ * card-spread.js v1.9.2
+ * v1.9.2 — rebuild scroll'u oynatmaz: build başında scrollY saklanır, temiz
+ * kill sonrası bitişte birebir restore edilir (revert'li kill'in spacer
+ * telafisi, geç `load` rebuild'inde scroll'lu kullanıcıyı pin mesafesi
+ * kadar kaydırıyordu — "bazı bilgisayarlarda" zıplamanın ikinci yarısı).
  * v1.9.1 — load/resize rebuild refresh'i Sestek.refreshScroll() üzerinden:
  * yavaş makinede `load` kullanıcı scroll'a başladıktan sonra gelir; çıplak
  * ScrollTrigger.refresh() o anda tüm pin'leri revert/re-apply edip sayfayı
@@ -163,6 +167,10 @@
     }
 
     function build() {
+      // Rebuild scroll'u oynatmasın: temiz söküm + sonda birebir restore
+      // (revert'li kill spacer telafisi yapar; layout aynı kalacağı için
+      // aynı scrollY aynı içeriği gösterir — bkz hero v1.8.3 notu).
+      var keepY = window.scrollY;
       destroy();
 
       // Measure the REAL layout first (transforms cleared), then stack the
@@ -309,6 +317,8 @@
           duration: Math.min(total * exitDist / pinDist, total)
         }, 0);
       }
+
+      if (Math.abs(window.scrollY - keepY) > 1) window.scrollTo(0, keepY);
     }
 
     build();
