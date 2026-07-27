@@ -1,5 +1,5 @@
 /*!
- * card-spread.js v1.8.0
+ * card-spread.js v1.9.0
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -56,6 +56,9 @@
  *   data-csp-start        ScrollTrigger start            (default "top top")
  *   data-csp-end          pin scroll distance            (default "+=160%")
  *   data-csp-scrub        scrub lag in seconds           (default 0.8)
+ *   data-csp-priority     ScrollTrigger refreshPriority — set per page
+ *                         order vs other pinned sections (PROJECT.md
+ *                         table); higher = refreshes earlier (default 1)
  *   data-csp-stagger      spread offset per depth level from the centre
  *                         card, in timeline units             (default 0.1)
  *   data-csp-stack-scale  scale falloff per depth while decked (default 0.06)
@@ -139,6 +142,7 @@
     var START = root.getAttribute("data-csp-start") || "top top";
     var END = root.getAttribute("data-csp-end") || "+=160%";
     var SCRUB = attrNum(root, "data-csp-scrub", 0.8);
+    var PRIORITY = attrNum(root, "data-csp-priority", 1);
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
     var LIFT = attrNum(root, "data-csp-lift", 48);          // px the grid drifts up as the header exits
@@ -222,7 +226,11 @@
           end: END,
           scrub: SCRUB,
           pin: true,
-          anticipatePin: 1
+          anticipatePin: 1,
+          // Page-order pin priority — without this the pin refreshed at 0 and
+          // any below trigger with priority 1 (e.g. h-scroll) measured its
+          // start BEFORE this pin's spacer existed (PROJECT.md pin table).
+          refreshPriority: PRIORITY
         }
       });
 

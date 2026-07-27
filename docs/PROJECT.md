@@ -187,6 +187,8 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `h-scroll.js` (pin, sadece desktop) | Sayfaya göre değişir | `data-hscroll-priority` ile ver (default `1`) |
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
+| `card-spread.js` (pin) | Sayfaya göre değişir | `data-csp-priority` ile ver (default `1`) |
+| `stack-panels.js` (pin, pinSpacing:false) | Sayfaya göre değişir | `data-sp-refresh-priority-start` (default `0`) — spacer EKLEMEZ, sırası alttaki ölçümleri etkilemez |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 | `section-shrink.js` (pin değil) | Her yerde | `-1` (default, `data-shrink-priority`) |
 | `waveline.js` (pin opsiyonel) | Sayfaya göre değişir | pin'liyse `data-waveline-priority` ile ver (default `1`); pin'siz default `-1` |
