@@ -1,7 +1,12 @@
 /*!
- * count-up.js v1.1.0
+ * count-up.js v1.2.0
  * Viewport count-up — numbers roll from a start value to the value you set,
  * the moment the element scrolls into view. Fully data-attribute driven.
+ *
+ * v1.2.0: trigger moved from ScrollTrigger to IntersectionObserver — IO
+ * reads the element's real rendered position, so pinned sections above
+ * (hero, scroll-tabs…) can no longer skew the start point and make
+ * counters arrive already counted. ScrollTrigger is no longer required.
  *
  * Webflow note: custom attributes require BOTH a name and a value, so set
  * the target as the value (data-counter="1250") — the visible text can be
@@ -21,7 +26,7 @@
  * Premium details baked in:
  *   • tabular-nums + reserved width — digits roll in place, zero layout shift
  *   • expo.out ease — rushes up fast, lands with a long satisfying settle
- *   • ScrollTrigger viewport enter, replays or plays once (your choice)
+ *   • IntersectionObserver viewport enter (pin-proof), replays or plays once
  *   • Intl.NumberFormat locale support (1.250.000 for tr-TR, 1,250,000 for en-US)
  *   • prefers-reduced-motion → value is set instantly, no motion
  *
@@ -29,7 +34,7 @@
  *   1. Sestek.initCountUp()          — declarative, scans [data-counter] (no JS)
  *   2. Sestek.countUp(el, opts)      — programmatic, returns the GSAP tween
  *
- * Requires: gsap + ScrollTrigger registered. Core: js/core/utils.js
+ * Requires: gsap. Core: js/core/utils.js
  *
  * DOM (Webflow):
  *   <span class="stat_number" data-counter data-counter-duration="2.4">12,500+</span>
@@ -48,7 +53,8 @@
  *                         Overrides data-counter-separator/decimal detection.
  *   data-counter-prefix     text before the number. Empty → parsed from text.
  *   data-counter-suffix     text after the number.  Empty → parsed from text.
- *   data-counter-start      ScrollTrigger start position          (default "top 85%")
+ *   data-counter-start      viewport line the roll starts at, "top N%" style —
+ *                         mapped to an IntersectionObserver margin (default "top 85%")
  *   data-counter-once       default true: counts once and stays. "false" →
  *                         re-rolls on every viewport enter (resets on leave-back).
  *
@@ -157,8 +163,8 @@
    * @returns {gsap.core.Tween|null}
    */
   function countUp(el, opts) {
-    if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-      console.error("[Sestek countUp] GSAP + ScrollTrigger required.");
+    if (typeof gsap === "undefined") {
+      console.error("[Sestek countUp] GSAP required.");
       return null;
     }
     if (!el || el._countUpInit) return null;
@@ -208,25 +214,51 @@
 
     var state = { value: from };
 
-    return gsap.to(state, {
+    var tween = gsap.to(state, {
       value: target,
       duration: duration,
       delay: delay,
       ease: ease,
+      paused: true,
       onUpdate: function () { el.textContent = format(state.value); },
       onComplete: function () { el.textContent = format(target); },
-      scrollTrigger: {
-        trigger: el,
-        start: start,
-        once: once,
-        // Same tier as reveal.js: refresh AFTER pinned triggers so "top 85%"
-        // measures against the real (post-pin-spacing) document height.
-        refreshPriority: -1,
-        // Replay mode: restart the roll on every enter, snap back on leave-back.
-        toggleActions: once ? "play none none none" : "restart none none reset",
-        onLeaveBack: once ? undefined : function () { el.textContent = format(from); },
-      },
     });
+
+    /*
+     * Trigger via IntersectionObserver, NOT ScrollTrigger. IO fires off the
+     * element's REAL rendered viewport position, so pinned sections above
+     * (hero, scroll-tabs…) can never skew it. ScrollTrigger start positions
+     * are measured against document height and go stale whenever a pin adds
+     * its spacing after this trigger was created — which made counters
+     * below a pinned section arrive already counted on page load.
+     */
+    // "top 85%" (element top crosses 85% of viewport height) maps to a
+    // -15% bottom rootMargin. Any "top N%" value converts the same way.
+    var margin = "0px 0px -15% 0px";
+    var mStart = /top\s+(\d+(?:\.\d+)?)%/.exec(start);
+    if (mStart) margin = "0px 0px " + (parseFloat(mStart[1]) - 100) + "% 0px";
+
+    if (typeof IntersectionObserver === "undefined") {
+      tween.play(); // ancient-browser fallback: just roll on load
+      return tween;
+    }
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          if (once) { tween.play(); io.disconnect(); }
+          else tween.restart(true);
+        } else if (!once && entry.boundingClientRect.top > 0) {
+          // Leave-back (element dropped below the viewport again):
+          // snap to the start value so the next enter re-rolls cleanly.
+          tween.pause(0);
+          el.textContent = format(from);
+        }
+      });
+    }, { rootMargin: margin, threshold: 0 });
+    io.observe(el);
+
+    return tween;
   }
 
   /**
@@ -236,26 +268,22 @@
    */
   function initCountUp(selector) {
     if (typeof gsap === "undefined") {
-      console.error("[Sestek initCountUp] GSAP + ScrollTrigger required.");
+      console.error("[Sestek initCountUp] GSAP required.");
       return [];
     }
     var els = document.querySelectorAll(selector || "[data-counter]");
     var tweens = [];
     Array.prototype.forEach.call(els, function (el) {
+      /*
+       * Hero stats are rolled programmatically by hero.js at the exact
+       * moment each stat reveals. A page-wide scan must not claim them
+       * first — the _countUpInit guard would turn hero's own call into a
+       * no-op and the number would roll while the card is still invisible.
+       */
+      if (el.closest && el.closest("[data-hero-stat]")) return;
       var t = countUp(el);
       if (t) tweens.push(t);
     });
-
-    // Same late-layout guard as reveal.js: re-measure trigger positions once
-    // fonts/images/CMS content have settled the final document height.
-    if (typeof ScrollTrigger !== "undefined") {
-      if (document.readyState === "complete") {
-        ScrollTrigger.refresh();
-      } else {
-        window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
-      }
-    }
-
     return tweens;
   }
 
