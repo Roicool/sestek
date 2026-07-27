@@ -3,6 +3,8 @@
  * v1.0.1 — kompakt döküm: yalnız PIN'li trigger'lar tek tek listelenir,
  * pin olmayanlar tek satır sayı özetidir (kalabalık sayfada panel ekrana
  * sığar); panel gerekirse kendi içinde scroll eder.
+ * v1.0.2 — KOPYALA butonu: tek tıkla tüm rapor panoya kopyalanır (ekran
+ * görüntüsü yerine metin olarak WhatsApp/mail ile gönderilebilir).
  * UZAKTAN TEŞHİS PANELİ — erişemediğin bir bilgisayarda sayfa bozuk
  * görünüyorsa: bu script'i siteye (geçici) ekle, kişiye ?stdebug'lı link
  * gönder, tek EKRAN GÖRÜNTÜSÜ iste. URL'de "stdebug" yoksa HİÇBİR ŞEY
@@ -46,7 +48,28 @@
     try { return CSS.supports(prop, val) ? "VAR" : "YOK"; } catch (e) { return "?"; }
   }
 
-  var box = null, timer = null;
+  var box = null, timer = null, lastReport = "";
+
+  function copyReport(btn) {
+    var done = function () {
+      btn.textContent = "✓ Kopyalandı";
+      setTimeout(function () { btn.textContent = "📋 Kopyala"; }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastReport).then(done, function () { fallbackCopy(done); });
+    } else {
+      fallbackCopy(done);
+    }
+  }
+  function fallbackCopy(done) {
+    var ta = document.createElement("textarea");
+    ta.value = lastReport;
+    ta.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 
   function render() {
     if (!box) return;
@@ -93,11 +116,18 @@
     } else {
       L.push("JS hatası yok (bu script yüklendikten sonra)");
     }
+    lastReport = "SESTEK ST-DEBUG\n" + L.join("\n");
     box.innerHTML =
-      "<b>SESTEK ST-DEBUG</b><span data-x style=\"float:right;cursor:pointer;color:#f66\">✕</span><hr>" +
+      "<b>SESTEK ST-DEBUG</b>" +
+      "<span data-x style=\"float:right;cursor:pointer;color:#f66;margin-left:10px\">✕</span>" +
+      "<button data-copy style=\"float:right;cursor:pointer;background:#1d2733;color:#8ef29a;" +
+      "border:1px solid #3a4a5c;border-radius:5px;font:inherit;padding:2px 8px\">📋 Kopyala</button>" +
+      "<hr>" +
       L.map(function (l) { return "<div>" + esc(l) + "</div>"; }).join("");
     var x = box.querySelector("[data-x]");
     if (x) x.onclick = function () { box.remove(); box = null; clearInterval(timer); };
+    var c = box.querySelector("[data-copy]");
+    if (c) c.onclick = function () { copyReport(c); };
   }
 
   function mount() {
