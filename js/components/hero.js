@@ -1,5 +1,8 @@
 /*!
- * hero.js v1.8.1
+ * hero.js v1.8.2
+ * v1.8.2 — rebuild refresh'i Sestek.refreshScroll() üzerinden (jank guard:
+ * scroll dururken ölçer); çıplak ScrollTrigger.refresh() scroll ortasında
+ * pin'leri revert/re-apply edip zıplatabiliyordu.
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -75,7 +78,10 @@
     function build() {
       if (activeST) {
         activeST.kill();
-        ScrollTrigger.refresh();
+        // Jank guard'lı boru: scroll idle'ken tek sefer ölçer (PROJECT.md
+        // Kural — çıplak refresh scroll ortasında pin'leri zıplatır).
+        if (global.Sestek && global.Sestek.refreshScroll) global.Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
       }
 
       var vw = window.innerWidth;

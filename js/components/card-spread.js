@@ -1,5 +1,9 @@
 /*!
- * card-spread.js v1.9.0
+ * card-spread.js v1.9.1
+ * v1.9.1 — load/resize rebuild refresh'i Sestek.refreshScroll() üzerinden:
+ * yavaş makinede `load` kullanıcı scroll'a başladıktan sonra gelir; çıplak
+ * ScrollTrigger.refresh() o anda tüm pin'leri revert/re-apply edip sayfayı
+ * zıplatıyordu ("bazı bilgisayarlarda bug"). Guard, scroll idle'ken ölçer.
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -315,7 +319,9 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         build();
-        ScrollTrigger.refresh();
+        // Jank guard'lı boru — scroll idle'ken tek sefer ölçer; yoksa fallback.
+        if (global.Sestek && global.Sestek.refreshScroll) global.Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
       }, 180);
     }
     window.addEventListener("resize", rebuild);
