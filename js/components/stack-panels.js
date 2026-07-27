@@ -1,5 +1,10 @@
 /*!
- * stack-panels.js v1.0.0
+ * stack-panels.js v1.1.0
+ * v1.1.0 — geç büyüyen içerik sağlamlığı: tall panellerin fake-scroll marjı
+ * artık her ScrollTrigger refresh'inin ölçüm ÖNCESİNDE (refreshInit) taze
+ * içerik boyundan yeniden yazılır — font/görsel geç gelince marj bayat
+ * kalmıyor. (İçeriği sonradan viewport'u AŞAN normal panel yapısal olarak
+ * yeniden kurulmaz — panel boylarını baştan 100svh+ tutun.)
  * "Stacking panels" scrollytelling: each panel (but the last) pins in place
  * with pinSpacing:false, then — as you keep scrolling and the NEXT panel
  * slides up over it — scales down and fades away, so panels visually stack
@@ -145,6 +150,7 @@
     }
 
     var triggers = [];
+    var marginRefreshers = [];
     // The LAST panel never pins/dissolves — it's the final resting layer.
     panels.slice(0, -1).forEach(function (panel, i) {
       var inner   = panel.querySelector("[data-sp-inner]");
@@ -161,7 +167,14 @@
       // pinSpacing:false ScrollTrigger reserves none, so add exactly the
       // fake-scroll distance as margin — verbatim from the reference technique.
       if (fakeRatio) {
-        panel.style.marginBottom = innerH * fakeRatio + "px";
+        var applyMargin = function () {
+          var wh = window.innerHeight;
+          var ih = inner.offsetHeight;
+          var d = ih - wh;
+          panel.style.marginBottom = (d > 0 ? ih * (d / (d + wh)) : 0) + "px";
+        };
+        applyMargin();
+        marginRefreshers.push(applyMargin);   // refreshInit'te taze ölçümle
       }
 
       // Normal panels pin CENTRED (start "center center") so the card is fully
@@ -215,7 +228,14 @@
       triggers.push(tl);
     });
 
+    var onRefreshInit = null;
+    if (marginRefreshers.length) {
+      onRefreshInit = function () { marginRefreshers.forEach(function (f) { f(); }); };
+      ScrollTrigger.addEventListener("refreshInit", onRefreshInit);
+    }
+
     root._stackPanelsDestroy = function () {
+      if (onRefreshInit) ScrollTrigger.removeEventListener("refreshInit", onRefreshInit);
       triggers.forEach(function (tl) {
         tl.scrollTrigger && tl.scrollTrigger.kill();
         tl.kill();

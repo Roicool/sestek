@@ -5,6 +5,8 @@
  * sığar); panel gerekirse kendi içinde scroll eder.
  * v1.0.2 — KOPYALA butonu: tek tıkla tüm rapor panoya kopyalanır (ekran
  * görüntüsü yerine metin olarak WhatsApp/mail ile gönderilebilir).
+ * v1.0.3 — readyState raporda: "interactive"de TAKILI kalmış sayfa, asılı
+ *  load kaynaklı bayat-pin bug'ının imzasıdır (lenis-init v1.4.0 notu).
  * UZAKTAN TEŞHİS PANELİ — erişemediğin bir bilgisayarda sayfa bozuk
  * görünüyorsa: bu script'i siteye (geçici) ekle, kişiye ?stdebug'lı link
  * gönder, tek EKRAN GÖRÜNTÜSÜ iste. URL'de "stdebug" yoksa HİÇBİR ŞEY
@@ -76,7 +78,8 @@
     var L = [];
     L.push("UA: " + navigator.userAgent);
     L.push("viewport: " + innerWidth + "×" + innerHeight + " · dpr " + devicePixelRatio +
-           " · scrollY " + Math.round(scrollY) + " · doküman " + document.body.scrollHeight + "px");
+           " · scrollY " + Math.round(scrollY) + " · doküman " + document.body.scrollHeight + "px" +
+           " · readyState " + document.readyState + (document.readyState !== "complete" ? " ⚠️ load asılı!" : ""));
     L.push("gsap: " + (typeof gsap !== "undefined" ? gsap.version : "YOK") +
            " · ScrollTrigger: " + (typeof ScrollTrigger !== "undefined" ? ScrollTrigger.version : "YOK") +
            " · Lenis: " + (typeof Lenis !== "undefined" ? "var" : "YOK"));
