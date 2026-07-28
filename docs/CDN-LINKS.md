@@ -845,6 +845,8 @@ DOM:
 | `css/components/chapter-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/chapter-tabs.css` |
 | `js/components/hero-cards.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero-cards.js` |
 | `css/components/hero-cards.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero-cards.css` |
+| `js/components/timeline.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/timeline.js` |
+| `css/components/timeline.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/timeline.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2879,6 +2881,99 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
 - `prefers-reduced-motion` veya no-JS: çizgi tam dolu / hiç yok, ikonlar renkli.
 - `refreshPriority: -1` — pinli bölümlerden sonra refresh eder.
 - `Sestek.initJourneyPath()` sayfadaki tüm bölümleri tek çağrıda bağlar.
+
+---
+
+### Timeline (pinli yatay hikâye şeridi)
+
+Section pinlenir, dikey scroll bir **yıl panelleri şeridini** ince bir çizginin
+önünden yatay geçirir. Her yılın **noktası** ekranın ortasına gelince belirir ve
+metni **kelime kelime** açılır — hikâye ilerledikçe okunur, hepsi birden değil.
+
+Reveal'lar ScrollTrigger'ın **containerAnimation**'ı ile yapılır: her item,
+hareket eden şeridin içindeki **yatay konumuna** göre tetiklenir (her frame'de
+rect ölçen manuel kontrol değil). Scroll mesafesi şeridin gerçek genişliğinden
+türetilir — yeni yıl eklemek section'ı kendiliğinden uzatır, elle senkron
+tutulacak bir değer yok.
+
+**CMS'e hazır:** item satırı bir Collection List olabilir (her kayıt bir yıl).
+
+```html
+<!-- in <head> -->
+<script>document.documentElement.classList.add('tl-armed')</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/timeline.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/timeline.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    gsap.registerPlugin(ScrollTrigger);
+    Sestek.initTimeline();
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök ([data-timeline]) attribute'ları (hepsi opsiyonel):
+    data-tl-speed     scroll mesafesi çarpanı — 1 = şerit genişliği kadar (default 1)
+    data-tl-scrub     scrub gecikmesi sn                        (default 1)
+    data-tl-start     reveal tetik noktası (yatay ölçülür) (default "left 75%")
+    data-tl-stagger   kelimeler arası sn                        (default 0.03)
+    data-tl-duration  kelime reveal süresi sn                   (default 0.6)
+    data-tl-rise      kelimenin yükseldiği px                   (default 14)
+    data-tl-priority  pin refreshPriority (PROJECT.md tablosu)  (default 1)
+    data-tl-bp        altında dikey listeye döner px            (default 1025)
+-->
+<section data-timeline>
+  <div data-tl-track>
+
+    <div data-tl-intro><h2>Our story so far</h2></div>   <!-- opsiyonel -->
+
+    <div data-tl-items>
+      <span data-tl-line></span>                          <!-- opsiyonel çizgi -->
+
+      <!-- her yıl (Collection Item olabilir) -->
+      <div data-tl-item>
+        <span data-tl-dot></span>
+        <div data-tl-year>2012</div>
+        <h3 data-tl-reveal>A Developer First</h3>
+        <div data-tl-reveal>Alt başlık…</div>
+        <p data-tl-reveal>Açıklama metni…</p>
+        <div data-tl-medias>
+          <div data-tl-media><img src="1.jpg" alt=""></div>
+          <div data-tl-media><img src="2.jpg" alt=""></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+```
+
+**Notlar**
+- **Pin kuralları:** `[data-timeline]`'ın hiçbir üst elementinde `transform`/
+  `filter`/`perspective` olmasın; sayfada başka pin varsa `data-tl-priority`'yi
+  PROJECT.md tablosuna göre ver.
+- **Panel genişlikleri Designer'da** — `[data-tl-item]`'a `min-width` (örn.
+  `75vw`) ver; script şeridin taşan genişliği kadar yol alır.
+- **Kelime bölme** DOM'u değiştirmeden yapılır (kelimeler `<span>`e sarılır,
+  cümle aynı kalır) — ekran okuyucu bütün cümleyi okumaya devam eder.
+  SplitText gerekmez.
+- **Kolaj:** JS her `[data-tl-medias]`'a `data-tl-len="N"` yazar; 2'li ile 5'li
+  yerleşimi Designer'da (veya CSS'te) sayıya göre farklı stillendirebilirsin.
+- `data-tl-bp` altında pin yok: bölüm normal dikey listeye döner, her item
+  kendi ScrollTrigger'ıyla açılır.
+- `prefers-reduced-motion` veya no-JS: pin yok, her şey yerinde görünür.
+- `Sestek.initTimeline()` sayfadaki tüm şeritleri tek çağrıda bağlar.
 
 ---
 

@@ -1,0 +1,80 @@
+/*!
+ * timeline.css v1.0.0
+ * Behavioural / critical CSS for the timeline component (pinned horizontal
+ * story track). Owns only what the mechanic needs: the track being a
+ * non-wrapping row, items refusing to shrink, the line sitting behind them,
+ * and the pre-reveal states for the dots and words. Typography, colours, panel
+ * widths, the media collage's look — all Designer's, with RC tokens.
+ *
+ * Drives: js/components/timeline.js
+ *
+ * NO-JS: the horizontal layout is gated on html.tl-armed, so without the
+ * script the section reads as an ordinary vertical list with everything
+ * visible — nothing is hidden behind an animation that never runs.
+ *
+ * The collage: timeline.js writes data-tl-len="N" on every [data-tl-medias],
+ * so you can lay 2 images out differently from 5 in Designer or here without
+ * naming a class per count. A neutral wrap is provided below; override freely.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-timeline] {
+  position: relative;
+}
+
+/* ── Horizontal track (desktop only, and only once armed) ───────────────── */
+@media (min-width: 1025px) {
+  html.tl-armed [data-timeline] {
+    overflow: hidden;          /* the track bleeds past the section edges */
+  }
+  html.tl-armed [data-tl-track] {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    height: 100%;
+    width: auto;
+    will-change: transform;
+  }
+  html.tl-armed [data-tl-items] {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    height: 100%;
+    position: relative;
+  }
+  html.tl-armed [data-tl-item] {
+    flex-shrink: 0;            /* panels keep their authored width */
+    position: relative;
+    height: 100%;
+  }
+  /* The line runs the full length of the items row, behind everything. */
+  html.tl-armed [data-tl-line] {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  html.tl-armed [data-tl-items] > * { position: relative; z-index: 1; }
+}
+
+/* ── Pre-reveal states — JS animates out of these ───────────────────────── */
+html.tl-armed [data-tl-dot] { transform: scale(0); }
+html.tl-armed [data-tl-word] { display: inline-block; will-change: transform, opacity; }
+
+/* ── Media collage: a sane default; style per count in Designer ──────────── */
+[data-tl-medias] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+[data-tl-media] { overflow: clip; }
+[data-tl-media] img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Reduced motion: nothing is ever hidden. */
+@media (prefers-reduced-motion: reduce) {
+  html.tl-armed [data-tl-dot] { transform: none !important; }
+  html.tl-armed [data-tl-word] { opacity: 1 !important; transform: none !important; }
+}

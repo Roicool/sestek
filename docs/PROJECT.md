@@ -30,7 +30,7 @@ sestek/
 │   │                #      process-flow.js, h-scroll.js, card-cascade.js,
 │   │                #      case-switch.js, circle-diagram.js, scroll-diagram.js,
 │   │                #      journey-path.js, quote-wheel.js, chapter-tabs.js,
-│   │                #      hero-cards.js
+│   │                #      hero-cards.js, timeline.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/
@@ -211,6 +211,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
 | `journey-path.js` (pin, ≥992px) | Sayfaya göre değişir | `data-jp-priority` ile ver (default `1`) |
+| `timeline.js` (pin, ≥1025px) | Sayfaya göre değişir | `data-tl-priority` ile ver (default `1`) |
 | `card-spread.js` (pin) | Sayfaya göre değişir | `data-csp-priority` ile ver (default `1`) |
 | `stack-panels.js` (pin, pinSpacing:false) | Sayfaya göre değişir | `data-sp-refresh-priority-start` (default `0`) — spacer EKLEMEZ, sırası alttaki ölçümleri etkilemez |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
