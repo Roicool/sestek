@@ -2932,7 +2932,9 @@ DOM:
     data-hc-ones      tam 1 ölçekte kalan kart sayısı    (default 2)
     data-hc-blur      1.0 ölçek farkı başına blur px     (default 20)
     data-hc-max-blur  blur tavanı px                     (default 60)
-    data-hc-jitter    konum sapması px                   (default 25)
+    data-hc-shuffle   "true" → kartlar konum da değiştirir; varsayılan
+                      KAPALI: her kart yerinde kalır     (default false)
+    data-hc-jitter    konum sapması px (yalnız shuffle)  (default 25)
     data-hc-parallax  fare sürüklenmesi px, 0 = kapalı   (default 40)
     data-hc-bp        mobil breakpoint px                (default 768)
     data-hc-spv       mobil kart/görünüm                 (default 1.6)

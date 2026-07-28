@@ -1,5 +1,10 @@
 /*!
- * hero-cards.js v1.1.0
+ * hero-cards.js v1.2.0
+ * v1.2.0: cards now HOLD their spot by default — only the stat and the focus
+ *         change. Watching the cards jump between positions read as restless;
+ *         a still composition where attention moves is calmer and closer to
+ *         the reference. data-hc-shuffle="true" restores the drifting layout
+ *         (and with it the position jitter).
  * v1.1.0: focus balance — a sharp card on one side of the stage now always
  *         gets a sharp partner on the other, so the composition never leans.
  *         Sides are measured from the authored positions at init.
@@ -54,7 +59,9 @@
  *   data-hc-ones       cards kept at exactly scale 1        (default 2)
  *   data-hc-blur       blur px per 1.0 of scale distance    (default 20)
  *   data-hc-max-blur   blur ceiling in px                   (default 60)
- *   data-hc-jitter     random position offset in px         (default 25)
+ *   data-hc-shuffle    "true" → cards also swap positions each round; off by
+ *                      default, so each card keeps its spot     (default false)
+ *   data-hc-jitter     random position offset in px, shuffle only (default 25)
  *   data-hc-parallax   max pointer drift in px, 0 = off     (default 40)
  *   data-hc-bp         mobile breakpoint px                 (default 768)
  *   data-hc-spv        mobile slides per view               (default 1.6)
@@ -155,6 +162,7 @@
     var MAX_BLUR = attrNum(root, "data-hc-max-blur", DEFAULTS.maxBlur);
     var JITTER   = attrNum(root, "data-hc-jitter", DEFAULTS.jitter);
     var PARALLAX = attrNum(root, "data-hc-parallax", DEFAULTS.parallax);
+    var SHUFFLE  = root.getAttribute("data-hc-shuffle") === "true";
     var BP       = attrNum(root, "data-hc-bp", DEFAULTS.bp);
     var SPV      = attrNum(root, "data-hc-spv", DEFAULTS.spv);
 
@@ -314,7 +322,8 @@
     function round() {
       var order = shuffle(slots.map(function (_, i) { return i; })).slice(0, Math.min(CHANGE, slots.length));
       var nextPool = pickNext(order);
-      var nextPos = reassign(currentPos, order);
+      // Cards hold their spot unless the layout is explicitly set to drift.
+      var nextPos = SHUFFLE ? reassign(currentPos, order) : currentPos;
       var scales = pickScales(order);
       balanceFocus(scales, order, nextPos);
 
@@ -325,7 +334,7 @@
             paint(el, 0);
             visible[slotIdx] = nextPool[i];
             renderInto(targets[slotIdx], nextPool[i]);
-            applyPreset(slotIdx, nextPos[slotIdx], true);
+            if (SHUFFLE) applyPreset(slotIdx, nextPos[slotIdx], true);
             tweenCard(el, scales[slotIdx], UP, "power2.out");
           });
         });
