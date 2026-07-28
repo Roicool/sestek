@@ -1,5 +1,11 @@
 /*!
- * timeline.js v1.0.0
+ * timeline.js v1.1.0
+ * v1.1.0: the images drift. Each media in an item slides against its
+ *         neighbours as the panel crosses the screen — they start apart, meet
+ *         as the panel reaches centre, and part again on the way out. Scrubbed
+ *         off the same containerAnimation as everything else, so it is the
+ *         horizontal travel doing the work, not a second scroll listener.
+ *         data-tl-drift sets the distance.
  * Horizontal story timeline: the section pins and vertical scroll drives a
  * track of year panels sideways past a thin line. Each year's dot pops as it
  * reaches the middle of the screen and its copy reveals word by word, so the
@@ -45,6 +51,8 @@
  *   data-tl-stagger    seconds between words                  (default 0.03)
  *   data-tl-duration   word reveal duration, seconds          (default 0.6)
  *   data-tl-rise       px each word rises from                (default 14)
+ *   data-tl-drift      px the images slide toward each other as the panel
+ *                      crosses the screen, 0 = off            (default 60)
  *   data-tl-priority   refreshPriority for the pin — set against the page's
  *                      other pinned sections (PROJECT.md)     (default 1)
  *   data-tl-bp         breakpoint px; below it the timeline unrolls into a
@@ -72,6 +80,7 @@
     stagger: 0.03,
     duration: 0.6,
     rise: 14,
+    drift: 60,
     priority: 1,
     bp: 1025,
   };
@@ -123,6 +132,7 @@
     var STAGGER  = attrNum(root, "data-tl-stagger", DEFAULTS.stagger);
     var DUR      = attrNum(root, "data-tl-duration", DEFAULTS.duration);
     var RISE     = attrNum(root, "data-tl-rise", DEFAULTS.rise);
+    var DRIFT    = attrNum(root, "data-tl-drift", DEFAULTS.drift);
     var PRIORITY = attrNum(root, "data-tl-priority", DEFAULTS.priority);
     var BP       = attrNum(root, "data-tl-bp", DEFAULTS.bp);
     var START    = root.getAttribute("data-tl-start") || DEFAULTS.start;
@@ -141,7 +151,12 @@
       toArray(item.querySelectorAll("[data-tl-reveal]")).forEach(function (block) {
         words = words.concat(splitWords(block));
       });
-      return { item: item, dot: item.querySelector("[data-tl-dot]"), words: words };
+      return {
+        item: item,
+        dot: item.querySelector("[data-tl-dot]"),
+        words: words,
+        medias: toArray(item.querySelectorAll("[data-tl-media]")),
+      };
     });
 
     function showAll() {
@@ -202,12 +217,38 @@
           }, 0.1);
         }
         triggers.push(tl.scrollTrigger);
+
+        // The images drift against each other across the panel's whole pass:
+        // apart on the way in, together at centre, apart again on the way out.
+        // Odd and even medias travel opposite ways, so two of them read as
+        // closing in on one another.
+        if (DRIFT && p.medias.length > 1) {
+          p.medias.forEach(function (m, i) {
+            var dir = i % 2 ? -1 : 1;
+            var d = DRIFT * (1 - i * 0.15);               // rear images move less
+            var drift = gsap.fromTo(m,
+              { x: dir * d, y: dir * d * 0.35 },
+              {
+                x: -dir * d, y: -dir * d * 0.35,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: p.item,
+                  containerAnimation: travel,
+                  start: "left right",                   // panel enters the stage
+                  end: "right left",                     // panel leaves it
+                  scrub: true,
+                },
+              });
+            triggers.push(drift.scrollTrigger);
+          });
+        }
       });
 
       return function () {
         triggers.forEach(function (t) { if (t) t.kill(); });
         gsap.killTweensOf(track);
         gsap.set(track, { clearProps: "transform" });
+        parts.forEach(function (p) { gsap.set(p.medias, { clearProps: "transform" }); });
         showAll();
       };
     });
