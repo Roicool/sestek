@@ -1,5 +1,10 @@
 /*!
- * hero-cards.js v1.2.0
+ * hero-cards.js v1.3.0
+ * v1.3.0: scroll drift — the cards rise gently as the hero scrolls away, each
+ *         at its own rate (near/sharp cards travel further than the soft ones,
+ *         same depth weighting the pointer parallax uses). Computed in the
+ *         existing ticker, so it composes with the pointer drift and the scale
+ *         tween instead of fighting them. data-hc-scroll sets the distance.
  * v1.2.0: cards now HOLD their spot by default — only the stat and the focus
  *         change. Watching the cards jump between positions read as restless;
  *         a still composition where attention moves is calmer and closer to
@@ -63,6 +68,8 @@
  *                      default, so each card keeps its spot     (default false)
  *   data-hc-jitter     random position offset in px, shuffle only (default 25)
  *   data-hc-parallax   max pointer drift in px, 0 = off     (default 40)
+ *   data-hc-scroll     px the cards rise as the hero scrolls away, 0 = off
+ *                      (negative sinks them instead)        (default 120)
  *   data-hc-bp         mobile breakpoint px                 (default 768)
  *   data-hc-spv        mobile slides per view               (default 1.6)
  *
@@ -94,6 +101,7 @@
     maxBlur: 60,
     jitter: 25,
     parallax: 40,
+    scroll: 120,
     parallaxEase: 0.025,
     bp: 768,
     spv: 1.6,
@@ -162,6 +170,7 @@
     var MAX_BLUR = attrNum(root, "data-hc-max-blur", DEFAULTS.maxBlur);
     var JITTER   = attrNum(root, "data-hc-jitter", DEFAULTS.jitter);
     var PARALLAX = attrNum(root, "data-hc-parallax", DEFAULTS.parallax);
+    var SCROLL   = attrNum(root, "data-hc-scroll", DEFAULTS.scroll);
     var SHUFFLE  = root.getAttribute("data-hc-shuffle") === "true";
     var BP       = attrNum(root, "data-hc-bp", DEFAULTS.bp);
     var SPV      = attrNum(root, "data-hc-spv", DEFAULTS.spv);
@@ -349,9 +358,12 @@
       loopCall = gsap.delayedCall(ROUND / 1000, function () { round(); schedule(); });
     }
 
-    // ── Parallax — rides GSAP's x/y, so it composes with the scale tween ────
-    function initParallax() {
-      if (!PARALLAX || reduce) return;
+    // ── Drift — pointer + scroll, both riding GSAP's x/y so they compose with
+    // the scale tween instead of fighting it. One ticker drives both.
+    function initDrift() {
+      var wantsPointer = PARALLAX !== 0 && !reduce;
+      var wantsScroll = SCROLL !== 0 && !reduce;
+      if (!wantsPointer && !wantsScroll) return;
       var depth = slots.map(function () { return rand(0.85, 1.15); });
       var setX = slots.map(function (el) { return gsap.quickSetter(el, "x", "px"); });
       var setY = slots.map(function (el) { return gsap.quickSetter(el, "y", "px"); });
@@ -369,6 +381,16 @@
 
       gsap.ticker.add(function () {
         if (!inView || hidden || isMobile()) return;
+
+        // How far the hero has travelled out of the top of the viewport, 0..1.
+        // Read once per frame (one rect), not per card. Lenis moves native
+        // scroll, so this stays in step with the smooth scrolling for free.
+        var sy = 0;
+        if (wantsScroll) {
+          var r = root.getBoundingClientRect();
+          sy = -clamp(-r.top / Math.max(r.height, 1), 0, 1) * SCROLL;
+        }
+
         cx += (tx - cx) * DEFAULTS.parallaxEase;
         cy += (ty - cy) * DEFAULTS.parallaxEase;
         for (var i = 0; i < slots.length; i++) {
@@ -377,7 +399,7 @@
           var focus = clamp(1 - blurFor(s) / MAX_BLUR, 0, 1);
           var f = s * focus * depth[i];
           setX[i](cx * PARALLAX * f);
-          setY[i](cy * PARALLAX * f);
+          setY[i](cy * PARALLAX * f + sy * depth[i]);
         }
       });
     }
@@ -470,7 +492,7 @@
       else if (hidden && loopCall) { loopCall.kill(); loopCall = null; running = false; }
     });
 
-    initParallax();
+    initDrift();
 
     root._heroCards = {
       el: root,
