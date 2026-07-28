@@ -841,6 +841,8 @@ DOM:
 | `css/components/journey-path.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/journey-path.css` |
 | `js/components/quote-wheel.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/quote-wheel.js` |
 | `css/components/quote-wheel.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/quote-wheel.css` |
+| `js/components/chapter-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/chapter-tabs.js` |
+| `css/components/chapter-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/chapter-tabs.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2875,6 +2877,94 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
 - `prefers-reduced-motion` veya no-JS: çizgi tam dolu / hiç yok, ikonlar renkli.
 - `refreshPriority: -1` — pinli bölümlerden sonra refresh eder.
 - `Sestek.initJourneyPath()` sayfadaki tüm bölümleri tek çağrıda bağlar.
+
+---
+
+### Chapter Tabs (renk eşleşen dikey sekmeler)
+
+"Our journey so far" tarzı bölüm: bir yanda büyük **tıklanabilir başlıklar**
+(dikey liste), diğer yanda o bölüme ait **kart**. Başlığa basınca kart
+cross-fade ile değişir ve sahne yüksekliği yeni karta **morph** eder (farklı
+uzunluktaki kartlarda zıplama olmaz). İşin özü **renk eşleşmesi**: her bölüm
+kendi **accent** rengini taşır (`data-ct-accent`) — aktif başlık (ve varsa ray
+göstergesi) o rengi alır. Kartın arka planını Designer'da panel class'ıyla
+verirsin; accent ikisini senkron tutan tek değerdir (soft-pink kart ↔ Sestek
+pembesi başlık). Pin yok, scroll bağımlılığı yok.
+
+```html
+<!-- in <head> -->
+<script>document.documentElement.classList.add('ctabs-armed')</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/chapter-tabs.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/chapter-tabs.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initChapterTabs(); // tüm [data-chapter-tabs] bölümlerini başlatır
+  });
+</script>
+```
+
+DOM (Webflow — grid/tipografi/kart renkleri Designer'da):
+
+```html
+<!--
+  Kök ([data-chapter-tabs]) attribute'ları (hepsi opsiyonel):
+    data-ct-duration   geçiş süresi sn                    (default 0.5)
+    data-ct-ease       GSAP ease                          (default "power2.out")
+    data-ct-rise       gelen kartın yükselme mesafesi px  (default 16)
+    data-ct-start      açılışta açık index                (default 0)
+    data-ct-interval   otomatik geçiş ms, 0 = kapalı      (default 0)
+-->
+<section data-chapter-tabs>
+
+  <!-- SOL: başlık rayı (dikey çizgi Designer'da: list'e border-left) -->
+  <div data-ct-list>
+    <div data-ct-indicator></div>        <!-- opsiyonel: accent renkli hareketli çubuk -->
+    <button data-ct-tab data-ct-accent="--brand-primary--500">Beginnings</button>
+    <button data-ct-tab data-ct-accent="--brand-secondary--600">Hyper growth</button>
+    <button data-ct-tab data-ct-accent="--accent--teal-500">Going global</button>
+    <button data-ct-tab data-ct-accent="--accent--amber-500">Innovation</button>
+  </div>
+
+  <!-- SAĞ: kart sahnesi — panel sırası başlık sırasıyla AYNI olmalı -->
+  <div data-ct-panels>
+    <div data-ct-panel class="chapter-card is-pink">   <!-- bg Designer'da -->
+      <h3>Since 2010, we have been on a mission…</h3>
+      <p>Açıklama…</p>
+      <a href="#">Learn more</a>
+    </div>
+    <div data-ct-panel class="chapter-card is-purple"> … </div>
+    <div data-ct-panel class="chapter-card is-teal">   … </div>
+    <div data-ct-panel class="chapter-card is-amber">  … </div>
+  </div>
+
+</section>
+```
+
+**Notlar**
+- **Accent nasıl verilir:** `data-ct-accent` token (`--brand-primary--500` ya da
+  `var(--brand-primary--500)`) veya literal renk kabul eder. Token verirsen
+  canlı CSS değişkeni olarak kalır (mode değişimlerinde doğru çözülür).
+  Attribute'u tab'a ya da eşleşen panele koyabilirsin — tab önceliklidir.
+- JS accent'i aktif tab'a **ve köke** `--ct-accent` olarak yazar; Designer'da
+  herhangi bir elemente `color: var(--ct-accent)` verip senkron takip
+  ettirebilirsin.
+- **Sahne yüksekliği:** yalnız aktif panel akışta kalır (CSS), diğerleri aynı
+  noktaya absolute yığılır — böylece metin sarması değişince sahne kendi
+  kendine reflow eder; geçişte yükseklik GSAP ile morph edilir.
+- Başlık/panel eşleşmesi **DOM sırasıyla**; sayılar tutmazsa JS uyarır.
+- **Erişilebilirlik:** gerçek tablist — `role="tab"/"tabpanel"`, `aria-selected`,
+  roving tabindex, ↑/↓/←/→/Home/End. Tab'lar `<a href="#">` ise tıklama
+  `preventDefault` edilir (sayfa zıplamaz).
+- `data-ct-interval` verilirse otomatik döner; hover/focus/sekme-gizli'de durur.
+- `prefers-reduced-motion` veya no-JS: kartlar anında/normal akışta görünür.
+- `Sestek.initChapterTabs()` her bölüme `{ el, to(i), _destroy() }` döndürür.
 
 ---
 

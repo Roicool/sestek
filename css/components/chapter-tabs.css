@@ -1,0 +1,91 @@
+/*!
+ * chapter-tabs.css v1.0.0
+ * Behavioural / critical CSS for the chapter-tabs component (colour-coordinated
+ * vertical tabs: big titles on one side, a card panel on the other). Owns only
+ * the mechanics — panels stacking in one spot, the accent hooks that keep the
+ * active title in sync with its card, and the optional rail indicator. Every
+ * visual decision (card backgrounds, title sizes, the rail line, the grid) is
+ * Designer's, with RC Structure tokens.
+ *
+ * Drives: js/components/chapter-tabs.js
+ *
+ * ACCENT: each tab carries data-ct-accent; JS writes it to --ct-accent on the
+ * tab (and on the root, for the indicator). Pair each card's background class
+ * in Designer with the matching accent attribute — soft-pink card ↔ Sestek-pink
+ * title.
+ *
+ * NO-JS: panels only stack once html.ctabs-armed is set (JS adds it), so a
+ * page without JS renders every card in normal flow — nothing is hidden.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-chapter-tabs] {
+  position: relative;
+}
+
+/* ── Title rail ─────────────────────────────────────────────────────────────
+   The vertical line itself is Designer's (a border-left on the list). This
+   file only owns the moving indicator and the tab's interactive states. */
+[data-ct-list] {
+  position: relative;
+}
+
+[data-ct-tab] {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  transition: color .35s ease, opacity .35s ease;
+}
+
+/* The active title takes its chapter's accent. Idle titles fall back to the
+   muted colour you set in Designer — override either side there. */
+[data-ct-tab].is-active {
+  color: var(--ct-accent, currentColor);
+}
+
+[data-ct-tab]:focus-visible {
+  outline: 2px solid var(--ct-accent, currentColor);
+  outline-offset: 4px;
+}
+
+/* Optional rail indicator — JS moves it to the active title and it inherits
+   the live accent. Give it a width in Designer (e.g. 2px). */
+[data-ct-indicator] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: var(--ct-accent, currentColor);
+  pointer-events: none;
+}
+
+/* ── Panel stage ────────────────────────────────────────────────────────────
+   Cards stack in one spot once armed; JS morphs the stage height between
+   cards, so panels of different lengths swap without a jump. */
+[data-ct-panels] {
+  position: relative;
+}
+
+/* The ACTIVE panel stays in normal flow — it is what gives the stage its
+   height, so the stage reflows for free when text wraps at a new width. The
+   others are lifted out of flow into the same spot. */
+html.ctabs-armed [data-ct-panel] {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+}
+html.ctabs-armed [data-ct-panel].is-active {
+  position: relative;
+  inset: auto;
+}
+
+/* Reduced motion: no transitions (JS already swaps instantly). */
+@media (prefers-reduced-motion: reduce) {
+  [data-ct-tab],
+  [data-ct-indicator] {
+    transition: none !important;
+  }
+}
