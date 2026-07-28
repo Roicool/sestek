@@ -2921,9 +2921,17 @@ DOM (Webflow — grid/tipografi/kart renkleri Designer'da):
     data-ct-start      açılışta açık index                (default 0)
     data-ct-interval   otomatik geçiş ms, 0 = kapalı      (default 0)
 -->
+<!--
+  ÖNEMLİ: kökte TAM 2 doğrudan çocuk olmalı (sol sarmalayıcı + panel sahnesi).
+  Başlığı köke doğrudan koyarsan 2 kolonlu grid'de üçüncü hücreye düşer.
+-->
 <section data-chapter-tabs>
 
-  <!-- SOL: başlık rayı (dikey çizgi Designer'da: list'e border-left) -->
+ <!-- SOL hücre: başlık + başlık rayı -->
+ <div>
+  <div><span>Company history</span><h2>Our journey so far</h2></div>
+
+  <!-- Başlık rayı (dikey çizgi Designer'da: list'e border-left) -->
   <div data-ct-list>
     <div data-ct-indicator></div>        <!-- opsiyonel: accent renkli hareketli çubuk -->
     <button data-ct-tab data-ct-accent="--brand-primary--500">Beginnings</button>
@@ -2931,8 +2939,10 @@ DOM (Webflow — grid/tipografi/kart renkleri Designer'da):
     <button data-ct-tab data-ct-accent="--accent--teal-500">Going global</button>
     <button data-ct-tab data-ct-accent="--accent--amber-500">Innovation</button>
   </div>
+ </div>
+ <!-- /SOL hücre -->
 
-  <!-- SAĞ: kart sahnesi — panel sırası başlık sırasıyla AYNI olmalı -->
+  <!-- SAĞ hücre: kart sahnesi — panel sırası başlık sırasıyla AYNI olmalı -->
   <div data-ct-panels>
     <div data-ct-panel class="chapter-card is-pink">   <!-- bg Designer'da -->
       <h3>Since 2010, we have been on a mission…</h3>
