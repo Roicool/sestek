@@ -843,6 +843,8 @@ DOM:
 | `css/components/quote-wheel.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/quote-wheel.css` |
 | `js/components/chapter-tabs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/chapter-tabs.js` |
 | `css/components/chapter-tabs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/chapter-tabs.css` |
+| `js/components/hero-cards.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero-cards.js` |
+| `css/components/hero-cards.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero-cards.css` |
 
 ### H-Scroll (pinli yatay kart bölümü)
 
@@ -2877,6 +2879,110 @@ DOM (Webflow — layout/grid Designer'da; SVG'yi JS kendisi enjekte eder):
 - `prefers-reduced-motion` veya no-JS: çizgi tam dolu / hiç yok, ikonlar renkli.
 - `refreshPriority: -1` — pinli bölümlerden sonra refresh eder.
 - `Sestek.initJourneyPath()` sayfadaki tüm bölümleri tek çağrıda bağlar.
+
+---
+
+### Hero Cards (uçuşan CMS istatistik kartları)
+
+Amplemarket tarzı hero: başlığın etrafına dağılmış birkaç istatistik kartı;
+birkaç saniyede bir bazıları küçülüp kaybolur, **CMS havuzundan** başka bir
+istatistik alır, başka bir konuma geçer ve yeni bir boyutta geri büyür. İşin
+sırrı **alan derinliği**: bir kartın bulanıklığı, ölçeğinin 1'den uzaklığından
+türetilir — büyük/küçük kartlar yakın/uzak okunur. Kartlar ayrıca fareyle
+**parallax** yapar; odaktaki kart daha çok, bulanık kart daha az hareket eder.
+
+**CMS-first:** istatistik havuzu bir **Collection List**'tir. Görünen kartlar
+Designer'da stillendirdiğin birkaç statik kabuktur; script yalnız havuzdaki
+içeriği kabuklara taşır — yeni istatistik eklemek CMS kaydı açmaktır, kod
+değişikliği değil. Kart **konumlarını Designer'da** verirsin; script o inset
+değerlerini okuyup kartlar arasında karıştırır.
+
+```html
+<!-- in <head> -->
+<script>document.documentElement.classList.add('hcards-armed')</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero-cards.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/core/utils.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero-cards.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initHeroCards();
+  });
+</script>
+```
+
+DOM:
+
+```html
+<!--
+  Kök ([data-hero-cards]) attribute'ları (hepsi opsiyonel):
+    data-hc-round     turlar arası ms                    (default 4000)
+    data-hc-change    turda kaç kart değişir             (default 3)
+    data-hc-stagger   kartlar arası gecikme ms           (default 100)
+    data-hc-down      küçülme süresi sn                  (default 0.35)
+    data-hc-up        büyüme süresi sn                   (default 0.35)
+    data-hc-min       en küçük yeniden doğma ölçeği      (default 0.3)
+    data-hc-max       en büyük ölçek                     (default 1)
+    data-hc-ones      tam 1 ölçekte kalan kart sayısı    (default 2)
+    data-hc-blur      1.0 ölçek farkı başına blur px     (default 20)
+    data-hc-max-blur  blur tavanı px                     (default 60)
+    data-hc-jitter    konum sapması px                   (default 25)
+    data-hc-parallax  fare sürüklenmesi px, 0 = kapalı   (default 40)
+    data-hc-bp        mobil breakpoint px                (default 768)
+    data-hc-spv       mobil kart/görünüm                 (default 1.6)
+-->
+<section data-hero-cards>
+
+  <!-- HAVUZ: Collection List — armed olunca görsel gizli, SR'a açık -->
+  <div data-hc-pool class="w-dyn-list">
+    <div role="list" class="w-dyn-items">
+      <div role="listitem" data-hc-item class="w-dyn-item">
+        <div class="stat-number">150+</div>
+        <div>enterprise opps</div>
+        <img src="logo.svg" alt="">
+      </div>
+      <!-- CMS'te kaç kayıt varsa o kadar -->
+    </div>
+  </div>
+
+  <!-- GÖRÜNEN KABUKLAR: Designer'da konumla + renklendir (genelde 5 tane) -->
+  <div data-hc-slot class="hero-card is-1 is-green"><div data-hc-content></div></div>
+  <div data-hc-slot class="hero-card is-2 is-yellow"><div data-hc-content></div></div>
+  <div data-hc-slot class="hero-card is-3 is-pink"><div data-hc-content></div></div>
+  <div data-hc-slot class="hero-card is-4 is-violet"><div data-hc-content></div></div>
+  <div data-hc-slot class="hero-card is-5 is-cyan"><div data-hc-content></div></div>
+
+  <!-- ortadaki başlık (normal Designer içeriği) -->
+  <div class="hero-copy"><h1>About us</h1><h2>We help companies grow</h2></div>
+
+</section>
+```
+
+**Notlar**
+- **Konumlar Designer'dan:** her kabuğa `position:absolute` + kendi `inset`
+  değerlerini ver (`is-1..is-5` gibi class'larla). Script bu değerleri init'te
+  okur ve turlarda kartlar arasında yer değiştirir + `data-hc-jitter` kadar
+  rastgele kaydırır. Kod hiçbir konum uydurmaz.
+- **Renk:** kabukların bg class'ları senindir; mobil karusel bu kabukları
+  klonladığı için renkler orada da döner.
+- `[data-hc-content]` opsiyoneldir — yoksa içerik doğrudan kabuğa yazılır.
+- **Bulanıklık ölçekten türetilir** (`|1 − scale| × data-hc-blur`), her karede
+  yeniden hesaplanır — kart 1'in içinden geçerken kendiliğinden netleşir.
+- **Parallax** GSAP'in x/y transform cache'ini kullanır; ölçek tween'iyle aynı
+  matriste birleşir (ayrı `translate` property'sine gerek yok).
+- **Mobil (< `data-hc-bp`):** dağınık yerleşim yerine havuzun tamamından
+  kaydırılabilir bir karusel kurulur; komşu kartlar küçülüp bulanıklaşır.
+  Swiper yoksa sade bir yığına düşer.
+- Turlar bölüm ekran dışındayken ve sekme gizliyken durur.
+- `prefers-reduced-motion`: tur yok, parallax yok — kartlar ilk
+  istatistikleriyle tam boyutta durur.
+- Erişilebilirlik: havuz ekran okuyucuya açık kalır, kabuklar `aria-hidden`.
 
 ---
 

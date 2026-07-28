@@ -1,0 +1,82 @@
+/*!
+ * hero-cards.css v1.0.0
+ * Behavioural / critical CSS for the hero-cards component (floating stat cards
+ * around a hero heading, CMS-driven). Owns only the mechanics: hiding the CMS
+ * pool once the script runs, the compositor hints the constant scale/blur
+ * tweens need, and the mobile carousel's neighbour scaling. Card size, colour,
+ * radius, padding and — importantly — each shell's POSITION are all Designer's;
+ * the script reads whatever inset you set there and shuffles those spots.
+ *
+ * Drives: js/components/hero-cards.js
+ *
+ * NO-JS: the pool is only hidden once html.hcards-armed is set, so a page
+ * without JS renders the stats as ordinary content instead of an empty stage.
+ *
+ * https://github.com/roicool/sestek
+ */
+
+[data-hero-cards] {
+  position: relative;
+}
+
+/* ── CMS pool — present for SEO and screen readers, out of the layout ────── */
+html.hcards-armed [data-hc-pool] {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ── Card shells ────────────────────────────────────────────────────────────
+   Position/size/colour come from Designer. These two hints are for the tweens:
+   the cards are scaled and blurred continuously, so they want their own layer,
+   and the blur must not bleed past the card's own box. */
+[data-hc-slot] {
+  will-change: transform, filter, opacity;
+  transform-origin: 50% 50%;
+}
+
+/* ── Mobile carousel (built by JS below data-hc-bp) ─────────────────────────
+   Swiper's own stylesheet is not loaded — these are the core rules it needs
+   (project convention, see h-scroll). */
+[data-hc-mobile] .swiper { overflow: hidden; padding-block: 1rem; }
+[data-hc-mobile] .swiper-wrapper { display: flex; box-sizing: content-box; }
+[data-hc-mobile] .swiper-slide {
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+/* Neighbours sit back: smaller and softly out of focus, same depth-of-field
+   language as the desktop stage. */
+[data-hc-mobile] [data-hc-card] {
+  transition: transform .4s ease, filter .4s ease;
+  transform: scale(0.65);
+  filter: blur(10px);
+}
+[data-hc-mobile] .swiper-slide-prev [data-hc-card],
+[data-hc-mobile] .swiper-slide-next [data-hc-card] {
+  transform: scale(0.82);
+  filter: blur(4px);
+}
+[data-hc-mobile] .swiper-slide-active [data-hc-card] {
+  transform: scale(1);
+  filter: blur(0px);
+}
+
+/* No Swiper: a plain centred stack rather than a broken track. */
+[data-hc-mobile] .swiper.is-fallback { overflow-x: auto; scroll-snap-type: x mandatory; }
+[data-hc-mobile] .swiper.is-fallback .swiper-wrapper { gap: 0.75rem; }
+[data-hc-mobile] .swiper.is-fallback .swiper-slide { scroll-snap-align: center; }
+[data-hc-mobile] .swiper.is-fallback [data-hc-card] { transform: none; filter: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hc-slot] { filter: none !important; transform: none !important; opacity: 1 !important; }
+  [data-hc-mobile] [data-hc-card] { transition: none !important; }
+}
