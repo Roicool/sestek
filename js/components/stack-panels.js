@@ -1,5 +1,11 @@
 /*!
- * stack-panels.js v1.2.0
+ * stack-panels.js v1.2.1
+ * v1.2.1 — KRİTİK: [data-sp-inner]'sız bir panel viewport'tan uzunsa init
+ * TypeError ile çöküyordu (fake-scroll marjı null inner'dan offsetHeight
+ * okuyordu) → section'ın TÜM pinleri sessizce yok oluyordu. Panel yüksek
+ * ekranda sığdığı için hata sadece kısa ekranlarda görünüyordu ("bazen
+ * kurulmuyor" vakasının gerçek kök nedeni). Artık inner yoksa fake-scroll
+ * atlanır, panel normal pinlenir ve konsola yol gösteren bir uyarı düşer.
  * v1.2.0 — pinBlocker artık kalıcı pes etmiyor: init anında bir ata elemanda
  * süren giriş/reveal animasyonunun bıraktığı transform, pin'i SONSUZA DEK
  * kapatıyordu ("hızlı makinede kuruluyor, yavaşta bazen kurulmuyor" vakası).
@@ -186,9 +192,16 @@
       var diff    = innerH - windowH;
       // Portion (0–1) of the pinned scroll spent "fake-scrolling" the inner
       // content up before the scale/fade phase — ONLY when a panel's content is
-      // taller than the viewport. For normal (≤ viewport) panels this is 0 and
-      // the whole fake-scroll branch is skipped — identical to the reference.
-      var fakeRatio = diff > 0 ? diff / (diff + windowH) : 0;
+      // taller than the viewport AND an [data-sp-inner] wrapper exists (the
+      // fake-scroll translates that wrapper — without it fake-scroll is
+      // imkânsız, panel normal ortalanmış pin'e düşer, çökmez).
+      var fakeRatio = inner && diff > 0 ? diff / (diff + windowH) : 0;
+      if (!inner && diff > 0) {
+        warn("Panel içeriği viewport'tan " + Math.round(diff) + "px uzun ama " +
+             "[data-sp-inner] sarıcısı yok — fake-scroll yapılamaz, panel normal " +
+             "pinlenir (taşan kısım okunmadan çözülebilir). Ya içeriği " +
+             "[data-sp-inner] ile sarın ya da kısa ekranda içeriği küçültün.", panel);
+      }
 
       // Only tall panels need extra reserved scroll space (see fakeRatio). With
       // pinSpacing:false ScrollTrigger reserves none, so add exactly the
