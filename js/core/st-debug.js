@@ -7,6 +7,11 @@
  * görüntüsü yerine metin olarak WhatsApp/mail ile gönderilebilir).
  * v1.0.3 — readyState raporda: "interactive"de TAKILI kalmış sayfa, asılı
  *  load kaynaklı bayat-pin bug'ının imzasıdır (lenis-init v1.4.0 notu).
+ * v1.0.4 — görünmez vakalar görünür: [Sestek...] önekli console.warn/error
+ *  çağrıları yakalanıp raporlanır (guard'ın "script yüklenmemiş" atlaması ve
+ *  component fallback'leri artık ekran görüntüsünde), Sestek init envanteri
+ *  (hangi component script'leri gerçekten yüklenmiş) ve stack-panels
+ *  kök/reduced sayacı eklendi.
  * UZAKTAN TEŞHİS PANELİ — erişemediğin bir bilgisayarda sayfa bozuk
  * görünüyorsa: bu script'i siteye (geçici) ekle, kişiye ?stdebug'lı link
  * gönder, tek EKRAN GÖRÜNTÜSÜ iste. URL'de "stdebug" yoksa HİÇBİR ŞEY
@@ -40,6 +45,27 @@
     errors.push("promise: " + ((e.reason && e.reason.message) || e.reason));
   });
   global.addEventListener("pageshow", function (e) { if (e.persisted) global.__stdbgBF = true; });
+
+  // [Sestek...] önekli console.warn/error'ları yakala — guard atlamaları ve
+  // component fallback'leri (ör. stack-panels pinBlocker) rapora düşsün.
+  var slog = [];
+  ["warn", "error"].forEach(function (m) {
+    var orig = global.console && console[m] && console[m].bind ? console[m].bind(console) : null;
+    if (!orig) return;
+    console[m] = function () {
+      try {
+        var s = Array.prototype.map.call(arguments, function (a) {
+          if (a && a.nodeType === 1) {
+            return "<" + a.tagName.toLowerCase() +
+              (a.className ? "." + String(a.className).split(" ")[0] : "") + ">";
+          }
+          return String(a);
+        }).join(" ");
+        if (s.indexOf("[Sestek") === 0) slog.push((m === "error" ? "✕ " : "⚠ ") + s.slice(0, 220));
+      } catch (e) {}
+      return orig.apply(null, arguments);
+    };
+  });
 
   function esc(s) {
     return String(s).replace(/[<>&]/g, function (c) {
@@ -101,6 +127,19 @@
       L.push("hero yüksekliği: " + Math.round(hero.getBoundingClientRect().height) +
              "px (beklenen ≈ " + innerHeight + ")");
     }
+    if (global.Sestek) {
+      var inits = [];
+      for (var k in Sestek) { if (k.indexOf("init") === 0) inits.push(k.slice(4)); }
+      L.push("Sestek init'leri: " + (inits.sort().join(" ") || "YOK"));
+    } else {
+      L.push("Sestek: YOK ⚠️ (hiçbir component script'i yüklenmemiş)");
+    }
+    var spRoots = document.querySelectorAll("[data-stack-panels]").length;
+    if (spRoots) {
+      var spReduced = document.querySelectorAll("[data-sp-reduced]").length;
+      L.push("stack-panels: " + spRoots + " kök · fallback'te " + spReduced +
+             (spReduced ? " ⚠️ (pin yok — konsol satırına bak)" : ""));
+    }
     if (typeof ScrollTrigger !== "undefined") {
       var ts = ScrollTrigger.getAll();
       L.push("── ScrollTrigger (" + ts.length + ") ──");
@@ -112,6 +151,10 @@
           "  start " + Math.round(t.start) + " → " + Math.round(t.end) +
           "  prio " + (t.vars && t.vars.refreshPriority != null ? t.vars.refreshPriority : 0));
       });
+    }
+    if (slog.length) {
+      L.push("── SESTEK KONSOL (" + slog.length + ") ──");
+      slog.slice(-8).forEach(function (s) { L.push(s); });
     }
     if (errors.length) {
       L.push("── HATALAR (" + errors.length + ") ──");

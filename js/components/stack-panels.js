@@ -1,5 +1,11 @@
 /*!
- * stack-panels.js v1.1.0
+ * stack-panels.js v1.2.0
+ * v1.2.0 — pinBlocker artık kalıcı pes etmiyor: init anında bir ata elemanda
+ * süren giriş/reveal animasyonunun bıraktığı transform, pin'i SONSUZA DEK
+ * kapatıyordu ("hızlı makinede kuruluyor, yavaşta bazen kurulmuyor" vakası).
+ * Engel şimdi 1.5sn aralıklı probe'larla izlenir: temizlenirse pinler kurulur
+ * ve guard'lı refresh çağrılır; ~12sn sonunda hâlâ duruyorsa gerçek engel
+ * sayılır ve düz akış fallback'inde kalınır.
  * v1.1.0 — geç büyüyen içerik sağlamlığı: tall panellerin fake-scroll marjı
  * artık her ScrollTrigger refresh'inin ölçüm ÖNCESİNDE (refreshInit) taze
  * içerik boyundan yeniden yazılır — font/görsel geç gelince marj bayat
@@ -142,10 +148,31 @@
 
     var blocker = pinBlocker(root, document.body);
     if (blocker) {
-      warn("Pin DISABLED — ancestor has transform/filter/perspective/will-change; " +
-           "position:fixed would slip (PROJECT.md Kural 3). Falling back to " +
-           "plain stacked-in-flow panels.", blocker);
+      // GEÇİCİ olabilir: init anında süren bir giriş/reveal animasyonu ata
+      // elemanda transform bırakmış olabilir (yavaş makinede DCL'e sarkar).
+      // Kalıcı vazgeçmek yerine izle: temizlenirse kur, ~12sn sonunda hâlâ
+      // duruyorsa gerçek engel say (PROJECT.md Kural 3 fallback'i).
+      warn("Pin ERTELENDİ — bir ancestor'da transform/filter/perspective/" +
+           "will-change var (muhtemelen süren bir giriş animasyonu). " +
+           "Temizlenirse pinler kurulacak.", blocker);
       root.setAttribute("data-sp-reduced", "");
+      var tries = 0;
+      var probe = setInterval(function () {
+        if (!pinBlocker(root, document.body)) {
+          clearInterval(probe);
+          root.removeAttribute("data-sp-reduced");
+          root._stackPanelsInit = false;          // wire yeniden koşabilsin
+          wire(root);
+          // Geç kurulan pinlerin start'ları jank-guard'lı refresh ile otursun.
+          if (global.Sestek && Sestek.refreshScroll) Sestek.refreshScroll();
+          else ScrollTrigger.refresh();
+        } else if (++tries >= 8) {
+          clearInterval(probe);
+          warn("Pin DISABLED — ancestor'daki transform kalıcı; düz akış " +
+               "fallback'inde kalınıyor (PROJECT.md Kural 3).",
+               pinBlocker(root, document.body));
+        }
+      }, 1500);
       return;
     }
 
