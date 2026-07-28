@@ -1,5 +1,8 @@
 /*!
- * hero-cards.js v1.0.0
+ * hero-cards.js v1.1.0
+ * v1.1.0: focus balance — a sharp card on one side of the stage now always
+ *         gets a sharp partner on the other, so the composition never leans.
+ *         Sides are measured from the authored positions at init.
  * Amplemarket-style floating stat cards: a handful of cards sit scattered
  * around a hero heading, and every few seconds some of them shrink away,
  * pick up a different stat, drift to another position and grow back at a new
@@ -222,6 +225,17 @@
     var presets = slots.map(readInset);
     var currentPos = slots.map(function (_, i) { return i; });
 
+    // Which side of the stage each PRESET sits on (-1 left, 1 right, 0 centre).
+    // Measured once from the authored layout; used to keep the in-focus cards
+    // balanced left/right as they shuffle between spots.
+    var presetSide = slots.map(function (el) {
+      var r = el.getBoundingClientRect();
+      var rr = root.getBoundingClientRect();
+      var d = (r.left + r.width / 2) - (rr.left + rr.width / 2);
+      return Math.abs(d) < r.width * 0.5 ? 0 : (d < 0 ? -1 : 1);
+    });
+    var FOCUS_EPS = 0.12;                                     // "reads as sharp"
+
     function applyPreset(slotIdx, presetIdx, withJitter) {
       var base = presets[presetIdx];
       if (!withJitter || !JITTER) { slots[slotIdx].style.inset = base; return; }
@@ -266,6 +280,26 @@
       return out;
     }
 
+    // A sharp card on one side wants a sharp partner on the other — otherwise
+    // the composition leans. Counts the focus on both sides for the frame this
+    // round will land on, and promotes one card on the empty side to scale 1.
+    function balanceFocus(scales, slotList, nextPos) {
+      var left = 0, right = 0;
+      slots.forEach(function (el, i) {
+        var changing = slotList.indexOf(i) !== -1;
+        var s = changing ? scales[i] : (gsap.getProperty(el, "scale") || 1);
+        if (Math.abs(s - 1) > FOCUS_EPS) return;
+        var side = presetSide[changing ? nextPos[i] : currentPos[i]];
+        if (side < 0) left++; else if (side > 0) right++;
+      });
+      if (left === right) return;
+      var need = left > right ? 1 : -1;
+      for (var k = 0; k < slotList.length; k++) {
+        var idx = slotList[k];
+        if (presetSide[nextPos[idx]] === need) { scales[idx] = 1; return; }
+      }
+    }
+
     // ── Playback gating ─────────────────────────────────────────────────────
     var inView = true, hidden = false, running = false;
     var loopCall = null;
@@ -282,6 +316,7 @@
       var nextPool = pickNext(order);
       var nextPos = reassign(currentPos, order);
       var scales = pickScales(order);
+      balanceFocus(scales, order, nextPos);
 
       order.forEach(function (slotIdx, i) {
         var el = slots[slotIdx];
