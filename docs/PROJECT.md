@@ -145,11 +145,32 @@ Webflow'da yerel dosya yolu (`/js/init.js`) yoktur. Init kodu Webflow'un Custom 
    * DOMContentLoaded, deferred script'ler bittikten SONRA ateşlenir (spec gereği).
    * Bu yüzden init kodu buraya — inline olmasına rağmen deferred script'lere
    * erişim garantilidir. /js/init.js'e gerek yok.
+   *
+   * Çağrılar isim listesi üzerinden GUARD'lı yapılır: tek bir component
+   * script'i o ziyaretçinin makinesinde yüklenemezse (kurumsal ağ/antivirüs/
+   * tarayıcı eklentisi/CDN edge aksaklığı) yalnız o component atlanır ve
+   * console'a tek satır uyarı düşer — zincir KOPMAZ. Gerçek vaka: color-shift.js
+   * gelmeyen bir makinede düz çağrı zinciri "initColorShift is not a function"
+   * ile koptu, sonraki 6 init hiç çalışmadı, sayfadaki bütün pinli bölümler
+   * bozuk göründü (sadece o makinede — HTML herkeste aynı, istekler değil).
    */
   document.addEventListener('DOMContentLoaded', function () {
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+      console.error('[Sestek] gsap/ScrollTrigger yüklenmemiş — sayfa statik kalıyor.');
+      return;
+    }
     gsap.registerPlugin(ScrollTrigger);
-    Sestek.initLenis(); // ayarlanmış default feel (duration 1.05, cubic-out)
-    // Sestek.initHero(); // hero componenti varsa
+    [
+      'initLenis',   // ayarlanmış default feel (duration 1.05, cubic-out)
+      // 'initHero', 'initHScroll', …  ← sayfadaki componentler, SAYFA SIRASIYLA
+    ].forEach(function (fn) {
+      if (window.Sestek && typeof Sestek[fn] === 'function') {
+        try { Sestek[fn](); }
+        catch (e) { console.error('[Sestek] ' + fn + ' hata verdi:', e); }
+      } else {
+        console.warn('[Sestek] ' + fn + ' atlandı — script yüklenmemiş.');
+      }
+    });
   });
 </script>
 ```
@@ -189,8 +210,11 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |
 | `card-cascade.js` (pin, ≥991px) | Sayfaya göre değişir | `data-cc-priority` ile ver (default `1`) |
 | `journey-path.js` (pin, ≥992px) | Sayfaya göre değişir | `data-jp-priority` ile ver (default `1`) |
+| `card-spread.js` (pin) | Sayfaya göre değişir | `data-csp-priority` ile ver (default `1`) |
+| `stack-panels.js` (pin, pinSpacing:false) | Sayfaya göre değişir | `data-sp-refresh-priority-start` (default `0`) — spacer EKLEMEZ, sırası alttaki ölçümleri etkilemez |
 | `reveal.js` (pin değil) | Her yerde | `-1` |
 | `section-shrink.js` (pin değil) | Her yerde | `-1` (default, `data-shrink-priority`) |
+| `waveline.js` (pin opsiyonel) | Sayfaya göre değişir | pin'liyse `data-waveline-priority` ile ver (default `1`); pin'siz default `-1` |
 
 > Yeni bir pin hero ile scroll-tabs arasına girerse `2` ile `1` arasına
 > **kesirli değil**, mevcut değerleri yeniden numaralandırarak yerleştir

@@ -1,9 +1,26 @@
 /*!
- * lenis-init.js v1.3.1
+ * lenis-init.js v1.4.1
  * Lenis smooth scroll — optional GSAP ScrollTrigger sync + stale-height guard
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.4.0 — ASILI-LOAD SİGORTASI: yükseklik gözcüsü ve geç güvenlik
+ *          refresh'leri yalnız `load`'a bağlıydı; takılı bir üçüncü parti
+ *          kaynak (proxy/antivirüsün kararttığı tracker vb.) load'u sonsuza
+ *          dek asarsa gözcü hiç açılmıyor, ScrollTrigger'ın load-refresh'i de
+ *          gelmiyor ve DCL'de ölçülen start'lar KALICI bayat kalıyordu —
+ *          geç yüklenen medya kadar kayan pinler sectionları üst üste
+ *          bindiriyordu (yalnız o makinelerde görünen bug). Artık load YA DA
+ *          init'ten 4 sn sonra (hangisi önce) gözcü açılır + telafi refresh'i
+ *          koşar. Ayrıca refreshScroll'un scroll-idle beklemesi ~3 sn'lik
+ *          tavana bağlandı (sonsuz erteleme olamaz).
+ * v1.4.1 — PİN BEKÇİSİ (jenerik güvenlik ağı): settle'dan sonra her pinli
+ *          trigger'ın "start − çapa konumu" farkı kalibre edilir ve
+ *          periyodik yoklanır (2.5s / 6s / 12s). BİLİNMEYEN bir kaynaktan
+ *          ölçüm kayması oluşursa (yükseklik değişmeden pozisyon kayması,
+ *          gözcünün göremediği her durum) tek düzeltici refreshScroll atılır.
+ *          Scroll halindeyken yoklamaz; kayma yoksa maliyeti birkaç
+ *          getBoundingClientRect'ten ibarettir.
  * v1.3.1 — refreshes no longer cause scroll jank: ScrollTrigger.refresh()
  *          is expensive (re-measures every trigger), so firing it while the
  *          page is still loading images (height changes constantly) or while
@@ -78,11 +95,14 @@
    */
   function refreshScroll() {
     if (refreshTimer) clearTimeout(refreshTimer);
+    var tries = 0;
     refreshTimer = setTimeout(function tick() {
       var lenis = global.lenisInstance;
       // Still scrolling (user gesture or scrollTo in flight)? Check again
-      // shortly — never re-measure under the user's finger/wheel.
-      if (lenis && (lenis.isScrolling || Math.abs(lenis.velocity || 0) > 0.05)) {
+      // shortly — never re-measure under the user's finger/wheel. Capped:
+      // ~3s sonra yine de koşar (idle hiç gelmezse ölçümler sonsuza dek
+      // bayat kalamaz — kısa bir hitch, kalıcı bozuk pinden iyidir).
+      if (tries++ < 20 && lenis && (lenis.isScrolling || Math.abs(lenis.velocity || 0) > 0.05)) {
         refreshTimer = setTimeout(tick, 150);
         return;
       }
@@ -179,7 +199,8 @@
     if (typeof ResizeObserver !== "undefined") {
       var lastHeight = document.body.scrollHeight;
       bodyObserver = new ResizeObserver(function () {
-        if (document.readyState !== "complete") return;   // load still in progress
+        // load bitene YA DA 4sn sigortası devralana kadar sessiz.
+        if (!loadSettled && document.readyState !== "complete") return;
         var h = document.body.scrollHeight;
         if (h !== lastHeight) {
           lastHeight = h;
@@ -193,16 +214,55 @@
     // changing body height enough to trip the observer (or on browsers
     // without ResizeObserver). Routed through refreshScroll() so they too
     // wait for scroll-idle instead of hitching an in-flight gesture.
-    var arm = function () {
+    // ── Pin bekçisi: start'lar ile gerçek konumlar arasındaki farkı
+    // kalibre et, sonra yokla — kayma varsa tek düzeltici refresh.
+    // Çapa: pin-spacer (varsa) — pin aktifken de konumu akışta sabittir.
+    var sentryBase = typeof WeakMap !== "undefined" ? new WeakMap() : null;
+    var sentry = function () {
+      if (typeof ScrollTrigger === "undefined" || !sentryBase) return;
+      var lenis = global.lenisInstance;
+      if (lenis && (lenis.isScrolling || Math.abs(lenis.velocity || 0) > 0.05)) return;
+      var drifted = false;
+      ScrollTrigger.getAll().forEach(function (t) {
+        if (!t.pin) return;
+        var anchor = t.spacer || t.trigger;
+        if (!anchor || !anchor.getBoundingClientRect) return;
+        var top = anchor.getBoundingClientRect().top +
+          (global.scrollY != null ? global.scrollY : global.pageYOffset || 0);
+        var off = t.start - top;
+        if (sentryBase.has(t)) {
+          if (Math.abs(off - sentryBase.get(t)) > 40) drifted = true;
+        } else {
+          sentryBase.set(t, off);
+        }
+      });
+      if (drifted) {
+        sentryBase = new WeakMap();          // refresh sonrası yeniden kalibre
+        refreshScroll();
+      }
+    };
+
+    var loadSettled = false;
+    var settle = function () {
+      if (loadSettled) return;
+      loadSettled = true;
       lateTimeouts.push(
         setTimeout(refreshScroll, 500),
-        setTimeout(refreshScroll, 1500)
+        setTimeout(refreshScroll, 1500),
+        setTimeout(sentry, 2500),            // kalibrasyon (refresh'ler oturdu)
+        setTimeout(sentry, 6000),            // yoklama 1
+        setTimeout(sentry, 12000)            // yoklama 2 — geç sürprizler
       );
     };
     if (document.readyState === "complete") {
-      arm();
+      settle();
     } else {
-      global.addEventListener("load", arm, { once: true });
+      global.addEventListener("load", settle, { once: true });
+      // ASILI-LOAD SİGORTASI: takılı bir kaynak load'u sonsuza dek asarsa
+      // (kurumsal proxy/adblock karartması) 4 sn sonra devral — gözcü açılır,
+      // telafi refresh'leri koşar. ScrollTrigger'ın kendi load-refresh'inin
+      // yerini de bu telafi doldurur.
+      lateTimeouts.push(setTimeout(settle, 4000));
     }
 
     return lenis;

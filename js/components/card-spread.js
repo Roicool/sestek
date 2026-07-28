@@ -1,5 +1,13 @@
 /*!
- * card-spread.js v1.8.0
+ * card-spread.js v1.9.2
+ * v1.9.2 — rebuild scroll'u oynatmaz: build başında scrollY saklanır, temiz
+ * kill sonrası bitişte birebir restore edilir (revert'li kill'in spacer
+ * telafisi, geç `load` rebuild'inde scroll'lu kullanıcıyı pin mesafesi
+ * kadar kaydırıyordu — "bazı bilgisayarlarda" zıplamanın ikinci yarısı).
+ * v1.9.1 — load/resize rebuild refresh'i Sestek.refreshScroll() üzerinden:
+ * yavaş makinede `load` kullanıcı scroll'a başladıktan sonra gelir; çıplak
+ * ScrollTrigger.refresh() o anda tüm pin'leri revert/re-apply edip sayfayı
+ * zıplatıyordu ("bazı bilgisayarlarda bug"). Guard, scroll idle'ken ölçer.
  * Ramp-style pinned scroll sequence, scrub-driven and fully reversible:
  *   1. (optional) a "physical card" hero visual is wiped away bottom-up with
  *      a clip-path while a 1px scan line travels up its face in sync —
@@ -56,6 +64,9 @@
  *   data-csp-start        ScrollTrigger start            (default "top top")
  *   data-csp-end          pin scroll distance            (default "+=160%")
  *   data-csp-scrub        scrub lag in seconds           (default 0.8)
+ *   data-csp-priority     ScrollTrigger refreshPriority — set per page
+ *                         order vs other pinned sections (PROJECT.md
+ *                         table); higher = refreshes earlier (default 1)
  *   data-csp-stagger      spread offset per depth level from the centre
  *                         card, in timeline units             (default 0.1)
  *   data-csp-stack-scale  scale falloff per depth while decked (default 0.06)
@@ -139,6 +150,7 @@
     var START = root.getAttribute("data-csp-start") || "top top";
     var END = root.getAttribute("data-csp-end") || "+=160%";
     var SCRUB = attrNum(root, "data-csp-scrub", 0.8);
+    var PRIORITY = attrNum(root, "data-csp-priority", 1);
     var STAGGER = attrNum(root, "data-csp-stagger", 0.1);   // per depth level from centre
     var STACK_SC = attrNum(root, "data-csp-stack-scale", 0.06); // behind-cards scale falloff
     var LIFT = attrNum(root, "data-csp-lift", 48);          // px the grid drifts up as the header exits
@@ -155,6 +167,10 @@
     }
 
     function build() {
+      // Rebuild scroll'u oynatmasın: temiz söküm + sonda birebir restore
+      // (revert'li kill spacer telafisi yapar; layout aynı kalacağı için
+      // aynı scrollY aynı içeriği gösterir — bkz hero v1.8.3 notu).
+      var keepY = window.scrollY;
       destroy();
 
       // Measure the REAL layout first (transforms cleared), then stack the
@@ -222,7 +238,11 @@
           end: END,
           scrub: SCRUB,
           pin: true,
-          anticipatePin: 1
+          anticipatePin: 1,
+          // Page-order pin priority — without this the pin refreshed at 0 and
+          // any below trigger with priority 1 (e.g. h-scroll) measured its
+          // start BEFORE this pin's spacer existed (PROJECT.md pin table).
+          refreshPriority: PRIORITY
         }
       });
 
@@ -297,6 +317,8 @@
           duration: Math.min(total * exitDist / pinDist, total)
         }, 0);
       }
+
+      if (Math.abs(window.scrollY - keepY) > 1) window.scrollTo(0, keepY);
     }
 
     build();
@@ -307,7 +329,9 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         build();
-        ScrollTrigger.refresh();
+        // Jank guard'lı boru — scroll idle'ken tek sefer ölçer; yoksa fallback.
+        if (global.Sestek && global.Sestek.refreshScroll) global.Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
       }, 180);
     }
     window.addEventListener("resize", rebuild);

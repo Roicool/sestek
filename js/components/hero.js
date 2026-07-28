@@ -1,5 +1,17 @@
 /*!
- * hero.js v1.8.1
+ * hero.js v1.8.3
+ * v1.8.2 — rebuild refresh'i Sestek.refreshScroll() üzerinden (jank guard:
+ * scroll dururken ölçer); çıplak ScrollTrigger.refresh() scroll ortasında
+ * pin'leri revert/re-apply edip zıplatabiliyordu.
+ * v1.8.3 — (1) Slot ölçümü HERO'ya göre: pin sırasında hero'nun sol-üstü =
+ * viewport'un sol-üstü olduğundan hero-göreli koordinat scroll'dan bağımsız
+ * doğrudur; eski çıplak viewport ölçümü, sayfa scroll'luyken gelen rebuild
+ * (resize / anchor'lu yükleme) durumunda morph hedeflerini scrollY kadar
+ * kaydırıyordu. (2) Rebuild'de eski TIMELINE da öldürülür — yalnız ST
+ * öldürülünce eski tween'ler elementlere bağlı kalıp sızıyordu. (3) Rebuild
+ * scroll'u oynatmaz: temiz kill + bitişte birebir scrollY restore — revert'li
+ * kill'in spacer telafisi kullanıcıyı pin mesafesi kadar ışınlıyor,
+ * revert'siz kill ise inline pin stillerini yetim bırakıyordu.
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
  *
@@ -70,12 +82,22 @@
       return;
     }
 
-    var activeST = null;
+    var activeST = null, activeTl = null;
 
     function build() {
+      // Rebuild scroll'u OYNATMAMALI: revert'li kill spacer telafisi yapar
+      // (kullanıcı pin mesafesi kadar kayar), revert'siz kill ise inline pin
+      // stillerini yetim bırakır (kalıcı position:fixed). Doğrusu: temiz
+      // kill + rebuild bitince scroll'u birebir geri koymak — söküm/kurulum
+      // sonrası layout aynı olduğundan aynı scrollY aynı içeriktir.
+      var keepY = window.scrollY;
       if (activeST) {
         activeST.kill();
-        ScrollTrigger.refresh();
+        if (activeTl) { activeTl.kill(); activeTl = null; }
+        // Jank guard'lı boru: scroll idle'ken tek sefer ölçer (PROJECT.md
+        // Kural — çıplak refresh scroll ortasında pin'leri zıplatır).
+        if (global.Sestek && global.Sestek.refreshScroll) global.Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
       }
 
       var vw = window.innerWidth;
@@ -94,10 +116,13 @@
        * Compute the transform that maps the full-viewport video-wrap
        * (transform-origin: center center) onto the slot's position and size.
        */
+      // HERO-göreli ölçüm: pin sırasında hero'nun sol-üstü viewport'un
+      // sol-üstüdür — sayfa ölçüm anında scroll'lu olsa bile doğru kalır.
+      var heroRect = hero.getBoundingClientRect();
       var targetScaleX = slotRect.width  / vw;
       var targetScaleY = slotRect.height / vh;
-      var targetX      = (slotRect.left + slotRect.width  * 0.5) - vw * 0.5;
-      var targetY      = (slotRect.top  + slotRect.height * 0.5) - vh * 0.5;
+      var targetX      = ((slotRect.left - heroRect.left) + slotRect.width  * 0.5) - vw * 0.5;
+      var targetY      = ((slotRect.top  - heroRect.top)  + slotRect.height * 0.5) - vh * 0.5;
 
       /*
        * scale() transform border-radius'ı da küçültür.
@@ -274,6 +299,8 @@
       }
 
       activeST = tl.scrollTrigger;
+      activeTl = tl;
+      if (Math.abs(window.scrollY - keepY) > 1) window.scrollTo(0, keepY);
     }
 
     build();

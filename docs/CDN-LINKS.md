@@ -3183,6 +3183,83 @@ DOM (Webflow — **TEK** Collection List; her item hem logo hem kart içerir):
 | `js/effects/mesh-gradient.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/effects/mesh-gradient.js` |
 | `css/effects/mesh-gradient.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/effects/mesh-gradient.css` |
 
+### Waveline (voiceprint timeline — adım adım section)
+
+"How it works" tarzı adımlı section'lar için SES DALGASI zaman çizgisi.
+Nötr eksen + tik noktaları track boyunca uzanır; scroll'la üstünde marka
+gradient'li (pembe→viyole→cyan) bir ses dalgası soldan sağa "kaydedilir".
+Dalga her adımın kolon merkezinde GENLİK PATLAMASI yapar (konuşulmuş kelime
+gibi), ucunda parlayan nokta taşır; bir adımın hizasını geçince o adım
+sönükten uyanır (`is-lit`). Geometri spline DEĞİL: y sabit eksen + gauss
+zarflı sinüs — ölçülen tek şey adımların X merkezi, her breakpoint'te
+deterministik üretilir (journey-path'in "eğri yamuk çizildi" sınıfı hata
+burada yapısal olarak imkânsız). Draw stroke-dashoffset'tir, scrub 0→1 tek
+sayı sürer. Default AKIŞTA scrub (pin yok); `data-waveline-pin="true"` ile
+pinli mod. bp altı (mobil) kapalı — mobil düzen Designer'ın. Reduced motion:
+dalga tam çizili + hepsi yanık statik hal. JS yoksa SVG hiç enjekte edilmez.
+
+```html
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/waveline.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/waveline.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initWaveline(); // tüm [data-waveline] bölümleri
+  });
+</script>
+```
+
+DOM (Webflow — düzen Designer'ın, yalnız attribute'lar önemli):
+
+```html
+<!--
+  Kök attribute'ları (hepsi opsiyonel):
+    data-waveline-bp        breakpoint px — altında kapalı      (default 992)
+    data-waveline-amp       patlama genliği, track boyu oranı   (default 0.34)
+    data-waveline-calm      sakin bölge genliği oranı           (default 0.05)
+    data-waveline-dot       uç nokta yarıçapı px — 0 = kapalı   (default 5)
+    data-waveline-start     ScrollTrigger start                 (default "top 70%")
+    data-waveline-end       ScrollTrigger end                   (default "top 25%")
+    data-waveline-scrub     scrub yumuşatması sn                (default true)
+    data-waveline-pin       "true" → section pinlenir           (default false)
+    data-waveline-distance  pin scroll mesafesi % viewport      (default 120)
+    data-waveline-priority  refreshPriority (default: pin 1, değilse -1)
+    data-waveline-live      çizim bitince loop'lu canlı dalga — "true" = açık,
+                            sayı = hız çarpanı (örn "1.5")      (default kapalı)
+-->
+<section data-waveline>
+  <div>…başlık bloğu…</div>
+  <div data-waveline-track></div>          <!-- dalga bandı; yükseklik Designer'dan (örn 10rem) -->
+  <div class="grid-3col">
+    <div data-waveline-item>01 + başlık + metin</div>
+    <div data-waveline-item>02 + başlık + metin</div>
+    <div data-waveline-item>03 + başlık + metin</div>
+  </div>
+</section>
+```
+
+**Notlar**
+- Sönükleştirme `[data-waveline-ready]` kapısının arkasında: JS kurulmadan /
+  bp altında hiçbir adım sönmez (FOUC yok). Sönüklük `--waveline-dim` (0.4).
+- Track genişliği = dalganın genişliği; container'a hizalamak için track'e
+  max-width/margin ver. Adım sayısı serbest (N ≥ 2), patlamalar merkezlere oturur.
+- Eksen bandın dikey ortasıdır; adım grid'ini bandın hemen altına koy.
+- CANLI MOD (v1.1.0, `data-waveline-live`): çizim tamamlanınca taşıyıcı faz
+  kayar, dalga patlamaların içinden sağa akar (zarf sabit — patlamalar
+  kolonlarda çakılı). Ekran dışında durur (IO), geri sarınca scrub'a temiz
+  devreder, reduced-motion'da hiç açılmaz. Attr yoksa maliyeti sıfır.
+- PİN + FLEX UYARISI: pinlenen `[data-waveline]` section'ını flex YAPMA —
+  100vh ortalama için içine bir sarmalayıcı div koy (flex column + justify
+  center + min-height 100vh onda). Flex içinde track/grid'e `width:100%` ver:
+  auto-margin stretch'i iptal eder, boş track 0 genişliğe düşer.
+
 ### Section Shrink (full-bleed → container oturması)
 
 Element viewport'a girerken TAM GENİŞLİK başlar; scroll'la hedef container
@@ -3299,6 +3376,8 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
     data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
     data-mesh-speed       idle drift hız çarpanı                 (default 1)
     data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
+    data-mesh-theme       "dark" → marka-moru koyu varyant: zemin secondary'den
+                          türeyen mor gradient, lekeler screen glow (CSS-only)
 -->
 <section data-mesh-gradient class="hero">
   … içerik …
@@ -3307,8 +3386,14 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
 
 **Notlar**
 - Yoğunluk kökten: statik `--mesh-soft` (default `20%`), canlı katmanlar
-  `--mesh-soft-live` (default `24%`). Koyu tema için `--mesh-base`'i koyu
-  token'a çek, yoğunluğu bir tık artır.
+  `--mesh-soft-live` (default `24%`).
+- KOYU TEMA (v2.2.0): `data-mesh-theme="dark"` — zemin SİYAH DEĞİL,
+  secondary'nin koyu tonlarından `color-mix` ile türeyen mor bir GRADIENT
+  (`--mesh-deep-a/-b` uçları, 160deg). Lekeler screen karışımıyla parlar
+  (statikte `background-blend-mode`, canlıda `mix-blend-mode`); viyole leke
+  koyu morda kaybolmasın diye `--mesh-c2` açık lavantaya çekilir. Tonlar
+  token'dan türediği için marka rengi değişirse tema izler. JS değişikliği
+  yok; ince ayar `--mesh-deep-a/-b`, `--mesh-soft/-soft-live`, `--mesh-c*`.
 - İçerik otomatik olarak lekelerin üstüne kaldırılır (statik çocuklara
   `position:relative; z-index:1`).
 - `filter: blur` bilinçli KULLANILMAZ — falloff radial'ın kendisinden gelir,

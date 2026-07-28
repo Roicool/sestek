@@ -1,0 +1,34 @@
+/*!
+ * waveline.css v1.0.0
+ * "Voiceprint timeline" davranışsal CSS'i — SVG katman konumu + adımların
+ * sönük/yanık state'leri. Sönükleştirme [data-waveline-ready] KAPISININ
+ * arkasındadır: JS kurulmadan (ya da bp altında / JS yokken) hiçbir adım
+ * sönmez — çizime engel yok. Mobil (<bp) düzen kuralı BURADA YOK; mobil
+ * tasarım Webflow Designer'ın. Timeline waveline.js'te.
+ * https://github.com/roicool/sestek
+ */
+
+[data-waveline] { position: relative; }
+
+/* Dalganın yaşadığı bant — yüksekliği Designer verir (örn 9-11rem) */
+[data-waveline-track] { position: relative; }
+
+[data-waveline-svg] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;              /* uç nokta glow'u bant kenarında kesilmesin */
+}
+
+/* Adımlar: yalnız JS kurulunca sönük başlar, dalga ulaşınca uyanır */
+[data-waveline-ready] [data-waveline-item] {
+  opacity: var(--waveline-dim, 0.4);
+  transition: opacity 0.55s ease;
+}
+[data-waveline-ready] [data-waveline-item].is-lit { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-waveline-ready] [data-waveline-item] { transition: none; }
+}
