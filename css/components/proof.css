@@ -3,7 +3,9 @@
  * Critical / behavioural CSS for the proof section (Partners page).
  *
  * Two rows in one grid:
- *   1. [data-proof-row="cards"]  — three case cards. No background by default;
+ *   1. [data-proof-row="cards"]  — a Case Studies Collection List (limit 3).
+ *      The grid sits on [data-proof-items] so the Collection Items are the
+ *      grid cells. Each card has no background by default;
  *      the media layer fades + zooms in on hover/focus and the copy flips to
  *      the inverted palette. A card carrying [data-proof-always] (or the
  *      .proof__card--on combo) keeps its image on permanently — that's the
@@ -42,14 +44,22 @@
   gap: var(--proof-gap);
 }
 
-/* ── Row 1: hover-reveal cards ───────────────────────────────────────────── */
-[data-proof-row="cards"] {
+/* ── Row 1: hover-reveal cards (CMS: Case Studies) ───────────────────────── */
+/* The row only hosts the Collection List; the grid lives on the list itself
+   so the Collection Items are the grid cells. */
+[data-proof-items] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--proof-gap);
 }
 
+[data-proof-item] {
+  display: flex;
+  min-width: 0;
+}
+
 [data-proof-card] {
+  width: 100%;
   position: relative;
   isolation: isolate;             /* keeps the media layer under the copy */
   display: flex;
@@ -285,7 +295,7 @@
 @media (max-width: 991px) {
   [data-proof] { --proof-card-min: 24rem; --proof-pad: 1.5rem; }
 
-  [data-proof-row="cards"] {
+  [data-proof-items] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -308,7 +318,7 @@
 @media (max-width: 767px) {
   [data-proof] { --proof-gap: 1rem; --proof-card-min: 20rem; }
 
-  [data-proof-row="cards"] {
+  [data-proof-items] {
     grid-template-columns: minmax(0, 1fr);
   }
 
