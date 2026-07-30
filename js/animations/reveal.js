@@ -1,8 +1,14 @@
 /*!
- * reveal.js v1.2.0
+ * reveal.js v1.2.1
  * Size-reveal entrance — the "Webflow grow-in" look, fully data-attribute driven.
  *
  * Changelog
+ * v1.2.1 — reveal bitince clip kaldırılır: inset(0%) inline kalıyor ve kutu
+ *          dışına çizilen her şeyi (box-shadow, glow) sonsuza dek kesiyordu.
+ *          onComplete artık clip-path:none yazar (clearProps DEĞİL — reveal.css
+ *          anti-flash kuralı geri uygulanıp elemanı gizlerdi) ve kimlik
+ *          transform'unu temizler (pinli torunlara containing block
+ *          bırakmasın). Load refresh'i Sestek.refreshScroll guard'ından akar.
  * v1.2.0 — bidirectional by default: plays every time the element enters the
  *          viewport (from either direction) and reverses every time it leaves.
  *          Set data-reveal-once="true" for the old play-once behaviour.
@@ -74,8 +80,17 @@
     scale: 1,
   };
 
-  // Numeric data-attribute reader — shared helper from js/core/utils.js (core layer).
-  var attrNum = Sestek.util.attrNum;
+  // Numeric data-attribute reader — utils.js varsa oradan, yoksa yerel fallback.
+  // (Eski hali tepe seviyede Sestek.util.attrNum okuyordu: utils.js yüklenmez
+  // ya da SONRA yüklenirse IIFE burada ölüyor, initReveal hiç doğmuyordu —
+  // tek-script-eksik hata sınıfı. Stack-panels'teki desenle aynı.)
+  var attrNum = (global.Sestek && Sestek.util && Sestek.util.attrNum) ||
+    function (el, attr, fallback) {
+      var raw = el.getAttribute(attr);
+      if (raw == null || raw === "") return fallback;
+      var v = parseFloat(raw);
+      return isNaN(v) ? fallback : v;
+    };
 
   /**
    * Reveal a single element. Sets its collapsed clip immediately, then grows it
@@ -138,7 +153,18 @@
         // every leave — scroll down past it and back up, it re-reveals.
         toggleActions: once ? "play none none none" : "play reverse play reverse",
       },
-      onComplete: function () { el.style.willChange = "auto"; },
+      onComplete: function () {
+        el.style.willChange = "auto";
+        // inset(0%) bile kutudan kırpar — gölgeler kesilir. Tam açılınca clip'i
+        // inline "none" yap: clearProps OLMAZ, reveal.css'teki collapsed kural
+        // geri uygulanıp elemanı gizlerdi. Reverse başlarsa tween ilk tick'te
+        // kendi değerlerini geri yazar, "none" sorunsuz ezilir.
+        el.style.clipPath = "none";
+        el.style.webkitClipPath = "none";
+        // Kimlik transform'u da temizle (translate3d(0,0,0) inline kalıyordu):
+        // pinli torunlar için containing block/stacking context bırakmasın.
+        gsap.set(el, { clearProps: "transform,translate,rotate,scale" });
+      },
       onReverseComplete: function () { el.style.willChange = "clip-path, transform"; },
     });
   }
@@ -167,10 +193,16 @@
     // settle the layout — and before pins below them finish adding pin-spacing.
     // Re-measure once everything has loaded so every start/end lands correctly.
     if (typeof ScrollTrigger !== "undefined") {
+      // Ham ScrollTrigger.refresh() DEĞİL: lenis-init'in jank-guard'ı varsa
+      // oradan akar (debounce + scroll-idle bekler), yoksa ham refresh'e düşer.
+      var doRefresh = function () {
+        if (global.Sestek && Sestek.refreshScroll) Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
+      };
       if (document.readyState === "complete") {
-        ScrollTrigger.refresh();
+        doRefresh();
       } else {
-        window.addEventListener("load", function () { ScrollTrigger.refresh(); }, { once: true });
+        window.addEventListener("load", doRefresh, { once: true });
       }
     }
 
