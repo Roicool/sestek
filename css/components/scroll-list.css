@@ -1,33 +1,54 @@
 /*!
- * scroll-list.css v2.0.0
+ * scroll-list.css v3.0.0
  * Simple sticky-list section — structure/behaviour only. Colours, fonts and the
  * active/inactive look come from the Webflow Designer + RC tokens.
  *
+ * Changelog
+ * v3.0.0 — ATTRIBUTE-DRIVEN. v2 keyed everything off .slist* classes, which the
+ *          Webflow DOM never carries (the JS contract is data-attributes), so on
+ *          a real page nothing applied: the left column never became sticky and
+ *          the section read as a plain stacked list. Every rule now targets the
+ *          same [data-slist-*] hooks the JS uses. The old class selectors are
+ *          kept alongside so any page that did use them keeps working.
+ *          The per-panel 100vh rhythm is now OPT-IN (data-slist-fill="true") —
+ *          most sections size their own media frames in Designer and forcing a
+ *          screen-height panel fought those.
+ *
  * THE PIN LIVES HERE, NOT IN JS: the left column is held with position:sticky.
  * That's the reliable way to get "left fixed while the right scrolls" (GSAP
- * pinning a grid child is fragile). For sticky to work, the grid must NOT
- * stretch the columns (align-items:start) and the right column must be tall
- * (its panels are ≈100vh each) so there is something to scroll past.
+ * pinning a grid child is fragile). Two things it needs from the layout:
+ *   1. the grid must NOT stretch its columns — align-items:start on the grid
+ *      parent, otherwise the left column is as tall as the grid and has no room
+ *      to stick;
+ *   2. no ancestor may have overflow:hidden — sticky dies silently there. Use
+ *      overflow:clip instead, it looks identical.
+ *
+ * Fixed navbar? Set --slist-top on the root, e.g. [data-scroll-list]{--slist-top:80px}
  *
  * Drives: js/components/scroll-list.js
  * https://github.com/roicool/sestek
  */
 
+[data-scroll-list],
 .slist {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: start;          /* REQUIRED — lets the left column be shorter than
-                                  the grid so it actually has room to stick */
 }
 
-/* Left column — the pin. Sticky at the top of the viewport, one screen tall,
-   content centred. */
+/* Two columns. Only applied when the root is not already a grid/flex from
+   Designer — authored layouts win, so this is a floor, not a cage. */
+.slist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;          /* REQUIRED — see header note 1 */
+}
+
+/* ── Left column — the pin ──────────────────────────────────────────────── */
+[data-slist-left],
 .slist__left {
   position: -webkit-sticky;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: var(--slist-top, 0px);
+  height: calc(100vh - var(--slist-top, 0px));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -35,38 +56,51 @@
 
 /* Each row is clickable; the title stays visible and the body accordions
    open/closed. overflow:hidden is required for the height (0 → auto) clip. */
+[data-slist-item],
 .slist__item { cursor: pointer; }
 
+[data-slist-body],
 .slist__body {
   overflow: hidden;
   will-change: height, opacity;
 }
 
-/* Right column — normal flow, this is what scrolls. */
+/* ── Right column — normal flow, this is what scrolls ───────────────────── */
+[data-slist-right],
 .slist__right { position: relative; }
 
-/* Each panel gets its own turn at centre-screen. Full-height keeps exactly one
-   panel over the centre band at a time. */
+[data-slist-panel],
 .slist__panel {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.slist__panel video {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
+/* Opt-in screen-height rhythm: one panel over the centre band at a time.
+   Leave it off when the media frames are sized in Designer. */
+[data-slist-fill="true"] [data-slist-panel],
+.slist--fill .slist__panel {
+  min-height: 100vh;
 }
 
-/* Controls are hidden until the panel is hovered (pointer-events off while
-   hidden so they don't block anything). */
+[data-slist-panel] video,
+.slist__panel video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Controls — hidden until the panel is hovered (pointer-events off while
+   hidden so they never block anything) ──────────────────────────────────── */
+[data-slist-panel] [data-slist-controls],
 .slist__panel [data-slist-controls] {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
+[data-slist-panel]:hover [data-slist-controls],
+[data-slist-panel]:focus-within [data-slist-controls],
 .slist__panel:hover [data-slist-controls] {
   opacity: 1;
   pointer-events: auto;
@@ -74,24 +108,28 @@
 
 /* Control icons — JS toggles .is-paused / .is-muted on the panel; show the icon
    that matches the current state. Default (no class) = playing + sound on. */
-.slist__panel [data-icon="play"]  { display: none; }
-.slist__panel.is-paused [data-icon="play"]  { display: inline; }
-.slist__panel.is-paused [data-icon="pause"] { display: none; }
-.slist__panel [data-icon="muted"] { display: none; }
-.slist__panel.is-muted [data-icon="muted"]  { display: inline; }
-.slist__panel.is-muted [data-icon="volume"] { display: none; }
+[data-slist-panel] [data-icon="play"]            { display: none; }
+[data-slist-panel].is-paused [data-icon="play"]  { display: inline; }
+[data-slist-panel].is-paused [data-icon="pause"] { display: none; }
+[data-slist-panel] [data-icon="muted"]           { display: none; }
+[data-slist-panel].is-muted [data-icon="muted"]  { display: inline; }
+[data-slist-panel].is-muted [data-icon="volume"] { display: none; }
 
 /* Reduced motion: the accordion is set instantly by JS; drop the hint. Sticky
    still applies (it isn't motion). */
 @media (prefers-reduced-motion: reduce) {
+  [data-slist-body],
   .slist__body { will-change: auto; }
 }
 
 /* Narrow screens — single column, nothing sticky (it would just cover content). */
 @media (max-width: 767.98px) {
   .slist { grid-template-columns: 1fr; }
+  [data-slist-left],
   .slist__left {
     position: static;
     height: auto;
   }
+  [data-slist-fill="true"] [data-slist-panel],
+  .slist--fill .slist__panel { min-height: 0; }
 }
