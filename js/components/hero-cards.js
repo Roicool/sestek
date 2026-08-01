@@ -1,5 +1,5 @@
 /*!
- * hero-cards.js v1.4.1
+ * hero-cards.js v1.4.2
  * v1.3.0: scroll drift — the cards rise gently as the hero scrolls away, each
  *         at its own rate (near/sharp cards travel further than the soft ones,
  *         same depth weighting the pointer parallax uses). Computed in the
@@ -194,25 +194,37 @@
     //      the designed box (offsetHeight, not getBoundingClientRect — the
     //      latter would measure the live scale tween);
     //   2. absolute positioning with BOTH top and bottom set — then the offsets
-    //      decide the height and height:auto is ignored entirely. Releasing the
-    //      bottom edge lets the card grow downward from its authored top.
+    //      decide the height and height:auto is ignored entirely. One of the two
+    //      edges has to go, and WHICH one is what keeps the composition intact:
+    //      release the far edge and keep the near one, so a card near the top of
+    //      the stage grows downward and a card near the bottom grows upward.
+    //      Each card therefore stays visually anchored where it was authored.
+    //      This only runs when the content actually overflows, so a stat that
+    //      fits leaves the authored geometry completely untouched.
     var authoredH = slots.map(function (el) { return el.offsetHeight; });
     var warnedPinned = false;
     function fitShells(only) {
       slots.forEach(function (el, i) {
         if (only != null && only !== i) return;
-        var cs = getComputedStyle(el);
-        if (cs.position === "absolute" && cs.top !== "auto" && cs.bottom !== "auto") {
-          el.style.bottom = "auto";
-          if (!warnedPinned) {
-            warnedPinned = true;
-            console.info("[Sestek HeroCards] A shell is pinned top AND bottom; " +
-              "the bottom edge was released so taller stats can grow instead of " +
-              "overflowing. Anchor each shell from one edge only to avoid this.");
-          }
-        }
         if (authoredH[i]) el.style.minHeight = authoredH[i] + "px";
         el.style.height = "auto";
+
+        var cs = getComputedStyle(el);
+        var pinned = cs.position === "absolute" &&
+                     cs.top !== "auto" && cs.bottom !== "auto";
+        if (!pinned) return;
+        if (el.scrollHeight <= el.clientHeight + 1) return;   // it fits — leave it
+
+        if (parseFloat(cs.bottom) < parseFloat(cs.top)) el.style.top = "auto";
+        else el.style.bottom = "auto";
+
+        if (!warnedPinned) {
+          warnedPinned = true;
+          console.info("[Sestek HeroCards] A shell is pinned top AND bottom, so " +
+            "its height comes from those offsets and a taller stat overflows. " +
+            "The far edge was released; anchor each shell from one edge only to " +
+            "avoid this.");
+        }
       });
     }
 
