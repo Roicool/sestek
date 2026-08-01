@@ -1,5 +1,5 @@
 /*!
- * hero-cards.js v1.4.0
+ * hero-cards.js v1.4.1
  * v1.3.0: scroll drift — the cards rise gently as the hero scrolls away, each
  *         at its own rate (near/sharp cards travel further than the soft ones,
  *         same depth weighting the pointer parallax uses). Computed in the
@@ -183,16 +183,34 @@
     slots.forEach(function (s) { s.setAttribute("aria-hidden", "true"); });
 
     // ── Shell heights ───────────────────────────────────────────────────────
-    // A shell sized in Designer has ONE height, but the stats swapped into it
-    // do not: a two-line description plus a wide logo is taller than a one-line
-    // one, and the overflow spills the logo out below the card's background.
-    // Because the stat shown is random per round, it only breaks sometimes.
-    // So: read the authored height once (offsetHeight ignores the scale tween,
-    // getBoundingClientRect would not), keep it as a floor, and let the card
-    // grow past it when the content needs the room.
+    // A shell has ONE height, but the stats swapped into it do not: a two-line
+    // description plus a wide logo needs more room than a one-line one, and the
+    // overflow spills the logo out below the card's background. The stat is
+    // random per round, so it only breaks some of the time.
+    //
+    // Two things pin a shell's height, and both have to be released:
+    //   1. an explicit height authored on the shell  → height:auto, with the
+    //      authored value kept as a min-height floor so short stats still fill
+    //      the designed box (offsetHeight, not getBoundingClientRect — the
+    //      latter would measure the live scale tween);
+    //   2. absolute positioning with BOTH top and bottom set — then the offsets
+    //      decide the height and height:auto is ignored entirely. Releasing the
+    //      bottom edge lets the card grow downward from its authored top.
     var authoredH = slots.map(function (el) { return el.offsetHeight; });
-    function fitShells() {
+    var warnedPinned = false;
+    function fitShells(only) {
       slots.forEach(function (el, i) {
+        if (only != null && only !== i) return;
+        var cs = getComputedStyle(el);
+        if (cs.position === "absolute" && cs.top !== "auto" && cs.bottom !== "auto") {
+          el.style.bottom = "auto";
+          if (!warnedPinned) {
+            warnedPinned = true;
+            console.info("[Sestek HeroCards] A shell is pinned top AND bottom; " +
+              "the bottom edge was released so taller stats can grow instead of " +
+              "overflowing. Anchor each shell from one edge only to avoid this.");
+          }
+        }
         if (authoredH[i]) el.style.minHeight = authoredH[i] + "px";
         el.style.height = "auto";
       });
@@ -360,12 +378,11 @@
             paint(el, 0);
             visible[slotIdx] = nextPool[i];
             renderInto(targets[slotIdx], nextPool[i]);
-            // Re-fit before the card grows back — the incoming stat may be
-            // taller than the one leaving, and it is shrunk to 0 right now so
-            // the resize is invisible.
-            if (authoredH[slotIdx]) el.style.minHeight = authoredH[slotIdx] + "px";
-            el.style.height = "auto";
             if (SHUFFLE) applyPreset(slotIdx, nextPos[slotIdx], true);
+            // Re-fit AFTER any new inset lands — the incoming stat may be taller
+            // than the one leaving, and the card is scaled to 0 right now so the
+            // resize is never seen.
+            fitShells(slotIdx);
             tweenCard(el, scales[slotIdx], UP, "power2.out");
           });
         });
@@ -489,6 +506,7 @@
         el.style.inset = presets[i];
         setCard(el, 1);
       });
+      fitShells();                    // the insets just landed — re-release them
       schedule();
       return function () {
         if (loopCall) { loopCall.kill(); loopCall = null; }
