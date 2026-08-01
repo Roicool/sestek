@@ -1,5 +1,5 @@
 /*!
- * hero-cards.js v1.3.0
+ * hero-cards.js v1.4.0
  * v1.3.0: scroll drift — the cards rise gently as the hero scrolls away, each
  *         at its own rate (near/sharp cards travel further than the soft ones,
  *         same depth weighting the pointer parallax uses). Computed in the
@@ -182,6 +182,22 @@
 
     slots.forEach(function (s) { s.setAttribute("aria-hidden", "true"); });
 
+    // ── Shell heights ───────────────────────────────────────────────────────
+    // A shell sized in Designer has ONE height, but the stats swapped into it
+    // do not: a two-line description plus a wide logo is taller than a one-line
+    // one, and the overflow spills the logo out below the card's background.
+    // Because the stat shown is random per round, it only breaks sometimes.
+    // So: read the authored height once (offsetHeight ignores the scale tween,
+    // getBoundingClientRect would not), keep it as a floor, and let the card
+    // grow past it when the content needs the room.
+    var authoredH = slots.map(function (el) { return el.offsetHeight; });
+    function fitShells() {
+      slots.forEach(function (el, i) {
+        if (authoredH[i]) el.style.minHeight = authoredH[i] + "px";
+        el.style.height = "auto";
+      });
+    }
+
     // ── Content pool ────────────────────────────────────────────────────────
     function renderInto(target, poolIdx) {
       var frag = document.createDocumentFragment();
@@ -192,6 +208,7 @@
 
     var visible = shuffle(poolItems.map(function (_, i) { return i; })).slice(0, slots.length);
     visible.forEach(function (poolIdx, slotIdx) { renderInto(targets[slotIdx], poolIdx); });
+    fitShells();
 
     // Pick stats that aren't on screen; fall back to any that isn't this
     // card's own so a small pool still rotates instead of freezing.
@@ -343,6 +360,11 @@
             paint(el, 0);
             visible[slotIdx] = nextPool[i];
             renderInto(targets[slotIdx], nextPool[i]);
+            // Re-fit before the card grows back — the incoming stat may be
+            // taller than the one leaving, and it is shrunk to 0 right now so
+            // the resize is invisible.
+            if (authoredH[slotIdx]) el.style.minHeight = authoredH[slotIdx] + "px";
+            el.style.height = "auto";
             if (SHUFFLE) applyPreset(slotIdx, nextPos[slotIdx], true);
             tweenCard(el, scales[slotIdx], UP, "power2.out");
           });
@@ -474,8 +496,11 @@
       };
     });
     mm.add("(max-width: " + (BP - 1) + "px)", function () {
+      // The carousel lays the cards out itself — an authored desktop height
+      // floor would only stretch them there.
+      slots.forEach(function (el) { el.style.minHeight = ""; el.style.height = ""; });
       mobileSetup();
-      return function () { mobileTeardown(); };
+      return function () { mobileTeardown(); fitShells(); };
     });
 
     // ── Pause when out of sight ─────────────────────────────────────────────
