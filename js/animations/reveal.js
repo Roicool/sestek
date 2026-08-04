@@ -1,8 +1,13 @@
 /*!
- * reveal.js v1.2.1
+ * reveal.js v1.3.0
  * Size-reveal entrance — the "Webflow grow-in" look, fully data-attribute driven.
  *
  * Changelog
+ * v1.3.0 — TEK YÖN default (tasarım isteği): çift yönlü hal çok oynak
+ *          bulundu. Artık her reveal BİR KEZ oynar ve açık kalır; geri
+ *          scroll'da kapanıp yeniden oynamaz (trigger once ile ölür —
+ *          maliyeti de sıfırlanır). Eski davranış isteyen eleman için:
+ *          data-reveal-once="false" → çift yönlü play/reverse geri gelir.
  * v1.2.1 — reveal bitince clip kaldırılır: inset(0%) inline kalıyor ve kutu
  *          dışına çizilen her şeyi (box-shadow, glow) sonsuza dek kesiyordu.
  *          onComplete artık clip-path:none yazar (clearProps DEĞİL — reveal.css
@@ -44,9 +49,9 @@
  *   data-reveal-scale     optional inner zoom-settle, e.g. 1.08 → 1   (default 1,
  *                         off). Adds the premium Webflow image-reveal depth.
  *   data-reveal-start     ScrollTrigger start position          (default "top 85%")
- *   data-reveal-once      "true" → play only once and stay revealed. Default
- *                         false: bidirectional — plays on every viewport enter
- *                         (scrolling down OR back up), reverses on every leave.
+ *   data-reveal-once      default TRUE (v1.3.0): plays once, stays revealed.
+ *                         "false" → bidirectional: plays on every viewport
+ *                         enter (down OR back up), reverses on every leave.
  *
  * https://github.com/roicool/sestek
  */
@@ -76,7 +81,7 @@
     delay: 0,
     ease: "expo.out",
     start: "top 85%",
-    once: false,
+    once: true,
     scale: 1,
   };
 
@@ -117,7 +122,10 @@
     var scale    = o.scale    != null ? o.scale    : attrNum(el, "data-reveal-scale", DEFAULTS.scale);
     var ease     = o.ease     || el.getAttribute("data-reveal-ease")  || DEFAULTS.ease;
     var start    = o.start    || el.getAttribute("data-reveal-start") || DEFAULTS.start;
-    var once     = o.once != null ? o.once : el.getAttribute("data-reveal-once") === "true";
+    var onceAttr = el.getAttribute("data-reveal-once");
+    var once     = o.once != null ? o.once
+                 : onceAttr == null ? DEFAULTS.once
+                 : onceAttr !== "false";
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
