@@ -1,8 +1,16 @@
 /*!
- * reveal.js v1.3.0
+ * reveal.js v1.4.0
  * Size-reveal entrance — the "Webflow grow-in" look, fully data-attribute driven.
  *
  * Changelog
+ * v1.4.0 — GÖLGE EASING'İ: clip animasyonu boyunca box-shadow kutuya
+ *          kırpılıyor, bitişte clip-path:none yazılınca gölge PAT diye
+ *          beliriyordu. Artık reveal tamamlanınca clip yok edilmez;
+ *          NEGATİF inset'e doğru ikinci bir kısa tween ile dışa büyütülür —
+ *          gölge kenardan yumuşakça sızar, sonra clip tamamen kalkar.
+ *          Taşma payı CSS box-shadow'dan OTOMATİK ölçülür (blur+spread+
+ *          offset); filter/drop-shadow gibi ölçülemeyen efektler için
+ *          data-reveal-shadow="120" ile elle verilebilir, "0" kapatır.
  * v1.3.0 — TEK YÖN default (tasarım isteği): çift yönlü hal çok oynak
  *          bulundu. Artık her reveal BİR KEZ oynar ve açık kalır; geri
  *          scroll'da kapanıp yeniden oynamaz (trigger once ile ölür —
@@ -52,6 +60,11 @@
  *   data-reveal-once      default TRUE (v1.3.0): plays once, stays revealed.
  *                         "false" → bidirectional: plays on every viewport
  *                         enter (down OR back up), reverses on every leave.
+ *   data-reveal-shadow    gölge sızma payı px (v1.4.0). Default "auto":
+ *                         computed box-shadow'dan ölçülür. Sayı → elle pay
+ *                         (drop-shadow/glow gibi ölçülemeyenler için).
+ *                         "0" → gölge fazı yok, eski anlık davranış.
+ *   data-reveal-shadow-duration   gölge fazının süresi sn (default 0.5)
  *
  * https://github.com/roicool/sestek
  */
@@ -89,6 +102,35 @@
   // (Eski hali tepe seviyede Sestek.util.attrNum okuyordu: utils.js yüklenmez
   // ya da SONRA yüklenirse IIFE burada ölüyor, initReveal hiç doğmuyordu —
   // tek-script-eksik hata sınıfı. Stack-panels'teki desenle aynı.)
+  /**
+   * Computed box-shadow'dan dışa taşma payını ölç (px). Çoklu gölgeleri
+   * üst seviye virgüllerden ayırır (renklerin içindeki virgüllere takılmaz);
+   * inset gölgeler dışa taşmadığı için atlanır.
+   * extent = max(|offset-x|, |offset-y|) + blur + spread, + 8px tampon.
+   */
+  function shadowExtent(el) {
+    var bs = getComputedStyle(el).boxShadow;
+    if (!bs || bs === "none") return 0;
+    var parts = [], depth = 0, start = 0, i;
+    for (i = 0; i < bs.length; i++) {
+      var ch = bs.charAt(i);
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if (ch === "," && !depth) { parts.push(bs.slice(start, i)); start = i + 1; }
+    }
+    parts.push(bs.slice(start));
+    var max = 0;
+    parts.forEach(function (p) {
+      if (p.indexOf("inset") !== -1) return;
+      var n = (p.match(/-?\d*\.?\d+px/g) || []).map(parseFloat);
+      if (!n.length) return;
+      var ox = Math.abs(n[0] || 0), oy = Math.abs(n[1] || 0);
+      var blur = n[2] || 0, spread = n[3] || 0;
+      max = Math.max(max, Math.max(ox, oy) + blur + spread);
+    });
+    return max ? Math.ceil(max) + 8 : 0;
+  }
+
   var attrNum = (global.Sestek && Sestek.util && Sestek.util.attrNum) ||
     function (el, attr, fallback) {
       var raw = el.getAttribute(attr);
@@ -126,6 +168,10 @@
     var once     = o.once != null ? o.once
                  : onceAttr == null ? DEFAULTS.once
                  : onceAttr !== "false";
+    var shadowAttr = o.shadow != null ? String(o.shadow)
+                   : el.getAttribute("data-reveal-shadow");
+    var shadowDur  = o.shadowDuration != null ? o.shadowDuration
+                   : attrNum(el, "data-reveal-shadow-duration", 0.5);
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
@@ -142,6 +188,26 @@
       force3D: true,
     });
     el.style.willChange = "clip-path, transform";
+
+    // Reveal tamamen bitince clip'i kaldır + kimlik transform'unu temizle.
+    // inline "none" (clearProps DEĞİL — reveal.css collapsed kuralı geri
+    // uygulanıp elemanı gizlerdi); transform temizliği pinli torunlara
+    // containing block bırakmasın diye.
+    function finishClip() {
+      el._revealShadowTween = null;
+      el.style.clipPath = "none";
+      el.style.webkitClipPath = "none";
+      gsap.set(el, { clearProps: "transform,translate,rotate,scale" });
+    }
+
+    // Reverse başlarken (bidirectional mod) gölge fazı iptal — ana tween
+    // clip'i geri devralır, gölge anında kırpılır (kaybolma yönünde doğal).
+    function killShadowPhase() {
+      if (el._revealShadowTween) {
+        el._revealShadowTween.kill();
+        el._revealShadowTween = null;
+      }
+    }
 
     return gsap.to(el, {
       clipPath: SHOWN,
@@ -160,18 +226,33 @@
         // Bidirectional: play on every enter (either direction), reverse on
         // every leave — scroll down past it and back up, it re-reveals.
         toggleActions: once ? "play none none none" : "play reverse play reverse",
+        onLeave: killShadowPhase,
+        onLeaveBack: killShadowPhase,
       },
       onComplete: function () {
         el.style.willChange = "auto";
-        // inset(0%) bile kutudan kırpar — gölgeler kesilir. Tam açılınca clip'i
-        // inline "none" yap: clearProps OLMAZ, reveal.css'teki collapsed kural
-        // geri uygulanıp elemanı gizlerdi. Reverse başlarsa tween ilk tick'te
-        // kendi değerlerini geri yazar, "none" sorunsuz ezilir.
-        el.style.clipPath = "none";
-        el.style.webkitClipPath = "none";
-        // Kimlik transform'u da temizle (translate3d(0,0,0) inline kalıyordu):
-        // pinli torunlar için containing block/stacking context bırakmasın.
-        gsap.set(el, { clearProps: "transform,translate,rotate,scale" });
+        // GÖLGE FAZI (v1.4.0): clip animasyon boyunca box-shadow'u kesiyor;
+        // "none"a anında geçmek gölgeyi PAT diye gösterirdi. Clip'i negatif
+        // inset'e doğru kısa bir tween'le DIŞA büyüt → gölge kenardan
+        // yumuşakça sızar, sonra clip tamamen kalkar. Pay: attribute > auto
+        // ölçüm (computed box-shadow) > gölge yoksa faz atlanır.
+        var bleed;
+        if (shadowAttr === "0" || shadowAttr === "false" || shadowAttr === "none") {
+          bleed = 0;
+        } else if (shadowAttr != null && shadowAttr !== "" && shadowAttr !== "auto") {
+          bleed = parseFloat(shadowAttr) || 0;
+        } else {
+          bleed = shadowExtent(el);
+        }
+        if (bleed > 0) {
+          var out = "inset(" + -bleed + "px " + -bleed + "px " + -bleed + "px " + -bleed + "px)";
+          el._revealShadowTween = gsap.fromTo(el,
+            { clipPath: "inset(0px 0px 0px 0px)" },
+            { clipPath: out, duration: shadowDur, ease: "power2.out", onComplete: finishClip }
+          );
+        } else {
+          finishClip();
+        }
       },
       onReverseComplete: function () { el.style.willChange = "clip-path, transform"; },
     });
