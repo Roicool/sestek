@@ -1,5 +1,12 @@
 /*!
- * text-rotator.js v1.1.0
+ * text-rotator.js v1.2.0
+ * v1.2.0 — ORTALAMA FIX: (1) item'lar top:0'a çivilenmiyor artık —
+ *          top:0 + bottom:0 gerdirilir, içerik kilitli yükseklik içinde
+ *          dikey ortalanır (kısa satır tepeye yapışmaz; CSS'te .is-ready
+ *          item'ları flex/center yapar). (2) lazy görseller yüklendiğinde
+ *          min-height yeniden ölçülür — init anında inmemiş ikon yüzünden
+ *          eksik ölçülen yükseklik (ör. 24px) içerik taşırıp şeridi
+ *          ortasız gösteriyordu.
  * Auto-rotating line of hand-authored items — the "Dribbble ships landing pages
  * 10x faster" strip that cycles through phrases/brands on its own. Each item
  * fades (and lifts) out while the next fades in, on a timer. Independent of
@@ -105,7 +112,11 @@
       el.style.position = "absolute";
       el.style.left = "0";
       el.style.right = "0";
+      /* top+bottom gerdirme: item wrapper yüksekliğini kaplar, içerik
+         align-items:center ile HER yükseklikte dikey ortada kalır
+         (yalnız top:0 olsaydı kısa item tepeye yapışırdı). */
       el.style.top = "0";
+      el.style.bottom = "0";
       el.style.transformOrigin = "center center";
       el.style.opacity = i === active ? "1" : "0";
       el.style.transform = "translateY(0)";
@@ -113,6 +124,16 @@
       el.setAttribute("aria-hidden", i === active ? "false" : "true");
     });
     lockHeight();
+
+    // Lazy görseller init'ten SONRA inince item yüksekliği değişir —
+    // her yüklenen görselde yeniden ölç (yoksa min-height eksik kalır,
+    // içerik wrapper'dan taşar ve şerit ortasız görünür).
+    Array.prototype.forEach.call(root.querySelectorAll("img"), function (img) {
+      if (!img.complete) {
+        img.addEventListener("load", lockHeight, { once: true });
+        img.addEventListener("error", lockHeight, { once: true });
+      }
+    });
 
     // Reduced motion or single item: show the first, never rotate.
     if (reduce || items.length < 2) {

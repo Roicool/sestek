@@ -1,5 +1,10 @@
 /*!
- * text-rotator.css v1.1.0
+ * text-rotator.css v1.2.0
+ * v1.2.0 — ORTALAMA FIX: .is-ready item'ları flex/center olur. JS artık
+ *          item'ları top:0 + bottom:0 gerdirdiği için içerik, kilitli
+ *          wrapper yüksekliği içinde dikey ortalanır (kısa satır tepeye
+ *          yapışmaz). Yatayda da justify-content:center default'u —
+ *          Designer'da farklı hizalama istenirse class'la ezilebilir.
  * Auto-rotating line (the "Dribbble ships landing pages 10x faster" strip),
  * built from plain hand-authored divs (no CMS). Items are stacked in one spot
  * and rotated by text-rotator.js — a 3D vertical "cube" roll by default, or a
@@ -32,6 +37,15 @@
    adds .is-ready to the root and takes over (absolute stacking + crossfade). */
 [data-rotator]:not(.is-ready) [data-rotator-item] ~ [data-rotator-item] {
   display: none;
+}
+
+/* JS devraldıktan sonra: item top:0+bottom:0 gerdirilir (JS yazar), içerik
+   bu kutunun ORTASINDA durur — hem dikey hem yatay. Kısa item, en uzun
+   item'a kilitlenen min-height içinde artık tepeye yapışmaz. */
+[data-rotator].is-ready [data-rotator-item] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
