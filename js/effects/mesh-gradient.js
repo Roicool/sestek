@@ -1,5 +1,5 @@
 /*!
- * mesh-gradient.js v2.1.0
+ * mesh-gradient.js v2.2.0
  * Sestek mesh gradient'inin CANLI katmanı: 4 renk lekesini (pembe / viyole
  * / cyan / viyole-eko) ayrı transform-only katmanlar olarak enjekte eder.
  *
@@ -26,6 +26,11 @@
  *   data-mesh-strength  mouse etki çarpanı — 0.5 hafif, 2 sert (default 1)
  *   data-mesh-speed     idle drift hız çarpanı — 2 = iki kat hızlı (default 1)
  *   data-mesh-c1/-c2/-c3  renk override'ları (token | hex | var())
+ *   data-mesh-mono      TEK RENK MOD (v2.2.0) — bare = yalnız viyole (c2);
+ *                       "c1"/"c3" pembe/cyan seçer. CSS tarafı sönen
+ *                       renkleri transparent'a çeker (mesh-gradient.css
+ *                       v2.3.0); burada da o renklerin katmanları hiç
+ *                       kurulmaz → görünmez leke için tween çalışmaz.
  *
  * https://github.com/roicool/sestek
  */
@@ -94,7 +99,16 @@
 
     var outers = [], driftTweens = [], quicks = [];
 
-    LAYERS.forEach(function (L) {
+    /* TEK RENK MOD: yalnız seçili rengin katmanları kurulur — diğerleri
+       CSS'te zaten transparent, görünmez leke için tween yakmaya gerek yok. */
+    var mono = root.getAttribute("data-mesh-mono");
+    var layers = LAYERS;
+    if (mono !== null) {
+      var keep = "--mesh-" + (/^c[123]$/.test(mono) ? mono : "c2");
+      layers = LAYERS.filter(function (L) { return L.c === keep; });
+    }
+
+    layers.forEach(function (L) {
       var outer = document.createElement("span");
       outer.setAttribute("data-mesh-layer", "");
       outer.setAttribute("aria-hidden", "true");

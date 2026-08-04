@@ -3589,6 +3589,9 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
     data-mesh-strength    mouse etki çarpanı (0.5 hafif, 2 sert) (default 1)
     data-mesh-speed       idle drift hız çarpanı                 (default 1)
     data-mesh-c1/-c2/-c3  mesh renk override'ları (token | hex | var())
+    data-mesh-mono        TEK RENK MOD — bare = yalnız viyole (c2) lekeleri;
+                          "c1"/"c3" pembe/cyan seçer. Diğer renkler söner,
+                          yoğunluk otomatik 100%'e çıkar
     data-mesh-theme       "dark" → marka-moru koyu varyant: zemin secondary'den
                           türeyen mor gradient, lekeler screen glow (CSS-only)
 -->
@@ -3600,6 +3603,12 @@ DOM (Webflow — herhangi bir div/section'a attribute ekle, o kadar):
 **Notlar**
 - Yoğunluk kökten: statik `--mesh-soft` (default `20%`), canlı katmanlar
   `--mesh-soft-live` (default `24%`).
+- TEK RENK MOD (v2.3.0, tasarım isteği): `data-mesh-mono` → mesh yalnız
+  viyoleden (c2) akar; pembe/cyan lekeleri hem statikte hem canlı katmanlarda
+  söner (JS o katmanları hiç kurmaz). Tek renk %20'de silik kaldığından
+  `--mesh-soft`/`--mesh-soft-live` otomatik `100%`'e çıkar — kökten inline
+  override edilebilir. `data-mesh-mono="c1"`/`"c3"` diğer renkleri seçer;
+  `data-mesh-theme="dark"` ile birleşebilir.
 - KOYU TEMA (v2.2.0): `data-mesh-theme="dark"` — zemin SİYAH DEĞİL,
   secondary'nin koyu tonlarından `color-mix` ile türeyen mor bir GRADIENT
   (`--mesh-deep-a/-b` uçları, 160deg). Lekeler screen karışımıyla parlar

@@ -1,5 +1,5 @@
 /*!
- * mesh-gradient.css v2.1.0
+ * mesh-gradient.css v2.3.0
  * Sestek mesh gradient — 3 marka renginin (pembe / viyole / cyan) yumuşak,
  * temiz mesh'i.
  *
@@ -25,6 +25,15 @@
  * tema da takip eder. Tamamen CSS — JS değişikliği gerektirmez; statik
  * fallback ve canlı katmanlar aynı attribute'la döner. İnce ayar:
  * --mesh-deep-a/-b (zemin uçları), --mesh-soft/--mesh-soft-live (yoğunluk).
+ *
+ * v2.3.0 — TEK RENK MOD (data-mesh-mono): tasarım isteği üzerine mesh tek
+ * marka renginden akabilir. Bare attribute viyoleyi (c2) tutar;
+ * data-mesh-mono="c1"/"c3" pembe/cyan seçer. Kapanan renkler transparent'a
+ * çekildiği için hem statik radial'lar hem canlı katmanlar (aynı
+ * değişkenleri okur) kendiliğinden söner. Tek renk default %20'de çok silik
+ * kaldığından yoğunluk tasarımın onayladığı %100'e çıkarılır — kökten
+ * --mesh-soft / --mesh-soft-live ile ince ayar. JS tarafı mono'da sönen
+ * renklerin katmanlarını hiç kurmaz (boşa tween çalışmaz).
  * https://github.com/roicool/sestek
  */
 
@@ -73,6 +82,32 @@
 
 [data-mesh-gradient][data-mesh-theme="dark"] > [data-mesh-layer] > span {
   mix-blend-mode: screen;
+}
+
+/* ── TEK RENK MOD — data-mesh-mono ────────────────────────────────
+   Yalnız seçili rengin lekeleri kalır; diğerleri transparent'a çekilir
+   (statik + canlı katmanlar aynı değişkenlerden beslendiği için ikisi de
+   kendiliğinden söner). Bare kullanım = viyole (c2). Yoğunluk tek renkte
+   tasarımın onayladığı %100'e çıkar — kökten override edilebilir.
+   Koyu temayla birleşebilsin diye dark bloğundan SONRA gelir (soft
+   değerleri mono'nunki kazanır, dark'ın c2 lavanta remap'i korunur). */
+[data-mesh-gradient][data-mesh-mono] {
+  --mesh-c1: transparent;
+  --mesh-c3: transparent;
+  --mesh-soft: 100%;
+  --mesh-soft-live: 100%;
+}
+
+[data-mesh-gradient][data-mesh-mono="c1"] {
+  --mesh-c1: var(--brand-primary--500, #EC008C);
+  --mesh-c2: transparent;
+  --mesh-c3: transparent;
+}
+
+[data-mesh-gradient][data-mesh-mono="c3"] {
+  --mesh-c1: transparent;
+  --mesh-c2: transparent;
+  --mesh-c3: var(--brand-tertiary--500, #00FFEB);
 }
 
 /* ── Canlı renk lekesi (JS enjekte eder) ──────────────────────────
