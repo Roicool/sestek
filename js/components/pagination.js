@@ -1,5 +1,5 @@
 /*!
- * pagination.js v1.7.0
+ * pagination.js v1.8.0
  * Numbered pagination for a Webflow Collection List: replaces the native
  * Prev/Next-only pagination with clickable page numbers, AJAX page swaps
  * (no full reload), hover/idle prefetching, and back/forward support.
@@ -21,8 +21,11 @@
  *     present so it doesn't fight the smooth-scroll engine (that tug-of-war
  *     was the old "jump"); native smooth scroll otherwise. Override with
  *     data-pagination-scroll: "auto" (only when the list top is above the
- *     viewport) or "none" (swap in place); data-pagination-scroll-offset
- *     trims px off the top for a sticky navbar.
+ *     viewport) or "none" (swap in place). The landing spot keeps a breathing
+ *     gap above the list — 6rem on desktop, 3rem on mobile (≤767px) — so the
+ *     first row never sits flush against the viewport top (or under a sticky
+ *     navbar); override with data-pagination-scroll-offset, which accepts px,
+ *     rem, em or vh ("0" pins the list top to the viewport top).
  *   • Hovering a page link (or idle time, throttled via requestIdleCallback)
  *     prefetches that page's HTML so the click feels instant. Skipped on
  *     Save-Data / 2G connections.
@@ -222,6 +225,35 @@
       return items;
     }
 
+    // ── Scroll offset ──────────────────────────────────────────────
+    // Landing gap above the list after a swap. Without it the first row sits
+    // flush against the viewport top — cramped, and hidden under a sticky
+    // navbar. Mobile gets less because the viewport is shorter.
+    var DEFAULT_OFFSET = { desktop: "6rem", mobile: "3rem" };
+    var MOBILE_MAX_PX = 767;                 // Webflow'un mobile landscape sınırı
+
+    /** "96" | "6rem" | "4em" | "8vh" → px. Birimsiz = px. Geçersiz → NaN. */
+    function toPx(value) {
+      if (value === null || value === undefined) return NaN;
+      var v = String(value).trim().toLowerCase();
+      var num = parseFloat(v);
+      if (isNaN(num)) return NaN;
+      if (v.indexOf("rem") !== -1 || v.indexOf("em") !== -1) {
+        // rem/em ikisi de köke göre çözülür — offset kök tipografiyle ölçeklensin
+        var fs = parseFloat(getComputedStyle(global.document.documentElement).fontSize);
+        return num * (fs > 0 ? fs : 16);
+      }
+      if (v.indexOf("vh") !== -1) return num * global.innerHeight / 100;
+      return num;
+    }
+
+    /** Ölçüm anında (resize/zoom sonrası da doğru) çözülen varsayılan offset. */
+    function defaultOffset() {
+      var mobile = global.matchMedia &&
+        global.matchMedia("(max-width: " + MOBILE_MAX_PX + "px)").matches;
+      return toPx(mobile ? DEFAULT_OFFSET.mobile : DEFAULT_OFFSET.desktop);
+    }
+
     // Read a config attribute from the wrapper or its enclosing
     // [data-pagination-scope] — whichever sets it (scope wins).
     function configAttr(wrapper, name) {
@@ -240,7 +272,9 @@
     //   "top" (default) — always scroll to the list top
     //   "auto"          — only when the list top is above the viewport
     //   "none"          — stay put, swap in place
-    // data-pagination-scroll-offset trims px off the top (e.g. a sticky navbar).
+    // data-pagination-scroll-offset trims the landing spot (sticky navbar /
+    // breathing room). Defaults to DEFAULT_OFFSET below; "0" pins the list top
+    // to the viewport top.
     function maybeScroll(wrapper, listEl) {
       var mode = (configAttr(wrapper, "data-pagination-scroll") || "top").toLowerCase();
       if (mode === "none") return;
@@ -248,8 +282,8 @@
       var section = wrapper.closest("[data-pagination-scope]") || listEl;
       if (!section || !section.getBoundingClientRect) return;
 
-      var offset = parseInt(configAttr(wrapper, "data-pagination-scroll-offset"), 10);
-      if (isNaN(offset)) offset = 0;
+      var offset = toPx(configAttr(wrapper, "data-pagination-scroll-offset"));
+      if (isNaN(offset)) offset = defaultOffset();
 
       var rectTop = section.getBoundingClientRect().top;
       if (mode === "auto" && rectTop >= offset) return; // already comfortably in view
