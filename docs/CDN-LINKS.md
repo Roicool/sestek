@@ -982,14 +982,17 @@ DOM (kart listesi modu — önerilen):
                      devam süresi sn                              (default 3)
     data-cd-visible  listede görünen kart sayısı                  (default 3)
     data-cd-start    başlangıç aktif index                        (default 0)
+    data-cd-align    sağ kolon kart metni hizası: "left" verilirse sola dayanır
+                     (default: ORTALI — CSS v1.5.0)
   Item attribute'ları: data-cd-angle (derece override, -90 = tepe),
+    data-cd-icon (nokta yerine ikon — aşağıya bak),
     data-cd-title / data-cd-text (tek-kart modu metinleri)
 -->
 <section data-circle-diagram data-cd-spin="14" class="">
   <div class="cd_layout">
     <div class="cd_panel">
       <div data-cd-stage class="cd_stage">
-        <button data-cd-item class="cd_item">
+        <button data-cd-item data-cd-icon="mic" class="cd_item">
           <span data-cd-dot class="cd_dot"></span>
           <span data-cd-label class="cd_label">Input</span>
         </button>
@@ -998,7 +1001,7 @@ DOM (kart listesi modu — önerilen):
     </div>
     <div data-cd-cards class="cd_cards">
       <div data-cd-cards-track class="cd_cards-track">
-        <div data-cd-panel-card class="cd_pcard">
+        <div data-cd-panel-card data-cd-icon="mic" class="cd_pcard">
           <div class="cd_card-title">Input</div>
           <p class="cd_card-text">Açıklama…</p>
         </div>
@@ -1009,6 +1012,26 @@ DOM (kart listesi modu — önerilen):
 </section>
 ```
 
+**İkon modu (CSS v1.5.0)** — halkadaki noktayı ikona çevirmek için DOM'a
+element EKLEMEZSİN; item'a (istersen kartın kendisine de) tek bir attribute
+yeter: `data-cd-icon="mic"`. Mevcut `[data-cd-dot]` kutusu `mask-image` ile
+ikona döner, rengi state'ten gelir (pasif `--cd-muted`, aktif `--cd-accent`),
+boyu `--cd-icon-size` (default `1.125rem`) ile ayarlanır.
+
+| Hazır set | |
+|---|---|
+| `mic` · `chat` · `headset` · `sparkle` · `chart` | `target` · `check` · `zap` · `search` · `user` |
+| `clock` · `shield` · `bulb` · `cycle` · `arrow` | bilinmeyen/boş değer → eski nokta görünümü |
+
+Özel ikon için Designer'da custom property ver (SVG'de `#` → `%23`):
+
+```css
+--cd-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8'%3E…%3C/svg%3E");
+```
+
+Attribute hiç istemiyorsan sıra üzerinden de verilebilir:
+`.cd_item:nth-of-type(2) { --cd-icon: url("…"); }`
+
 **Notlar**
 - Ring'i (`.cd_connector`) JS enjekte eder — HTML'e ring koyma. Liste
   penceresinin yüksekliğini de JS ölçer/basar (görünen kart sayısı kadar).
@@ -1018,6 +1041,8 @@ DOM (kart listesi modu — önerilen):
   aynen çalışır — kart listesi verilmeyen sayfalar etkilenmez.
 - Renkler kökteki `--cd-*` değişkenleriyle; koyu section'da 5 değişkeni
   override etmek yeter. Kritik CSS olarak inline edilebilir.
+- Sağ kolon kart metinleri v1.5.0'dan beri ORTALI; sola dayalı eski hâl için
+  köke `data-cd-align="left"`.
 - Dönüş yalnız section viewport'tayken çalışır (IntersectionObserver).
 
 ### Accordion
