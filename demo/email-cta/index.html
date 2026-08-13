@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email CTA → Contact Form — demo (CTA sayfası)</title>
+  <link rel="stylesheet" href="../../css/components/email-cta.css">
+  <style>
+    /* Demo-only: the RC design tokens the component CSS reads. On the real
+       site these come from the Webflow variable collection. */
+    :root {
+      --color-text--negative: #d92d20;
+      --text--sm: 0.875rem;
+      --spacing--2: 0.5rem;
+      --brand-primary--200: #e6e2dd;
+      --brand-primary--500: #9b9089;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #fff;
+      color: #232323;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .band { width: min(560px, 100%); }
+    h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 500; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+    p.lede { color: #4b4f58; line-height: 1.5; margin: 0 0 1.5rem; }
+    form { display: flex; gap: 0.5rem; }
+    input[type="email"] {
+      flex: 1; padding: 0.75rem 1rem; font: inherit;
+      border: 1px solid #d5d2ce; border-radius: 8px; background: #fff;
+    }
+    input[type="submit"] {
+      padding: 0.75rem 1.25rem; font: inherit; cursor: pointer;
+      border: 0; border-radius: 8px; background: #232323; color: #fff;
+    }
+    .note { margin-top: 2rem; font-size: 0.875rem; color: #6b6f78; line-height: 1.6; }
+    code { background: #f3f1ef; padding: 0.1em 0.35em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="band">
+    <h1>Aramıza katılın</h1>
+    <p class="lede">E-postanızı bırakın, gerisini biz halledelim.</p>
+
+    <!-- The CTA. On the real site this is a native Webflow form inside
+         a .w-form wrapper; the markup below is the same shape. -->
+    <div data-email-cta data-email-cta-target="contact.html">
+      <form>
+        <input type="email" name="email" placeholder="İş e-postanız" required>
+        <input type="submit" value="İletişime geç">
+      </form>
+      <div data-email-cta-error>Geçerli bir e-posta adresi girin.</div>
+    </div>
+
+    <p class="note">
+      Boş bırakıp gönderin ya da <code>asdf</code> yazın — sayfa değişmez, hata
+      görünür. Geçerli bir adres yazdığınızda iletişim sayfasına gidersiniz ve
+      adres orada forma yazılı gelir.
+    </p>
+  </div>
+
+  <script src="../../js/components/email-cta.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      Sestek.initEmailCta();
+    });
+  </script>
+
+</body>
+</html>

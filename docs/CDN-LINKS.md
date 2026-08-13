@@ -742,6 +742,8 @@ DOM yapısı:
 | `css/components/demo-form.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/demo-form.css` |
 | `js/components/leadgen-slide-in.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/leadgen-slide-in.js` |
 | `css/components/leadgen-slide-in.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/leadgen-slide-in.css` |
+| `js/components/email-cta.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-cta.js` |
+| `css/components/email-cta.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-cta.css` |
 | `js/components/h-scroll.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/h-scroll.js` |
 | `css/components/h-scroll.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/h-scroll.css` |
 | `js/components/circle-diagram.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/circle-diagram.js` |
@@ -1321,6 +1323,115 @@ sayfada ne zaman çıkacağına script karar verir):
   controller döndürür — `show()` tetikleri atlar ama snooze/done/oturum
   sınırlarına yine uyar (başka bir CTA'dan elle açmak için).
 - Z-index `950` — içeriğin üstünde, nav/modal katmanlarının (1000+) altında.
+
+### Email CTA → Contact Form (e-postayı iletişim formuna taşıma)
+
+Sadece e-posta alan küçük CTA (hero altı, footer bandı, banner) artık çıkmaz
+sokak değil: **gerçekten geçerli bir adres** yazıldığında ziyaretçi iletişim
+sayfasına götürülür ve adres **contact formuna yazılı olarak** gelir — aynı
+şeyi iki kez yazmaz.
+
+- **Sadece alan gerçekten doluysa yönlendirir.** Boş, boşluk ya da `asdf`
+  hiçbir zaman sayfa değiştirmez — hata mesajı gösterilir, ziyaretçi yerinde
+  kalır. Aynı kapı contact tarafında da var: URL'e elle yazılmış çöp değer
+  forma basılmaz.
+- **Zaten yazılmakta olan alanın üstüne asla yazmaz.**
+- Adres query param'la taşınır (`?email=…`) + yedek olarak `sessionStorage`
+  (dil önekli 301 gibi query'yi düşüren yönlendirmeler için). Form
+  doldurulduktan sonra **adres URL'den silinir** (`history.replaceState`) —
+  kişisel veri paylaşılabilir linkte, referrer'da ve analytics yolunda durmaz.
+- Doldurduktan sonra `input`/`change` event'leri atılır (Webflow alan durumu,
+  floating label, analytics gerçek bir düzenleme görsün), **sıradaki boş alana
+  odaklanılır** ve form ekran dışındaysa yumuşakça görünür hale getirilir.
+- CTA'daki `utm_*` parametreleri de yolculuğa katılır — bu bir JS hop'u olduğu
+  için `sticky-utms.js` (yalnız `<a href>` yazar) burada devrede değildir.
+- CTA formu Designer'da **native Webflow form** kalır; varsayılan olarak kendi
+  submit'i bastırılır (lead contact formunda kaydedilir). Adresin Webflow'a da
+  düşmesini istersen `data-email-cta-keep-submit` ekle — o zaman önce native
+  submit çalışır, başarı mesajı görünür görünmez yönlendirme yapılır.
+
+```html
+<!-- in <head> — bağımlılık yok (GSAP gerekmez) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/email-cta.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/email-cta.js" defer></script>
+```
+
+Webflow `</body>` öncesi — **tek çağrı iki tarafı da bağlar**, o yüzden site
+geneli custom code'a koyabilirsin (markup yoksa sessizce hiçbir şey yapmaz):
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initEmailCta();
+  });
+</script>
+```
+
+DOM — **GÖNDEREN** taraf (CTA'nın olduğu sayfa; tüm görsel stil Designer'ında):
+
+```html
+<!--
+  Kök (data-email-cta) attribute'ları (hepsi opsiyonel):
+    data-email-cta-target       hedef sayfa (varsayılan "/contact");
+                                hash verilebilir: "/contact#form"
+    data-email-cta-param        query param adı (varsayılan "email")
+    data-email-cta-keep-submit  CTA formunu Webflow'a da göndert; yönlendirme
+                                başarı mesajından sonra yapılır (varsayılan kapalı)
+    data-email-cta-input        alan <input type="email"> DEĞİLSE bu attribute'u
+                                alanın üstüne koy
+    data-email-cta-submit       tetikleyici native submit değilse (örn. stillendirilmiş
+                                <a>) bu attribute'u onun üstüne koy
+    data-email-cta-error        adres boş/geçersizken gösterilecek mesaj elementi
+                                (element yoksa tarayıcının kendi uyarı balonu kullanılır)
+-->
+<div data-email-cta data-email-cta-target="/contact">
+  <div class="w-form">
+    <form>
+      <input type="email" name="email" placeholder="İş e-postanız" required>
+      <input type="submit" value="İletişime geç">
+    </form>
+  </div>
+  <div data-email-cta-error>Geçerli bir e-posta adresi girin.</div>
+</div>
+```
+
+DOM — **ALAN** taraf (contact sayfası; formu bir kez işaretlemen yeterli):
+
+```html
+<!--
+  [data-email-cta-form] attribute'ları (hepsi opsiyonel):
+    data-email-cta-param          gönderen taraftakiyle aynı olmalı (varsayılan "email")
+    data-email-cta-field          hedef input, formun <input type="email">'i
+                                  değilse bu attribute'u onun üstüne koy
+    data-email-cta-focus="false"  sıradaki boş alana odaklanma
+    data-email-cta-scroll="false" formu görünür hale getirmek için kaydırma
+    data-email-cta-offset         kaydırma hedefinden düşülecek px (varsayılan 100)
+    data-email-cta-keep-url       ?email=… adres çubuğunda kalsın (varsayılan: silinir)
+-->
+<div data-email-cta-form>
+  <form>
+    <input type="email" name="Email">
+    <input type="text" name="Name">
+    <textarea name="Message"></textarea>
+  </form>
+</div>
+```
+
+**Notlar**
+- Contact sayfasında hiç attribute koymasan da çalışır: script `<form>` içindeki
+  ve herhangi bir `[data-email-cta]`'nın DIŞINDAKİ ilk e-posta alanını doldurur.
+  `[data-email-cta-form]` / `[data-email-cta-field]` yalnızca sayfada birden
+  fazla form varken (footer bülten formu vb.) gerekir ve her zaman öncelikli.
+- Contact sayfasında da bir e-posta CTA'sı varsa karışmaz — CTA'nın kendi alanı
+  hedef olarak seçilmez.
+- Param adını değiştirirsen (`data-email-cta-param`) **iki tarafta da** aynı
+  değeri ver.
+- CSS yalnız davranış taşır: hata mesajının gizli duruşu (`is-visible` ile
+  açılır) ve dolu gelen alandaki kısa vurgu (`is-prefilled`, odaklanınca düşer).
+  Hata mesajını Designer'da `display:none` YAPMA — gizlemeyi CSS zaten yapıyor.
+- `Sestek.initEmailCta()` her CTA için `{ el, input, send }` controller döndürür;
+  `send()` aynı doğrulama kapısından geçer (geçersizse `false` döner, hiçbir yere
+  gitmez) — başka bir butondan elle tetiklemek için.
 
 ### Site Utils
 
