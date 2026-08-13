@@ -1,9 +1,15 @@
 /*!
- * savings-calculator.css v2.0.0
+ * savings-calculator.css v2.1.0
  * Ramp-style live savings calculator — critical/behavioural styles.
  * Custom div-based slider (track / fill / thumb are plain divs — no native
  * range input, no browser pseudo-elements, nothing Webflow CSS can break).
  * Bound via data-attributes (same hooks the JS targets).
+ *
+ * v2.1.0 — küçük input satırı (cost / agents) büyütüldü: etiket 12px → 15px,
+ *          kutu 40×56px → 48×80px, değer 12px → 16px (16px altı iOS'ta
+ *          focus'ta sayfayı zoomlar). Ölçüler kökteki --sv-label-font /
+ *          --sv-input-font / --sv-input-h / --sv-input-w ile ayarlanır.
+ *
  * https://github.com/roicool/sestek
  */
 
@@ -19,6 +25,12 @@
   --sv-grad-c: #16183c;          /* fill gradient end (at the thumb)      */
   --sv-thumb-color: #16183c;     /* thumb dot ("midnight" of the hue)     */
   --sv-thumb-size: 16px;
+  /* Küçük input satırı — tek yerden ölçeklenir (v2.1.0) */
+  --sv-label-font: 0.9375rem;    /* etiket metni            15px */
+  --sv-input-font: 1rem;         /* kutu içi değer          16px
+                                    (16px altı iOS'ta focus'ta zoom yapar) */
+  --sv-input-h: 3rem;            /* kutu yüksekliği         48px */
+  --sv-input-w: 5rem;            /* kutu genişliği — 5 haneye kadar rahat */
   --sv-num-dur: 0.9s;            /* set live by JS from data-sv-duration  */
   --sv-fill: 50%;                /* ┐ set live by JS                      */
   --sv-left: 50%;                /* ┘ thumb centre position               */
@@ -141,27 +153,27 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem 2rem;
+  gap: 0.75rem 2.5rem;
   max-width: 720px;
   margin: 2.5rem auto 0;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--sv-label-font, 0.9375rem);
+  line-height: 1.4;
   color: #71717a;
 }
 .sv-calc__inputs label {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 .sv-calc__inputs input {
-  height: 2.5rem;                /* h-10 */
-  width: 3.5rem;                 /* w-14 */
-  padding: 0 0.5rem;
+  height: var(--sv-input-h, 3rem);
+  width: var(--sv-input-w, 5rem);
+  padding: 0 0.625rem;
   border: 1px solid #e5e7eb;     /* gray-200 */
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--sv-input-font, 1rem);
+  line-height: 1.2;
   color: inherit;
   text-align: center;
   outline: none;
