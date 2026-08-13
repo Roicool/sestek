@@ -3148,6 +3148,8 @@ DOM (Webflow — grid/tipografi/kart renkleri Designer'da):
     data-ct-rise       gelen kartın yükselme mesafesi px  (default 16)
     data-ct-start      açılışta açık index                (default 0)
     data-ct-interval   otomatik geçiş ms, 0 = kapalı      (default 0)
+    data-ct-align      "start" verilirse içerik section'ın TEPESİNE hizalanır
+                       (default: dikeyde ORTALI — CSS v1.1.0)
 -->
 <!--
   ÖNEMLİ: kökte TAM 2 doğrudan çocuk olmalı (sol sarmalayıcı + panel sahnesi).
@@ -3196,6 +3198,11 @@ DOM (Webflow — grid/tipografi/kart renkleri Designer'da):
 - **Sahne yüksekliği:** yalnız aktif panel akışta kalır (CSS), diğerleri aynı
   noktaya absolute yığılır — böylece metin sarması değişince sahne kendi
   kendine reflow eder; geçişte yükseklik GSAP ile morph edilir.
+- **Dikey hiza:** section kartlardan uzunsa (min-height/100vh) içerik eskiden
+  tepeye yapışıyordu — grid hücreleri stretch olduğu için. v1.1.0'dan beri kök
+  ve doğrudan çocukları dikeyde ortalanır (`align-items`/`align-content`/
+  `align-self: center`); Designer'ın grid child'a bastığı `align-self: stretch`
+  bile `align-content: center` sayesinde ortada kalır. Eski hâl: `data-ct-align="start"`.
 - Başlık/panel eşleşmesi **DOM sırasıyla**; sayılar tutmazsa JS uyarır.
 - **Erişilebilirlik:** gerçek tablist — `role="tab"/"tabpanel"`, `aria-selected`,
   roving tabindex, ↑/↓/←/→/Home/End. Tab'lar `<a href="#">` ise tıklama

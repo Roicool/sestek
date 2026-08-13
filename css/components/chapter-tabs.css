@@ -1,5 +1,5 @@
 /*!
- * chapter-tabs.css v1.0.0
+ * chapter-tabs.css v1.1.0
  * Behavioural / critical CSS for the chapter-tabs component (colour-coordinated
  * vertical tabs: big titles on one side, a card panel on the other). Owns only
  * the mechanics — panels stacking in one spot, the accent hooks that keep the
@@ -22,6 +22,29 @@
 
 [data-chapter-tabs] {
   position: relative;
+}
+
+/* ── Dikey ortalama (v1.1.0) ────────────────────────────────────────────────
+   Section kartlardan uzunsa (min-height/100vh) içerik tepeye yapışırdı: grid
+   hücreleri varsayılan olarak STRETCH, dolayısıyla hem başlık kolonu hem kart
+   sahnesi üstten hizalanıyordu. Designer'dan align-items vermek çoğu zaman
+   yetmez — Webflow grid çocuğuna ayrıca align-self basar ve ebeveyni ezer;
+   bu yüzden çocukları da burada hizalıyoruz.
+   Kök block layout'taysa bu satırlar zararsızdır (etkisiz).
+   Kapatmak için: <section data-chapter-tabs data-ct-align="start">           */
+[data-chapter-tabs] {
+  align-items: center;      /* satır içi hizalama (grid/flex)   */
+  align-content: center;    /* artan dikey boşluk ortada kalsın */
+}
+[data-chapter-tabs] > * {
+  align-self: center;       /* Designer'ın stretch'ini nötrler  */
+}
+[data-chapter-tabs][data-ct-align="start"] {
+  align-items: start;
+  align-content: start;
+}
+[data-chapter-tabs][data-ct-align="start"] > * {
+  align-self: start;
 }
 
 /* ── Title rail ─────────────────────────────────────────────────────────────
