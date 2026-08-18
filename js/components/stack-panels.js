@@ -1,5 +1,16 @@
 /*!
- * stack-panels.js v1.3.0
+ * stack-panels.js v1.3.1
+ * v1.3.1 — geri scroll'da görünür POP düzeltmesi: son hızlı fade (midFade→0)
+ * yalnızca ~%5'lik bir scroll bandına sıkışıktır ve bunun görünmez kalması,
+ * o anda kartın GELEN panelce tamamen örtülmüş olmasına bağlıdır. Gelen panel
+ * viewport'tan kısaysa (kısa son kart; mobilde adres çubuğu gizlenince
+ * 100svh < innerHeight kalması) kart hiç örtülmez → iki yönde de pop:
+ * aşağı inerken kart aniden kaybolur, yukarı çıkarken "zıplayarak" belirir.
+ * Fade payı artık gelen panelin örtemediği viewport oranı kadar genişletilir;
+ * tam örten panelde davranış birebir aynı kalır (görsel sıfır fark).
+ * Ayrıca initStackPanels artık gsap.registerPlugin(ScrollTrigger) çağırır —
+ * yükleme sırası guard'ı (kayıtsız pluginde scrollTrigger config'i sessizce
+ * yok sayılırdı).
  * v1.3.0 — SAĞLAMLAŞTIRMA (zıplama/atlama vakaları):
  * · KRİTİK: ScrollTrigger her pinli paneli init anında bir "pin-spacer"
  *   div'ine sarar — o andan itibaren CSS'teki
@@ -288,12 +299,25 @@
       // The premium beat: outgoing panel scales down + dims (+ optional blur/
       // upward drift for depth), then a quick final fade to 0 — same shape as
       // the reference (0.9 scale/dim, 0.1 fade), enriched.
+      //
+      // GÖRÜNÜR-POP KORUMASI (v1.3.1): hızlı fade'in "hızlı" olabilmesinin
+      // önkoşulu, o anda kartın GELEN panel tarafından tamamen örtülmüş
+      // olmasıdır. Gelen panel viewport'tan KISAysa (kısa son kart; ya da
+      // mobilde adres çubuğu gizlenince 100svh < innerHeight kalması) kart
+      // hiç örtülmez ve ~%5'lik scroll bandına sıkışan 0.5→0 fade'i iki yönde
+      // de gözle görülür POP yapar (yukarı çıkarken kart "zıplayarak" belirir).
+      // Fade payı bu yüzden gelen panelin ÖRTEMEDİĞİ viewport oranı kadar
+      // genişletilir: tam örten panelde değer aynen data-sp-fade-portion
+      // kalır (görsel sıfır fark), örtemeyen panelde pop yumuşak fade olur.
+      var next = panels[i + 1];
+      var uncovered = next ? 1 - Math.min(1, next.offsetHeight / windowH) : 0;
+      var fadeDur = Math.min(0.9, Math.max(fadePortion, uncovered));
       var fromVars = { scale: 1, opacity: 1 };
-      var toVars   = { scale: endScale, opacity: midFade, duration: 1 - fadePortion, ease: "none" };
+      var toVars   = { scale: endScale, opacity: midFade, duration: 1 - fadeDur, ease: "none" };
       if (blurPx > 0) { fromVars.filter = "blur(0px)"; toVars.filter = "blur(" + blurPx + "px)"; }
       if (liftPx)     { fromVars.y = 0; toVars.y = -liftPx; }
       tl.fromTo(panel, fromVars, toVars)
-        .to(panel, { opacity: 0, duration: fadePortion, ease: "none" });
+        .to(panel, { opacity: 0, duration: fadeDur, ease: "none" });
 
       triggers.push(tl);
     });
@@ -319,6 +343,10 @@
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
       console.error("[Sestek StackPanels] GSAP + ScrollTrigger required."); return;
     }
+    // Script yükleme sırasından bağımsız güvence: kayıtsız pluginle kurulan
+    // gsap.timeline({scrollTrigger}) config'i SESSİZCE yok sayar — tüm
+    // paneller anında dissolve olup görünmez kalırdı (v2 ile aynı guard).
+    gsap.registerPlugin(ScrollTrigger);
     var roots = document.querySelectorAll(selector || "[data-stack-panels]");
     if (!roots.length) return;
     Array.prototype.forEach.call(roots, wire);
