@@ -1,5 +1,5 @@
 /*!
- * marquee.js v1.2.1
+ * marquee.js v1.3.0
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
  *
@@ -10,10 +10,18 @@
  *                           respect it automatically
  *   data-marquee-drag-slop  px of movement before a press counts as a drag
  *                           instead of a click                  (default 6)
+ *   data-marquee-drag       "off" — no drag gesture at all: no grab cursor, no
+ *                           pointer capture, no click handling. The row still
+ *                           scrolls and still pauses on hover, and its links
+ *                           behave like plain links      (default "on")
  *
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.3.0 — two ways out for rows whose items are links: data-marquee-drag="off"
+ *          drops the drag gesture entirely (nothing left that could eat a
+ *          click), and with the gesture ON a press that stayed under the slop
+ *          now opens its link itself if no natural click arrives.
  * v1.2.1 — a press that ended OUTSIDE the marquee left .is-dragging on: with
  *          the pointer captured only after the drag threshold, the root never
  *          saw that pointerup. Items stayed pointer-events:none, so the cursor
@@ -76,6 +84,14 @@
     var DRAG_SLOP = parseFloat(root.dataset.marqueeDragSlop);
     if (isNaN(DRAG_SLOP) || DRAG_SLOP < 0) DRAG_SLOP = 6;
 
+    // data-marquee-drag="off" — no grab, no drag, nothing that can eat a click.
+    // For rows whose items are links: the marquee just scrolls (and still pauses
+    // on hover), and every pointer event goes straight to the markup. Reach for
+    // this when clicks matter more than the gesture.
+    var dragAttr = (root.getAttribute("data-marquee-drag") || "on").toLowerCase();
+    var DRAG_OFF = dragAttr === "off" || dragAttr === "false" || dragAttr === "0" ||
+                   dragAttr === "none";
+
     // ── 1. Clone original items for seamless loop ─────────────
     //    aria-hidden keeps clones out of accessibility tree
     Array.from(track.children).forEach(function (el) {
@@ -116,6 +132,8 @@
     var dragMoved   = 0;       // px travelled this press — click vs drag verdict
     var captured    = false;   // pointer captured? (only once it IS a drag)
     var activePtrId = null;    // captured pointer, so we can let it go by hand
+    var downTarget  = null;    // what the press actually started on
+    var pendingLink = null;    // link to open if no natural click shows up
     var dragStartX  = 0;
     var dragStartPos = 0;
     var ptrVelocity = 0;       // px / s  (positive = dragging left)
@@ -163,6 +181,11 @@
     });
 
     // ── 6. Drag / grab ────────────────────────────────────────
+    // Drag off: bind none of this. No pointer capture, no .is-dragging, no
+    // click handler — the row scrolls and its links behave like plain links.
+    if (!DRAG_OFF) bindDrag();
+
+    function bindDrag() {
     root.addEventListener("pointerdown", function (e) {
       // Ignore non-primary buttons on mouse; allow touch / pen
       if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -174,6 +197,8 @@
       dragMoved    = 0;
       captured     = false;
       activePtrId  = e.pointerId;
+      downTarget   = e.target;
+      pendingLink  = null;
       dragStartX   = e.clientX;
       dragStartPos = pos;
       lastPtrX     = e.clientX;
@@ -261,17 +286,49 @@
                     e.clientY >= r.top  && e.clientY <= r.bottom;
 
       tweenSpeed(inside ? 0 : BASE_SPEED, 1.6, "power4.out");
+
+      // TAP SAFETY NET. The press stayed under the slop, so it was a click, not
+      // a drag — and it started on a link. If a natural click reaches that link
+      // the handler below clears this and we stand down; if nothing arrives by
+      // the next task (something upstream swallowed it, or the browser aimed
+      // the click at an ancestor because the row shifted mid-press), we open
+      // the link ourselves. Modifier keys are copied so ⌘/ctrl-click still
+      // opens a new tab.
+      if (dragMoved < DRAG_SLOP && downTarget && downTarget.closest) {
+        var link = downTarget.closest("a[href]");
+        if (link) {
+          pendingLink = link;
+          var mods = {
+            bubbles: true, cancelable: true, view: global, button: 0,
+            ctrlKey: !!e.ctrlKey, metaKey: !!e.metaKey,
+            shiftKey: !!e.shiftKey, altKey: !!e.altKey
+          };
+          global.setTimeout(function () {
+            if (pendingLink !== link) return;   // natural click already did it
+            pendingLink = null;
+            link.dispatchEvent(new MouseEvent("click", mods));
+          }, 0);
+        }
+      }
     }
 
     // A drag ends with a click event on whatever sits under the pointer —
     // swallow it (capture phase, before the link sees it) so letting go over a
     // logo never navigates. A press that stayed under DRAG_SLOP is a real
-    // click and passes straight through to the <a>.
+    // click: let it through, and note that the link DID get its click so the
+    // fallback below stands down.
     root.addEventListener("click", function (e) {
-      if (dragMoved < DRAG_SLOP) return;
-      e.preventDefault();
-      e.stopPropagation();
+      if (dragMoved >= DRAG_SLOP) {
+        pendingLink = null;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (pendingLink && e.target && e.target.closest && e.target.closest("a[href]")) {
+        pendingLink = null;                      // natural click landed — done
+      }
     }, true);
+    } // bindDrag
 
     // ── 7. Resize ─────────────────────────────────────────────
     var rTimer;

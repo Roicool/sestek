@@ -1,9 +1,13 @@
 /*!
- * marquee.css v1.0.0
+ * marquee.css v1.1.0
  * Infinite logo marquee
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.1.0 — a logo that links somewhere shows the LINK cursor, not the grab
+ *          hand; [data-marquee-drag="off"] drops the grab affordance for the
+ *          whole row (pair it with the same attribute in marquee.js, which
+ *          then skips the drag gesture entirely)
  * v1.0.0 — initial release
  */
 
@@ -40,6 +44,28 @@
 /* Grabbing state — JS adds / removes this class */
 .marquee.is-dragging {
   cursor: grabbing;
+}
+
+/*
+ * A linked logo is a link first: over it the cursor says "clickable", not
+ * "draggable". The row stays draggable from anywhere — the gesture doesn't
+ * care which cursor is showing.
+ */
+.marquee a,
+a.marquee__item {
+  cursor: pointer;
+}
+
+/*
+ * data-marquee-drag="off" — no gesture, no grab affordance anywhere. Use it on
+ * rows made of links, where a click matters more than the drag. marquee.js
+ * reads the same attribute and binds none of the drag handling.
+ */
+.marquee[data-marquee-drag="off"],
+.marquee[data-marquee-drag="none"],
+.marquee[data-marquee-drag="false"],
+.marquee[data-marquee-drag="0"] {
+  cursor: auto;
 }
 
 /* ── Track (the moving row) ──────────────────────────────────── */
