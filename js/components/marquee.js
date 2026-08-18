@@ -1,5 +1,5 @@
 /*!
- * marquee.js v1.2.0
+ * marquee.js v1.2.1
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
  *
@@ -14,6 +14,11 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.2.1 — a press that ended OUTSIDE the marquee left .is-dragging on: with
+ *          the pointer captured only after the drag threshold, the root never
+ *          saw that pointerup. Items stayed pointer-events:none, so the cursor
+ *          stuck at grab and every link went dead until reload. The release
+ *          now also listens on window (and on losing window focus).
  * v1.2.0 — links inside items are clickable again. The pointer is now captured
  *          only once the press turns into a real drag (> drag-slop px), so a
  *          plain click keeps its natural target: capturing on pointerdown
@@ -110,6 +115,7 @@
     var isDragging  = false;
     var dragMoved   = 0;       // px travelled this press — click vs drag verdict
     var captured    = false;   // pointer captured? (only once it IS a drag)
+    var activePtrId = null;    // captured pointer, so we can let it go by hand
     var dragStartX  = 0;
     var dragStartPos = 0;
     var ptrVelocity = 0;       // px / s  (positive = dragging left)
@@ -167,6 +173,7 @@
       isDragging   = true;
       dragMoved    = 0;
       captured     = false;
+      activePtrId  = e.pointerId;
       dragStartX   = e.clientX;
       dragStartPos = pos;
       lastPtrX     = e.clientX;
@@ -207,6 +214,21 @@
     root.addEventListener("pointerup",     releaseDrag);
     root.addEventListener("pointercancel", releaseDrag);
 
+    // Release on WINDOW too. The pointer is only captured once the press turns
+    // into a real drag, so a press that ends outside the marquee (moved a few
+    // px, then let go past the edge) never reaches the root's pointerup —
+    // .is-dragging would stay on, and with it the CSS that makes items
+    // pointer-events:none: the cursor sticks at grab and every link inside
+    // goes dead until reload. releaseDrag no-ops when a drag isn't running,
+    // so the captured case firing both handlers is harmless.
+    global.addEventListener("pointerup",     releaseDrag);
+    global.addEventListener("pointercancel", releaseDrag);
+    // Alt-tab / OS drag / devtools stealing the pointer mid-press: no pointerup
+    // ever arrives, so let a lost window focus end the gesture as well.
+    global.addEventListener("blur", function () {
+      if (isDragging) releaseDrag({ clientX: -1, clientY: -1 });
+    });
+
     // Links and images are natively draggable, so pressing on one and moving
     // sideways starts the BROWSER's drag-and-drop: it fires pointercancel and
     // kills our gesture a couple of frames in (the marquee stops following the
@@ -217,6 +239,14 @@
       if (!isDragging) return;
       isDragging = false;
       root.classList.remove("is-dragging");
+
+      // Normally implicit on pointerup — explicit here so a gesture ended by
+      // window blur (no pointerup at all) can't leave the pointer captured.
+      if (captured && activePtrId !== null) {
+        try { root.releasePointerCapture(activePtrId); } catch (err) { /* already gone */ }
+      }
+      captured = false;
+      activePtrId = null;
 
       // Clamp momentum so it never feels violent (magnitude-based — BASE_SPEED
       // may be negative for data-marquee-direction="right").
