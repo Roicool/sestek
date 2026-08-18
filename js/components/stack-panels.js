@@ -1,5 +1,13 @@
 /*!
- * stack-panels.js v1.3.1
+ * stack-panels.js v1.3.2
+ * v1.3.2 — BAYAT-ARALIK düzeltmesi: scroll sürerken resize gelirse
+ * (masaüstünde pencere/ekran değişimi, mobilde adres çubuğu) ScrollTrigger
+ * kendi refresh'ini scroll durana dek erteliyor — o pencerede tüm pinlerin
+ * start/end'leri bayat kalıyor, kartlar yanlış scroll konumlarında
+ * çözülüyor/pinleniyor ve scroll durunca geç refresh görünür bir sıçramayla
+ * düzeltiyordu. 100vh paneller resize'da büyüdüğünden kayma büyük ekranda
+ * daha büyüktü ("büyük ekranda daha kötü" vakası). Artık kısa debounce'lu
+ * kendi resize→refresh guard'ımız bu pencereyi kapatır; destroy'da söker.
  * v1.3.1 — geri scroll'da görünür POP düzeltmesi: son hızlı fade (midFade→0)
  * yalnızca ~%5'lik bir scroll bandına sıkışıktır ve bunun görünmez kalması,
  * o anda kartın GELEN panelce tamamen örtülmüş olmasına bağlıdır. Gelen panel
@@ -328,7 +336,28 @@
       ScrollTrigger.addEventListener("refreshInit", onRefreshInit);
     }
 
+    // BAYAT-ARALIK KORUMASI (v1.3.2): scroll SÜRERKEN resize olursa
+    // (masaüstünde pencere/ekran değişimi, mobilde adres çubuğu gizlenmesi)
+    // ScrollTrigger kendi refresh'ini scroll durana dek ERTELER — o pencerede
+    // tüm pinlerin start/end'leri bayat kalır: kartlar yanlış scroll
+    // konumlarında çözülür/pinlenir, scroll durunca da geç refresh görünür bir
+    // sıçramayla düzeltir. 100vh paneller resize'da büyüdüğü için kayma büyük
+    // ekranda daha büyüktür. Kısa debounce'lu kendi refresh'imiz bu pencereyi
+    // kapatır (scroll ortasında doğrudan refresh'in temiz hizaladığı headless
+    // ölçümle doğrulandı). Tek listener yeter — refresh zaten sayfa geneli.
+    var resizeTimer = null;
+    var onResize = function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (global.Sestek && Sestek.refreshScroll) Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
+      }, 150);
+    };
+    window.addEventListener("resize", onResize);
+
     root._stackPanelsDestroy = function () {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(resizeTimer);
       if (onRefreshInit) ScrollTrigger.removeEventListener("refreshInit", onRefreshInit);
       triggers.forEach(function (tl) {
         tl.scrollTrigger && tl.scrollTrigger.kill();
