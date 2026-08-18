@@ -1,8 +1,11 @@
 /*!
- * page-transitions.js v1.1.0
+ * page-transitions.js v1.1.1
  * Companion to css/components/page-transitions.css.
  *
  * Changelog
+ * v1.1.1 — no more "Uncaught (in promise) AbortError: Transition was skipped":
+ *          a skipped view transition rejects vt.finished, and the morph cleanup
+ *          only handled the fulfilled arm. Both arms now clear the tag.
  * v1.1.0 — honours prefers-reduced-motion: forces the minimal fade and disables
  *          the directional slide + shared-element image morph. Native cross-document
  * View Transitions need no JS for the basic fade — this file adds the two
@@ -131,12 +134,26 @@
         if (resolveHref(cards[i]) === destUrl) {
           var img = cards[i].querySelector("[data-pt-card-img]") || cards[i];
           img.style.viewTransitionName = "pt-hero";
-          // Clean up once the snapshot is captured so a repeat nav re-tags cleanly.
-          vt.finished.then(function () { img.style.viewTransitionName = ""; });
+          // Clean up once the snapshot is captured so a repeat nav re-tags
+          // cleanly. Both arms: a skipped transition REJECTS finished with an
+          // AbortError, and an unhandled one shows up in the console.
+          untag(vt, img);
           break;
         }
       }
     }
+  }
+
+  /* Drop the morph tag once the transition settles — however it settles. The
+     browser SKIPS a view transition whenever it can't run it (a second
+     navigation lands first, the tab is hidden, reduced motion kicks in), and a
+     skipped transition rejects vt.finished with an AbortError. Handling only
+     the fulfilled arm left that rejection unhandled: "Uncaught (in promise)
+     AbortError: Transition was skipped" in the console, and the element kept a
+     stale view-transition-name. Both arms run the same cleanup. */
+  function untag(vt, el) {
+    function clear() { el.style.viewTransitionName = ""; }
+    vt.finished.then(clear, clear);
   }
 
   /* On the INCOMING page: tag the hero image as the morph target and re-assert
@@ -156,7 +173,7 @@
       var hero = doc.querySelector("[data-pt-hero-img]");
       if (hero) {
         hero.style.viewTransitionName = "pt-hero";
-        vt.finished.then(function () { hero.style.viewTransitionName = ""; });
+        untag(vt, hero);
       }
     }
   }
