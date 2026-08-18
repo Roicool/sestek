@@ -1,5 +1,23 @@
 /*!
- * stack-panels.js v1.2.1
+ * stack-panels.js v1.3.0
+ * v1.3.0 — SAĞLAMLAŞTIRMA (zıplama/atlama vakaları):
+ * · KRİTİK: ScrollTrigger her pinli paneli init anında bir "pin-spacer"
+ *   div'ine sarar — o andan itibaren CSS'teki
+ *   [data-sp-panel] ~ [data-sp-panel] { z-index:2 } kardeş seçicisi HİÇBİR
+ *   panele eşleşmez (paneller artık kardeş değil, her biri kendi spacer'ının
+ *   tek çocuğu). Katmanlama DOM boyama sırasının şansına kalıyordu: son kart
+ *   girerken arkaya giden kartın ÖNE boyanması / yukarı scroll'da arkadaki
+ *   kartın "zıplayarak" belirmesi bunun belirtisi. z-index artık JS'ten her
+ *   panele INLINE yazılır (sıra = DOM sırası, sonraki üstte) — spacer
+ *   sarmalamasından etkilenmez. Var olan inline z-index'e dokunulmaz.
+ * · anticipatePin BİLE BİLE YOK: denendi, sıçramalı scroll girdisinde
+ *   (trackpad flick, sentetik scroll) pin'i erken kurup panelin merkeze
+ *   40px'e varan SIÇRAMASINA yol açtığı ölçüldü — çözdüğünden büyük atlama
+ *   yaratıyor, ekleme.
+ * · Tall panel fake-scroll tween'inin y değeri artık function-based: viewport
+ *   yüksekliği değişince (mobil adres çubuğu, resize) refresh'te taze
+ *   window.innerHeight ile yeniden hesaplanır — bayat mesafe kaynaklı
+ *   içerik zıplaması kalmaz (invalidateOnRefresh zaten açıktı).
  * v1.2.1 — KRİTİK: [data-sp-inner]'sız bir panel viewport'tan uzunsa init
  * TypeError ile çöküyordu (fake-scroll marjı null inner'dan offsetHeight
  * okuyordu) → section'ın TÜM pinleri sessizce yok oluyordu. Panel yüksek
@@ -182,6 +200,15 @@
       return;
     }
 
+    // Stacking order INLINE olarak yazılır: ScrollTrigger pin kurulur kurulmaz
+    // panelleri pin-spacer'lara sardığı için stack-panels.css'teki
+    // [data-sp-panel] ~ [data-sp-panel] kardeş kuralı ölür — sonraki panelin
+    // öncekinin ÜSTÜNE boyanması garantisi buradan gelir. Elle verilmiş bir
+    // inline z-index varsa ona saygı duyulur.
+    panels.forEach(function (panel, idx) {
+      if (!panel.style.zIndex) panel.style.zIndex = String(idx + 1);
+    });
+
     var triggers = [];
     var marginRefreshers = [];
     // The LAST panel never pins/dissolves — it's the final resting layer.
@@ -242,7 +269,10 @@
       if (fakeRatio) {
         tl.to(inner, {
           yPercent: -100,
-          y: windowH,
+          // function-based: invalidateOnRefresh her refresh'te taze viewport
+          // yüksekliğiyle yeniden çözer (mobil adres çubuğu / resize) — bayat
+          // windowH ile içerik yanlış mesafeye taşınıp zıplamasın.
+          y: function () { return window.innerHeight; },
           ease: "none",
           duration: 1 / (1 - fakeRatio) - 1,
         });
