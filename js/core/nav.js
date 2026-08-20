@@ -1,18 +1,11 @@
 /*!
- * nav.js v2.8.0
+ * nav.js v2.7.2
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
- * v2.8.0 — data-nav-morph="false" (nav kökünde): v2.6.0'ın genişlik morph'unu
- *           kapatır. Morph açıkken panel max-content ile ölçülüp o genişliğe
- *           sabitlenir — flex kolonlar içerik genişliğine göre toplandığından
- *           kırılım/yükseklik Designer'daki tam genişlik (left:0/right:0,
- *           flex:1) düzeninden farklı çıkabilir. Morph kapalıyken panel wrap'in
- *           tam genişliğinde ölçülür ve açılır: yayın = Designer birebir;
- *           yükseklik morph'u aynen çalışır. Default açık (eski davranış).
  * v2.7.2 — mobile menu also gets `inert` while closed, not just aria-hidden:
  *           aria-hidden alone doesn't remove descendants from the tab order,
  *           so its links/buttons stayed keyboard-focusable while hidden
@@ -192,14 +185,6 @@
       return -1;
     }
 
-    // v2.8.0 — data-nav-morph="false" (nav kökünde) genişlik morph'unu kapatır:
-    // panel max-content ile DEĞİL, wrap'in tam genişliğinde ölçülür ve açılır.
-    // max-content ölçümünde flex kolonlar içerik genişliğine göre toplanır —
-    // Designer'daki left:0/right:0 (tam genişlik, flex:1 eşit pay) düzeninden
-    // farklı kırılım ve yükseklik çıkar. Morph kapalıyken yayın görünümü
-    // Designer'la birebir aynıdır; yükseklik morph'u çalışmaya devam eder.
-    var widthMorph = nav.getAttribute("data-nav-morph") !== "false";
-
     /**
      * Briefly positions the panel as relative + shrink-to-content + invisible
      * to read BOTH its natural width and height (no visible flash, no CSS
@@ -215,16 +200,14 @@
         opacity : s.opacity, position: s.position, width: s.width,
         maxWidth: s.maxWidth, left: s.left, right: s.right,
       };
-      // Cap to the wrap's width so an over-wide panel doesn't break the page.
-      var capEl = (dropdown.parentElement || dropdown);
-      var cap   = capEl.clientWidth || 0;
       s.opacity  = "0";
       s.position = "relative";
       s.left     = "auto";
       s.right    = "auto";
-      // Morph kapalıysa panel yayında da tam wrap genişliğinde render edilecek —
-      // yüksekliği de o genişlikte ölç ki kırılımlar Designer'la aynı olsun.
-      s.width    = widthMorph ? "max-content" : (cap ? cap + "px" : "100%");
+      s.width    = "max-content";
+      // Cap to the wrap's width so an over-wide panel doesn't break the page.
+      var capEl = (dropdown.parentElement || dropdown);
+      var cap   = capEl.clientWidth || 0;
       if (cap) s.maxWidth = cap + "px";
       var w = p.offsetWidth;
       var h = p.offsetHeight;
