@@ -1,11 +1,18 @@
 /*!
- * nav.js v2.7.2
+ * nav.js v2.7.3
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.3 — fix mega-menus being cut off on wide screens: the panel was measured
+ *           against the full-width .nav__dropdown-wrap, but the box that clips
+ *           it is .nav__dropdown (max-width: 90rem, margin-inline:auto). On a
+ *           viewport wider than that cap, GSAP got a width CSS immediately
+ *           clamped back, so overflow:hidden sliced the panel's right edge —
+ *           and the height, measured at that too-wide width, came up short and
+ *           cut the bottom too. Measured against the dropdown's own box now.
  * v2.7.2 — mobile menu also gets `inert` while closed, not just aria-hidden:
  *           aria-hidden alone doesn't remove descendants from the tab order,
  *           so its links/buttons stayed keyboard-focusable while hidden
@@ -205,9 +212,22 @@
       s.left     = "auto";
       s.right    = "auto";
       s.width    = "max-content";
-      // Cap to the wrap's width so an over-wide panel doesn't break the page.
-      var capEl = (dropdown.parentElement || dropdown);
-      var cap   = capEl.clientWidth || 0;
+      // Cap to the box that actually CLIPS the panel — the dropdown itself,
+      // not its full-width wrap. The dropdown is usually narrower than the wrap
+      // (max-width: 90rem + margin-inline:auto), so measuring against the wrap
+      // would report a width the clip box can never show: GSAP sets that width,
+      // CSS max-width clamps it back, and overflow:hidden cuts the panel off on
+      // the right — with the height, measured at that too-wide width, coming up
+      // short and cutting the bottom too. Reading it needs the animated inline
+      // width off for a moment so CSS decides the real box.
+      var prevDropW = dropdown.style.width;
+      dropdown.style.width = "";
+      var cap = dropdown.clientWidth || 0;
+      dropdown.style.width = prevDropW;
+      if (!cap) {
+        var capEl = (dropdown.parentElement || dropdown);
+        cap = capEl.clientWidth || 0;
+      }
       if (cap) s.maxWidth = cap + "px";
       var w = p.offsetWidth;
       var h = p.offsetHeight;
