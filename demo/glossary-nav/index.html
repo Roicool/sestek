@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary Nav — Demo</title>
+<link rel="stylesheet" href="../../css/components/glossary-nav.css">
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; color: #12343b; }
+  .hero { height: 100vh; display: grid; place-items: center; background: #12343b; color: #fff; }
+  .glossary-section { min-height: 60vh; padding: 4rem 2rem; border-top: 1px solid #e5e5e5; }
+  .glossary-section h2 { font-size: 3rem; margin: 0 0 1rem; }
+  .footer { height: 80vh; display: grid; place-items: center; background: #f4f4f4; }
+</style>
+</head>
+<body>
+
+<div class="hero"><h1>Hero — bar hidden here</h1></div>
+
+<div data-glossary-nav-scope>
+  <section class="glossary-section" data-glossary-section="A"><h2>A</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="B"><h2>B</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="C"><h2>C</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="D"><h2>D</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="M"><h2>M</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="S"><h2>S</h2><p>Entries…</p></section>
+  <section class="glossary-section" data-glossary-section="Y"><h2>Y</h2><p>Entries…</p></section>
+</div>
+
+<div class="footer"><h2>Footer — bar hides again</h2></div>
+
+<nav data-glossary-nav aria-label="Glossary index">
+  <div data-glossary-nav-track>
+    <a href="#" data-glossary-nav-letter>A</a><a href="#" data-glossary-nav-letter>B</a><a href="#" data-glossary-nav-letter>C</a><a href="#" data-glossary-nav-letter>D</a><a href="#" data-glossary-nav-letter>E</a><a href="#" data-glossary-nav-letter>F</a><a href="#" data-glossary-nav-letter>G</a><a href="#" data-glossary-nav-letter>H</a><a href="#" data-glossary-nav-letter>I</a><a href="#" data-glossary-nav-letter>J</a><a href="#" data-glossary-nav-letter>K</a><a href="#" data-glossary-nav-letter>L</a><a href="#" data-glossary-nav-letter>M</a><a href="#" data-glossary-nav-letter>N</a><a href="#" data-glossary-nav-letter>O</a><a href="#" data-glossary-nav-letter>P</a><a href="#" data-glossary-nav-letter>Q</a><a href="#" data-glossary-nav-letter>R</a><a href="#" data-glossary-nav-letter>S</a><a href="#" data-glossary-nav-letter>T</a><a href="#" data-glossary-nav-letter>U</a><a href="#" data-glossary-nav-letter>V</a><a href="#" data-glossary-nav-letter>W</a><a href="#" data-glossary-nav-letter>X</a><a href="#" data-glossary-nav-letter>Y</a><a href="#" data-glossary-nav-letter>Z</a>
+  </div>
+</nav>
+
+<script src="../../js/components/glossary-nav.js" defer></script>
+<script defer>
+  window.addEventListener("DOMContentLoaded", function () {
+    Sestek.initGlossaryNav();
+  });
+</script>
+
+</body>
+</html>
