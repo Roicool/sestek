@@ -1,10 +1,11 @@
 /*!
- * glossary-nav.js v1.0.0
+ * glossary-nav.js v1.1.0
  * Glossary A–Z letter bar — fixed bottom-center pill. Click a letter to
  * scroll to its section (routed through Lenis via Sestek.scrollTo when
  * present), the indicator disc glides to whichever section owns the
- * viewport, letters with no matching section auto-disable, and the bar
- * itself only shows while the glossary content is on screen.
+ * viewport, letters with no matching section are removed from the bar
+ * (or dimmed — see data-glossary-nav-empty), and the bar itself only
+ * shows while the glossary content is on screen.
  *
  * Requires : nothing (Lenis + Sestek.scrollTo used when available).
  * CSS      : css/components/glossary-nav.css
@@ -21,11 +22,17 @@
  *                                        the bar is always visible.
  *   [data-glossary-section="A"]          one per letter — the block the matching
  *                                        letter scrolls to. Letters without a
- *                                        section get .is-disabled automatically.
+ *                                        section are handled automatically per
+ *                                        data-glossary-nav-empty.
  *
  * Root attributes (all optional):
  *   data-glossary-nav-offset   px between viewport top and the section when
  *                              scrolled to; also the tracking line (default 96)
+ *   data-glossary-nav-empty    what to do with letters that have no section:
+ *                              "hide" removes them from the bar (default) —
+ *                              always drop all 26 letters into Webflow, the
+ *                              bar composes itself per page; "dim" keeps them
+ *                              visible but muted and unclickable
  *
  * https://github.com/roicool/sestek
  */
@@ -49,6 +56,7 @@
     var offset = parseFloat(root.getAttribute("data-glossary-nav-offset"));
     if (isNaN(offset)) offset = 96;
 
+    var emptyMode = root.getAttribute("data-glossary-nav-empty") || "hide";
     var scope = document.querySelector("[data-glossary-nav-scope]");
     var reduce = global.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -66,10 +74,13 @@
         : null;
       if (section) {
         pairs.push({ letter: el, section: section, key: key });
-      } else {
+      } else if (emptyMode === "dim") {
         el.classList.add("is-disabled");
         el.setAttribute("aria-disabled", "true");
         el.setAttribute("tabindex", "-1");
+      } else {
+        el.classList.add("is-hidden");
+        el.setAttribute("hidden", "");
       }
     });
 
