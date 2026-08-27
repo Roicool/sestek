@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Roicool — Web Sitesi Tasarım &amp; Webflow Geliştirme Teklifi · Endoks–Inavitas Grubu</title>
+<style>
+/* DM Sans (OFL) — variable font, latin + latin-ext */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:100 1000;src:url(fonts/dm1.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:100 1000;src:url(fonts/dm2.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'DM Sans';font-style:italic;font-weight:100 1000;src:url(fonts/dm3.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'DM Sans';font-style:italic;font-weight:100 1000;src:url(fonts/dm4.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+
+:root{
+  /* Roicool marka paleti (Webflow variable collection'dan) */
+  --blue: oklch(58.3% 0.19 261.2);
+  --blue-600: oklch(50% 0.18 261.2);
+  --blue-700: oklch(42% 0.16 261.2);
+  --blue-800: oklch(35% 0.13 261.2);
+  --blue-900: oklch(28% 0.11 261.2);
+  --blue-200: oklch(90% 0.08 261.2);
+  --blue-100: oklch(95% 0.04 261.2);
+  --red: oklch(65.4% 0.19 28.5);
+  --red-700: oklch(52% 0.15 28.5);
+  --red-100: oklch(96% 0.04 28.5);
+  --black: oklch(10% 0 0);
+  --ink: oklch(20% 0.005 260);
+  --ink-2: oklch(30% 0.005 260);
+  --g600: oklch(50% 0.01 260);
+  --g500: oklch(60% 0.015 260);
+  --g400: oklch(70% 0.015 260);
+  --g300: oklch(80% 0.015 260);
+  --g200: oklch(90% 0.01 260);
+  --g100: oklch(95% 0.01 260);
+  --g050: oklch(98% 0.005 260);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#fff;}
+body{font-family:'DM Sans',Arial,sans-serif;color:var(--ink);font-size:9pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+@page{size:A4;margin:0;}
+
+.page{width:210mm;height:297mm;padding:12mm 15mm 15mm;position:relative;overflow:hidden;page-break-after:always;display:flex;flex-direction:column;background:#fff;}
+.page:last-child{page-break-after:auto;}
+
+/* ortak parçalar */
+.topbar{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.6pt solid var(--black);padding-bottom:2.5mm;margin-bottom:4.5mm;}
+.wordmark{font-weight:700;font-size:13pt;letter-spacing:-0.02em;color:var(--black);}
+.wordmark .dot{color:var(--red);}
+.topbar .right{font-size:7pt;color:var(--g600);letter-spacing:0.06em;text-transform:uppercase;}
+.footer{position:absolute;left:15mm;right:15mm;bottom:8mm;display:flex;justify-content:space-between;align-items:center;border-top:0.5pt solid var(--g200);padding-top:2.2mm;font-size:6.6pt;color:var(--g500);}
+.footer b{color:var(--ink-2);font-weight:500;}
+.pageno{font-variant-numeric:tabular-nums;}
+
+.klabel{font-size:6.8pt;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--blue);margin-bottom:1.8mm;}
+.klabel.dark{color:var(--g600);}
+h2.sec{font-size:12.5pt;font-weight:700;letter-spacing:-0.01em;margin-bottom:2.5mm;color:var(--black);}
+ul.tick{list-style:none;}
+ul.tick li{padding-left:4.2mm;position:relative;margin-bottom:1.5mm;}
+ul.tick li::before{content:"";position:absolute;left:0;top:1.35mm;width:1.7mm;height:1.7mm;background:var(--blue);}
+ul.tick li b{font-weight:600;color:var(--black);}
+ul.tick.red li::before{background:var(--red);}
+.muted{color:var(--g600);}
+
+/* ── Sayfa 1: kapak + genel ── */
+.cover-title{font-size:19.5pt;font-weight:700;letter-spacing:-0.02em;line-height:1.12;color:var(--black);margin:1.5mm 0 2.5mm;}
+.cover-title em{font-style:normal;color:var(--blue);}
+.cover-sub{font-size:8.8pt;color:var(--ink-2);max-width:158mm;margin-bottom:3.5mm;}
+.metagrid{display:grid;grid-template-columns:repeat(4,1fr);border-top:0.6pt solid var(--g200);border-bottom:0.6pt solid var(--g200);padding:2.2mm 0;margin-bottom:4mm;}
+.metagrid .cell{font-size:8pt;}
+.metagrid .cell .k{font-size:6.4pt;letter-spacing:0.1em;text-transform:uppercase;color:var(--g500);margin-bottom:0.8mm;}
+.metagrid .cell .v{font-weight:600;color:var(--black);}
+.brandchips{display:grid;grid-template-columns:repeat(3,1fr);gap:1.8mm;margin-bottom:4.5mm;}
+.chip{border:0.6pt solid var(--g200);padding:1.8mm 2.6mm;}
+.chip .n{font-weight:700;font-size:8.6pt;color:var(--black);}
+.chip .d{font-size:6.9pt;color:var(--g600);margin-top:0.3mm;}
+.chip .d .new{color:var(--red-700);font-weight:600;}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-bottom:4mm;}
+.twocol li{font-size:8.3pt;margin-bottom:1.3mm;}
+.geo-band{background:var(--blue-100);border-left:2.2pt solid var(--blue);padding:3.5mm 4.5mm 3.2mm;margin-bottom:4mm;}
+.geo-band p.lead{font-size:8.1pt;color:var(--ink-2);margin-bottom:2.2mm;max-width:168mm;}
+.geo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2mm 7mm;}
+.geo-grid .gitem{padding-left:4.2mm;position:relative;font-size:7.9pt;}
+.geo-grid .gitem::before{content:"";position:absolute;left:0;top:1.4mm;width:1.7mm;height:1.7mm;background:var(--blue);}
+.geo-grid .gitem b{font-weight:700;color:var(--blue-800);}
+.ai-callout{margin-top:2.4mm;padding-top:2.2mm;border-top:0.6pt solid var(--blue-200);font-size:7.9pt;color:var(--blue-900);}
+.ai-callout b{font-weight:700;}
+.process{display:flex;gap:0;margin-bottom:3.5mm;}
+.process .step{flex:1;border-top:1.6pt solid var(--g200);padding-top:1.6mm;margin-right:2.5mm;font-size:6.8pt;line-height:1.35;color:var(--ink-2);}
+.process .step:last-child{margin-right:0;}
+.process .step.hot{border-top-color:var(--blue);}
+.process .step .no{font-weight:700;color:var(--g400);font-size:6.4pt;display:block;letter-spacing:0.08em;}
+.smallnote{font-size:7.3pt;color:var(--g600);line-height:1.5;}
+.smallnote b{color:var(--ink-2);font-weight:600;}
+
+/* ── Marka sayfaları ── */
+.bhead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5mm;}
+.bhead .bname{font-size:23pt;font-weight:700;letter-spacing:-0.02em;color:var(--black);line-height:1;}
+.bhead .bmeta{text-align:right;font-size:7.6pt;color:var(--g600);}
+.bhead .bmeta .dom{font-weight:600;color:var(--blue);font-size:8.8pt;}
+.statusrow{display:grid;grid-template-columns:repeat(4,1fr);border-top:1pt solid var(--black);border-bottom:0.6pt solid var(--g200);margin-bottom:3mm;}
+.statusrow .s{padding:3mm 2mm 3mm 0;}
+.statusrow .s+.s{padding-left:3.2mm;border-left:0.6pt solid var(--g200);}
+.statusrow .k{font-size:6.4pt;letter-spacing:0.1em;text-transform:uppercase;color:var(--g500);margin-bottom:1mm;}
+.statusrow .v{font-size:9.2pt;font-weight:600;color:var(--black);line-height:1.25;}
+.statusrow .v small{display:block;font-size:7.2pt;font-weight:400;color:var(--g600);margin-top:0.6mm;}
+.statusnote{font-size:8.2pt;color:var(--g600);margin-bottom:5.5mm;max-width:178mm;}
+.statusnote b{color:var(--red-700);font-weight:600;}
+.bcols{display:grid;grid-template-columns:1.15fr 1fr;gap:8mm;margin-bottom:5mm;}
+.bcols .worklist li{font-size:9pt;margin-bottom:2.4mm;line-height:1.5;}
+.geo-side{background:var(--g050);border-left:2.2pt solid var(--blue);padding:4mm 4.5mm;height:fit-content;}
+.geo-side .klabel{margin-bottom:2.6mm;}
+.geo-side li{font-size:8.5pt;margin-bottom:2.2mm;line-height:1.5;}
+.factrow{display:grid;grid-template-columns:1fr 1.55fr 0.8fr 1.35fr;border-top:1pt solid var(--black);margin-top:auto;margin-bottom:4mm;}
+.factrow .f{padding:2.8mm 3mm 2.8mm 0;}
+.factrow .f+.f{padding-left:3.5mm;border-left:0.6pt solid var(--g200);}
+.factrow .k{font-size:6.4pt;letter-spacing:0.1em;text-transform:uppercase;color:var(--g500);margin-bottom:1mm;}
+.factrow .big{font-size:15pt;font-weight:700;color:var(--black);line-height:1;font-variant-numeric:tabular-nums;}
+.factrow .big small{font-size:8pt;font-weight:500;color:var(--g600);letter-spacing:0;}
+.factrow .list{font-size:7.3pt;color:var(--ink-2);line-height:1.5;}
+.factrow .list b{font-weight:600;color:var(--black);}
+.factrow .k{margin-bottom:1.4mm;}
+.factrow .big{font-size:16pt;}
+.factrow .list{font-size:7.6pt;}
+.priceband{display:flex;justify-content:space-between;align-items:center;background:var(--black);color:#fff;padding:3.4mm 5mm;}
+.priceband .l{font-size:7.2pt;letter-spacing:0.12em;text-transform:uppercase;color:var(--g300);}
+.priceband .p{font-size:15pt;font-weight:700;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;}
+.priceband .p small{font-size:7.6pt;font-weight:400;color:var(--g300);margin-left:2mm;letter-spacing:0;}
+.priceband .p .cur{color:var(--red);}
+
+/* ── Son sayfa ── */
+table.pricing{width:100%;border-collapse:collapse;margin-bottom:5mm;font-variant-numeric:tabular-nums;}
+table.pricing th{font-size:6.6pt;letter-spacing:0.1em;text-transform:uppercase;color:var(--g500);text-align:left;font-weight:600;border-bottom:1pt solid var(--black);padding:0 2mm 1.8mm 0;}
+table.pricing th.num,table.pricing td.num{text-align:right;padding-right:0;white-space:nowrap;}
+table.pricing td{padding:1.9mm 2mm 1.9mm 0;border-bottom:0.5pt solid var(--g200);font-size:8.6pt;vertical-align:top;}
+table.pricing td .sub{font-size:7pt;color:var(--g600);}
+table.pricing td b{font-weight:700;color:var(--black);}
+table.pricing tr.total td{border-bottom:none;border-top:1pt solid var(--black);font-weight:600;padding-top:2.4mm;}
+table.pricing tr.discount td{border-bottom:none;color:var(--red-700);padding-top:1mm;padding-bottom:1mm;}
+table.pricing tr.grand td{border-bottom:none;background:var(--black);color:#fff;font-weight:700;font-size:10pt;padding:2.6mm 2mm;}
+table.pricing tr.grand td:first-child{padding-left:3.5mm;}
+table.pricing tr.grand td.num{padding-right:3.5mm;}
+table.pricing tr.grand td small{font-weight:400;font-size:7pt;color:var(--g300);}
+.termgrid{display:grid;grid-template-columns:1fr 1fr;gap:4mm 8mm;margin-bottom:4mm;}
+.termbox h3{font-size:8.6pt;font-weight:700;color:var(--black);margin-bottom:1.6mm;}
+.termbox p,.termbox li{font-size:7.7pt;color:var(--ink-2);}
+.termbox ul{list-style:none;}
+.termbox li{padding-left:3.6mm;position:relative;margin-bottom:1mm;}
+.termbox li::before{content:"";position:absolute;left:0;top:1.5mm;width:1.4mm;height:1.4mm;background:var(--g300);}
+.timeline{display:grid;grid-template-columns:repeat(7,1fr);gap:1.2mm;margin-bottom:1.8mm;}
+.timeline .t{padding:1.6mm 2mm;font-size:6.8pt;line-height:1.3;color:#fff;}
+.timeline .t b{display:block;font-size:7.4pt;}
+.timeline .t.ds{background:var(--blue-800);}
+.timeline .t.w1{background:var(--blue);}
+.timeline .t.w2{background:var(--blue-600);}
+.timeline .t.w3{background:var(--blue-700);}
+</style>
+</head>
+<body>
+
+<!-- ════════ SAYFA 1 — GENEL ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Teklif No RC-2026-0827 · 27 Ağustos 2026</div>
+  </div>
+
+  <div class="klabel">Web Sitesi Tasarım &amp; Webflow Geliştirme Teklifi</div>
+  <div class="cover-title">Endoks–Inavitas Grubu<br>6 marka, tek design system, <em>Webflow</em> altyapısı</div>
+  <p class="cover-sub">Grubun altı markasının web varlıklarının tek bir tasarım sistemi altında, her markanın kendi kimliğini koruyarak Webflow üzerinde yeniden kurulması; çok dilli yapı, teknik SEO ve yapay zekâ aramalarına uyum (GEO) katmanlarıyla birlikte.</p>
+
+  <div class="metagrid">
+    <div class="cell"><div class="k">Hazırlayan</div><div class="v">Roicool · roicool.com</div></div>
+    <div class="cell"><div class="k">Kapsam</div><div class="v">6 site · 52 sayfa tasarımı · 29 CMS koleksiyonu</div></div>
+    <div class="cell"><div class="k">Süre</div><div class="v">12–14 hafta (paralel yürütme)</div></div>
+    <div class="cell"><div class="k">Geçerlilik</div><div class="v">26 Eylül 2026</div></div>
+  </div>
+
+  <div class="brandchips">
+    <div class="chip"><div class="n">Wattox</div><div class="d">wattox.com · Webflow'da yeniden kurulum</div></div>
+    <div class="chip"><div class="n">Presify</div><div class="d">presify.ai · WordPress → Webflow taşıma</div></div>
+    <div class="chip"><div class="n">Inavitas Elektrik</div><div class="d"><span class="new">Hazır tasarımdan geliştirme</span> + yayına alma</div></div>
+    <div class="chip"><div class="n">Inavitas Yatırım</div><div class="d"><span class="new">Sıfırdan</span> kurumsal site</div></div>
+    <div class="chip"><div class="n">Endoks</div><div class="d">endoks.com · WordPress → Webflow taşıma</div></div>
+    <div class="chip"><div class="n">Partner EGS</div><div class="d">partneregs.com · Webflow'da yeniden yapılandırma</div></div>
+  </div>
+
+  <div class="twocol">
+    <div>
+      <div class="klabel">Tüm sitelerde standart — Tasarım &amp; Geliştirme</div>
+      <ul class="tick">
+        <li><b>Ortak design system:</b> grup genelinde tek değişken/komponent altyapısı; renk, tipografi ve bileşenler her markanın kimliğine göre türetilir.</li>
+        <li><b>Özgün arayüz tasarımı</b> — hazır template kullanılmaz; tüm sayfalar masaüstü/tablet/mobil için ayrı kurgulanır.</li>
+        <li><b>Webflow CMS mimarisi:</b> içerik tipleri koleksiyon olarak kurulur, ekipleriniz kod bilmeden içerik yönetir.</li>
+        <li><b>Native Localization ile TR + EN:</b> klasör kopyası değil; Webflow Localization ve hreflang etiketleriyle gerçek çok dilli yapı.</li>
+        <li><b>Etkileşim katmanı:</b> Roicool komponent kütüphanesindeki animasyon ve mikro-etkileşimler (geçişler, marquee, hesaplayıcı vb.).</li>
+      </ul>
+    </div>
+    <div>
+      <div class="klabel">Tüm sitelerde standart — Teknik altyapı</div>
+      <ul class="tick">
+        <li><b>Teknik SEO kurulumu:</b> XML sitemap, robots.txt, canonical yapısı, meta/Open Graph düzeni.</li>
+        <li><b>301 yönlendirme haritası:</b> mevcut URL'ler trafik ve sıralama kaybı olmadan yeni yapıya taşınır.</li>
+        <li><b>Performans ve erişilebilirlik:</b> Core Web Vitals hedefli optimizasyon, görsel sıkıştırma (WebP/AVIF).</li>
+        <li><b>Ölçümleme:</b> GA4, Search Console ve KVKK/GDPR uyumlu çerez yönetimi.</li>
+        <li><b>Teslim sonrası:</b> içerik yönetimi eğitimi (kayıtlı oturum) + 30 gün ücretsiz destek.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="geo-band">
+    <div class="klabel">GEO — Yapay zekâ aramalarına uyum</div>
+    <p class="lead">Kullanıcılar artık yalnızca Google'da değil; ChatGPT, Gemini ve Perplexity gibi yapay zekâ asistanlarında da marka ve ürün araştırıyor. GEO (Generative Engine Optimization), sitenin bu sistemler tarafından doğru okunmasını, alıntılanmasını ve önerilmesini sağlayan yapısal düzenlemelerin bütünüdür. Altı sitenin tamamında şu katman standart olarak kurulur:</p>
+    <div class="geo-grid">
+      <div class="gitem"><b>Schema.org JSON-LD:</b> Organization, Product/Service, Article, FAQPage ve Breadcrumb şemaları</div>
+      <div class="gitem"><b>llms.txt:</b> yapay zekâ tarayıcıları için site rehberi dosyası</div>
+      <div class="gitem"><b>Semantik içerik mimarisi:</b> doğru başlık hiyerarşisi, SSS blokları, makine tarafından okunabilir özellik tabloları</div>
+      <div class="gitem"><b>Entity tutarlılığı:</b> tüm platformlarda tutarlı unvan-adres-iletişim (NAP) ve sameAs bağlantıları</div>
+    </div>
+    <div class="ai-callout"><b>AI Info Page:</b> Her marka için, şirket kimliğini, ürün ve hizmet bilgilerini ve doğrulanmış kurumsal verileri yapay zekâ sistemlerine tek kaynaktan aktaran özel bir bilgi sayfası oluşturulur — Roicool'un kendi sitesinde de uyguladığı yaklaşım.</div>
+  </div>
+
+  <div class="process">
+    <div class="step"><span class="no">01</span>Keşif &amp; içerik envanteri</div>
+    <div class="step hot"><span class="no">02</span>Design system</div>
+    <div class="step"><span class="no">03</span>Sayfa tasarımları</div>
+    <div class="step hot"><span class="no">04</span>Webflow geliştirme</div>
+    <div class="step"><span class="no">05</span>İçerik girişi &amp; lokalizasyon</div>
+    <div class="step hot"><span class="no">06</span>SEO / GEO kurulumu</div>
+    <div class="step"><span class="no">07</span>Test &amp; yayın</div>
+  </div>
+
+  <p class="smallnote"><b>Görsel sorumluluğu (genel kural):</b> Arayüz tasarımı, ikonografi, diyagramlar ve yerleşimde kullanılan destek görselleri Roicool tarafından hazırlanır. Ürün, tesis ve ekip fotoğrafları, logo vektörleri ve teknik doküman içerikleri müşteri tarafından iletilir; gereken yerlerde lisanslı stok görsel Roicool tarafından sağlanır. Marka bazındaki ayrıntılar ilgili sayfalardadır.</p>
+
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">01 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 2 — WATTOX ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 1 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">İnverter · PCS · Enerji depolama (BESS)</div><div class="bname">Wattox</div></div>
+    <div class="bmeta"><div class="dom">wattox.com</div>Mevcut altyapı: Webflow (hazır template)</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">Webflow<small>satın alınmış template üzerine</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">TR / EN karışık<small>locale yapısı yok</small></div></div>
+    <div class="s"><div class="k">Sayfa</div><div class="v">~10–15<small>çok sınırlı içerik</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">Kısmen var<small>demo koleksiyonlarla karışık</small></div></div>
+  </div>
+  <p class="statusnote"><b>Kritik:</b> Template'in demo sayfaları ve örnek blog yazıları hâlâ yayında ve Google dizininde; sayfa başlıklarına "Webflow HTML website template" ifadesi sızıyor. Türkçe ve İngilizce sayfalar tek yapıda, dil ayrımı olmadan iç içe duruyor.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>Sitenin, template bağımlılığı olmadan Wattox kimliğiyle <b>özgün tasarımla yeniden kurulması</b></li>
+        <li>Demo içeriklerin, artık koleksiyonların ve dizindeki çöp URL'lerin <b>temizlenmesi</b></li>
+        <li>String / santral inverter, PCS ve BESS ürünleri için <b>teknik özellik alanlı ürün kataloğu</b></li>
+        <li>Datasheet ve kullanım kılavuzları için <b>doküman/indirme merkezi</b></li>
+        <li>TR + EN yapısının <b>native Localization</b>'a taşınması, eski URL'ler için 301 haritası</li>
+        <li>Servis &amp; garanti sayfası ve teklif/iletişim hunisinin kurulması</li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>Product şeması:</b> güç, verim, sertifika gibi teknik özellikler makine tarafından okunabilir alanlar olarak</li>
+        <li>Ürün sayfalarına SSS blokları + <b>FAQPage şeması</b></li>
+        <li><b>Wattox AI Info Page</b> + llms.txt (üretim kapasitesi, ürün aileleri, yerli üretim vurgusu)</li>
+        <li>Template kaynaklı çöp URL'lerin 301 + canonical ile <b>dizinden düşürülmesi</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa tasarımı</div><div class="big">10 <small>özgün şablon</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Ürünler</b> (teknik spec alanlarıyla) · <b>Ürün kategorileri</b> · <b>Blog / Haber</b> · <b>Dokümanlar</b> (datasheet) · <b>SSS</b></div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">4 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Ürün fotoğrafı/render: <b>müşteri</b> · UI, ikonografi, teknik diyagram: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Wattox</span><span class="p"><span class="cur">$</span>9.000 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">02 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 3 — PRESIFY ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 2 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">Enerji piyasaları için yapay zekâ &amp; tahminleme yazılımı</div><div class="bname">Presify</div></div>
+    <div class="bmeta"><div class="dom">presify.ai</div>Mevcut altyapı: WordPress</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">WordPress<small>hazır tema, az özelleştirilmiş</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">Yalnızca EN<small>Türkçe sayfa yok</small></div></div>
+    <div class="s"><div class="k">Sayfa</div><div class="v">~16<small>9 çözüm + kurumsal</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">Blog açık, boş<small>hiç yazı girilmemiş</small></div></div>
+  </div>
+  <p class="statusnote"><b>Kritik:</b> Türkiye elektrik piyasasına satış yapan ürünün Türkçe sayfası yok. Tema dolgu metinleri sitede duruyor; dizinde parametreli çöp URL'ler var (canonical eksikliği). Ürünün gerçek gücü ayrı portallarda, pazarlama sitesi bunu yansıtmıyor.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>WordPress'ten Webflow'a taşıma; SaaS ürününe yakışır <b>modern arayüz tasarımı</b></li>
+        <li>9 çözümün (fiyat tahmini, kesinti tahmini, anomali tespiti vb.) <b>çözüm koleksiyonuna</b> taşınması</li>
+        <li><b>Türkçe dilin eklenmesi</b> — native Localization ile TR + EN</li>
+        <li>Boş duran blogun içerik üretimine hazır <b>yayın altyapısına</b> dönüştürülmesi; vaka analizi (case study) koleksiyonu</li>
+        <li>Demo talebi odaklı <b>dönüşüm hunisi</b>: form, CTA kurgusu, portal yönlendirmeleri</li>
+        <li>Parametreli çöp URL'ler için <b>canonical + 301 temizliği</b></li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>SoftwareApplication + Service şemaları</b> çözüm sayfalarında</li>
+        <li>Blog ve vaka analizlerine <b>Article şeması</b></li>
+        <li><b>Presify AI Info Page</b> + llms.txt (çözüm listesi, veri kaynakları, referans pazarlar)</li>
+        <li>"Elektrik fiyat tahmini nedir?" tarzı sorulara yanıt veren <b>SSS blokları + FAQPage</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa tasarımı</div><div class="big">10 <small>özgün şablon</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Çözümler</b> (9+) · <b>Blog</b> · <b>Vaka analizleri</b> · <b>Kariyer ilanları</b> · <b>SSS</b></div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">4 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Ürün ekran görüntüleri: <b>müşteri</b> · UI çerçeveleri, illüstrasyon, soyut görseller: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Presify</span><span class="p"><span class="cur">$</span>8.000 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">03 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 4 — INAVITAS ELEKTRİK ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 3 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">Yenilenebilir enerji çözümleri · Çatı GES · Anahtar teslim kurulum</div><div class="bname">Inavitas Elektrik</div></div>
+    <div class="bmeta"><div class="dom">inavitaselektrik.com</div>Tasarım hazır — yalnızca geliştirme</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">Aktif site yok<small>alan adı mevcut</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">TR<small>+ EN, tasarımda varsa</small></div></div>
+    <div class="s"><div class="k">Tasarım</div><div class="v">Hazır<small>müşteri tarafından iletilecek</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">Kurulacak<small>tasarım kurgusuna göre</small></div></div>
+  </div>
+  <p class="statusnote"><b>Özel durum:</b> Inavitas Elektrik'in yayında bir web sitesi bulunmuyor; arayüz/tasarım çalışması firmanız tarafından hazırlanmış durumda. Bu nedenle kapsamda tasarım fazı yoktur — iletilecek tasarımın birebir, piksel hassasiyetinde Webflow'a geliştirilmesi ve yayına alınması yer alır.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>Hazır tasarımın <b>birebir Webflow geliştirmesi</b> (masaüstü/tablet/mobil kırılımlarıyla)</li>
+        <li>Tasarım kurgusuna göre <b>CMS koleksiyonlarının</b> kurulması ve içerik girişi</li>
+        <li>Teklif talebi odaklı <b>form ve başvuru hunisi</b> kurulumu</li>
+        <li>Alan adı/DNS yönlendirmesi, SSL ve <b>yayına alma</b></li>
+        <li>Sayfa geliştirme kapsamı: iletilen tasarımdaki <b>8 sayfaya kadar</b> bu bedele dahildir; üzeri sayfa başına ayrıca fiyatlandırılır</li>
+        <li>Ön koşul: tasarımın <b>Figma kaynak dosyası</b> olarak teslimi</li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>Organization + Service şemaları</b> (çatı GES, anahtar teslim kurulum hizmetleri)</li>
+        <li><b>Inavitas Elektrik AI Info Page</b> + llms.txt</li>
+        <li>"Çatı GES maliyeti", "lisanssız üretim" gibi sorulara <b>SSS blokları + FAQPage</b></li>
+        <li>Grup şirketleriyle <b>parentOrganization/sameAs</b> bağlantıları — markanın Inavitas ekosistemine bağlanması</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa (tasarım hazır)</div><div class="big">8 <small>sayfa geliştirme</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Hizmetler</b> · <b>Proje referansları</b> · <b>Blog / Haber</b> · <b>SSS</b> (tasarım kurgusuna göre)</div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">2 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Tasarım ve tüm görsel içerik: <b>müşteri</b> · Webflow'a uyarlama ve optimizasyon: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Inavitas Elektrik</span><span class="p"><span class="cur">$</span>3.500 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">04 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 5 — INAVITAS YATIRIM ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 4 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">Yenilenebilir enerji &amp; depolama varlık yatırımları</div><div class="bname">Inavitas Yatırım</div></div>
+    <div class="bmeta"><div class="dom">alan adı birlikte belirlenecek</div>Sıfırdan kurulum</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">Site yok<small>marka inavitas.com'da haber olarak yaşıyor</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">TR + EN<small>baştan çift dilli kurulum</small></div></div>
+    <div class="s"><div class="k">Sayfa</div><div class="v">—<small>bilgi mimarisi birlikte kurgulanacak</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">Kurulacak<small>portföy odaklı</small></div></div>
+  </div>
+  <p class="statusnote"><b>Fırsat:</b> Şirketin ilk varlığı (Nevşehir 9,4 MW GES) ve 2030 için 150 MW portföy hedefi güçlü bir kurumsal anlatı sunuyor. Yatırımcı, kamu kurumları ve iş ortaklarının karşısına çıkacak prestij odaklı bir site, markanın kurumsal kimliğini baştan doğru kurar.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>Bilgi mimarisi ve içerik kurgusunun birlikte oluşturulması; <b>sıfırdan kurumsal site</b></li>
+        <li>Yatırım yaklaşımı, portföy ve 2030 hedefini anlatan <b>prestij odaklı tasarım</b></li>
+        <li>Santral varlıkları için kapasite, konum ve durum alanlı <b>portföy koleksiyonu</b>; harita ve veri kartlarıyla sunum</li>
+        <li><b>Haber/duyuru akışı</b> — grup haberleriyle beslenebilir yapı</li>
+        <li>Yönetim/ekip ve sürdürülebilirlik sayfaları</li>
+        <li>TR + EN native Localization ile <b>çift dilli yayın</b></li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>Organization şeması</b> + grup ilişkileri (parentOrganization, sameAs) — yapay zekâ sistemlerinin markayı doğru konumlaması</li>
+        <li>Varlık verilerinin (MW, konum, devreye alma) <b>makine tarafından okunabilir</b> sunumu</li>
+        <li>Haberlere <b>NewsArticle şeması</b></li>
+        <li><b>Inavitas Yatırım AI Info Page</b> + llms.txt</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa tasarımı</div><div class="big">8 <small>özgün şablon</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Portföy varlıkları</b> (kapasite/konum/durum) · <b>Haberler</b> · <b>Ekip</b> · <b>SSS</b></div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">3 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Santral/saha fotoğrafları: <b>müşteri</b> · Harita, veri kartları, diyagram ve UI: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Inavitas Yatırım</span><span class="p"><span class="cur">$</span>5.500 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">05 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 6 — ENDOKS ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 5 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">Güç kalitesi &amp; şebeke çözümleri — SVC, STATCOM, filtreleme, IoT</div><div class="bname">Endoks</div></div>
+    <div class="bmeta"><div class="dom">endoks.com</div>Mevcut altyapı: WordPress (~2020)</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">WordPress<small>Yoast + çok dil eklentisi</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">TR + EN<small>EN sayfalara TR arayüz metni sızıyor</small></div></div>
+    <div class="s"><div class="k">Sayfa</div><div class="v">~60–120 URL<small>dağınık, tekrarlı yapı</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">4 içerik tipi<small>haber · servis · proje · ekip</small></div></div>
+  </div>
+  <p class="statusnote"><b>Kritik:</b> Grubun en büyük ve en eski sitesi. www/www-suz adresler dizinde birlikte geziyor (canonical karmaşası); eski endoks.com.tr döneminden kalma .html/.asp URL'ler ve spam izli sayfalar hâlâ dizinde. İçerik 2020'den beri neredeyse güncellenmemiş. 72+ ülkeye ihracat yapan şirketin dijital vitrini bugünkü ölçeğini yansıtmıyor.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>WordPress'ten Webflow'a <b>tam kapsamlı taşıma</b>; kurumsal kimliği güçlendiren yeni tasarım</li>
+        <li>Dağınık URL yapısının <b>~35–40 sayfalık net bilgi mimarisine</b> konsolidasyonu</li>
+        <li>SVC, STATCOM, MCR, harmonik filtre, DVR ve IoT ürünleri için <b>ürün/çözüm kataloğu</b></li>
+        <li>Yurt dışı projeler için <b>referans/proje koleksiyonu</b> — ülke ve kapasite verileriyle</li>
+        <li>PDF datasheet arşivinin <b>doküman kütüphanesine</b> taşınması</li>
+        <li>Kapsamlı <b>301 haritası</b>: eski .com.tr ve .asp URL enkazının dizinden temizlenmesi, www birleştirmesi</li>
+        <li>Mevcut TR + EN içeriğin native Localization'a <b>kayıpsız aktarımı</b></li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>Product/Service şemaları:</b> MVAr kapasitesi, gerilim seviyesi gibi teknik veriler yapılandırılmış alanlarda</li>
+        <li>Proje referanslarına <b>Article/CaseStudy şeması</b> — "Türkiye'de SVC üreticisi" tarzı sorgularda görünürlük</li>
+        <li><b>Endoks AI Info Page</b> + llms.txt (üretim yetkinlikleri, ihracat pazarları, Ar-Ge merkezi)</li>
+        <li>Legacy dizin temizliği — yapay zekâ botlarının eski/çelişkili içeriğe ulaşmasının engellenmesi</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa tasarımı</div><div class="big">14 <small>özgün şablon</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Ürün &amp; çözümler</b> · <b>Projeler / referanslar</b> · <b>Haberler</b> · <b>Ekip</b> · <b>Doküman kütüphanesi</b> · <b>SSS</b></div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">6 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Tesis/saha/proje fotoğrafları: <b>müşteri</b> · Teknik diyagram, ikonografi, UI: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Endoks</span><span class="p"><span class="cur">$</span>13.500 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">06 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 7 — PARTNER EGS ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Marka 6 / 6</div>
+  </div>
+  <div class="bhead">
+    <div><div class="klabel">Güneş enerjisi ürün distribütörlüğü &amp; enerji depolama</div><div class="bname">Partner EGS</div></div>
+    <div class="bmeta"><div class="dom">partneregs.com</div>Mevcut altyapı: Webflow (yeniden yapılandırma)</div>
+  </div>
+
+  <div class="statusrow">
+    <div class="s"><div class="k">Altyapı</div><div class="v">Webflow<small>doğru platform, eksik kurulum</small></div></div>
+    <div class="s"><div class="k">Dil</div><div class="v">TR + EN<small>manuel klasör kopyası, hreflang yok</small></div></div>
+    <div class="s"><div class="k">Sayfa</div><div class="v">~30–40<small>tamamı statik sayfa</small></div></div>
+    <div class="s"><div class="k">CMS</div><div class="v">Yok<small>hiç koleksiyon kurulmamış</small></div></div>
+  </div>
+  <p class="statusnote"><b>Kritik:</b> Site Webflow'da ancak CMS'siz kurulmuş: her ürün elle açılmış statik sayfa, TR ve EN içerikler kopya klasörlerde ayrı ayrı yönetiliyor. Soma 4 MW BESS gibi güçlü referans projeler ve haberler sitede hiç yer almıyor.</p>
+
+  <div class="bcols">
+    <div>
+      <div class="klabel">Yapılacak işler</div>
+      <ul class="tick worklist">
+        <li>Tasarımın grup design system'i üzerinde <b>yenilenmesi</b></li>
+        <li>Klasör tabanlı TR/EN yapısının <b>native Localization'a dönüştürülmesi</b> (mevcut URL'lerden 301 ile)</li>
+        <li>Statik ürün ağacının <b>CMS ürün kataloğuna</b> dönüştürülmesi — inverter, depolama, panel, trafo merkezi, IoT</li>
+        <li><b>Referans projeler koleksiyonu:</b> Soma 4 MW BESS ve diğer kurulumlar, kapasite/lokasyon verileriyle</li>
+        <li><b>Haber/duyuru koleksiyonu</b> — iş birlikleri ve basın görünürlüğü için</li>
+        <li>"Teklif Al" hunisinin <b>çok adımlı forma</b> dönüştürülmesi ve CRM entegrasyonu</li>
+      </ul>
+    </div>
+    <div class="geo-side">
+      <div class="klabel">Bu siteye özel GEO</div>
+      <ul class="tick">
+        <li><b>Product şeması:</b> marka/model/kategori alanlarıyla distribütör kataloğu</li>
+        <li>Referans projelere <b>CaseStudy/Article şeması</b> — "Türkiye BESS kurulumu" tarzı sorgular</li>
+        <li>hreflang'lı gerçek çok dillilik — TR/EN içeriğin doğru pazara eşlenmesi</li>
+        <li><b>Partner EGS AI Info Page</b> + llms.txt (distribütörlükler, kurulum referansları)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="factrow">
+    <div class="f"><div class="k">Sayfa tasarımı</div><div class="big">10 <small>özgün şablon</small></div></div>
+    <div class="f"><div class="k">Kurulacak CMS koleksiyonları</div><div class="list"><b>Ürünler</b> · <b>Çözümler</b> · <b>Referans projeler</b> · <b>Haberler</b> · <b>SSS</b></div></div>
+    <div class="f"><div class="k">Süre</div><div class="big">4 <small>hafta</small></div></div>
+    <div class="f"><div class="k">Görseller</div><div class="list">Ürün görselleri ve proje fotoğrafları: <b>müşteri</b> · UI ve ikonografi: <b>Roicool</b></div></div>
+  </div>
+
+  <div class="priceband"><span class="l">Yatırım — Partner EGS</span><span class="p"><span class="cur">$</span>7.500 <small>+ KDV</small></span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">07 / 08</span></div>
+</div>
+
+<!-- ════════ SAYFA 8 — YATIRIM ÖZETİ ════════ -->
+<div class="page">
+  <div class="topbar">
+    <div class="wordmark">roicool<span class="dot">.</span></div>
+    <div class="right">Yatırım özeti &amp; koşullar</div>
+  </div>
+
+  <div class="klabel">Yatırım Özeti</div>
+  <h2 class="sec">Altı site, tek program</h2>
+
+  <table class="pricing">
+    <tr><th>Marka</th><th>Kapsam</th><th class="num">Süre</th><th class="num">Bedel (USD)</th></tr>
+    <tr><td><b>Endoks</b></td><td>WordPress → Webflow taşıma, 14 şablon, 6 koleksiyon, kapsamlı 301 <span class="sub">· endoks.com</span></td><td class="num">6 hafta</td><td class="num">13.500</td></tr>
+    <tr><td><b>Wattox</b></td><td>Özgün tasarımla yeniden kurulum, ürün kataloğu, 10 şablon, 5 koleksiyon <span class="sub">· wattox.com</span></td><td class="num">4 hafta</td><td class="num">9.000</td></tr>
+    <tr><td><b>Presify</b></td><td>WordPress → Webflow taşıma, TR dili, 10 şablon, 5 koleksiyon <span class="sub">· presify.ai</span></td><td class="num">4 hafta</td><td class="num">8.000</td></tr>
+    <tr><td><b>Partner EGS</b></td><td>Webflow'da yeniden yapılandırma, native Localization, 10 şablon, 5 koleksiyon <span class="sub">· partneregs.com</span></td><td class="num">4 hafta</td><td class="num">7.500</td></tr>
+    <tr><td><b>Inavitas Yatırım</b></td><td>Sıfırdan kurumsal site, portföy koleksiyonu, 8 şablon, 4 koleksiyon</td><td class="num">3 hafta</td><td class="num">5.500</td></tr>
+    <tr><td><b>Inavitas Elektrik</b></td><td>Hazır tasarımdan geliştirme + yayına alma, 8 sayfa, 4 koleksiyon <span class="sub">· inavitaselektrik.com</span></td><td class="num">2 hafta</td><td class="num">3.500</td></tr>
+    <tr class="total"><td colspan="3">Liste toplamı</td><td class="num">47.000</td></tr>
+    <tr class="discount"><td colspan="3">Altı sitenin birlikte alınması hâlinde grup indirimi (ortak design system verimliliği)</td><td class="num">− 4.500</td></tr>
+    <tr class="grand"><td colspan="3">Paket bedeli <small>· KDV hariç</small></td><td class="num">$42.500</td></tr>
+  </table>
+
+  <div class="klabel">Zaman Planı</div>
+  <div class="timeline">
+    <div class="t ds"><b>Hafta 1–2</b>Design system + keşif</div>
+    <div class="t w1"><b>Hafta 3–8</b>Endoks</div>
+    <div class="t w2"><b>Hafta 3–6</b>Wattox</div>
+    <div class="t w2"><b>Hafta 5–8</b>Presify</div>
+    <div class="t w3"><b>Hafta 7–10</b>Partner EGS</div>
+    <div class="t w3"><b>Hafta 9–11</b>Inavitas Yatırım</div>
+    <div class="t w1"><b>Hafta 11–12</b>Inavitas Elektrik</div>
+  </div>
+  <p class="smallnote" style="margin-bottom:5mm;">Siteler iki paralel hatta yürütülür; her site kendi süresi içinde ayrı ayrı yayına alınır. Toplam program: <b>12–14 hafta</b>. Inavitas Elektrik, tasarım dosyasının teslimine bağlı olarak öne çekilebilir.</p>
+
+  <div class="termgrid">
+    <div class="termbox">
+      <h3>Ödeme planı</h3>
+      <ul>
+        <li>%40 — sözleşme ile birlikte, işe başlangıç</li>
+        <li>%30 — tasarımların onayında</li>
+        <li>%30 — sitelerin yayına alınmasında</li>
+      </ul>
+    </div>
+    <div class="termbox">
+      <h3>Kapsam dışı / müşteri tarafında</h3>
+      <ul>
+        <li>Webflow abonelik bedelleri (site başına yıllık yaklaşık 350–450 USD; CMS planı + Localization)</li>
+        <li>Alan adı tescili ve yenilemeleri</li>
+        <li>Metin içeriklerin yazımı (mevcut içerik taşınır; yeni metin ihtiyacı için copywriting ayrıca teklif edilir)</li>
+        <li>Ürün, tesis ve ekip fotoğraf çekimleri</li>
+      </ul>
+    </div>
+    <div class="termbox">
+      <h3>Opsiyonel — teklif kapsamı dışında</h3>
+      <ul>
+        <li>Aylık bakım + SEO/GEO içerik yönetimi (site başına 250–400 USD/ay)</li>
+        <li>inavitas.com ana sitesinin aynı design system'e hizalanması</li>
+        <li>Blog/vaka analizi içerik üretimi</li>
+      </ul>
+    </div>
+    <div class="termbox">
+      <h3>Koşullar</h3>
+      <ul>
+        <li>Bedellere KDV dahil değildir; TL faturalandırma fatura tarihindeki kur üzerinden yapılır</li>
+        <li>Teklif 26 Eylül 2026 tarihine kadar geçerlidir</li>
+        <li>Süreler, içerik ve görsellerin zamanında teslimine bağlıdır</li>
+        <li>Tüm siteler tek Webflow Workspace altında, tam yönetim yetkisi müşteride olacak şekilde teslim edilir</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="priceband" style="padding:2.8mm 5mm;margin-top:auto;"><span class="l">Sorularınız ve revizyon talepleriniz için</span><span class="p" style="font-size:10pt;">roicool<span class="cur">.</span>com</span></div>
+  <div class="footer"><span><b>Roicool</b> · Webflow Teklifi · Endoks–Inavitas Grubu</span><span class="pageno">08 / 08</span></div>
+</div>
+
+</body>
+</html>
