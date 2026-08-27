@@ -1,19 +1,27 @@
 /*!
- * voice-orbs.css v1.0.0
- * Voice sample orb carousel — ElevenLabs "omnibox" yapısının Sestek uyarlaması.
- * Ölçüler ve easing canlı siteden çıkarılan değerlerdir (256→202→145→109 px,
- * cubic-bezier(.22,1,.36,1)). Pair with js/components/voice-orbs.js.
+ * voice-orbs.css v2.0.0
+ * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
+ * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
  *
+ * Custom props ([data-voice-orbs] üzerinde override edilebilir):
+ *   --vo-gap          orb'lar arası boşluk            (default 48px)
+ *   --vo-caption-w    başlık/açıklama sütun genişliği (default 280px)
+ *   --vo-nav-offset   ‹ › oklarının merkezden uzaklığı (default 230px)
+ *   --vo-nav-bottom   okların alttan konumu           (default 2.25rem)
+ *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
+ *
  * Changelog
+ * v2.0.0 — BREAKING: item Button → Div (.vo-item > .vo-orb + .vo-caption);
+ *          caption (başlık+açıklama) desteği; play/pause overlay (JS enjekte
+ *          eder); nav okları absolute konumlu; aktif orb'da canvas her zaman
+ *          görünür; filtre butonu state'i (.is-active) dokümante edildi.
+ * v1.1.0 — (yayınlanmadı)
  * v1.0.0 — initial release
  */
 
 /* ── Root ────────────────────────────────────────────────────── */
-/*
- * Kart görünümü (cream zemin, radius, inset ring) Webflow tarafında verilir —
- * burada yalnız davranışsal iskelet var. Root genişliği parent'tan gelir.
- */
+/* Kart görünümü (zemin, radius, padding) Webflow tarafında verilir. */
 [data-voice-orbs] {
   position: relative;
 }
@@ -26,85 +34,156 @@
 
 .vo-track {
   display: flex;
-  align-items: center;
-  gap: var(--vo-gap, 24px);
+  align-items: flex-start; /* zone'lar üstten hizalı → caption'lar aynı satırda */
+  gap: var(--vo-gap, 48px);
   width: max-content;
   will-change: transform;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Wrap-jump sırasında JS bu sınıfı basar: geçişsiz anlık konumlama. */
+/* Wrap-jump / filtre değişimi: geçişsiz anlık konumlama (JS basar). */
 [data-voice-orbs].vo-no-anim .vo-track,
-[data-voice-orbs].vo-no-anim .vo-orb {
+[data-voice-orbs].vo-no-anim .vo-item {
   transition: none !important;
 }
 
-/* ── Orb ─────────────────────────────────────────────────────── */
+/* ── Item ────────────────────────────────────────────────────── */
+/* width inline JS'ten gelir (orb çapı); caption sabit genişlikte ortalanır. */
+.vo-item {
+  flex: 0 0 auto;
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Orb alanı ───────────────────────────────────────────────── */
 /*
- * width/height inline olarak JS'ten gelir (merdiven: 256/202/145/109 × scale);
- * geçiş burada tanımlı ki boyut değişimi carousel kaymasıyla aynı eğride aksın.
+ * Yükseklik tüm item'larda sabit (--vo-zone = en büyük çap, JS yazar);
+ * küçük orb'lar bu alanın ortasında durur → orb merkezleri aynı hizada,
+ * caption'lar aynı taban çizgisinde.
  */
 .vo-orb {
   position: relative;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
+  height: var(--vo-zone, 256px);
   cursor: pointer;
-  border-radius: 9999px;
-  opacity: 0.7;
-  transition:
-    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.vo-orb.vo-d1 { opacity: 0.85; }
-.vo-orb.is-active { opacity: 1; }
-
-.vo-orb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 9999px;
-  display: block;
-  pointer-events: none;
-  transition: transform 0.1s ease; /* ses enerjisiyle hafif pulse (JS) */
-}
-
-/* ── Visualizer canvas (yalnız aktif orb'da, JS taşır) ───────── */
+.vo-orb img,
 .vo-canvas {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1;
   border-radius: 9999px;
+  display: block;
+}
+
+.vo-orb img {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Aktif orb'da canvas (fluid gradient) PNG'nin üstünde her zaman açık. */
+.vo-canvas {
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.4s;
+  z-index: 1;
+}
+.vo-item.is-active .vo-canvas { opacity: 1; }
+
+/* ── Play / Pause overlay (JS enjekte eder) ──────────────────── */
+.vo-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 2;
+}
+.vo-item.is-active .vo-play,
+.vo-item:hover .vo-play,
+.vo-play:focus-visible { opacity: 1; }
+.vo-play:hover { transform: translate(-50%, -50%) scale(1.06); }
+
+.vo-play .vo-ic-play { display: block; }
+.vo-play .vo-ic-pause { display: none; }
+.vo-item.is-playing .vo-play .vo-ic-play { display: none; }
+.vo-item.is-playing .vo-play .vo-ic-pause { display: block; }
+
+/* ── Caption ─────────────────────────────────────────────────── */
+.vo-caption {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--vo-caption-w, 280px);
+  margin-top: var(--spacing--400, 1.5rem);
+  text-align: center;
 }
 
-.vo-canvas.is-on { opacity: 1; }
+.vo-title {
+  color: var(--color-text--secondary, #8f8f8f);
+  transition: color 0.3s;
+}
+.vo-item.is-active .vo-title {
+  color: var(--color-text--primary, #111);
+}
+
+.vo-desc {
+  margin-top: 0.35em;
+  color: var(--color-text--secondary, #9a9a9a);
+  transition: color 0.3s;
+}
+.vo-item.is-active .vo-desc {
+  color: var(--color-text--primary, #444);
+}
 
 /* ── Prev / Next ─────────────────────────────────────────────── */
-/* Nav butonlarını Webflow'da serbestçe stillendir; bu taban yeterlidir. */
+/* Caption satırı hizasında, merkezin iki yanında. Konum --vo-nav-offset /
+ * --vo-nav-bottom ile ayarlanır. */
 [data-vo-prev],
 [data-vo-next] {
+  position: absolute;
+  bottom: var(--vo-nav-bottom, 2.25rem);
   width: 40px;
   height: 40px;
+  padding: 0;
+  border: 0;
   border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: var(--surface--primary, #fff);
-  cursor: pointer;
-  font-size: 20px;
+  background: transparent;
+  color: var(--color-text--secondary, #777);
+  font-size: 22px;
   line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  transition: color 0.2s;
 }
+[data-vo-prev]:hover,
+[data-vo-next]:hover { color: var(--color-text--primary, #111); }
+[data-vo-prev] { left: calc(50% - var(--vo-nav-offset, 230px)); }
+[data-vo-next] { right: calc(50% - var(--vo-nav-offset, 230px)); }
+
+/* ── Filtre butonları ────────────────────────────────────────── */
+/* Görünümü Webflow'da stillendir; JS aktif butona .is-active basar. */
+[data-vo-filter] { cursor: pointer; }
 
 /* ── Reduced motion ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .vo-track,
-  .vo-orb,
-  .vo-orb img {
+  .vo-item,
+  .vo-canvas,
+  .vo-play {
     transition: none;
   }
 }

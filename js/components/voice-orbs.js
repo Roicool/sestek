@@ -1,50 +1,69 @@
 /*!
- * voice-orbs.js v1.0.0
- * Voice sample orb carousel — ElevenLabs "omnibox" bileşeninin birebir
- * mekanizmasıyla: yatay orb dizisi (merkez büyük, komşular peek), tıklanınca
- * ses önizlemesi çalar, aktif orb'un üstünde SES-REAKTİF WebGL katmanı oynar.
- * Zero deps (GSAP gerektirmez) — tüm geçişler CSS transition'dır.
+ * voice-orbs.js v2.0.0
+ * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
+ * + 2 kenar), her orb'un altında başlık + açıklama, dil filtresi, play/pause
+ * overlay. AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer
+ * (film grenli); ses çalarken akış hızı ve parlaklık AnalyserNode enerjisiyle
+ * artar. Zero deps — geçişler CSS transition, shader dosyanın içinde gömülü.
  * https://github.com/roicool/sestek
  *
- * Pipeline (kaynak analiz dokümanına sadık):
- *   • İki <audio preload="none" crossorigin="anonymous"> — double-buffer,
- *     ses değişiminde ping-pong (gapless). src, fetch→Blob→objectURL.
- *   • Web Audio: MediaElementSource → AnalyserNode → destination;
- *     rAF'te frekans verisi → tek enerji değeri (0..1).
- *   • WebGL fragment shader: orb dokusu + 32px noise dokusu; UV'ler
- *     fbm(uv + time) ile warp edilir, şiddet = uEnergy; üstüne grain.
- *     Canvas yalnız AKTİF orb'da; diğerleri düz <img> (perf).
- *   • Orb <img>'i enerjiyle hafif scale pulse'ı alır (1 + energy*0.06).
+ * Audio pipeline: iki <audio preload="none" crossorigin="anonymous"> —
+ * double-buffer ping-pong, src fetch→Blob→objectURL (cache'li);
+ * MediaElementSource → AnalyserNode → destination; rAF'te frekans
+ * ortalaması → enerji (0..1).
  *
- * Markup:
+ * Markup (Webflow):
  *   <div data-voice-orbs>
+ *     [ops.] filtre barı: <button data-vo-filter="all">All</button>
+ *                         <button data-vo-filter="en">English</button> …
+ *                         (üstte ve/veya altta; JS aktif olana .is-active basar)
  *     <div class="vo-viewport"><div class="vo-track">
- *       <button class="vo-orb" data-vo-item data-vo-name="James"
- *               data-vo-src="https://…/james.mp3">
- *         <img src="…orb.png" alt="">
- *       </button>
- *       … (her ses için bir buton; component sonsuz döngü için klonlar)
+ *       <div class="vo-item" data-vo-item
+ *            data-vo-name="Characters"
+ *            data-vo-src="https://…/preview.mp3"
+ *            data-vo-lang="en,tr"                      ← filtre eşleşmesi
+ *            data-vo-colors="#e08bd2,#7f7bd6,#f7c8b8"> ← ops. shader renkleri
+ *         <div class="vo-orb"><img src="…orb.png" alt=""></div>
+ *         <div class="vo-caption">
+ *           <div class="vo-title">Characters</div>
+ *           <div class="vo-desc">Playful and engaging voices…</div>
+ *         </div>
+ *       </div>
+ *       … her ses için bir .vo-item
  *     </div></div>
- *     <button data-vo-prev>‹</button> <button data-vo-next>›</button>
+ *     <button data-vo-prev aria-label="Previous voice">‹</button>
+ *     <button data-vo-next aria-label="Next voice">›</button>
  *   </div>
  *
+ * Component davranışı:
+ *   • Orijinal .vo-item'lar şablon olarak alınır ve DOM'dan çıkarılır;
+ *     track, aktif filtreye uyan seslerin 3 kopyasıyla (sonsuz döngü)
+ *     yeniden kurulur. Play/pause butonunu her orb'a JS enjekte eder.
+ *   • data-vo-colors yoksa renkler orb PNG'sinden otomatik örneklenir
+ *     (CORS temiz olmalı); o da olmazsa Sestek pastel varsayılanları.
+ *   • Komşu orb'a tıklama (veya hover'da çıkan play) oraya kaydırır ve çalar;
+ *     aktif orb'da play/pause toggle.
+ *
  * Root attributes (hepsi opsiyonel):
- *   data-vo-sizes      merkezden uzaklığa göre orb çapları px
- *                      (default "256,202,145,109" — kaynak siteden ölçülü)
- *   data-vo-fit        merdivenin tam ölçek çalıştığı viewport genişliği px;
- *                      daha darda oransal küçülür, peek düzeni korunur
- *                      (default 760)
- *   data-vo-min-scale  mobil küçülmenin alt sınırı (default 0.42)
+ *   data-vo-sizes      orb çapları merkez→dışa px (default "256,190,132")
+ *   data-vo-fit        merdivenin tam ölçek viewport'u px (default 760);
+ *                      darda oransal küçülür, peek düzeni korunur
+ *   data-vo-min-scale  küçülme alt sınırı (default 0.42)
  *
- * ⚠️ CORS: ses dosyaları (Cloudflare R2) ve orb görselleri (Webflow assets)
- * Access-Control-Allow-Origin header'ıyla servis edilmeli — AnalyserNode ve
- * WebGL dokusu ancak böyle çalışır. R2 bucket'ında CORS policy tanımla.
+ * ⚠️ CORS: mp3'ler (R2) ve orb görselleri Access-Control-Allow-Origin ile
+ * servis edilmeli — analyser, renk örnekleme ve WebGL dokusu buna bağlı.
  *
- * Fallback'ler: WebGL/doku yoksa görselleştirici sessizce atlanır, ses çalar.
- * prefers-reduced-motion → canvas ve pulse yok, ses çalar. Viewport dışında
- * rAF durur (ses sürer). Audio fetch hatasında blob yerine doğrudan URL.
+ * Fallback'ler: WebGL yoksa canvas atlanır (PNG kalır, ses çalar);
+ * prefers-reduced-motion → canvas yok, statik düzen, ses çalar; viewport
+ * dışında rAF durur; fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v2.0.0 — BREAKING yeniden tasarım: item Button → Div (.vo-orb + .vo-caption),
+ *          caption alanı, dil filtresi (data-vo-filter / data-vo-lang),
+ *          JS-enjekte play/pause overlay (hover'da komşularda görünür),
+ *          5-orb düzeni (3 kademeli merdiven), aktif orb'da PNG yerine
+ *          sürekli akan fluid-gradient shader (domain-warped fbm + gren;
+ *          renkler data-vo-colors ya da PNG'den otomatik).
  * v1.0.0 — initial release
  */
 
@@ -64,44 +83,81 @@
   /* Aynı anda tek instance ses çalsın. */
   var currentlyPlaying = null;
 
-  /* ── WebGL visualizer ─────────────────────────────────────────
-   * Dokümandaki tarif: orb dokusunu fbm(uv+time)*uEnergy ile warp'la,
-   * noise dokusundan grain ekle. Dairesel maske alpha'da.
+  var DEFAULT_COLORS = [
+    [0.98, 0.84, 0.93], // soft pembe
+    [0.55, 0.47, 0.92], // viyole
+    [0.79, 0.86, 0.98]  // buz mavisi
+  ];
+
+  var PLAY_SVG =
+    '<svg class="vo-ic-play" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">' +
+    '<path d="M5.5 3.5v11l9-5.5z" fill="currentColor"/></svg>';
+  var PAUSE_SVG =
+    '<svg class="vo-ic-pause" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">' +
+    '<path d="M4.5 3.5h3v11h-3zM10.5 3.5h3v11h-3z" fill="currentColor"/></svg>';
+
+  /* ── WebGL fluid gradient ─────────────────────────────────────
+   * Domain-warped fbm: q ve w ara alanları üzerinden 3 rengi akıtır,
+   * küre hacmi için highlight + kenar gölgesi, üstüne canlı film greni.
+   * u_energy akış hızını ve parlaklığı sürer (0 = sakin idle akış).
    */
   var VERT = "attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}";
 
+  /*
+   * Kaynak dokümanın tarifi: orb dokusunu fbm(uv+time) ile warp'la (şiddet
+   * uEnergy'yle ölçekli), noise dokusundan grain ekle. Burada warp "sıvı"
+   * seviyesinde ve idle'da da akar; energy hızı+şiddeti+parlaklığı artırır.
+   * PNG dokusu (CORS) alınamazsa u_c1..3 renklerinden aynı akışla sentez.
+   * NOT: fbm örnekleme koordinatları TEXEL ölçeğine indirgenir (÷128) —
+   * yüksek frekansta ham random dokusu konfetiye döner.
+   */
   var FRAG = [
     "precision highp float;",
     "uniform sampler2D u_tex;",     // orb PNG
-    "uniform sampler2D u_noise;",   // 32px tileable noise
+    "uniform sampler2D u_noise;",   // 128px tileable random
     "uniform vec2  u_res;",
     "uniform float u_time;",
     "uniform float u_energy;",
-    // fbm — noise DOKUSUNDAN örnekleyerek (kaynak: küçük noise png + fbm warp)
+    "uniform float u_hasTex;",
+    "uniform vec3  u_c1;",
+    "uniform vec3  u_c2;",
+    "uniform vec3  u_c3;",
+    // value-noise fbm — p birim uzayda, texel ölçeğine burada iner
     "float fbm(vec2 p){",
     "  float v=0.0,a=0.5;",
+    "  p*=0.045;",                  // canvas boyu ≈ 6 texel → yumuşak alan
     "  for(int i=0;i<4;i++){v+=a*texture2D(u_noise,p).r;p=p*2.03+17.1;a*=0.5;}",
     "  return v;}",
     "void main(){",
     "  vec2 uv=gl_FragCoord.xy/u_res;",
     "  vec2 c=uv-0.5;float r=length(c)*2.0;",
     "  float mask=1.0-smoothstep(0.98,1.0,r);",
-    "  float t=u_time;",
-    // warp şiddeti ses enerjisiyle ölçeklenir; kenara doğru söner ki
-    // örnekleme dairenin (şeffaf köşelerin) dışına taşmasın
-    "  float amp=(0.04+u_energy*0.22)*(1.0-smoothstep(0.82,1.0,r));",
-    "  vec2 d=vec2(fbm(uv*1.5+vec2(t*0.05,t*0.03)),",
-    "              fbm(uv*1.5+vec2(-t*0.04,t*0.06)+7.3))-0.5;",
-    "  vec3 col=texture2D(u_tex,uv+d*amp).rgb;",
-    // grain
-    "  float g=texture2D(u_noise,gl_FragCoord.xy/32.0+fract(vec2(t*7.0,t*13.0))).r;",
-    "  col+=(g-0.5)*0.06;",
+    "  float t=u_time*(0.28+u_energy*1.1);",
+    // akış alanı: iki fazlı fbm → sıvı domain warp
+    "  vec2 q=vec2(fbm(uv*2.0+vec2(t*0.30,t*0.18)),",
+    "              fbm(uv*2.0+vec2(4.7,1.3)-vec2(t*0.22,t*0.34)));",
+    "  float amp=(0.14+u_energy*0.30)*(1.0-smoothstep(0.80,1.0,r));",
+    "  vec2 wuv=uv+(q-0.5)*amp;",
+    // renk: PNG varsa warp'lı doku; yoksa aynı akıştan 3-renk sentez
+    "  vec3 col;",
+    "  if(u_hasTex>0.5){col=texture2D(u_tex,wuv).rgb;}",
+    "  else{",
+    "    col=mix(u_c1,u_c2,clamp((q.x-0.32)*3.0,0.0,1.0));",
+    "    col=mix(col,u_c3,clamp((q.y-0.36)*2.8,0.0,1.0));",
+    "  }",
+    "  vec2 h=c-vec2(-0.16,0.16);",                       // üst-sol highlight
+    "  col+=vec3(0.08)*exp(-dot(h,h)*7.0);",
+    "  col*=1.0-0.16*smoothstep(0.60,1.0,r);",            // kenar gölgesi
+    "  col+=u_energy*0.12;",                              // çalarken parlar
+    "  float g=texture2D(u_noise,gl_FragCoord.xy/128.0+fract(vec2(u_time*3.1,u_time*5.7))).r;",
+    "  col+=(g-0.5)*0.07;",                               // film greni
     "  gl_FragColor=vec4(col,mask);}"
   ].join("\n");
 
   function createViz(canvas) {
-    var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false }) ||
-             canvas.getContext("experimental-webgl", { alpha: true, premultipliedAlpha: false });
+    var opts = { alpha: true, premultipliedAlpha: false };
+    var gl = canvas.getContext("webgl", opts) ||
+             canvas.getContext("experimental-webgl", opts);
     if (!gl) return null;
 
     function compile(type, src) {
@@ -125,53 +181,59 @@
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-    // TEXTURE1 — 32×32 tileable noise (kaynaktaki küçük noise png karşılığı,
-    // dışa istek atmamak için burada üretilir)
+    // 128×128 tileable noise — fbm tabanı + piksel greni (dış istek yok)
     var noiseTex = gl.createTexture();
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, noiseTex);
-    var px = new Uint8Array(32 * 32);
+    var px = new Uint8Array(128 * 128);
     for (var i = 0; i < px.length; i++) px[i] = (Math.random() * 256) | 0;
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 32, 32, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, px);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 128, 128, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, px);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    // TEXTURE0 — orb görseli (aktif ses değişince yeniden yüklenir)
+    // TEXTURE0 — aktif orb'un PNG'si (ses değişince setImage ile yenilenir)
     var orbTex = gl.createTexture();
-    var hasTex = false;
 
     var uRes = gl.getUniformLocation(prog, "u_res");
     var uTime = gl.getUniformLocation(prog, "u_time");
     var uEnergy = gl.getUniformLocation(prog, "u_energy");
+    var uHasTex = gl.getUniformLocation(prog, "u_hasTex");
+    var uC = [
+      gl.getUniformLocation(prog, "u_c1"),
+      gl.getUniformLocation(prog, "u_c2"),
+      gl.getUniformLocation(prog, "u_c3")
+    ];
     gl.uniform1i(gl.getUniformLocation(prog, "u_tex"), 0);
     gl.uniform1i(gl.getUniformLocation(prog, "u_noise"), 1);
+    gl.uniform1f(uHasTex, 0);
 
     return {
       setImage: function (img) {
-        hasTex = false;
-        if (!img) return;
+        if (!img) { gl.uniform1f(uHasTex, 0); return false; }
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, orbTex);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         try {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         } catch (e) {
-          console.warn("[voice-orbs] Orb dokusu yüklenemedi (CORS?):", e);
-          return;
+          gl.uniform1f(uHasTex, 0); return false;
         }
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        hasTex = true;
+        gl.uniform1f(uHasTex, 1);
+        return true;
       },
-      ready: function () { return hasTex; },
-      resize: function (px) {
-        canvas.width = px; canvas.height = px;
-        gl.viewport(0, 0, px, px);
+      setColors: function (cols) {
+        for (var i = 0; i < 3; i++) gl.uniform3fv(uC[i], cols[i] || DEFAULT_COLORS[i]);
+      },
+      resize: function (side) {
+        canvas.width = side; canvas.height = side;
+        gl.viewport(0, 0, side, side);
       },
       draw: function (t, energy) {
         gl.uniform2f(uRes, canvas.width, canvas.height);
@@ -182,6 +244,53 @@
     };
   }
 
+  /* "#rrggbb,#rrggbb,#rrggbb" → [[r,g,b]×3] (0..1) | null */
+  function parseColors(v) {
+    if (!v) return null;
+    var out = [];
+    v.split(",").forEach(function (h) {
+      var m = h.trim().match(/^#?([0-9a-f]{6})$/i);
+      if (m) out.push([
+        parseInt(m[1].slice(0, 2), 16) / 255,
+        parseInt(m[1].slice(2, 4), 16) / 255,
+        parseInt(m[1].slice(4, 6), 16) / 255
+      ]);
+    });
+    return out.length >= 3 ? out.slice(0, 3) : null;
+  }
+
+  /* PNG'den 3 renk örnekle: parlaklığa göre sırala, %82/%50/%18'den al. */
+  function extractPalette(src) {
+    return new Promise(function (res) {
+      if (!src) return res(null);
+      var im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onerror = function () { res(null); };
+      im.onload = function () {
+        try {
+          var cv = document.createElement("canvas");
+          cv.width = cv.height = 24;
+          var cx = cv.getContext("2d");
+          cx.drawImage(im, 0, 0, 24, 24);
+          var d = cx.getImageData(0, 0, 24, 24).data, px = [];
+          for (var i = 0; i < d.length; i += 4) {
+            if (d[i + 3] > 200) px.push([d[i] / 255, d[i + 1] / 255, d[i + 2] / 255]);
+          }
+          if (px.length < 12) return res(null);
+          px.sort(function (a, b) {
+            return (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]);
+          });
+          res([
+            px[(px.length * 0.82) | 0],
+            px[(px.length * 0.50) | 0],
+            px[(px.length * 0.18) | 0]
+          ]);
+        } catch (e) { res(null); } // tainted canvas (CORS yok) → varsayılan
+      };
+      im.src = src;
+    });
+  }
+
   /* ── Bir instance ─────────────────────────────────────────── */
   function setup(root) {
     if (root._voInit) return null;
@@ -189,89 +298,33 @@
 
     var track = root.querySelector(".vo-track");
     var viewport = root.querySelector(".vo-viewport");
-    var items = Array.prototype.slice.call(root.querySelectorAll("[data-vo-item]"));
-    if (!track || !viewport || items.length < 2) {
-      console.warn("[voice-orbs] .vo-track/.vo-viewport veya yeterli [data-vo-item] yok.");
+    var originals = Array.prototype.slice.call(root.querySelectorAll("[data-vo-item]"));
+    if (!track || !viewport || !originals.length) {
+      console.warn("[voice-orbs] .vo-track/.vo-viewport veya [data-vo-item] yok.");
       return null;
     }
 
     var reduce = reducedMotion();
-    var ladder = (root.getAttribute("data-vo-sizes") || "256,202,145,109")
+    var ladder = (root.getAttribute("data-vo-sizes") || "256,190,132")
       .split(",").map(function (n) { return parseFloat(n) || 0; });
-    while (ladder.length < 4) ladder.push(ladder[ladder.length - 1]);
     var fit = attrNum(root, "data-vo-fit", 760);
     var minScale = attrNum(root, "data-vo-min-scale", 0.42);
 
-    var N = items.length;
-    var voices = items.map(function (el) {
+    // Şablonları topla, orijinalleri DOM'dan çıkar (track klonlarla kurulur)
+    var voices = originals.map(function (el) {
+      var img = el.querySelector("img");
       return {
         name: el.getAttribute("data-vo-name") || "",
         src: el.getAttribute("data-vo-src") || "",
-        img: el.querySelector("img"),
-        texPromise: null
+        langs: (el.getAttribute("data-vo-lang") || "").toLowerCase()
+          .split(",").map(function (s) { return s.trim(); }).filter(Boolean),
+        colors: parseColors(el.getAttribute("data-vo-colors")),
+        imgSrc: img ? (img.currentSrc || img.src) : "",
+        tpl: el,
+        palettePromise: null
       };
     });
-
-    // ── Sonsuz döngü: seti 3 kopya hâlinde diz (kaynak DOM'daki gibi),
-    // pos orta kopyada gezer, kenara yaklaşınca sessizce ±N zıplanır.
-    function makeClone(i) {
-      var el = items[i].cloneNode(true);
-      el.setAttribute("tabindex", "-1"); // klonlar tab sırasına girmesin
-      el._voVoice = i;
-      return el;
-    }
-    items.forEach(function (el, i) {
-      el._voVoice = i;
-      if (voices[i].name) {
-        el.setAttribute("aria-label", "Play " + voices[i].name + " preview");
-      }
-    });
-    voices.forEach(function (_, i) { track.insertBefore(makeClone(i), items[0]); });
-    voices.forEach(function (_, i) { track.appendChild(makeClone(i)); });
-    // DOM sırası: [önceki kopya][orijinaller][sonraki kopya]
-    var els = Array.prototype.slice.call(track.children);
-
-    var pos = N; // orta kopyanın ilk sesi
-    var normalizeTimer = 0;
-
-    // ── Layout: boyut merdiveni + track'i merkeze getiren translate
-    function scaleNow() {
-      var w = viewport.clientWidth || root.clientWidth;
-      return Math.max(minScale, Math.min(1, w / fit));
-    }
-    function layout(noAnim) {
-      var s = scaleNow();
-      var gap = parseFloat(getComputedStyle(track).gap) || 24;
-      if (noAnim) root.classList.add("vo-no-anim");
-      var x = 0, activeCenter = 0;
-      els.forEach(function (el, i) {
-        var dist = Math.min(Math.abs(i - pos), 3);
-        var size = Math.round(ladder[dist] * s);
-        el.style.width = size + "px";
-        el.style.height = size + "px";
-        el.classList.toggle("is-active", i === pos);
-        el.classList.toggle("vo-d1", Math.abs(i - pos) === 1);
-        if (i === pos) activeCenter = x + size / 2;
-        x += size + gap;
-      });
-      var tx = (viewport.clientWidth / 2) - activeCenter;
-      track.style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
-      if (noAnim) {
-        void track.offsetWidth; // reflow — geçişsiz uygula
-        root.classList.remove("vo-no-anim");
-      }
-      if (viz) viz.resize(Math.round(ladder[0] * s * Math.min(window.devicePixelRatio || 1, 2)));
-    }
-    // Kenar kopyasına taşındıysak animasyon bitince görünmez ±N zıplaması
-    function scheduleNormalize() {
-      if (pos >= N && pos < 2 * N) return;
-      clearTimeout(normalizeTimer);
-      normalizeTimer = setTimeout(function () {
-        pos += pos < N ? N : -N;
-        moveCanvasTo(els[pos]);
-        layout(true);
-      }, 500);
-    }
+    originals.forEach(function (el) { el.parentNode.removeChild(el); });
 
     // ── Audio: double-buffer + blob cache + analyser
     var audios = [0, 1].map(function () {
@@ -311,66 +364,187 @@
       return blobCache[url];
     }
 
-    // ── Visualizer kurulumu (tek canvas, aktif orb'a taşınır)
-    var canvas = null, viz = null, energy = 0;
+    // ── Visualizer (tek canvas, aktif orb'a taşınır; idle'da da akar)
+    var canvas = null, viz = null;
     if (!reduce) {
       canvas = document.createElement("canvas");
       canvas.className = "vo-canvas";
       canvas.setAttribute("aria-hidden", "true");
       viz = createViz(canvas);
-      if (!viz) canvas = null; // WebGL yok → görselleştiricisiz devam
+      if (!viz) canvas = null;
     }
-    function moveCanvasTo(el) {
-      if (canvas && canvas.parentNode !== el) el.appendChild(canvas);
+
+    function paletteFor(vi) {
+      var v = voices[vi];
+      if (v.colors) return Promise.resolve(v.colors);
+      if (!v.palettePromise) v.palettePromise = extractPalette(v.imgSrc);
+      return v.palettePromise;
     }
-    function loadTexFor(vi) {
+
+    /* Aktif sesin PNG'sini CORS'lu Image olarak yükle (cache'li). */
+    function textureFor(vi) {
       var v = voices[vi];
       if (!v.texPromise) {
         v.texPromise = new Promise(function (res) {
-          if (!v.img) return res(null);
+          if (!v.imgSrc) return res(null);
           var im = new Image();
           im.crossOrigin = "anonymous";
           im.onload = function () { res(im); };
           im.onerror = function () { res(null); };
-          im.src = v.img.currentSrc || v.img.src;
+          im.src = v.imgSrc;
         });
       }
       return v.texPromise;
     }
 
+    // ── View (aktif filtre) + track kurulumu
+    var view = [];   // görünür voice index'leri
+    var els = [];    // track'teki node'lar: {el, vi}
+    var pos = 0;
+    var normalizeTimer = 0;
+    var M = 0;       // view.length
+
+    function buildView(filterVal) {
+      stop();
+      clearTimeout(normalizeTimer);
+      filterVal = (filterVal || "all").toLowerCase();
+      view = [];
+      voices.forEach(function (v, i) {
+        var match = filterVal === "all" || !v.langs.length ||
+                    v.langs.indexOf(filterVal) !== -1;
+        if (match) view.push(i);
+      });
+      M = view.length;
+      track.innerHTML = "";
+      els = [];
+      if (!M) { console.warn("[voice-orbs] '" + filterVal + "' filtresi boş."); return; }
+
+      for (var copy = 0; copy < 3; copy++) {
+        view.forEach(function (vi) {
+          var v = voices[vi];
+          var el = v.tpl.cloneNode(true);
+          el.classList.add("vo-item");
+          var orb = el.querySelector(".vo-orb");
+          if (orb) {
+            var btn = document.createElement("button");
+            btn.className = "vo-play";
+            btn.setAttribute("aria-label", "Play " + (v.name || "voice") + " preview");
+            if (copy !== 1) btn.setAttribute("tabindex", "-1"); // klon kopyalar tab dışı
+            btn.innerHTML = PLAY_SVG + PAUSE_SVG;
+            orb.appendChild(btn);
+            (function (node) {
+              orb.addEventListener("click", function () { onOrbClick(node); });
+            })(el);
+          }
+          track.appendChild(el);
+          els.push({ el: el, vi: vi });
+        });
+      }
+      pos = M; // orta kopyanın ilk sesi
+      activate();
+      layout(true);
+    }
+
+    function onOrbClick(node) {
+      var i = -1;
+      for (var k = 0; k < els.length; k++) if (els[k].el === node) { i = k; break; }
+      if (i === -1) return;
+      if (i === pos) { toggle(); } else { goTo(i); }
+    }
+
+    // ── Layout
+    function scaleNow() {
+      var w = viewport.clientWidth || root.clientWidth;
+      return Math.max(minScale, Math.min(1, w / fit));
+    }
+    function layout(noAnim) {
+      if (!els.length) return;
+      var s = scaleNow();
+      var gap = parseFloat(getComputedStyle(track).gap) || 48;
+      root.style.setProperty("--vo-zone", Math.round(ladder[0] * s) + "px");
+      if (noAnim) root.classList.add("vo-no-anim");
+      var x = 0, activeCenter = 0;
+      els.forEach(function (o, i) {
+        var dist = Math.min(Math.abs(i - pos), ladder.length - 1);
+        var size = Math.round(ladder[dist] * s);
+        o.el.style.width = size + "px";
+        if (i === pos) activeCenter = x + size / 2;
+        x += size + gap;
+      });
+      var tx = (viewport.clientWidth / 2) - activeCenter;
+      track.style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
+      if (noAnim) {
+        void track.offsetWidth;
+        root.classList.remove("vo-no-anim");
+      }
+      if (viz) viz.resize(Math.round(ladder[0] * s * Math.min(window.devicePixelRatio || 1, 2)));
+    }
+
+    // Aktif sınıflar + canvas'ı aktif orb'a taşı + renkleri yükle
+    function activate() {
+      els.forEach(function (o, i) {
+        o.el.classList.toggle("is-active", i === pos);
+        o.el.classList.toggle("vo-d1", Math.abs(i - pos) === 1);
+        if (i !== pos) o.el.classList.remove("is-playing");
+      });
+      if (!canvas) return;
+      var orb = els[pos] && els[pos].el.querySelector(".vo-orb");
+      if (orb && canvas.parentNode !== orb) orb.insertBefore(canvas, orb.querySelector(".vo-play"));
+      // Önce PNG dokusu (dokümandaki asıl teknik); CORS/tainted ise
+      // renk paletine düş (data-vo-colors → PNG örnekleme → varsayılan).
+      var vi = els[pos].vi, seq = ++colorSeq;
+      textureFor(vi).then(function (im) {
+        if (seq !== colorSeq || !viz) return;
+        if (viz.setImage(im)) return;
+        paletteFor(vi).then(function (cols) {
+          if (seq !== colorSeq || !viz) return;
+          viz.setColors(cols || DEFAULT_COLORS);
+        });
+      });
+      startTick();
+    }
+    var colorSeq = 0;
+
+    function scheduleNormalize() {
+      if (pos >= M && pos < 2 * M) return;
+      clearTimeout(normalizeTimer);
+      normalizeTimer = setTimeout(function () {
+        pos += pos < M ? M : -M;
+        activate();
+        layout(true);
+      }, 600);
+    }
+
+    // ── rAF: idle'da da akar (enerji 0), çalarken analyser sürer
     var t0 = performance.now();
+    var energy = 0;
     function tick() {
       raf = 0;
-      if (!playing || !visible) return;
-      var e = 0;
-      if (analyser) {
+      if (!visible || !viz || !els.length) return;
+      var target = 0;
+      if (playing && analyser) {
         analyser.getByteFrequencyData(freq);
         var sum = 0;
         for (var i = 0; i < freq.length; i++) sum += freq[i];
-        e = (sum / freq.length) / 255;
+        target = (sum / freq.length) / 255;
       }
-      energy = e;
-      var active = els[pos];
-      var img = active.querySelector("img");
-      if (img && !reduce) img.style.transform = "scale(" + (1 + e * 0.06).toFixed(3) + ")";
-      if (viz && viz.ready() && canvas) viz.draw((performance.now() - t0) / 1000, e);
+      energy += (target - energy) * 0.18; // yumuşatılmış enerji
+      viz.draw((performance.now() - t0) / 1000, energy);
       raf = requestAnimationFrame(tick);
     }
-    function startTick() { if (!raf && playing && visible) raf = requestAnimationFrame(tick); }
+    function startTick() { if (!raf && visible && viz) raf = requestAnimationFrame(tick); }
 
+    // ── Playback
     function stop() {
       playing = false;
-      if (raf) { cancelAnimationFrame(raf); raf = 0; }
-      if (canvas) canvas.classList.remove("is-on");
-      var img = els[pos].querySelector("img");
-      if (img) img.style.transform = "";
+      els.forEach(function (o) { o.el.classList.remove("is-playing"); });
       audios.forEach(function (a) { a.pause(); });
     }
-
     var ctl = { stop: stop };
 
     function play() {
-      var vi = els[pos]._voVoice;
+      if (!els.length) return;
+      var vi = els[pos].vi;
       var v = voices[vi];
       if (!v.src) return;
       if (currentlyPlaying && currentlyPlaying !== ctl) currentlyPlaying.stop();
@@ -381,17 +555,9 @@
 
       var id = ++playSeq;
       var prev = audios[flip];
-      flip = 1 - flip;                      // ping-pong: diğer buffer'a geç
+      flip = 1 - flip;
       var next = audios[flip];
 
-      moveCanvasTo(els[pos]);
-      if (viz) {
-        loadTexFor(vi).then(function (im) {
-          if (id !== playSeq) return;
-          viz.setImage(im);
-          if (canvas && im && playing) canvas.classList.add("is-on");
-        });
-      }
       loadBlob(v.src).then(function (src) {
         if (id !== playSeq) return;
         prev.pause();
@@ -399,32 +565,39 @@
         next.currentTime = 0;
         next.play().catch(function () {});
         playing = true;
-        if (canvas && viz && viz.ready()) canvas.classList.add("is-on");
+        if (els[pos]) els[pos].el.classList.add("is-playing");
         startTick();
       });
     }
-    function toggle() {
-      if (playing) { stop(); } else { play(); }
-    }
-    function goTo(index, autoplay) {
-      if (index === pos) { toggle(); return; }
-      if (canvas) canvas.classList.remove("is-on");
-      var img = els[pos].querySelector("img");
-      if (img) img.style.transform = "";
+    function toggle() { if (playing) { stop(); } else { play(); } }
+    function goTo(index) {
+      if (M < 2 || index === pos) return;
       pos = index;
+      activate();
       layout(reduce);
       scheduleNormalize();
-      if (autoplay !== false) play();
+      play();
     }
 
-    // ── Events
-    els.forEach(function (el, i) {
-      el.addEventListener("click", function () { goTo(i); });
-    });
+    // ── Nav + filtre + resize + görünürlük
     var prevBtn = root.querySelector("[data-vo-prev]");
     var nextBtn = root.querySelector("[data-vo-next]");
     if (prevBtn) prevBtn.addEventListener("click", function () { goTo(pos - 1); });
     if (nextBtn) nextBtn.addEventListener("click", function () { goTo(pos + 1); });
+
+    var filterBtns = Array.prototype.slice.call(root.querySelectorAll("[data-vo-filter]"));
+    function setFilter(val) {
+      filterBtns.forEach(function (b) {
+        b.classList.toggle("is-active",
+          (b.getAttribute("data-vo-filter") || "").toLowerCase() === val);
+      });
+      buildView(val);
+    }
+    filterBtns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        setFilter((b.getAttribute("data-vo-filter") || "all").toLowerCase());
+      });
+    });
 
     var resizeT = 0;
     window.addEventListener("resize", function () {
@@ -432,7 +605,6 @@
       resizeT = setTimeout(function () { layout(true); }, 100);
     });
 
-    // Viewport dışında çizimi durdur (ses sürer)
     if (typeof IntersectionObserver !== "undefined") {
       new IntersectionObserver(function (entries) {
         visible = entries[0].isIntersecting;
@@ -440,7 +612,15 @@
       }).observe(root);
     }
 
-    layout(true);
+    // İlk görünüm: .is-active işaretli filtre butonu varsa o, yoksa "all"
+    var initial = "all";
+    filterBtns.forEach(function (b) {
+      if (b.classList.contains("is-active")) {
+        initial = (b.getAttribute("data-vo-filter") || "all").toLowerCase();
+      }
+    });
+    setFilter(initial);
+
     return ctl;
   }
 
