@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v2.1.0
+ * voice-orbs.js v2.2.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, dil filtresi, play/pause
  * overlay. AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer
@@ -41,8 +41,9 @@
  *     yeniden kurulur. Play/pause butonunu her orb'a JS enjekte eder.
  *   • data-vo-colors yoksa renkler orb PNG'sinden otomatik örneklenir
  *     (CORS temiz olmalı); o da olmazsa Sestek pastel varsayılanları.
- *   • Komşu orb'a tıklama (veya hover'da çıkan play) oraya kaydırır ve çalar;
- *     aktif orb'da play/pause toggle.
+ *   • Autoplay YOK: orb gövdesine tıklama ve ‹ › yalnız kaydırır (süren
+ *     yayını durdurur). Çalma sadece play butonuyla — komşunun play'i
+ *     oraya kaydırıp çalar, aktifte play/pause toggle eder.
  *
  * Root attributes (hepsi opsiyonel):
  *   data-vo-sizes      orb çapları merkez→dışa px (default "220,150,104")
@@ -58,6 +59,9 @@
  * dışında rAF durur; fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v2.2.0 — autoplay kaldırıldı: orb'a tıklamak ve ‹ › yalnız KAYDIRIR (süren
+ *          yayını durdurur); çalma sadece play butonuyla — komşunun play'i
+ *          oraya kaydırıp çalar, aktifte toggle eder
  * v2.1.0 — daha ferah düzen: default orb merdiveni 256/190/132 → 220/150/104,
  *          orb aralığı (gap) mobil ölçeğiyle birlikte küçülür (dar ekranda
  *          oransal boşluk korunur, kalabalık görünüm gitti)
@@ -436,7 +440,13 @@
             btn.innerHTML = PLAY_SVG + PAUSE_SVG;
             orb.appendChild(btn);
             (function (node) {
-              orb.addEventListener("click", function () { onOrbClick(node); });
+              // Orb gövdesi yalnız KAYDIRIR — autoplay yok
+              orb.addEventListener("click", function () { onOrbClick(node, false); });
+              // Play butonu açık niyettir: gerekirse kaydırır ve çalar
+              btn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                onOrbClick(node, true);
+              });
             })(el);
           }
           track.appendChild(el);
@@ -448,11 +458,16 @@
       layout(true);
     }
 
-    function onOrbClick(node) {
+    function onOrbClick(node, wantPlay) {
       var i = -1;
       for (var k = 0; k < els.length; k++) if (els[k].el === node) { i = k; break; }
       if (i === -1) return;
-      if (i === pos) { toggle(); } else { goTo(i); }
+      if (i === pos) {
+        if (wantPlay) toggle(); // aktif orb'da yalnız play butonu toggle eder
+      } else {
+        goTo(i);
+        if (wantPlay) play();
+      }
     }
 
     // ── Layout
@@ -579,13 +594,14 @@
       });
     }
     function toggle() { if (playing) { stop(); } else { play(); } }
+    /* Kaydırma ÇALMAZ (autoplay yok) — süren yayını durdurur. */
     function goTo(index) {
       if (M < 2 || index === pos) return;
+      stop();
       pos = index;
       activate();
       layout(reduce);
       scheduleNormalize();
-      play();
     }
 
     // ── Nav + filtre + resize + görünürlük
