@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.css v2.0.0
+ * voice-orbs.css v2.1.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
@@ -12,6 +12,9 @@
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.1.0 — sadece AKTİF item'ın caption'ı görünür (pasifler fade-out —
+ *          üst üste binen yazı kalabalığı gitti); default gap 48→64px;
+ *          nav butonları grid ile gerçek ortalanır (bozuk chevron hizası)
  * v2.0.0 — BREAKING: item Button → Div (.vo-item > .vo-orb + .vo-caption);
  *          caption (başlık+açıklama) desteği; play/pause overlay (JS enjekte
  *          eder); nav okları absolute konumlu; aktif orb'da canvas her zaman
@@ -35,7 +38,7 @@
 .vo-track {
   display: flex;
   align-items: flex-start; /* zone'lar üstten hizalı → caption'lar aynı satırda */
-  gap: var(--vo-gap, 48px);
+  gap: var(--vo-gap, 64px); /* JS bunu mobil ölçeğiyle çarpar */
   width: max-content;
   will-change: transform;
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
@@ -123,6 +126,8 @@
 .vo-item.is-playing .vo-play .vo-ic-pause { display: block; }
 
 /* ── Caption ─────────────────────────────────────────────────── */
+/* Yalnız AKTİF item'ın caption'ı görünür — pasifler yumuşakça kaybolur
+ * (fixed genişlikli caption'lar küçük orb'larda üst üste biner). */
 .vo-caption {
   position: relative;
   left: 50%;
@@ -130,6 +135,13 @@
   width: var(--vo-caption-w, 280px);
   margin-top: var(--spacing--400, 1.5rem);
   text-align: center;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.vo-item.is-active .vo-caption {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .vo-title {
@@ -163,16 +175,21 @@
   border-radius: 9999px;
   background: transparent;
   color: var(--color-text--secondary, #777);
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
   z-index: 3;
   transition: color 0.2s;
+  display: grid;
+  place-items: center; /* glyph/ikon tam ortada — kayık chevron düzeldi */
 }
+[data-vo-prev] svg,
+[data-vo-next] svg { display: block; }
 [data-vo-prev]:hover,
 [data-vo-next]:hover { color: var(--color-text--primary, #111); }
-[data-vo-prev] { left: calc(50% - var(--vo-nav-offset, 230px)); }
-[data-vo-next] { right: calc(50% - var(--vo-nav-offset, 230px)); }
+/* max(): dar ekranda offset kartın dışına taşarsa kenarda 12px'te durur */
+[data-vo-prev] { left: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
+[data-vo-next] { right: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
 
 /* ── Filtre butonları ────────────────────────────────────────── */
 /* Görünümü Webflow'da stillendir; JS aktif butona .is-active basar. */

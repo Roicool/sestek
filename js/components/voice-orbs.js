@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v2.0.0
+ * voice-orbs.js v2.1.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, dil filtresi, play/pause
  * overlay. AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer
@@ -45,7 +45,7 @@
  *     aktif orb'da play/pause toggle.
  *
  * Root attributes (hepsi opsiyonel):
- *   data-vo-sizes      orb çapları merkez→dışa px (default "256,190,132")
+ *   data-vo-sizes      orb çapları merkez→dışa px (default "220,150,104")
  *   data-vo-fit        merdivenin tam ölçek viewport'u px (default 760);
  *                      darda oransal küçülür, peek düzeni korunur
  *   data-vo-min-scale  küçülme alt sınırı (default 0.42)
@@ -58,6 +58,9 @@
  * dışında rAF durur; fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v2.1.0 — daha ferah düzen: default orb merdiveni 256/190/132 → 220/150/104,
+ *          orb aralığı (gap) mobil ölçeğiyle birlikte küçülür (dar ekranda
+ *          oransal boşluk korunur, kalabalık görünüm gitti)
  * v2.0.0 — BREAKING yeniden tasarım: item Button → Div (.vo-orb + .vo-caption),
  *          caption alanı, dil filtresi (data-vo-filter / data-vo-lang),
  *          JS-enjekte play/pause overlay (hover'da komşularda görünür),
@@ -305,7 +308,7 @@
     }
 
     var reduce = reducedMotion();
-    var ladder = (root.getAttribute("data-vo-sizes") || "256,190,132")
+    var ladder = (root.getAttribute("data-vo-sizes") || "220,150,104")
       .split(",").map(function (n) { return parseFloat(n) || 0; });
     var fit = attrNum(root, "data-vo-fit", 760);
     var minScale = attrNum(root, "data-vo-min-scale", 0.42);
@@ -460,7 +463,13 @@
     function layout(noAnim) {
       if (!els.length) return;
       var s = scaleNow();
-      var gap = parseFloat(getComputedStyle(track).gap) || 48;
+      // gap da orb'larla aynı oranda küçülür (taban: --vo-gap) — hem
+      // hesapta hem gerçek flex gap'inde aynı değer kullanılır
+      var baseGap = parseFloat(
+        getComputedStyle(root).getPropertyValue("--vo-gap")
+      ) || 64;
+      var gap = baseGap * s;
+      track.style.gap = gap.toFixed(1) + "px";
       root.style.setProperty("--vo-zone", Math.round(ladder[0] * s) + "px");
       if (noAnim) root.classList.add("vo-no-anim");
       var x = 0, activeCenter = 0;
