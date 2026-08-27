@@ -30,7 +30,7 @@ sestek/
 │   │                #      process-flow.js, h-scroll.js, card-cascade.js,
 │   │                #      case-switch.js, circle-diagram.js, scroll-diagram.js,
 │   │                #      journey-path.js, quote-wheel.js, chapter-tabs.js,
-│   │                #      hero-cards.js, timeline.js
+│   │                #      hero-cards.js, timeline.js, voice-orbs.js
 │   ├── effects/     # Visual effects — grain.js, btn-glow.js
 │   └── animations/  # Reusable presets — height-reveal.js, reveal.js, color-shift.js, orbit.js, count-up.js
 ├── css/
