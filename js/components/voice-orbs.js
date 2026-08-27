@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v2.2.0
+ * voice-orbs.js v2.3.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, dil filtresi, play/pause
  * overlay. AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer
@@ -59,6 +59,9 @@
  * dışında rAF durur; fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v2.3.0 — ‹ › okları aktif başlıkla aynı hizada: her layout'ta .vo-title'ın
+ *          dikey merkezi ölçülüp --vo-nav-top olarak yazılır (kart padding'i
+ *          ne olursa olsun hiza tutar)
  * v2.2.0 — autoplay kaldırıldı: orb'a tıklamak ve ‹ › yalnız KAYDIRIR (süren
  *          yayını durdurur); çalma sadece play butonuyla — komşunun play'i
  *          oraya kaydırıp çalar, aktifte toggle eder
@@ -497,6 +500,15 @@
       });
       var tx = (viewport.clientWidth / 2) - activeCenter;
       track.style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
+      // ‹ › oklarını aktif başlığın dikey merkezine hizala (buton 40px)
+      var cap = els[pos].el.querySelector(".vo-caption");
+      if (cap) {
+        var title = cap.querySelector(".vo-title") || cap;
+        var rootTop = root.getBoundingClientRect().top;
+        var tr = title.getBoundingClientRect();
+        root.style.setProperty("--vo-nav-top",
+          Math.round(tr.top - rootTop + tr.height / 2 - 20) + "px");
+      }
       if (noAnim) {
         void track.offsetWidth;
         root.classList.remove("vo-no-anim");

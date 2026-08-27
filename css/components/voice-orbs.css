@@ -1,17 +1,20 @@
 /*!
- * voice-orbs.css v2.1.0
+ * voice-orbs.css v2.2.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
  *
  * Custom props ([data-voice-orbs] üzerinde override edilebilir):
- *   --vo-gap          orb'lar arası boşluk            (default 48px)
+ *   --vo-gap          orb'lar arası boşluk (default 64px; JS mobil ölçeğiyle çarpar)
  *   --vo-caption-w    başlık/açıklama sütun genişliği (default 280px)
  *   --vo-nav-offset   ‹ › oklarının merkezden uzaklığı (default 230px)
- *   --vo-nav-bottom   okların alttan konumu           (default 2.25rem)
+ *   --vo-nav-top      okların dikey konumu — JS başlık hizasına yazar, elle verme
+ *   --vo-nav-bottom   yalnız JS'siz fallback          (default 2.25rem)
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.2.0 — nav okları başlık hizasında: --vo-nav-top (JS ölçer, top bottom'ı
+ *          ezer); --vo-nav-bottom yalnız JS'siz fallback
  * v2.1.0 — sadece AKTİF item'ın caption'ı görünür (pasifler fade-out —
  *          üst üste binen yazı kalabalığı gitti); default gap 48→64px;
  *          nav butonları grid ile gerçek ortalanır (bozuk chevron hizası)
@@ -162,11 +165,16 @@
 }
 
 /* ── Prev / Next ─────────────────────────────────────────────── */
-/* Caption satırı hizasında, merkezin iki yanında. Konum --vo-nav-offset /
- * --vo-nav-bottom ile ayarlanır. */
+/*
+ * Merkezin iki yanında, BAŞLIKLA AYNI HİZADA: JS her layout'ta aktif
+ * .vo-title'ın dikey merkezini ölçüp --vo-nav-top yazar (top, bottom'ı
+ * ezer). JS çalışmazsa --vo-nav-bottom fallback'i devrede kalır.
+ * Yatay konum --vo-nav-offset ile ayarlanır.
+ */
 [data-vo-prev],
 [data-vo-next] {
   position: absolute;
+  top: var(--vo-nav-top, auto);
   bottom: var(--vo-nav-bottom, 2.25rem);
   width: 40px;
   height: 40px;
