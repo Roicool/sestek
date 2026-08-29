@@ -42,6 +42,11 @@ export interface OutboundCallDemoProps {
   sendingText?: string;
   successTitle?: string;
   successText?: string;
+  sideTitle?: string;
+  sideText1?: string;
+  sideText2?: string;
+  sideText3?: string;
+  sideCaption?: string;
   endpoint?: string;
   lang?: Lang;
   cooldownSeconds?: number;
@@ -236,6 +241,10 @@ const CSS = `
 .sodc.is-deep .sodc-cta{color:#17151f}
 .sodc *{box-sizing:border-box}
 
+/* ── İkili düzen: solda arama kartı, sağda metin kartı ─────── */
+.sodc-grid{display:grid;grid-template-columns:1.55fr 1fr;
+  gap:var(--spacing--5,1.25rem);align-items:stretch}
+
 .sodc-card{position:relative;display:flex;flex-direction:column;
   min-height:34rem;border-radius:var(--radius--3xl,24px);
   background:var(--x-card);
@@ -341,7 +350,30 @@ const CSS = `
   font-size:var(--text--sm,.875rem);font-weight:500;color:var(--x-text)}
 .sodc-chips svg{width:1.05em;height:1.05em;color:var(--x-text);opacity:.85}
 
+/* ── Sağ: metin kartı ──────────────────────────────────────── */
+.sodc-side{display:flex;flex-direction:column;
+  border-radius:var(--radius--3xl,24px);
+  background:color-mix(in oklab,var(--x-text) 4%,var(--x-card));
+  box-shadow:inset 0 0 0 1px var(--x-line);
+  padding:var(--spacing--10,2.5rem) var(--spacing--8,2rem) var(--spacing--8,2rem)}
+.sodc.is-deep .sodc-side{background:color-mix(in oklab,#000 22%,var(--x-card))}
+.sodc-side .sodc-t{margin-bottom:var(--spacing--8,2rem)}
+.sodc-bubs{display:grid;gap:var(--spacing--3,.75rem);align-content:start}
+.sodc-bub{max-width:92%;padding:.8em 1.1em;font-size:var(--text--sm,.875rem);
+  line-height:1.55;background:var(--x-card);color:var(--x-text);
+  border-radius:1.15rem;box-shadow:inset 0 0 0 1px var(--x-line)}
+.sodc-bub:nth-child(even){justify-self:end;
+  background:var(--x-ink);color:var(--x-card)}
+.sodc.is-deep .sodc-bub:nth-child(even){color:#17151f}
+.sodc-side-cap{margin-top:auto;padding-top:var(--spacing--8,2rem);
+  font-size:var(--text--base,1rem);line-height:1.55;color:var(--x-muted);
+  max-width:20rem}
+
 /* ── Responsive / reduced motion ───────────────────────────── */
+@media (max-width:991px){
+  .sodc-grid{grid-template-columns:1fr}
+  .sodc-side{min-height:0}
+}
 @media (max-width:767px){
   .sodc-card{min-height:30rem;
     padding:var(--spacing--7,1.75rem) var(--spacing--5,1.25rem)}
@@ -394,6 +426,11 @@ export function OutboundCallDemo({
   sendingText = "Bağlanıyor…",
   successTitle = "Aranıyor",
   successText = "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal sesiyle karşılaşacaksınız.",
+  sideTitle = "Nasıl çalışır?",
+  sideText1 = "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
+  sideText2 = "Knovvu saniyeler içinde sizi arar, açtığınızda doğal bir sesle konuşursunuz.",
+  sideText3 = "Görüşmenin sonunda gerçek bir müşteri deneyimini dinlemiş olursunuz.",
+  sideCaption = "Bankacılıktan sigortaya, gerçek senaryolarla eğitilmiş sesli yapay zekâ.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "TR",
   cooldownSeconds = 600,
@@ -456,10 +493,12 @@ export function OutboundCallDemo({
   }
 
   const chips = [chip1, chip2, chip3].filter(Boolean);
+  const sideTexts = [sideText1, sideText2, sideText3].filter(Boolean);
 
   return (
     <section className={"sodc" + (theme === "Deep" ? " is-deep" : "")}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="sodc-grid">
       <div className="sodc-card">
         <h3 className="sodc-t">{heading}</h3>
 
@@ -567,6 +606,21 @@ export function OutboundCallDemo({
             </div>
           )}
         </div>
+      </div>
+
+      {(sideTitle || sideTexts.length > 0 || sideCaption) && (
+        <aside className="sodc-side">
+          {sideTitle && <h3 className="sodc-t">{sideTitle}</h3>}
+          {sideTexts.length > 0 && (
+            <div className="sodc-bubs">
+              {sideTexts.map((x, i) => (
+                <div className="sodc-bub" key={i}>{x}</div>
+              ))}
+            </div>
+          )}
+          {sideCaption && <div className="sodc-side-cap">{sideCaption}</div>}
+        </aside>
+      )}
       </div>
     </section>
   );

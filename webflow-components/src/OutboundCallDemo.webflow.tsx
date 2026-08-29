@@ -5,7 +5,8 @@ import { OutboundCallDemo } from "./OutboundCallDemo";
 export default declareComponent(OutboundCallDemo, {
   name: "Outbound Call Demo",
   description:
-    "'Sizi arayalım' canlı demo kartı — minimal tek kart: sade başlık, " +
+    "'Sizi arayalım' canlı demo — referans estetiğinde İKİLİ kart: solda " +
+    "arama kartı (sade başlık, " +
     "ortada dev canlı orb + telefon butonu, sol altta caption, sağ altta " +
     "özellik çipleri. Butona basınca orb küçülür, minimal form açılır " +
     "(pill input'lar, +90 çipli canlı biçimlenen numara); gönderince orb " +
@@ -98,6 +99,41 @@ export default declareComponent(OutboundCallDemo, {
         "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal " +
         "sesiyle karşılaşacaksınız.",
       tooltip: "Aranıyor sahnesinde sol alt caption'ın yerini alır",
+    }),
+    sideTitle: props.Text({
+      name: "Side title",
+      group: "Side",
+      defaultValue: "Nasıl çalışır?",
+      tooltip: "Sağ kartın başlığı; Side alanları boşsa kart gizlenir",
+    }),
+    sideText1: props.Text({
+      name: "Side text 1",
+      group: "Side",
+      defaultValue:
+        "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
+    }),
+    sideText2: props.Text({
+      name: "Side text 2",
+      group: "Side",
+      defaultValue:
+        "Knovvu saniyeler içinde sizi arar, açtığınızda doğal bir sesle " +
+        "konuşursunuz.",
+    }),
+    sideText3: props.Text({
+      name: "Side text 3",
+      group: "Side",
+      defaultValue:
+        "Görüşmenin sonunda gerçek bir müşteri deneyimini dinlemiş " +
+        "olursunuz.",
+      tooltip: "Boş bırakılan satırlar gizlenir",
+    }),
+    sideCaption: props.Text({
+      name: "Side caption",
+      group: "Side",
+      defaultValue:
+        "Bankacılıktan sigortaya, gerçek senaryolarla eğitilmiş sesli " +
+        "yapay zekâ.",
+      tooltip: "Sağ kartın alt açıklaması",
     }),
     endpoint: props.Text({
       name: "API endpoint",
