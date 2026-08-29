@@ -284,6 +284,7 @@ Read+Write** scope'u). Token workspace-level olmalı — site token'ları
 
 | Component | Ne | Notlar |
 |---|---|---|
+| Outbound Call Demo | "Sizi arayalım" split section (solda içerik, sağda form) | RC token'larına bağlı (site renklerini alır), container-2xl, mobilde tek kolon; Knovvu outbound proxy'sine gönderir (`docs/outbound-demo-api.md`), TR telefon doğrulama + KVKK + honeypot + kalıcı cooldown |
 | Shader Gradient BG | Animasyonlu WebGL gradient arka planı (`@shadergradient/react`) | Sestek Brand / Deep / Halo / Custom preset'leri; IntersectionObserver + `React.lazy` ile three.js chunk'ı (~1MB) viewport'a yaklaşana dek inmez (giriş ~12KB); `prefers-reduced-motion`'da statik kare; `ssr: false` |
 
 > Tuzak: `@shadergradient/react`, `three` ve `@react-three/fiber`'ı peer
