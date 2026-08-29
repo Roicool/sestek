@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.0.0
+ * outbound-demo.js v1.1.0
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -10,7 +10,8 @@
  * DOM (Webflow) — görünüm tamamen Designer'da, script yalnız davranış:
  *   <form data-outbound-demo
  *         data-od-endpoint="/demos/api/demos/outbound-call"  ← ops. (default bu)
- *         data-od-lang="TR">                                 ← ops. arama dili
+ *         data-od-lang="TR"                                  ← ops. arama dili
+ *         data-od-cooldown="600">                            ← ops. numara başına sn
  *     <input  data-od-name  type="text">
  *     <input  data-od-phone type="tel">
  *     <label><input data-od-consent type="checkbox"> KVKK…</label>
@@ -26,8 +27,12 @@
  *     edilir (+90… / 90… / 05… → "05XXXXXXXXX"); consent işaretli olmalı.
  *     Hatalı alana .od-invalid basılır, [data-od-error] ilgili mesajla açılır.
  *   • Gönderim: JSON POST { name, phone, consent, lang, hp } → proxy.
- *     Root'a is-sending; yanıtta is-success / is-error. Çift gönderim kilidi +
- *     başarı sonrası 60 sn client cooldown (gerçek limit sunucuda).
+ *     Root'a is-sending; yanıtta is-success / is-error. Çift gönderim kilidi.
+ *   • KALICI cooldown (localStorage — sayfa yenilense de tutar): başarılı
+ *     gönderimden sonra AYNI NUMARAYA data-od-cooldown sn (default 600)
+ *     boyunca yeni istek atılmaz (rate_limited mesajı gösterilir, fetch hiç
+ *     çıkmaz); ayrıca numara fark etmeksizin 60 sn form kilidi. localStorage
+ *     kapalıysa oturum içi bellekle devam eder. Gerçek limit yine sunucuda.
  *   • Sunucu hata kodları ({error}) mesaja çevrilir; bilinmeyen kod → genel
  *     mesaj. Mesajlar data-od-msg-<kod> attribute'larıyla override edilebilir
  *     (örn. data-od-msg-rate_limited="Biraz sonra tekrar deneyin").
@@ -38,6 +43,9 @@
  *   501 {ok:false,error:"not_configured"} · 502 {ok:false,error:"upstream"}
  *
  * Changelog
+ * v1.1.0 — kalıcı client cooldown: başarılı gönderimler localStorage'da
+ *          tutulur; aynı numara data-od-cooldown sn (default 600) içinde
+ *          tekrar gönderilemez, genel 60 sn form kilidi de kalıcı
  * v1.0.0 — initial release
  */
 
@@ -69,6 +77,40 @@
     return /^05\d{9}$/.test(d) ? d : null;
   }
 
+  /* Kalıcı gönderim kaydı — localStorage yoksa bellekte (oturumluk). */
+  var STORE_KEY = "sestek-od";
+  var memStore = { last: 0, phones: {} };
+  function readStore() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return memStore;
+  }
+  function writeStore(s) {
+    memStore = s;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  function recordSubmit(phone) {
+    var s = readStore(), now = Date.now();
+    s.last = now;
+    s.phones = s.phones || {};
+    s.phones[phone] = now;
+    // eski kayıtları temizle (24 saatten yaşlı)
+    for (var k in s.phones) {
+      if (now - s.phones[k] > 86400000) delete s.phones[k];
+    }
+    writeStore(s);
+  }
+  /** Kalan cooldown ms'i döndürür (0 = gönderilebilir). */
+  function cooldownLeft(phone, perPhoneMs) {
+    var s = readStore(), now = Date.now();
+    var left = Math.max(0, (s.last || 0) + 60000 - now); // genel form kilidi
+    var t = s.phones && s.phones[phone];
+    if (t) left = Math.max(left, t + perPhoneMs - now);  // numara kilidi
+    return left;
+  }
+
   function setup(root) {
     if (root._odInit) return null;
     root._odInit = true;
@@ -89,8 +131,9 @@
     var endpoint = root.getAttribute("data-od-endpoint") ||
       "/demos/api/demos/outbound-call";
     var lang = root.getAttribute("data-od-lang") || "TR";
+    var perPhoneMs = (parseFloat(root.getAttribute("data-od-cooldown")) || 600) * 1000;
 
-    var sending = false, cooldownUntil = 0;
+    var sending = false;
     var defaultError = errorEl ? errorEl.textContent : "";
 
     function msg(code) {
@@ -122,7 +165,7 @@
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      if (sending || Date.now() < cooldownUntil) return;
+      if (sending) return;
       clearState();
 
       var name = (nameEl.value || "").trim();
@@ -131,6 +174,9 @@
       if (!phone) return markInvalid(phoneEl, "invalid_phone");
       if (consentEl && !consentEl.checked) {
         return markInvalid(consentEl, "consent_required");
+      }
+      if (cooldownLeft(phone, perPhoneMs) > 0) {
+        return showError("rate_limited"); // kalıcı cooldown — fetch hiç çıkmaz
       }
 
       sending = true;
@@ -157,7 +203,7 @@
           if (r.status === 200 && r.body && r.body.ok) {
             root.classList.add("is-success");
             if (successEl) successEl.hidden = false;
-            cooldownUntil = Date.now() + 60000; // sunucudaki gerçek limitin gölgesi
+            recordSubmit(phone); // kalıcı cooldown başlat
             form.reset();
           } else {
             showError((r.body && r.body.error) || "generic");
