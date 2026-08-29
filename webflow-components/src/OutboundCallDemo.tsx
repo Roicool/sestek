@@ -220,18 +220,18 @@ function useFluidOrb(
 }
 
 const CSS = `
-.sodc{--x-bg1:#141222;--x-bg2:#1c1830;--x-glow1:rgba(124,108,255,.32);--x-glow2:rgba(79,209,224,.16);
+.sodc{--x-bg1:#141222;--x-bg2:#1c1830;
   --x-text:#f4f2fb;--x-muted:#a49ec2;--x-line:rgba(255,255,255,.09);
   --x-glass:rgba(255,255,255,.05);--x-glass-line:rgba(255,255,255,.10);
   --x-field:rgba(255,255,255,.06);--x-field-line:rgba(255,255,255,.14);
   --x-accent:var(--brand-primary--400,#8d7bff);--x-accent2:#4fd1e0;--x-accent3:#ff8ac4;
-  --x-neg:#ff7a68;
+  --x-neg:#ff7a68;--x-ring:rgba(255,255,255,.055);
   max-width:var(--container--2xl,96rem);margin-inline:auto;
   padding:var(--spacing--6,1.5rem);color:var(--x-text);font:inherit}
-.sodc.is-soft{--x-bg1:#f6f4fa;--x-bg2:#eef0fa;--x-glow1:rgba(124,108,255,.18);--x-glow2:rgba(79,209,224,.12);
+.sodc.is-soft{--x-bg1:#f6f4fa;--x-bg2:#eef0fa;
   --x-text:var(--color-text--base,#1b1830);--x-muted:var(--color-text--muted,#6d6885);
   --x-line:rgba(20,16,48,.08);--x-glass:rgba(255,255,255,.72);--x-glass-line:rgba(20,16,48,.08);
-  --x-field:rgba(20,16,48,.045);--x-field-line:rgba(20,16,48,.14);--x-neg:#d34a3a}
+  --x-field:rgba(20,16,48,.045);--x-field-line:rgba(20,16,48,.14);--x-neg:#d34a3a;--x-ring:rgba(20,16,48,.06)}
 .sodc *{box-sizing:border-box}
 .sodc-card{position:relative;isolation:isolate;overflow:hidden;
   border-radius:var(--radius--3xl,24px);
@@ -240,14 +240,12 @@ const CSS = `
   display:grid;grid-template-columns:1.08fr 1fr;align-items:center;
   gap:var(--spacing--14,3.5rem);
   padding:var(--spacing--16,4rem) var(--spacing--14,3.5rem)}
-.sodc-card::before{content:"";position:absolute;inset:-20%;z-index:-1;pointer-events:none;
-  background:radial-gradient(42rem 30rem at 78% 18%,var(--x-glow1),transparent 60%),
-             radial-gradient(38rem 30rem at 12% 95%,var(--x-glow2),transparent 60%)}
-.sodc-card::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.5;
-  background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);
-  background-size:22px 22px;
-  mask-image:radial-gradient(60% 60% at 70% 30%,#000,transparent)}
-.sodc.is-soft .sodc-card::after{background-image:radial-gradient(rgba(20,16,48,.07) 1px,transparent 1px)}
+/* Ambiyans: isima yerine orb'u yankilayan hairline halkalar — sag tarafta,
+ * cok silik cizgi isi (glow degil) */
+.sodc-card::before,.sodc-card::after{content:"";position:absolute;z-index:-1;
+  pointer-events:none;border-radius:50%;border:1px solid var(--x-ring)}
+.sodc-card::before{width:64rem;height:64rem;right:-22rem;top:50%;transform:translateY(-50%)}
+.sodc-card::after{width:44rem;height:44rem;right:-12rem;top:50%;transform:translateY(-50%)}
 
 /* ── Sol: içerik ───────────────────────────────────────────── */
 .sodc-copy{max-width:37rem}
@@ -260,21 +258,23 @@ const CSS = `
   font-size:var(--heading--h1,var(--text--5xl,3rem));font-weight:600;
   line-height:1.06;letter-spacing:-.025em}
 .sodc-h em{font-style:normal;
-  background:linear-gradient(92deg,var(--x-accent),var(--x-accent2) 55%,var(--x-accent3));
+  background:linear-gradient(100deg,#b3a6ff,var(--x-accent) 70%);
   -webkit-background-clip:text;background-clip:text;color:transparent}
+.sodc.is-soft .sodc-h em{background:linear-gradient(100deg,#7c6cff,#584ad0 70%);
+  -webkit-background-clip:text;background-clip:text}
 .sodc-p{margin:var(--spacing--6,1.5rem) 0 0;max-width:30rem;
   font-size:var(--text--lg,1.125rem);line-height:1.65;color:var(--x-muted)}
-.sodc-steps{list-style:none;display:flex;margin:var(--spacing--10,2.5rem) 0 0;padding:0;
-  border-top:1px solid var(--x-line)}
-.sodc-steps li{flex:1;padding:var(--spacing--5,1.25rem) var(--spacing--5,1.25rem) 0 0;
-  font-size:var(--text--sm,.875rem);line-height:1.5;color:var(--x-muted)}
+.sodc-steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);
+  gap:var(--spacing--3,.75rem);margin:var(--spacing--10,2.5rem) 0 0;padding:0}
+.sodc-steps li{position:relative;padding:var(--spacing--5,1.25rem);
+  font-size:var(--text--sm,.875rem);line-height:1.5;color:var(--x-muted);
+  background:var(--x-glass);border-radius:var(--radius--xl,12px);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px var(--x-glass-line)}
+.sodc.is-soft .sodc-steps li{box-shadow:inset 0 1px 0 rgba(255,255,255,.85),
+  inset 0 0 0 1px var(--x-glass-line)}
 .sodc-steps b{display:block;font-size:var(--text--xs,.75rem);font-weight:600;
-  letter-spacing:.12em;color:var(--x-accent);margin-bottom:.5em}
-.sodc-wave{display:flex;align-items:flex-end;gap:3px;height:26px;
-  margin-top:var(--spacing--10,2.5rem)}
-.sodc-wave i{width:3px;border-radius:2px;background:var(--x-accent);opacity:.75;
-  animation:sodc-eq 1.3s ease-in-out infinite}
-@keyframes sodc-eq{0%,100%{height:22%}50%{height:100%}}
+  letter-spacing:.12em;color:var(--x-accent);margin-bottom:.55em}
 
 /* ── Sağ: cam panel ────────────────────────────────────────── */
 .sodc-panel{position:relative;border-radius:var(--radius--2xl,16px);
@@ -356,14 +356,15 @@ const CSS = `
   font-size:var(--text--base,1rem);color:#fff;width:100%;border:0;cursor:pointer;
   display:inline-flex;justify-content:center;align-items:center;gap:.6em;
   padding:1em 1.5em;border-radius:var(--radius--full,9999px);
-  background:linear-gradient(92deg,var(--x-accent),color-mix(in oklab,var(--x-accent) 55%,var(--x-accent2)));
-  box-shadow:0 14px 30px -12px color-mix(in oklab,var(--x-accent) 60%,transparent);
-  transition:transform .2s,box-shadow .2s,filter .2s}
+  background:var(--x-accent);
+  box-shadow:0 12px 26px -14px color-mix(in oklab,var(--x-accent) 65%,transparent);
+  transition:transform .2s,box-shadow .2s,background .2s,filter .2s}
+.sodc-btn:hover{background:color-mix(in oklab,var(--x-accent) 88%,#fff)}
 .sodc-btn::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.35) 50%,transparent 62%);
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);
   transform:translateX(-110%);transition:transform .7s ease}
 .sodc-btn:hover{transform:translateY(-2px);
-  box-shadow:0 20px 38px -12px color-mix(in oklab,var(--x-accent) 70%,transparent)}
+  box-shadow:0 18px 34px -14px color-mix(in oklab,var(--x-accent) 75%,transparent)}
 .sodc-btn:hover::after{transform:translateX(110%)}
 .sodc-btn:active{transform:translateY(0)}
 .sodc-btn:disabled{cursor:default;transform:none;filter:saturate(.7) brightness(.92)}
@@ -388,10 +389,12 @@ const CSS = `
   color:var(--x-muted);font-size:var(--text--base,1rem)}
 .sodc-call-x{color:var(--x-muted);font-size:var(--text--sm,.875rem);
   line-height:1.55;max-width:24rem}
-.sodc-call-eq{display:flex;align-items:flex-end;gap:3px;height:22px;
-  margin-top:var(--spacing--3,.75rem)}
-.sodc-call-eq i{width:3px;border-radius:2px;background:var(--x-accent);
-  animation:sodc-eq 1.1s ease-in-out infinite}
+.sodc-call-dots{display:flex;gap:.5rem;margin-top:var(--spacing--3,.75rem)}
+.sodc-call-dots i{width:.5rem;height:.5rem;border-radius:50%;background:var(--x-accent);
+  animation:sodc-dot 1.2s ease-in-out infinite}
+.sodc-call-dots i:nth-child(2){animation-delay:.2s}
+.sodc-call-dots i:nth-child(3){animation-delay:.4s}
+@keyframes sodc-dot{0%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
 @media (max-width:991px){
@@ -399,12 +402,10 @@ const CSS = `
     padding:var(--spacing--10,2.5rem) var(--spacing--6,1.5rem)}
   .sodc-copy{max-width:none}
   .sodc-h{font-size:var(--heading--h2,var(--text--4xl,2.25rem))}
-  .sodc-steps{flex-direction:column;gap:0}
-  .sodc-steps li{padding-right:0}
-  .sodc-wave{display:none}
+  .sodc-steps{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){
-  .sodc-wave i,.sodc-call-eq i,.sodc-ring,.sodc-spin{animation:none}
+  .sodc-call-dots i,.sodc-ring,.sodc-spin{animation:none}
   .sodc-btn::after{display:none}
 }
 `;
@@ -517,17 +518,6 @@ export function OutboundCallDemo({
               </li>
             ))}
           </ol>
-          <div className="sodc-wave" aria-hidden="true">
-            {Array.from({ length: 26 }).map((_, i) => (
-              <i
-                key={i}
-                style={{
-                  animationDelay: `${(i * 0.09) % 1.3}s`,
-                  animationDuration: `${1.1 + ((i * 7) % 5) * 0.12}s`,
-                }}
-              />
-            ))}
-          </div>
         </div>
 
         <div className={"sodc-panel" + (done ? " is-calling" : "") + (shake ? " is-shake" : "")} key={shake}>
@@ -609,10 +599,8 @@ export function OutboundCallDemo({
             <div className="sodc-call" role="status">
               <div className="sodc-call-t">{successTitle}</div>
               <div className="sodc-call-num">+90 {formatPhone(digits)}</div>
-              <div className="sodc-call-eq" aria-hidden="true">
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <i key={i} style={{ animationDelay: `${(i * 0.13) % 1.1}s` }} />
-                ))}
+              <div className="sodc-call-dots" aria-hidden="true">
+                <i /><i /><i />
               </div>
               <div className="sodc-call-x">{successText}</div>
             </div>
