@@ -5,14 +5,13 @@ import { OutboundCallDemo } from "./OutboundCallDemo";
 export default declareComponent(OutboundCallDemo, {
   name: "Outbound Call Demo",
   description:
-    "'Sizi arayalım' canlı demo — referans estetiğinde İKİLİ kart: solda " +
-    "arama kartı (sade başlık, " +
-    "ortada dev canlı orb + telefon butonu, sol altta caption, sağ altta " +
-    "özellik çipleri. Butona basınca orb küçülür, minimal form açılır " +
-    "(pill input'lar, +90 çipli canlı biçimlenen numara); gönderince orb " +
-    "büyür ve 'Aranıyor' sahnesine geçer. Knovvu outbound proxy'sine " +
-    "gönderir (docs/outbound-demo-api.md); doğrulama + KVKK + honeypot + " +
-    "kalıcı cooldown içerir. Font ve tipografi sayfadan miras alınır.",
+    "'Sizi arayalım' canlı demo — ikili kart: solda dev canlı orb'lu " +
+    "vitrin kartı (telefon butonu sağdaki forma odaklar, altta caption + " +
+    "çipler), sağda HER ZAMAN AÇIK form kartı (pill input'lar, +90 çipli " +
+    "canlı biçimlenen numara, KVKK, siyah CTA). Gönderince sağ panel " +
+    "'Aranıyor' olur, soldaki orb hızlanıp halkalanır. Knovvu outbound " +
+    "proxy'sine gönderir (docs/outbound-demo-api.md); doğrulama + honeypot " +
+    "+ kalıcı cooldown içerir. Font sayfadan miras alınır.",
   group: "Sestek",
   props: {
     theme: props.Variant({
@@ -56,11 +55,6 @@ export default declareComponent(OutboundCallDemo, {
       defaultValue: "Knovvu Sesli Asistan",
       tooltip: "Aranıyor sahnesinde görünür",
     }),
-    backLabel: props.Text({
-      name: "Back label",
-      group: "Form",
-      defaultValue: "Geri",
-    }),
     nameLabel: props.Text({
       name: "Name placeholder",
       group: "Form",
@@ -103,51 +97,22 @@ export default declareComponent(OutboundCallDemo, {
     sideTitle: props.Text({
       name: "Side title",
       group: "Side",
-      defaultValue: "Nasıl çalışır?",
-      tooltip: "Sağ kartın başlığı; Side alanları boşsa kart gizlenir",
+      defaultValue: "Hemen deneyin",
+      tooltip: "Sağ form kartının başlığı",
     }),
-    sideText1: props.Text({
-      name: "Side text 1",
+    sideIntro: props.Text({
+      name: "Side intro",
       group: "Side",
       defaultValue:
         "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
-    }),
-    sideText2: props.Text({
-      name: "Side text 2",
-      group: "Side",
-      defaultValue:
-        "Knovvu saniyeler içinde sizi arar, açtığınızda doğal bir sesle " +
-        "konuşursunuz.",
-    }),
-    sideText3: props.Text({
-      name: "Side text 3",
-      group: "Side",
-      defaultValue:
-        "Görüşmenin sonunda gerçek bir müşteri deneyimini dinlemiş " +
-        "olursunuz.",
-      tooltip: "Boş bırakılan satırlar gizlenir",
+      tooltip: "Form alanlarının üstündeki kısa açıklama",
     }),
     sideCaption: props.Text({
       name: "Side caption",
       group: "Side",
       defaultValue:
-        "Bankacılıktan sigortaya, gerçek senaryolarla eğitilmiş sesli " +
-        "yapay zekâ.",
-      tooltip: "Sağ kartın alt açıklaması",
-    }),
-    sidePlaceholder: props.Text({
-      name: "Chat placeholder",
-      group: "Side",
-      defaultValue: "Mesajınızı yazın…",
-    }),
-    sideCtaUrl: props.Text({
-      name: "Chat CTA URL",
-      group: "Side",
-      defaultValue: "",
-      tooltip:
-        "Gönder'e basınca gidilecek sayfa (örn. /contact). Yazılan metin " +
-        "?m= parametresiyle taşınır. BOŞSA gönderim soldaki arama formunu " +
-        "açar.",
+        "Numaranız yalnız bu demo araması için kullanılır, kayıt tutulmaz.",
+      tooltip: "Sağ kartın en altındaki güven notu",
     }),
     endpoint: props.Text({
       name: "API endpoint",

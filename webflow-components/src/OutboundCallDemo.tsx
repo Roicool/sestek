@@ -24,7 +24,7 @@ import * as React from "react";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
-type Stage = "idle" | "form" | "calling";
+type Stage = "idle" | "calling";
 
 export interface OutboundCallDemoProps {
   theme?: Theme;
@@ -34,7 +34,6 @@ export interface OutboundCallDemoProps {
   chip2?: string;
   chip3?: string;
   agentName?: string;
-  backLabel?: string;
   nameLabel?: string;
   phoneLabel?: string;
   consentText?: string;
@@ -43,12 +42,8 @@ export interface OutboundCallDemoProps {
   successTitle?: string;
   successText?: string;
   sideTitle?: string;
-  sideText1?: string;
-  sideText2?: string;
-  sideText3?: string;
+  sideIntro?: string;
   sideCaption?: string;
-  sidePlaceholder?: string;
-  sideCtaUrl?: string;
   endpoint?: string;
   lang?: Lang;
   cooldownSeconds?: number;
@@ -262,8 +257,7 @@ const CSS = `
   padding:var(--spacing--6,1.5rem) 0}
 .sodc-orbwrap{position:relative;width:24rem;max-width:70vw;aspect-ratio:1;
   transition:width .6s cubic-bezier(.22,1,.36,1)}
-.sodc-mid.st-form .sodc-orbwrap{width:8.5rem}
-.sodc-mid.st-calling .sodc-orbwrap{width:17rem}
+.sodc-mid.st-calling .sodc-orbwrap{width:22rem}
 .sodc-orb,.sodc-orb-fb{position:absolute;inset:0;width:100%;height:100%;
   border-radius:50%;display:block}
 .sodc-orb-fb{background:radial-gradient(circle at 34% 30%,#cfc5ff,#8fd6ea 55%,#b7a8f5 95%)}
@@ -287,7 +281,10 @@ const CSS = `
 .sodc-callbtn svg{width:1.35rem;height:1.35rem}
 
 /* calling metinleri */
-.sodc-callmeta{text-align:center;animation:sodc-in .5s cubic-bezier(.22,1,.36,1)}
+.sodc-callmeta{text-align:center;padding:var(--spacing--8,2rem) 0;
+  animation:sodc-in .5s cubic-bezier(.22,1,.36,1)}
+.sodc-callnote{margin:var(--spacing--5,1.25rem) auto 0;max-width:18rem;
+  font-size:var(--text--sm,.875rem);line-height:1.55;color:var(--x-muted)}
 .sodc-callmeta b{display:block;font-weight:500;font-size:var(--text--lg,1.125rem)}
 .sodc-callmeta span{display:block;margin-top:.25em;color:var(--x-muted);
   font-size:var(--text--sm,.875rem);font-variant-numeric:tabular-nums;letter-spacing:.03em}
@@ -299,13 +296,11 @@ const CSS = `
 @keyframes sodc-dot{0%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
 /* ── Form (stage: form) ────────────────────────────────────── */
-.sodc-form{width:100%;max-width:23rem;display:grid;gap:var(--spacing--3,.75rem);
-  animation:sodc-in .45s cubic-bezier(.22,1,.36,1)}
+.sodc-form{width:100%;display:grid;gap:var(--spacing--3,.75rem);
+  align-content:start}
+.sodc-intro{margin:0 0 var(--spacing--2,.5rem);font-size:var(--text--sm,.875rem);
+  line-height:1.55;color:var(--x-muted)}
 @keyframes sodc-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.sodc-back{justify-self:start;display:inline-flex;align-items:center;gap:.45em;
-  border:0;background:none;cursor:pointer;padding:0;margin-bottom:.25rem;
-  font:inherit;font-size:var(--text--sm,.875rem);color:var(--x-muted)}
-.sodc-back:hover{color:var(--x-text)}
 .sodc-field{position:relative}
 .sodc-input{width:100%;font:inherit;font-size:var(--text--base,1rem);color:var(--x-text);
   background:var(--x-field);border:1px solid var(--x-field-line);
@@ -360,31 +355,8 @@ const CSS = `
   box-shadow:inset 0 0 0 1px var(--x-line);
   padding:var(--spacing--10,2.5rem) var(--spacing--8,2rem) var(--spacing--8,2rem)}
 .sodc.is-deep .sodc-side{background:color-mix(in oklab,#000 22%,var(--x-card))}
-.sodc-side .sodc-t{margin-bottom:var(--spacing--8,2rem)}
-.sodc-bubs{display:grid;gap:var(--spacing--3,.75rem);align-content:start}
-.sodc-bub{max-width:92%;padding:.8em 1.1em;font-size:var(--text--sm,.875rem);
-  line-height:1.55;background:var(--x-card);color:var(--x-text);
-  border-radius:1.15rem;box-shadow:inset 0 0 0 1px var(--x-line)}
-.sodc-bub:nth-child(even){justify-self:end;
-  background:var(--x-ink);color:var(--x-card)}
-.sodc.is-deep .sodc-bub:nth-child(even){color:#17151f}
-/* chat input satırı — mini CTA */
-.sodc-chatrow{position:relative;margin-top:auto;padding-top:var(--spacing--8,2rem)}
-.sodc-chat-in{width:100%;font:inherit;font-size:var(--text--sm,.875rem);
-  color:var(--x-text);background:var(--x-card);
-  border:1px solid var(--x-line);border-radius:var(--radius--full,9999px);
-  outline:none;padding:.95em 3.4em .95em 1.35em;
-  transition:border-color .2s,box-shadow .2s}
-.sodc-chat-in::placeholder{color:var(--x-muted)}
-.sodc-chat-in:focus{border-color:var(--x-text);box-shadow:0 0 0 3px rgba(20,18,30,.07)}
-.sodc-send{position:absolute;right:.35rem;bottom:.35rem;
-  width:2.35rem;height:2.35rem;border:0;border-radius:50%;cursor:pointer;
-  background:var(--x-ink);color:var(--x-card);display:grid;place-items:center;
-  transition:background .2s,transform .2s}
-.sodc-send:hover{background:var(--x-ink-hover);transform:scale(1.05)}
-.sodc-send svg{width:1rem;height:1rem;transform:translateX(-1px)}
-.sodc.is-deep .sodc-send{color:#17151f}
-.sodc-side-cap{margin-top:var(--spacing--6,1.5rem);
+.sodc-side .sodc-t{margin-bottom:var(--spacing--6,1.5rem)}
+.sodc-side-cap{margin-top:auto;padding-top:var(--spacing--6,1.5rem);
   font-size:var(--text--base,1rem);line-height:1.55;color:var(--x-muted);
   max-width:20rem}
 
@@ -437,7 +409,6 @@ export function OutboundCallDemo({
   chip2 = "Doğal ses",
   chip3 = "Saniyeler içinde",
   agentName = "Knovvu Sesli Asistan",
-  backLabel = "Geri",
   nameLabel = "Adınız",
   phoneLabel = "5XX XXX XX XX",
   consentText = "Kişisel verilerimin demo araması için işlenmesine onay veriyorum.",
@@ -445,13 +416,9 @@ export function OutboundCallDemo({
   sendingText = "Bağlanıyor…",
   successTitle = "Aranıyor",
   successText = "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal sesiyle karşılaşacaksınız.",
-  sideTitle = "Nasıl çalışır?",
-  sideText1 = "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
-  sideText2 = "Knovvu saniyeler içinde sizi arar, açtığınızda doğal bir sesle konuşursunuz.",
-  sideText3 = "Görüşmenin sonunda gerçek bir müşteri deneyimini dinlemiş olursunuz.",
-  sideCaption = "Bankacılıktan sigortaya, gerçek senaryolarla eğitilmiş sesli yapay zekâ.",
-  sidePlaceholder = "Mesajınızı yazın…",
-  sideCtaUrl = "",
+  sideTitle = "Hemen deneyin",
+  sideIntro = "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
+  sideCaption = "Numaranız yalnız bu demo araması için kullanılır, kayıt tutulmaz.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "TR",
   cooldownSeconds = 600,
@@ -514,24 +481,12 @@ export function OutboundCallDemo({
   }
 
   const chips = [chip1, chip2, chip3].filter(Boolean);
-  const sideTexts = [sideText1, sideText2, sideText3].filter(Boolean);
-  const [chatText, setChatText] = React.useState("");
+  const nameRef = React.useRef<HTMLInputElement>(null);
 
-  /* Mini CTA: chat input'u gerçek sohbet değil, yönlendirme kapısı —
-   * gönderilen metin ?m= ile hedef sayfaya taşınır (ön-doldurma için). */
-  function chatSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!sideCtaUrl) {
-      // URL verilmemişse soldaki arama formuna yönlendir
-      setChatText("");
-      setStage("form");
-      return;
-    }
-    const q = chatText.trim();
-    const sep = sideCtaUrl.includes("?") ? "&" : "?";
-    window.location.href = q
-      ? sideCtaUrl + sep + "m=" + encodeURIComponent(q)
-      : sideCtaUrl;
+  /* Soldaki telefon butonu sağdaki açık forma odaklar */
+  function focusForm() {
+    nameRef.current?.focus();
+    nameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   return (
@@ -553,84 +508,16 @@ export function OutboundCallDemo({
                 type="button"
                 className="sodc-callbtn"
                 aria-label={buttonText}
-                onClick={() => setStage("form")}
+                onClick={focusForm}
               >
                 <PhoneIcon />
               </button>
             )}
           </div>
-
-          {stage === "form" && (
-            <form className="sodc-form" onSubmit={submit} noValidate aria-busy={sending}>
-              <button type="button" className="sodc-back" onClick={() => { clearErr(); setStage("idle"); }}>
-                <span aria-hidden="true">←</span>
-                {backLabel}
-              </button>
-              <div className={"sodc-field" + (invalid === "name" ? " is-invalid" : "")}>
-                <input
-                  className="sodc-input"
-                  type="text"
-                  autoComplete="name"
-                  placeholder={nameLabel}
-                  aria-label={nameLabel}
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); clearErr(); }}
-                />
-              </div>
-              <div className={"sodc-field sodc-field--phone" + (invalid === "phone" ? " is-invalid" : "")}>
-                <span className="sodc-prefix" aria-hidden="true">+90</span>
-                <input
-                  className="sodc-input"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  placeholder={phoneLabel}
-                  aria-label={phoneLabel}
-                  value={formatPhone(digits)}
-                  onChange={(e) => { setDigits(phoneDigits(e.target.value)); clearErr(); }}
-                />
-              </div>
-              {/* honeypot — görünmez, botlar doldurur */}
-              <input
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }}
-                value={hp}
-                onChange={(e) => setHp(e.target.value)}
-              />
-              <label className={"sodc-consent" + (invalid === "consent" ? " is-invalid" : "")}>
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => { setConsent(e.target.checked); clearErr(); }}
-                />
-                <span>{consentText}</span>
-              </label>
-              {error && <div className="sodc-err" role="alert">{error}</div>}
-              <button className="sodc-cta" type="submit" disabled={sending}>
-                {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon size={15} />}
-                {sending ? sendingText : buttonText}
-              </button>
-            </form>
-          )}
-
-          {stage === "calling" && (
-            <div className="sodc-callmeta" role="status">
-              <b>{successTitle} · {agentName}</b>
-              <span>+90 {formatPhone(digits)}</span>
-              <div className="sodc-dots" aria-hidden="true">
-                <i /><i /><i />
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="sodc-foot">
-          <div className="sodc-cap">
-            {stage === "calling" ? successText : description}
-          </div>
+          <div className="sodc-cap">{description}</div>
           {chips.length > 0 && (
             <div className="sodc-chips">
               {chips.map((c, i) => {
@@ -647,36 +534,72 @@ export function OutboundCallDemo({
         </div>
       </div>
 
-      {(sideTitle || sideTexts.length > 0 || sideCaption) && (
-        <aside className="sodc-side">
-          {sideTitle && <h3 className="sodc-t">{sideTitle}</h3>}
-          {sideTexts.length > 0 && (
-            <div className="sodc-bubs">
-              {sideTexts.map((x, i) => (
-                <div className="sodc-bub" key={i}>{x}</div>
-              ))}
-            </div>
-          )}
-          {(
-            <form className="sodc-chatrow" onSubmit={chatSubmit}>
+      <aside className="sodc-side">
+        {sideTitle && <h3 className="sodc-t">{sideTitle}</h3>}
+        {stage !== "calling" ? (
+          <form className="sodc-form" onSubmit={submit} noValidate aria-busy={sending}>
+            {sideIntro && <p className="sodc-intro">{sideIntro}</p>}
+            <div className={"sodc-field" + (invalid === "name" ? " is-invalid" : "")}>
               <input
-                className="sodc-chat-in"
+                ref={nameRef}
+                className="sodc-input"
                 type="text"
-                placeholder={sidePlaceholder}
-                aria-label={sidePlaceholder}
-                value={chatText}
-                onChange={(e) => setChatText(e.target.value)}
+                autoComplete="name"
+                placeholder={nameLabel}
+                aria-label={nameLabel}
+                value={name}
+                onChange={(e) => { setName(e.target.value); clearErr(); }}
               />
-              <button className="sodc-send" type="submit" aria-label={sidePlaceholder}>
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M2 8 14 2 9.5 14 7.5 9.2 2 8z" fill="currentColor" />
-                </svg>
-              </button>
-            </form>
-          )}
-          {sideCaption && <div className="sodc-side-cap">{sideCaption}</div>}
-        </aside>
-      )}
+            </div>
+            <div className={"sodc-field sodc-field--phone" + (invalid === "phone" ? " is-invalid" : "")}>
+              <span className="sodc-prefix" aria-hidden="true">+90</span>
+              <input
+                className="sodc-input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                placeholder={phoneLabel}
+                aria-label={phoneLabel}
+                value={formatPhone(digits)}
+                onChange={(e) => { setDigits(phoneDigits(e.target.value)); clearErr(); }}
+              />
+            </div>
+            {/* honeypot — görünmez, botlar doldurur */}
+            <input
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }}
+              value={hp}
+              onChange={(e) => setHp(e.target.value)}
+            />
+            <label className={"sodc-consent" + (invalid === "consent" ? " is-invalid" : "")}>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => { setConsent(e.target.checked); clearErr(); }}
+              />
+              <span>{consentText}</span>
+            </label>
+            {error && <div className="sodc-err" role="alert">{error}</div>}
+            <button className="sodc-cta" type="submit" disabled={sending}>
+              {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon size={15} />}
+              {sending ? sendingText : buttonText}
+            </button>
+          </form>
+        ) : (
+          <div className="sodc-callmeta" role="status">
+            <b>{successTitle} · {agentName}</b>
+            <span>+90 {formatPhone(digits)}</span>
+            <div className="sodc-dots" aria-hidden="true">
+              <i /><i /><i />
+            </div>
+            <p className="sodc-callnote">{successText}</p>
+          </div>
+        )}
+        {sideCaption && <div className="sodc-side-cap">{sideCaption}</div>}
+      </aside>
       </div>
     </section>
   );
