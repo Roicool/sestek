@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v3.3.0
+ * voice-orbs.js v3.3.1
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, play/pause overlay.
  * AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer (film grenli);
@@ -57,6 +57,10 @@
  * fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v3.3.1 — çalarken seğirme düzeltildi: enerji toplam zamanı ÇARPIYORDU
+ *          (her dalgalanmada shader fazı ileri-geri sıçrıyordu); faz artık
+ *          JS'te entegre — enerji yalnız hızı/şiddeti artırır, faz sürekli.
+ *          Dokümandaki orb pulse'ı geri geldi: scale(1 + energy*0.06).
  * v3.3.0 — drag/swipe (snap dahil) ve nokta göstergesi kaldırıldı — gezinme
  *          oklar + orb tıkları + ←/→ klavye
  * v3.2.0 — slider hissi paketi: drag/swipe (momentum + en yakına snap,
@@ -139,7 +143,10 @@
     "  vec2 uv=gl_FragCoord.xy/u_res;",
     "  vec2 c=uv-0.5;float r=length(c)*2.0;",
     "  float mask=1.0-smoothstep(0.98,1.0,r);",
-    "  float t=u_time*(0.28+u_energy*1.1);",
+    // u_time JS'te entegre edilmiş FAZDIR (hız enerjiyle artar ama faz
+    // asla sıçramaz) — zamanı burada enerjiyle çarpma: her enerji
+    // dalgalanmasında animasyon ileri-geri seğirir
+    "  float t=u_time;",
     // akış alanı: iki fazlı fbm → sıvı domain warp
     "  vec2 q=vec2(fbm(uv*2.0+vec2(t*0.30,t*0.18)),",
     "              fbm(uv*2.0+vec2(4.7,1.3)-vec2(t*0.22,t*0.34)));",
@@ -156,7 +163,7 @@
     "  col+=vec3(0.08)*exp(-dot(h,h)*7.0);",
     "  col*=1.0-0.16*smoothstep(0.60,1.0,r);",            // kenar gölgesi
     "  col+=u_energy*0.12;",                              // çalarken parlar
-    "  float g=texture2D(u_noise,gl_FragCoord.xy/128.0+fract(vec2(u_time*3.1,u_time*5.7))).r;",
+    "  float g=texture2D(u_noise,gl_FragCoord.xy/128.0+fract(vec2(t*3.1,t*5.7))).r;",
     "  col+=(g-0.5)*0.07;",                               // film greni
     "  gl_FragColor=vec4(col,mask);}"
   ].join("\n");
@@ -551,23 +558,32 @@
       goTo(pos === N - 1 ? 0 : pos + 1);
     });
 
-    // ── rAF: KOŞULSUZ döngü — idle'da da akar, çalarken analyser sürer
-    var t0 = performance.now();
-    var energy = 0;
+    // ── rAF: KOŞULSUZ döngü — idle'da da akar, çalarken analyser sürer.
+    // Faz JS'te entegre edilir: enerji HIZI artırır, faz sürekli kalır
+    // (dokümandaki gibi enerji şiddeti sürer; zamanı çarpmak seğirtir).
+    var lastTick = performance.now();
+    var energy = 0, phase = 0;
     function tick() {
-      if (viz) {
-        var target = 0;
-        if (playing && analyser) {
-          analyser.getByteFrequencyData(freq);
-          var sum = 0;
-          for (var i = 0; i < freq.length; i++) sum += freq[i];
-          target = (sum / freq.length) / 255;
-        }
-        energy += (target - energy) * 0.18; // yumuşatılmış enerji
-        viz.draw((performance.now() - t0) / 1000, energy);
+      var now = performance.now();
+      var dt = Math.min((now - lastTick) / 1000, 0.05); // sekme dönüşü sıçratmasın
+      lastTick = now;
+      var target = 0;
+      if (playing && analyser) {
+        analyser.getByteFrequencyData(freq);
+        var sum = 0;
+        for (var i = 0; i < freq.length; i++) sum += freq[i];
+        target = (sum / freq.length) / 255;
       }
-      if (playing) { // ilerleme halkası
-        var a = audios[flip];
+      energy += (target - energy) * 0.18; // yumuşatılmış enerji
+      phase += dt * (0.28 + energy * 1.1);
+      if (viz) viz.draw(phase, energy);
+      if (playing) {
+        // dokümandaki orb pulse'ı: scale(1 + energy*0.06)
+        if (canvas) {
+          canvas.style.transform = "translate(-50%,-50%) scale(" +
+            (1 + energy * 0.06).toFixed(4) + ")";
+        }
+        var a = audios[flip]; // ilerleme halkası
         var p = a.duration ? a.currentTime / a.duration : 0;
         ringCircle.style.strokeDashoffset = (100 - p * 100).toFixed(2);
       }
@@ -579,6 +595,7 @@
       playing = false;
       items.forEach(function (el) { el.classList.remove("is-playing"); });
       audios.forEach(function (a) { a.pause(); });
+      if (canvas) canvas.style.transform = ""; // pulse'ı sıfırla
     }
     var ctl = { stop: stop };
 
