@@ -47,6 +47,8 @@ export interface OutboundCallDemoProps {
   sideText2?: string;
   sideText3?: string;
   sideCaption?: string;
+  sidePlaceholder?: string;
+  sideCtaUrl?: string;
   endpoint?: string;
   lang?: Lang;
   cooldownSeconds?: number;
@@ -365,7 +367,23 @@ const CSS = `
 .sodc-bub:nth-child(even){justify-self:end;
   background:var(--x-ink);color:var(--x-card)}
 .sodc.is-deep .sodc-bub:nth-child(even){color:#17151f}
-.sodc-side-cap{margin-top:auto;padding-top:var(--spacing--8,2rem);
+/* chat input satırı — mini CTA */
+.sodc-chatrow{position:relative;margin-top:auto;padding-top:var(--spacing--8,2rem)}
+.sodc-chat-in{width:100%;font:inherit;font-size:var(--text--sm,.875rem);
+  color:var(--x-text);background:var(--x-card);
+  border:1px solid var(--x-line);border-radius:var(--radius--full,9999px);
+  outline:none;padding:.95em 3.4em .95em 1.35em;
+  transition:border-color .2s,box-shadow .2s}
+.sodc-chat-in::placeholder{color:var(--x-muted)}
+.sodc-chat-in:focus{border-color:var(--x-text);box-shadow:0 0 0 3px rgba(20,18,30,.07)}
+.sodc-send{position:absolute;right:.35rem;bottom:.35rem;
+  width:2.35rem;height:2.35rem;border:0;border-radius:50%;cursor:pointer;
+  background:var(--x-ink);color:var(--x-card);display:grid;place-items:center;
+  transition:background .2s,transform .2s}
+.sodc-send:hover{background:var(--x-ink-hover);transform:scale(1.05)}
+.sodc-send svg{width:1rem;height:1rem;transform:translateX(-1px)}
+.sodc.is-deep .sodc-send{color:#17151f}
+.sodc-side-cap{margin-top:var(--spacing--6,1.5rem);
   font-size:var(--text--base,1rem);line-height:1.55;color:var(--x-muted);
   max-width:20rem}
 
@@ -431,6 +449,8 @@ export function OutboundCallDemo({
   sideText2 = "Knovvu saniyeler içinde sizi arar, açtığınızda doğal bir sesle konuşursunuz.",
   sideText3 = "Görüşmenin sonunda gerçek bir müşteri deneyimini dinlemiş olursunuz.",
   sideCaption = "Bankacılıktan sigortaya, gerçek senaryolarla eğitilmiş sesli yapay zekâ.",
+  sidePlaceholder = "Mesajınızı yazın…",
+  sideCtaUrl = "",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "TR",
   cooldownSeconds = 600,
@@ -494,6 +514,19 @@ export function OutboundCallDemo({
 
   const chips = [chip1, chip2, chip3].filter(Boolean);
   const sideTexts = [sideText1, sideText2, sideText3].filter(Boolean);
+  const [chatText, setChatText] = React.useState("");
+
+  /* Mini CTA: chat input'u gerçek sohbet değil, yönlendirme kapısı —
+   * gönderilen metin ?m= ile hedef sayfaya taşınır (ön-doldurma için). */
+  function chatSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sideCtaUrl) return;
+    const q = chatText.trim();
+    const sep = sideCtaUrl.includes("?") ? "&" : "?";
+    window.location.href = q
+      ? sideCtaUrl + sep + "m=" + encodeURIComponent(q)
+      : sideCtaUrl;
+  }
 
   return (
     <section className={"sodc" + (theme === "Deep" ? " is-deep" : "")}>
@@ -617,6 +650,23 @@ export function OutboundCallDemo({
                 <div className="sodc-bub" key={i}>{x}</div>
               ))}
             </div>
+          )}
+          {sideCtaUrl && (
+            <form className="sodc-chatrow" onSubmit={chatSubmit}>
+              <input
+                className="sodc-chat-in"
+                type="text"
+                placeholder={sidePlaceholder}
+                aria-label={sidePlaceholder}
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+              />
+              <button className="sodc-send" type="submit" aria-label={sidePlaceholder}>
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M2 8 14 2 9.5 14 7.5 9.2 2 8z" fill="currentColor" />
+                </svg>
+              </button>
+            </form>
           )}
           {sideCaption && <div className="sodc-side-cap">{sideCaption}</div>}
         </aside>

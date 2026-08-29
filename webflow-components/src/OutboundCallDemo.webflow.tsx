@@ -135,6 +135,19 @@ export default declareComponent(OutboundCallDemo, {
         "yapay zekâ.",
       tooltip: "Sağ kartın alt açıklaması",
     }),
+    sidePlaceholder: props.Text({
+      name: "Chat placeholder",
+      group: "Side",
+      defaultValue: "Mesajınızı yazın…",
+    }),
+    sideCtaUrl: props.Text({
+      name: "Chat CTA URL",
+      group: "Side",
+      defaultValue: "",
+      tooltip:
+        "Gönder'e basınca gidilecek sayfa (örn. /contact). Yazılan metin " +
+        "?m= parametresiyle taşınır. BOŞSA input satırı gizlenir.",
+    }),
     endpoint: props.Text({
       name: "API endpoint",
       group: "API",
