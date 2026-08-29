@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.css v2.3.0
+ * voice-orbs.css v2.4.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
@@ -13,6 +13,8 @@
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.4.0 — transform-only geçişler: item kutusu sabit, transition width →
+ *          transform (translateX+scale, origin orb merkezi) + will-change
  * v2.3.0 — filtre kuralı kaldırıldı (JS v3: filtre yok); loop'suz nav
  *          durumları: [data-vo-prev].is-disabled (ilk seste) ve
  *          [data-vo-next].vo-restart (son seste "başa dön" — ikonu bu
@@ -58,10 +60,16 @@
 }
 
 /* ── Item ────────────────────────────────────────────────────── */
-/* width inline JS'ten gelir (orb çapı); caption sabit genişlikte ortalanır. */
+/*
+ * Kutu SABİTTİR (en büyük çap, JS resize'da yazar) — boyut/konum geçişleri
+ * yalnız transform'dadır (translateX + scale): geçişte layout/paint çalışmaz,
+ * her kare compositor'da biter (60fps). transform-origin orb merkezinde.
+ */
 .vo-item {
   flex: 0 0 auto;
-  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 50% calc(var(--vo-zone, 256px) / 2);
+  will-change: transform;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Orb alanı ───────────────────────────────────────────────── */

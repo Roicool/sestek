@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v3.0.0
+ * voice-orbs.js v3.1.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, play/pause overlay.
  * AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer (film grenli);
@@ -56,6 +56,11 @@
  * fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v3.1.0 — geçiş kasması kökten çözüldü: width/height animasyonu kaldırıldı,
+ *          kutular sabit; boyut scale(), merkez mesafesi translateX() ile —
+ *          geçişler %100 transform-only (compositor), layout/paint sıfır.
+ *          Canvas backing yalnız resize'da değişir; ok hizası ölçümü de
+ *          init+resize'a alındı (goTo'da forced reflow yok).
  * v3.0.0 — BREAKING: dil filtresi kaldırıldı (data-vo-filter/data-vo-lang
  *          yok); sonsuz döngü kaldırıldı — klonsuz düz liste, ilk seste ‹
  *          disabled, son seste › "başa dön" (.vo-restart) olur; çizim önünde
@@ -404,45 +409,64 @@
       return v.texPromise;
     }
 
-    // ── Layout
+    // ── Layout — TRANSFORM-ONLY geçişler (60fps garantisi)
+    /*
+     * width/height animate edilmez: her item'ın kutusu SABİT (en büyük çap),
+     * görsel boyut scale() ile, merkezler arası doğru mesafe translateX()
+     * düzeltmesiyle verilir. Geçiş sırasında layout/paint hiç çalışmaz —
+     * her şey compositor'da. Kutular yalnız resize'da (setStatic) değişir.
+     */
     function scaleNow() {
       var w = viewport.clientWidth || root.clientWidth;
       return Math.max(minScale, Math.min(1, w / fit));
     }
-    function layout(noAnim) {
+    var L0 = 0, gapNow = 0;
+    function setStatic() { // resize'da bir kez: sabit kutular + canvas backing
       var s = scaleNow();
-      // gap da orb'larla aynı oranda küçülür (taban: --vo-gap)
       var baseGap = parseFloat(
         getComputedStyle(root).getPropertyValue("--vo-gap")
       ) || 64;
-      var gap = baseGap * s;
-      track.style.gap = gap.toFixed(1) + "px";
-      root.style.setProperty("--vo-zone", Math.round(ladder[0] * s) + "px");
+      gapNow = baseGap * s;
+      L0 = Math.round(ladder[0] * s);
+      track.style.gap = gapNow.toFixed(1) + "px";
+      root.style.setProperty("--vo-zone", L0 + "px");
+      items.forEach(function (el) { el.style.width = L0 + "px"; });
+      if (viz) viz.resize(Math.round(L0 * Math.min(window.devicePixelRatio || 1, 2)));
+      updateNavTop();
+    }
+    function layout(noAnim) {
+      var s = scaleNow();
       if (noAnim) root.classList.add("vo-no-anim");
+      // Hedef görsel merkezler (merdivene göre), statik kutu merkezleri
+      // ve aradaki farkı kapatan per-item translateX.
       var x = 0, activeCenter = 0;
       items.forEach(function (el, i) {
         var dist = Math.min(Math.abs(i - pos), ladder.length - 1);
-        var size = Math.round(ladder[dist] * s);
-        el.style.width = size + "px";
-        if (i === pos) activeCenter = x + size / 2;
-        x += size + gap;
+        var size = ladder[dist] * s;
+        var cVisual = x + size / 2;
+        var cStatic = i * (L0 + gapNow) + L0 / 2;
+        el.style.transform = "translate3d(" + (cVisual - cStatic).toFixed(1) +
+          "px,0,0) scale(" + (size / L0).toFixed(4) + ")";
+        if (i === pos) activeCenter = cVisual;
+        x += size + gapNow;
       });
       var tx = (viewport.clientWidth / 2) - activeCenter;
       track.style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
-      // ‹ › oklarını aktif başlığın dikey merkezine hizala (buton 40px)
-      var cap = items[pos].querySelector(".vo-caption");
-      if (cap) {
-        var title = cap.querySelector(".vo-title") || cap;
-        var rootTop = root.getBoundingClientRect().top;
-        var tr = title.getBoundingClientRect();
-        root.style.setProperty("--vo-nav-top",
-          Math.round(tr.top - rootTop + tr.height / 2 - 20) + "px");
-      }
       if (noAnim) {
         void track.offsetWidth;
         root.classList.remove("vo-no-anim");
       }
-      if (viz) viz.resize(Math.round(ladder[0] * s * Math.min(window.devicePixelRatio || 1, 2)));
+    }
+    // ‹ › oklarını aktif başlığın dikey merkezine hizala (buton 40px).
+    // Dikey konum geçişlerde değişmez — yalnız init + resize'da ölçülür.
+    function updateNavTop() {
+      var cap = items[pos].querySelector(".vo-caption");
+      if (!cap) return;
+      var title = cap.querySelector(".vo-title") || cap;
+      var rootTop = root.getBoundingClientRect().top;
+      var tr = title.getBoundingClientRect();
+      root.style.setProperty("--vo-nav-top",
+        Math.round(tr.top - rootTop + tr.height / 2 - 20) + "px");
     }
 
     // Aktif sınıflar + canvas taşı + doku/renk yükle + komşuları önden ısıt
@@ -553,10 +577,11 @@
     var resizeT = 0;
     window.addEventListener("resize", function () {
       clearTimeout(resizeT);
-      resizeT = setTimeout(function () { layout(true); }, 100);
+      resizeT = setTimeout(function () { setStatic(); layout(true); }, 100);
     });
 
     activate();
+    setStatic();
     layout(true);
     if (viz) requestAnimationFrame(tick);
 
