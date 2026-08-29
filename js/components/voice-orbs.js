@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v3.2.0
+ * voice-orbs.js v3.3.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, play/pause overlay.
  * AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer (film grenli);
@@ -29,13 +29,10 @@
  *     </div></div>
  *     <button data-vo-prev aria-label="Previous voice">‹</button>
  *     <button data-vo-next aria-label="Next voice">›</button>
- *     [ops.] <div data-vo-dots></div>  ← boş bırak, JS noktaları doldurur
  *   </div>
  *
  * Component davranışı:
- *   • SLIDER hissi: viewport drag/swipe edilir (momentum + en yakına snap;
- *     6px altı hareket tık sayılır), ←/→ klavye gezdirir, çalarken aktif
- *     orb çevresinde ilerleme halkası dolar.
+ *   • ←/→ klavye gezdirir; çalarken aktif orb çevresinde ilerleme halkası dolar.
  *   • LOOP YOK: liste uçludur. İlk seste ‹ oku .is-disabled alır; SON seste
  *     › oku .vo-restart sınıfını alır ve tıklanınca başa döner (ikonunu
  *     CSS'ten değiştirebilirsin, örn. ↺).
@@ -60,6 +57,8 @@
  * fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v3.3.0 — drag/swipe (snap dahil) ve nokta göstergesi kaldırıldı — gezinme
+ *          oklar + orb tıkları + ←/→ klavye
  * v3.2.0 — slider hissi paketi: drag/swipe (momentum + en yakına snap,
  *          6px eşik altı tık sayılır), çalma ilerleme halkası (aktif orb
  *          çevresinde stroke), derinlik opacity kademesi (kenarlar soluk),
@@ -537,20 +536,6 @@
     // ── Nav durumları: başta ‹ disabled, sonda › "başa dön"
     var prevBtn = root.querySelector("[data-vo-prev]");
     var nextBtn = root.querySelector("[data-vo-next]");
-    // Opsiyonel nokta göstergesi: markup'ta boş <div data-vo-dots></div>
-    // varsa JS doldurur — tıkla-git, aktif nokta .is-active (CSS'te hap olur)
-    var dotsWrap = root.querySelector("[data-vo-dots]");
-    var dots = [];
-    if (dotsWrap) {
-      voices.forEach(function (v, i) {
-        var d = document.createElement("button");
-        d.className = "vo-dot";
-        d.setAttribute("aria-label", v.name || ("Voice " + (i + 1)));
-        d.addEventListener("click", function () { goTo(i); });
-        dotsWrap.appendChild(d);
-        dots.push(d);
-      });
-    }
     function updateNav() {
       if (prevBtn) prevBtn.classList.toggle("is-disabled", pos === 0);
       if (nextBtn) {
@@ -558,9 +543,6 @@
         nextBtn.classList.toggle("vo-restart", end);
         nextBtn.setAttribute("aria-label", end ? "Back to start" : "Next voice");
       }
-      dots.forEach(function (d, i) {
-        d.classList.toggle("is-active", i === pos);
-      });
     }
     if (prevBtn) prevBtn.addEventListener("click", function () {
       if (pos > 0) goTo(pos - 1);
@@ -639,54 +621,6 @@
       clearTimeout(resizeT);
       resizeT = setTimeout(function () { setStatic(); layout(true); }, 100);
     });
-
-    // ── Drag / swipe: track parmağı izler, bırakınca en yakına snap'ler;
-    // hızlı fırlatma (momentum) bir sonraki/önceki orb'a taşır. Eşik (6px)
-    // altı hareket tık sayılır — play butonu ve orb tıkları bozulmaz.
-    var dragOn = false, dragMoved = false, dragPid = 0;
-    var dragStartX = 0, dragBaseTx = 0, lastX = 0, lastT = 0, vel = 0;
-    function squelchClick(e) { e.stopPropagation(); e.preventDefault(); }
-    viewport.addEventListener("pointerdown", function (e) {
-      if (e.button) return;
-      dragOn = true; dragMoved = false; dragPid = e.pointerId;
-      dragStartX = e.clientX; dragBaseTx = curTx;
-      lastX = e.clientX; lastT = performance.now(); vel = 0;
-    });
-    window.addEventListener("pointermove", function (e) {
-      if (!dragOn || e.pointerId !== dragPid) return;
-      var dx = e.clientX - dragStartX;
-      if (!dragMoved) {
-        if (Math.abs(dx) < 6) return;
-        dragMoved = true;
-        root.classList.add("is-dragging");
-        try { viewport.setPointerCapture(dragPid); } catch (err) {}
-      }
-      var now = performance.now();
-      vel = 0.8 * vel + 0.2 * ((e.clientX - lastX) / Math.max(1, now - lastT));
-      lastX = e.clientX; lastT = now;
-      curTx = dragBaseTx + dx;
-      track.style.transform = "translate3d(" + curTx.toFixed(1) + "px,0,0)";
-    });
-    function endDrag(e) {
-      if (!dragOn || e.pointerId !== dragPid) return;
-      dragOn = false;
-      if (!dragMoved) return;
-      root.classList.remove("is-dragging");
-      window.addEventListener("click", squelchClick, { capture: true, once: true });
-      // en yakın orb'a snap; hızlı fırlatmada yönüne bir adım
-      var centerX = viewport.clientWidth / 2 - curTx;
-      var nearest = 0, best = Infinity;
-      centers.forEach(function (c, i) {
-        var d = Math.abs(c - centerX);
-        if (d < best) { best = d; nearest = i; }
-      });
-      if (Math.abs(vel) > 0.4 && nearest === pos) {
-        nearest = Math.max(0, Math.min(N - 1, pos + (vel < 0 ? 1 : -1)));
-      }
-      if (nearest === pos) { layout(false); } else { goTo(nearest); }
-    }
-    window.addEventListener("pointerup", endDrag);
-    window.addEventListener("pointercancel", endDrag);
 
     // ── Klavye: ← → gezdirir (sonda → başa döner)
     root.addEventListener("keydown", function (e) {

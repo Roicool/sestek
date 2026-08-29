@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.css v2.5.0
+ * voice-orbs.css v2.6.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
@@ -13,6 +13,8 @@
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.6.0 — drag cursor/touch-action ve .vo-dot/[data-vo-dots] kuralları
+ *          kaldırıldı (JS v3.3: drag ve dots yok)
  * v2.5.0 — slider paketi: grab/grabbing cursor + touch-action:pan-y,
  *          .is-dragging'de track geçişi kapalı; derinlik opacity kademesi
  *          (.75/.9/1); komşu orb hover scale; caption slide-up girişi;
@@ -46,11 +48,7 @@
 .vo-viewport {
   width: 100%;
   overflow: hidden;
-  touch-action: pan-y; /* dikey sayfa kaydırması serbest, yatay drag bizim */
-  cursor: grab;
 }
-[data-voice-orbs].is-dragging .vo-viewport { cursor: grabbing; }
-[data-voice-orbs].is-dragging .vo-track { transition: none !important; }
 
 .vo-track {
   display: flex;
@@ -251,33 +249,6 @@
 [data-vo-prev].is-disabled {
   opacity: 0.35;
   pointer-events: none;
-}
-
-/* ── Nokta göstergesi (opsiyonel <div data-vo-dots></div> — JS doldurur) ─ */
-[data-vo-dots] {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-}
-.vo-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--color-text--secondary, #b6b3c4);
-  opacity: 0.55;
-  cursor: pointer;
-  transition:
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.35s,
-    background-color 0.35s;
-}
-.vo-dot.is-active {
-  width: 26px; /* aktif nokta hap olur */
-  opacity: 1;
-  background: var(--color-text--primary, #111);
 }
 
 /* ── Reduced motion ──────────────────────────────────────────── */
