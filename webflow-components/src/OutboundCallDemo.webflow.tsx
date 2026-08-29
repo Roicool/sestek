@@ -146,7 +146,8 @@ export default declareComponent(OutboundCallDemo, {
       defaultValue: "",
       tooltip:
         "Gönder'e basınca gidilecek sayfa (örn. /contact). Yazılan metin " +
-        "?m= parametresiyle taşınır. BOŞSA input satırı gizlenir.",
+        "?m= parametresiyle taşınır. BOŞSA gönderim soldaki arama formunu " +
+        "açar.",
     }),
     endpoint: props.Text({
       name: "API endpoint",

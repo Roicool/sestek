@@ -344,13 +344,14 @@ const CSS = `
 /* ── Alt satır: caption + çipler ───────────────────────────── */
 .sodc-foot{display:flex;justify-content:space-between;align-items:flex-end;
   gap:var(--spacing--6,1.5rem)}
-.sodc-cap{max-width:20rem;font-size:var(--text--base,1rem);line-height:1.55;
+.sodc-cap{max-width:15rem;font-size:var(--text--sm,.875rem);line-height:1.5;
   color:var(--x-muted)}
-.sodc-chips{display:flex;gap:var(--spacing--6,1.5rem);flex-wrap:wrap;
-  justify-content:flex-end}
-.sodc-chips span{display:inline-flex;align-items:center;gap:.5em;
-  font-size:var(--text--sm,.875rem);font-weight:500;color:var(--x-text)}
-.sodc-chips svg{width:1.05em;height:1.05em;color:var(--x-text);opacity:.85}
+.sodc-chips{display:flex;gap:var(--spacing--4,1rem) var(--spacing--5,1.25rem);
+  flex-wrap:wrap;justify-content:flex-end}
+.sodc-chips span{display:inline-flex;align-items:center;gap:.45em;
+  font-size:var(--text--xs,.75rem);font-weight:500;letter-spacing:.01em;
+  color:var(--x-muted)}
+.sodc-chips svg{width:1.1em;height:1.1em;color:var(--x-muted)}
 
 /* ── Sağ: metin kartı ──────────────────────────────────────── */
 .sodc-side{display:flex;flex-direction:column;
@@ -520,7 +521,12 @@ export function OutboundCallDemo({
    * gönderilen metin ?m= ile hedef sayfaya taşınır (ön-doldurma için). */
   function chatSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!sideCtaUrl) return;
+    if (!sideCtaUrl) {
+      // URL verilmemişse soldaki arama formuna yönlendir
+      setChatText("");
+      setStage("form");
+      return;
+    }
     const q = chatText.trim();
     const sep = sideCtaUrl.includes("?") ? "&" : "?";
     window.location.href = q
@@ -651,7 +657,7 @@ export function OutboundCallDemo({
               ))}
             </div>
           )}
-          {sideCtaUrl && (
+          {(
             <form className="sodc-chatrow" onSubmit={chatSubmit}>
               <input
                 className="sodc-chat-in"
