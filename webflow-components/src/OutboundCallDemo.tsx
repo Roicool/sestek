@@ -1,22 +1,24 @@
 /**
  * OutboundCallDemo — "Sizi arayalım" canlı demo sahnesi.
  *
- * Koyu (Deep) ya da açık (Soft) temalı, container-2xl genişliğinde split
- * section: solda display tipografili içerik + 3 adımlık şerit + nefes alan
- * ses dalgası; sağda cam (glass) panel — başında CANLI WebGL fluid orb'lu
- * asistan satırı, floating-label'lı alanlar, +90 çipli ve yazarken
- * biçimlenen telefon girişi. Gönderimde buton "bağlanıyor" durumuna geçer;
- * başarıda panel bir ARAMA EKRANINA dönüşür: orb büyür, çalma halkaları
- * yayılır, ekolayzer çubukları oynar, aranan numara gösterilir.
+ * Solda display tipografili içerik + cam adım kartları; sağda CSS ile
+ * çizilmiş GERÇEKÇİ TELEFON MOCKUP'I: bezel + yan tuşlar + Dynamic Island +
+ * gerçek saatli status bar. Form, telefonun ekranında bir bottom-sheet
+ * olarak yaşar (canlı WebGL orb'lu asistan satırı, floating-label alanlar,
+ * +90 çipli canlı biçimlenen telefon girişi). Gönderim başarılı olunca
+ * ekran bir ARAMA EKRANINA döner: "aranıyor" etiketi, asistan adı, numara,
+ * halkalarla nefes alan orb ve nokta pulse'ı. Hata panel yerine TELEFONU
+ * silkeler. Font sayfadan miras alınır (site marka fontu).
  *
  * Davranış js/components/outbound-demo.js ile aynı sözleşmededir
  * (docs/outbound-demo-api.md): TR telefon normalizasyonu, KVKK onayı,
  * honeypot, JSON POST, sunucu hata kodları, localStorage'da kalıcı cooldown
  * (AYNI "sestek-od" anahtarı — vanilla formla limiti paylaşır).
  *
- * Renk/ölçüler RC token'larına köprülüdür (var(--token, fallback)) —
- * Webflow sayfasında gerçek marka değerleri kaskadlanır. WebGL yoksa ya da
- * prefers-reduced-motion'da orb statik CSS gradient'e düşer.
+ * Sol kolon RC token'larına köprülüdür (var(--token, fallback)); telefon
+ * ekranı bilinçli olarak kendi koyu paletini taşır (bir cihaz ekranıdır,
+ * sayfa temasına uymaz). WebGL yoksa / reduced-motion'da orb statik
+ * gradient'e düşer.
  */
 import * as React from "react";
 
@@ -113,9 +115,10 @@ function cooldownLeft(phone: string, perPhoneMs: number): number {
 }
 
 /* ── Mini fluid orb — voice-orbs shader'ının renk-sentez dalı ─────
- * Küçük (dpr×88px) canvas'ta domain-warped fbm; idle'da yavaş akar,
- * "calling" durumunda hız + parlaklık artar. Reduced-motion/WebGL yok →
- * CSS gradient fallback (canvas gizli kalır). */
+ * Küçük canvas'ta domain-warped fbm; idle'da yavaş, "calling" durumunda
+ * hızlı + parlak akar. Canvas form ↔ arama ekranı arasında yeniden mount
+ * olduğu için effect `calling` ile yeniden kurulur. Reduced-motion/WebGL
+ * yok → CSS gradient fallback. */
 const ORB_FRAG = `precision mediump float;
 uniform sampler2D n;uniform vec2 R;uniform float T,E;
 uniform vec3 A,B,C;
@@ -135,8 +138,6 @@ function useFluidOrb(
   canvasRef: React.RefObject<HTMLCanvasElement>,
   calling: boolean
 ) {
-  const callingRef = React.useRef(calling);
-  callingRef.current = calling;
   const [gpuOk, setGpuOk] = React.useState(true);
 
   React.useEffect(() => {
@@ -182,7 +183,7 @@ function useFluidOrb(
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    const side = Math.round(88 * Math.min(window.devicePixelRatio || 1, 2));
+    const side = Math.round(96 * Math.min(window.devicePixelRatio || 1, 2));
     canvas.width = side;
     canvas.height = side;
     gl.viewport(0, 0, side, side);
@@ -194,13 +195,14 @@ function useFluidOrb(
     const uT = gl.getUniformLocation(prog, "T");
     const uE = gl.getUniformLocation(prog, "E");
 
-    let raf = 0, phase = 0, energy = 0, last = performance.now(), dead = false;
+    let raf = 0, phase = Math.random() * 20, energy = calling ? 0.4 : 0,
+      last = performance.now(), dead = false;
     const tick = () => {
       if (dead) return;
       const now = performance.now();
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      const target = callingRef.current ? 0.75 : 0.12;
+      const target = calling ? 0.75 : 0.12;
       energy += (target - energy) * 0.06;
       phase += dt * (0.35 + energy * 1.2);
       gl.uniform1f(uT, phase);
@@ -214,7 +216,7 @@ function useFluidOrb(
       cancelAnimationFrame(raf);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [canvasRef]);
+  }, [canvasRef, calling]);
 
   return gpuOk;
 }
@@ -223,25 +225,23 @@ const CSS = `
 .sodc{--x-bg1:#141222;--x-bg2:#1c1830;
   --x-text:#f4f2fb;--x-muted:#a49ec2;--x-line:rgba(255,255,255,.09);
   --x-glass:rgba(255,255,255,.05);--x-glass-line:rgba(255,255,255,.10);
-  --x-field:rgba(255,255,255,.06);--x-field-line:rgba(255,255,255,.14);
-  --x-accent:var(--brand-primary--400,#8d7bff);--x-accent2:#4fd1e0;--x-accent3:#ff8ac4;
+  --x-accent:var(--brand-primary--400,#8d7bff);
   --x-neg:#ff7a68;--x-ring:rgba(255,255,255,.055);
   max-width:var(--container--2xl,96rem);margin-inline:auto;
   padding:var(--spacing--6,1.5rem);color:var(--x-text);font:inherit}
 .sodc.is-soft{--x-bg1:#f6f4fa;--x-bg2:#eef0fa;
   --x-text:var(--color-text--base,#1b1830);--x-muted:var(--color-text--muted,#6d6885);
   --x-line:rgba(20,16,48,.08);--x-glass:rgba(255,255,255,.72);--x-glass-line:rgba(20,16,48,.08);
-  --x-field:rgba(20,16,48,.045);--x-field-line:rgba(20,16,48,.14);--x-neg:#d34a3a;--x-ring:rgba(20,16,48,.06)}
+  --x-neg:#d34a3a;--x-ring:rgba(20,16,48,.06)}
 .sodc *{box-sizing:border-box}
 .sodc-card{position:relative;isolation:isolate;overflow:hidden;
   border-radius:var(--radius--3xl,24px);
   background:linear-gradient(160deg,var(--x-bg1),var(--x-bg2));
   box-shadow:inset 0 0 0 1px var(--x-line);
-  display:grid;grid-template-columns:1.08fr 1fr;align-items:center;
+  display:grid;grid-template-columns:1.15fr 1fr;align-items:center;
   gap:var(--spacing--14,3.5rem);
   padding:var(--spacing--16,4rem) var(--spacing--14,3.5rem)}
-/* Ambiyans: isima yerine orb'u yankilayan hairline halkalar — sag tarafta,
- * cok silik cizgi isi (glow degil) */
+/* Ambiyans: orb'u yankılayan hairline halkalar — çizgi işi, glow değil */
 .sodc-card::before,.sodc-card::after{content:"";position:absolute;z-index:-1;
   pointer-events:none;border-radius:50%;border:1px solid var(--x-ring)}
 .sodc-card::before{width:64rem;height:64rem;right:-22rem;top:50%;transform:translateY(-50%)}
@@ -276,125 +276,130 @@ const CSS = `
 .sodc-steps b{display:block;font-size:var(--text--xs,.75rem);font-weight:600;
   letter-spacing:.12em;color:var(--x-accent);margin-bottom:.55em}
 
-/* ── Sağ: cam panel ────────────────────────────────────────── */
-.sodc-panel{position:relative;border-radius:var(--radius--2xl,16px);
-  background:var(--x-glass);
-  -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px var(--x-glass-line),
-    0 34px 70px -30px rgba(0,0,0,.55);
-  padding:var(--spacing--9,2.25rem)}
-.sodc.is-soft .sodc-panel{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),
-  inset 0 0 0 1px var(--x-glass-line),0 30px 60px -28px rgba(30,24,70,.25)}
-.sodc-panel.is-shake{animation:sodc-shake .4s}
-@keyframes sodc-shake{20%{transform:translateX(-7px)}45%{transform:translateX(6px)}
-  70%{transform:translateX(-4px)}90%{transform:translateX(2px)}}
+/* ── Sağ: telefon mockup'ı ─────────────────────────────────── */
+.sodc-stage{display:grid;place-items:center}
+.sodc-phone{position:relative;width:min(21.5rem,100%);aspect-ratio:9/19;
+  border-radius:3.2rem;padding:.6rem;transform:rotate(-3deg);
+  background:linear-gradient(150deg,#3d3d49,#141419 55%,#2b2b35);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),
+    inset 0 0 .4rem rgba(0,0,0,.9),
+    0 44px 90px -34px rgba(0,0,0,.65)}
+.sodc.is-soft .sodc-phone{box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),
+  inset 0 0 .4rem rgba(0,0,0,.85),0 40px 80px -30px rgba(30,24,70,.35)}
+.sodc-phone.is-shake{animation:sodc-shake .4s}
+@keyframes sodc-shake{20%{transform:rotate(-3deg) translateX(-7px)}
+  45%{transform:rotate(-3deg) translateX(6px)}70%{transform:rotate(-3deg) translateX(-4px)}
+  90%{transform:rotate(-3deg) translateX(2px)}}
+/* yan tuşlar */
+.sodc-key{position:absolute;width:3px;border-radius:2px;background:#0e0e14;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.sodc-key--v1{left:-3px;top:23%;height:2.1rem}
+.sodc-key--v2{left:-3px;top:31%;height:2.1rem}
+.sodc-key--pw{right:-3px;top:26%;height:3.4rem}
+/* ekran */
+.sodc-screen{position:absolute;inset:.6rem;border-radius:2.65rem;overflow:hidden;
+  display:flex;flex-direction:column;
+  background:radial-gradient(130% 75% at 50% -12%,#2d2852 0%,#1a1729 52%,#0f0e19 100%)}
+.sodc-island{position:absolute;top:.7rem;left:50%;transform:translateX(-50%);
+  width:34%;height:1.45rem;border-radius:999px;background:#050508;z-index:6}
+.sodc-sb{display:flex;justify-content:space-between;align-items:center;
+  padding:.9rem 1.5rem 0;position:relative;z-index:5;
+  font-size:.78rem;font-weight:600;letter-spacing:.02em;color:#eae7f6;
+  font-variant-numeric:tabular-nums}
+.sodc-sb-r{display:flex;gap:.32rem;align-items:center}
+.sodc-sb svg{display:block;opacity:.92}
 
-.sodc-agent{display:flex;align-items:center;gap:var(--spacing--4,1rem);
-  padding-bottom:var(--spacing--6,1.5rem);margin-bottom:var(--spacing--6,1.5rem);
-  border-bottom:1px solid var(--x-line);
-  transition:all .5s cubic-bezier(.22,1,.36,1)}
-.sodc-orb-wrap{position:relative;flex:none;width:56px;height:56px;
-  transition:width .55s cubic-bezier(.22,1,.36,1),height .55s cubic-bezier(.22,1,.36,1)}
+/* ekrandaki bottom sheet (form) */
+.sodc-sheet{margin:auto .45rem .45rem;padding:1.05rem .95rem .95rem;
+  border-radius:1.5rem 1.5rem 2.3rem 2.3rem;
+  background:rgba(255,255,255,.065);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 0 0 1px rgba(255,255,255,.08);
+  display:grid;gap:.7rem;animation:sodc-in .5s cubic-bezier(.22,1,.36,1)}
+.sodc-agent{display:flex;align-items:center;gap:.7rem;
+  padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.sodc-orb-wrap{position:relative;flex:none;width:40px;height:40px}
 .sodc-orb,.sodc-orb-fallback{position:absolute;inset:0;width:100%;height:100%;
   border-radius:50%;display:block}
 .sodc-orb-fallback{background:radial-gradient(circle at 32% 28%,#c9b8ff,#7c6cff 46%,#4fd1e0 90%)}
-.sodc-agent-txt{min-width:0}
-.sodc-agent-name{font-weight:600;font-size:var(--text--base,1rem)}
-.sodc-agent-st{display:flex;align-items:center;gap:.45em;margin-top:.2em;
-  font-size:var(--text--xs,.75rem);letter-spacing:.06em;text-transform:uppercase;
-  color:var(--x-muted)}
+.sodc-agent-name{font-weight:600;font-size:.9rem;color:#f2f0fa}
+.sodc-agent-st{display:flex;align-items:center;gap:.4em;margin-top:.15em;
+  font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#8f89ad}
 .sodc-agent-st::before{content:"";width:.5em;height:.5em;border-radius:50%;
-  background:#3ddc84;box-shadow:0 0 8px #3ddc84}
+  background:#3ddc84;box-shadow:0 0 6px #3ddc84}
 
-/* çalma halkaları — yalnız success'te */
-.sodc-ring{position:absolute;inset:0;border-radius:50%;pointer-events:none;
-  border:1.5px solid var(--x-accent);opacity:0}
-.is-calling .sodc-ring{animation:sodc-ring 2s cubic-bezier(.2,.6,.35,1) infinite}
-.is-calling .sodc-ring:nth-child(2){animation-delay:.66s}
-.is-calling .sodc-ring:nth-child(3){animation-delay:1.33s}
-@keyframes sodc-ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
-
-/* alanlar — floating label */
-.sodc-form{display:grid;gap:var(--spacing--5,1.25rem)}
+/* alanlar — floating label (ekran ölçeğinde) */
+.sodc-form{display:grid;gap:.6rem}
 .sodc-field{position:relative}
-.sodc-input{width:100%;font:inherit;font-size:var(--text--base,1rem);color:var(--x-text);
-  background:var(--x-field);border:1px solid var(--x-field-line);
-  border-radius:var(--radius--xl,12px);outline:none;
-  padding:1.5em 1.1em .6em;transition:border-color .2s,box-shadow .2s,background .2s}
+.sodc-input{width:100%;font:inherit;font-size:.88rem;color:#f2f0fa;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:.85rem;outline:none;
+  padding:1.35em .95em .5em;transition:border-color .2s,box-shadow .2s}
 .sodc-input:focus{border-color:var(--x-accent);
-  box-shadow:0 0 0 4px color-mix(in oklab,var(--x-accent) 18%,transparent)}
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--x-accent) 20%,transparent)}
 .sodc-field.is-invalid .sodc-input{border-color:var(--x-neg);
-  box-shadow:0 0 0 4px color-mix(in oklab,var(--x-neg) 16%,transparent)}
-.sodc-flabel{position:absolute;left:1.15em;top:50%;transform:translateY(-50%);
-  pointer-events:none;color:var(--x-muted);font-size:var(--text--base,1rem);
-  transition:all .18s ease}
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--x-neg) 18%,transparent)}
+.sodc-flabel{position:absolute;left:1.05em;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:#8f89ad;font-size:.88rem;transition:all .18s ease}
 .sodc-input:focus~.sodc-flabel,.sodc-field.has-value .sodc-flabel{
-  top:.62em;transform:none;font-size:var(--text--xs,.75rem);
-  letter-spacing:.05em;color:var(--x-accent)}
+  top:.55em;transform:none;font-size:.6rem;letter-spacing:.06em;color:var(--x-accent)}
 .sodc-field.is-invalid .sodc-flabel{color:var(--x-neg)}
-/* +90 çipi */
-.sodc-field--phone .sodc-input{padding-left:4.4em}
-.sodc-field--phone .sodc-flabel{left:4.55em}
-.sodc-prefix{position:absolute;left:.75em;top:50%;transform:translateY(-50%);
-  font-size:var(--text--sm,.875rem);font-weight:600;color:var(--x-muted);
-  background:var(--x-field);border:1px solid var(--x-field-line);
-  border-radius:var(--radius--lg,8px);padding:.35em .6em;pointer-events:none}
-
-.sodc-consent{display:flex;gap:.7em;align-items:flex-start;cursor:pointer;
-  font-size:var(--text--sm,.875rem);line-height:1.5;color:var(--x-muted)}
-.sodc-consent input{flex:none;width:1.1em;height:1.1em;margin-top:.16em;
+.sodc-field--phone .sodc-input{padding-left:4em}
+.sodc-field--phone .sodc-flabel{left:4.15em}
+.sodc-prefix{position:absolute;left:.65em;top:50%;transform:translateY(-50%);
+  font-size:.72rem;font-weight:600;color:#b9b3d6;pointer-events:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:.5rem;padding:.3em .5em}
+.sodc-consent{display:flex;gap:.6em;align-items:flex-start;cursor:pointer;
+  font-size:.66rem;line-height:1.45;color:#8f89ad}
+.sodc-consent input{flex:none;width:1.05em;height:1.05em;margin-top:.18em;
   accent-color:var(--x-accent);cursor:pointer}
 .sodc-consent.is-invalid{color:var(--x-neg)}
-
-.sodc-error{display:flex;gap:.6em;align-items:flex-start;
-  font-size:var(--text--sm,.875rem);line-height:1.45;color:var(--x-neg);
+.sodc-error{display:flex;gap:.5em;align-items:flex-start;
+  font-size:.7rem;line-height:1.45;color:var(--x-neg);
   background:color-mix(in oklab,var(--x-neg) 12%,transparent);
   border:1px solid color-mix(in oklab,var(--x-neg) 30%,transparent);
-  border-radius:var(--radius--lg,8px);padding:.7em .9em}
-
+  border-radius:.6rem;padding:.55em .7em}
 .sodc-btn{position:relative;overflow:hidden;font:inherit;font-weight:600;
-  font-size:var(--text--base,1rem);color:#fff;width:100%;border:0;cursor:pointer;
-  display:inline-flex;justify-content:center;align-items:center;gap:.6em;
-  padding:1em 1.5em;border-radius:var(--radius--full,9999px);
-  background:var(--x-accent);
-  box-shadow:0 12px 26px -14px color-mix(in oklab,var(--x-accent) 65%,transparent);
-  transition:transform .2s,box-shadow .2s,background .2s,filter .2s}
-.sodc-btn:hover{background:color-mix(in oklab,var(--x-accent) 88%,#fff)}
-.sodc-btn::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);
-  transform:translateX(-110%);transition:transform .7s ease}
-.sodc-btn:hover{transform:translateY(-2px);
-  box-shadow:0 18px 34px -14px color-mix(in oklab,var(--x-accent) 75%,transparent)}
-.sodc-btn:hover::after{transform:translateX(110%)}
+  font-size:.9rem;color:#fff;width:100%;border:0;cursor:pointer;
+  display:inline-flex;justify-content:center;align-items:center;gap:.55em;
+  padding:.9em 1.2em;border-radius:999px;background:var(--x-accent);
+  box-shadow:0 10px 22px -12px color-mix(in oklab,var(--x-accent) 70%,transparent);
+  transition:transform .2s,background .2s,filter .2s}
+.sodc-btn:hover{background:color-mix(in oklab,var(--x-accent) 88%,#fff);transform:translateY(-1px)}
 .sodc-btn:active{transform:translateY(0)}
 .sodc-btn:disabled{cursor:default;transform:none;filter:saturate(.7) brightness(.92)}
 .sodc-btn svg{flex:none}
 .sodc-btn:hover .sodc-btn-ic{animation:sodc-wiggle .5s ease}
 @keyframes sodc-wiggle{25%{transform:rotate(-12deg)}60%{transform:rotate(9deg)}}
-.sodc-spin{width:1.05em;height:1.05em;flex:none;border-radius:50%;
+.sodc-spin{width:1em;height:1em;flex:none;border-radius:50%;
   border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
   animation:sodc-rot .7s linear infinite}
 @keyframes sodc-rot{to{transform:rotate(360deg)}}
 
-/* ── Arama ekranı (success) ────────────────────────────────── */
-.sodc-call{display:grid;justify-items:center;text-align:center;
-  gap:var(--spacing--3,.75rem);padding:var(--spacing--6,1.5rem) 0 var(--spacing--4,1rem);
-  animation:sodc-in .5s cubic-bezier(.22,1,.36,1)}
+/* ── Arama ekranı ──────────────────────────────────────────── */
+.sodc-callui{position:absolute;inset:0;z-index:4;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:4.4rem 1.4rem 2rem;animation:sodc-in .5s cubic-bezier(.22,1,.36,1)}
 @keyframes sodc-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-.is-calling .sodc-agent{border:0;margin:0;padding:0;justify-content:center}
-.is-calling .sodc-orb-wrap{width:96px;height:96px}
-.is-calling .sodc-agent-txt{display:none}
-.sodc-call-t{font-size:var(--text--2xl,1.5rem);font-weight:600;margin-top:var(--spacing--4,1rem)}
-.sodc-call-num{font-variant-numeric:tabular-nums;letter-spacing:.04em;
-  color:var(--x-muted);font-size:var(--text--base,1rem)}
-.sodc-call-x{color:var(--x-muted);font-size:var(--text--sm,.875rem);
-  line-height:1.55;max-width:24rem}
-.sodc-call-dots{display:flex;gap:.5rem;margin-top:var(--spacing--3,.75rem)}
-.sodc-call-dots i{width:.5rem;height:.5rem;border-radius:50%;background:var(--x-accent);
+.sodc-call-k{font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:#8f89ad}
+.sodc-call-name{margin-top:.45rem;font-size:1.3rem;font-weight:600;color:#f2f0fa}
+.sodc-call-num{margin-top:.2rem;color:#8f89ad;font-size:.85rem;
+  font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.sodc-callui .sodc-orb-wrap{width:92px;height:92px;margin-top:2.4rem}
+.sodc-ring{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  border:1.5px solid var(--x-accent);opacity:0}
+.sodc-callui .sodc-ring{animation:sodc-ringw 2s cubic-bezier(.2,.6,.35,1) infinite}
+.sodc-callui .sodc-ring:nth-of-type(2){animation-delay:.66s}
+.sodc-callui .sodc-ring:nth-of-type(3){animation-delay:1.33s}
+@keyframes sodc-ringw{0%{transform:scale(1);opacity:.7}100%{transform:scale(2);opacity:0}}
+.sodc-call-dots{display:flex;gap:.45rem;margin-top:1.9rem}
+.sodc-call-dots i{width:.42rem;height:.42rem;border-radius:50%;background:var(--x-accent);
   animation:sodc-dot 1.2s ease-in-out infinite}
 .sodc-call-dots i:nth-child(2){animation-delay:.2s}
 .sodc-call-dots i:nth-child(3){animation-delay:.4s}
 @keyframes sodc-dot{0%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.sodc-call-x{margin-top:auto;color:#8f89ad;font-size:.72rem;line-height:1.55;max-width:16rem}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
 @media (max-width:991px){
@@ -403,20 +408,42 @@ const CSS = `
   .sodc-copy{max-width:none}
   .sodc-h{font-size:var(--heading--h2,var(--text--4xl,2.25rem))}
   .sodc-steps{grid-template-columns:1fr}
+  .sodc-phone{transform:none;width:min(19.5rem,88vw)}
+  @keyframes sodc-shake{20%{transform:translateX(-7px)}45%{transform:translateX(6px)}
+    70%{transform:translateX(-4px)}90%{transform:translateX(2px)}}
 }
 @media (prefers-reduced-motion:reduce){
-  .sodc-call-dots i,.sodc-ring,.sodc-spin{animation:none}
-  .sodc-btn::after{display:none}
+  .sodc-call-dots i,.sodc-callui .sodc-ring,.sodc-spin{animation:none}
 }
 `;
 
 const PhoneIcon = () => (
-  <svg className="sodc-btn-ic" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+  <svg className="sodc-btn-ic" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
     <path
       d="M3.6 1.8c.5-.5 1.3-.4 1.7.1l1.3 1.7c.3.5.3 1.1-.1 1.5l-.7.8c.6 1.3 1.7 2.4 3 3l.8-.7c.4-.4 1-.4 1.5-.1l1.7 1.3c.5.4.6 1.2.1 1.7l-.9.9c-.5.5-1.2.7-1.9.5-2-.6-3.9-1.7-5.4-3.2S2.2 6 1.6 4c-.2-.7 0-1.4.5-1.9l1.5-.3z"
       fill="currentColor"
     />
   </svg>
+);
+const SbIcons = () => (
+  <span className="sodc-sb-r" aria-hidden="true">
+    <svg width="15" height="10" viewBox="0 0 15 10">
+      <rect x="0" y="6" width="2.5" height="4" rx="1" fill="currentColor" opacity=".5" />
+      <rect x="4" y="4" width="2.5" height="6" rx="1" fill="currentColor" opacity=".7" />
+      <rect x="8" y="2" width="2.5" height="8" rx="1" fill="currentColor" opacity=".85" />
+      <rect x="12" y="0" width="2.5" height="10" rx="1" fill="currentColor" />
+    </svg>
+    <svg width="14" height="10" viewBox="0 0 14 10">
+      <path d="M7 9.5 4.6 7.1a3.4 3.4 0 0 1 4.8 0Z" fill="currentColor" />
+      <path d="M2.5 5a6.4 6.4 0 0 1 9 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M.5 2.8a9.2 9.2 0 0 1 13 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".7" />
+    </svg>
+    <svg width="20" height="10" viewBox="0 0 20 10">
+      <rect x=".5" y=".5" width="16" height="9" rx="2.5" fill="none" stroke="currentColor" opacity=".5" />
+      <rect x="2" y="2" width="11" height="6" rx="1.4" fill="currentColor" />
+      <rect x="17.6" y="3" width="1.9" height="4" rx="1" fill="currentColor" opacity=".5" />
+    </svg>
+  </span>
 );
 
 export function OutboundCallDemo({
@@ -435,8 +462,8 @@ export function OutboundCallDemo({
   consentText = "Kişisel verilerimin demo araması için işlenmesine onay veriyorum.",
   buttonText = "Beni ara",
   sendingText = "Bağlanıyor…",
-  successTitle = "Telefonunuz çalıyor",
-  successText = "Knovvu sesli asistanı sizi arıyor — açtığınızda doğal bir sesle karşılaşacaksınız.",
+  successTitle = "Aranıyor",
+  successText = "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal sesiyle karşılaşacaksınız.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "TR",
   cooldownSeconds = 600,
@@ -450,9 +477,21 @@ export function OutboundCallDemo({
   const [error, setError] = React.useState<string | null>(null);
   const [invalid, setInvalid] = React.useState<"name" | "phone" | "consent" | null>(null);
   const [shake, setShake] = React.useState(0);
+  const [clock, setClock] = React.useState("");
 
   const orbCanvas = React.useRef<HTMLCanvasElement>(null);
   const gpuOk = useFluidOrb(orbCanvas, done);
+
+  React.useEffect(() => {
+    const f = () =>
+      setClock(new Date().toLocaleTimeString(lang === "EN" ? "en-GB" : "tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }));
+    f();
+    const id = setInterval(f, 30000);
+    return () => clearInterval(id);
+  }, [lang]);
 
   const t = MESSAGES[lang] || MESSAGES.TR;
   const msg = (code: string) => t[code] || t.generic;
@@ -500,6 +539,13 @@ export function OutboundCallDemo({
       .finally(() => setSending(false));
   }
 
+  const orb = (
+    <>
+      {!gpuOk && <span className="sodc-orb-fallback" aria-hidden="true" />}
+      <canvas ref={orbCanvas} className="sodc-orb" aria-hidden="true" hidden={!gpuOk} />
+    </>
+  );
+
   return (
     <section className={"sodc" + (theme === "Soft" ? " is-soft" : "")}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -520,91 +566,107 @@ export function OutboundCallDemo({
           </ol>
         </div>
 
-        <div className={"sodc-panel" + (done ? " is-calling" : "") + (shake ? " is-shake" : "")} key={shake}>
-          <div className="sodc-agent">
-            <div className="sodc-orb-wrap">
-              {!gpuOk && <span className="sodc-orb-fallback" aria-hidden="true" />}
-              <canvas ref={orbCanvas} className="sodc-orb" aria-hidden="true" hidden={!gpuOk} />
-              <span className="sodc-ring" aria-hidden="true" />
-              <span className="sodc-ring" aria-hidden="true" />
-              <span className="sodc-ring" aria-hidden="true" />
-            </div>
-            <div className="sodc-agent-txt">
-              <div className="sodc-agent-name">{agentName}</div>
-              <div className="sodc-agent-st">{agentStatus}</div>
-            </div>
-          </div>
-
-          {!done ? (
-            <form className="sodc-form" onSubmit={submit} noValidate aria-busy={sending}>
-              <div className={"sodc-field" + (name ? " has-value" : "") + (invalid === "name" ? " is-invalid" : "")}>
-                <input
-                  id="sodc-name"
-                  className="sodc-input"
-                  type="text"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); clearErr(); }}
-                />
-                <label className="sodc-flabel" htmlFor="sodc-name">{nameLabel}</label>
+        <div className="sodc-stage">
+          <div className={"sodc-phone" + (shake ? " is-shake" : "")} key={shake}>
+            <span className="sodc-key sodc-key--v1" aria-hidden="true" />
+            <span className="sodc-key sodc-key--v2" aria-hidden="true" />
+            <span className="sodc-key sodc-key--pw" aria-hidden="true" />
+            <div className="sodc-screen">
+              <div className="sodc-island" aria-hidden="true" />
+              <div className="sodc-sb" aria-hidden="true">
+                <span>{clock}</span>
+                <SbIcons />
               </div>
 
-              <div className={"sodc-field sodc-field--phone" + (digits ? " has-value" : "") + (invalid === "phone" ? " is-invalid" : "")}>
-                <span className="sodc-prefix" aria-hidden="true">+90</span>
-                <input
-                  id="sodc-phone"
-                  className="sodc-input"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  value={formatPhone(digits)}
-                  onChange={(e) => { setDigits(phoneDigits(e.target.value)); clearErr(); }}
-                />
-                <label className="sodc-flabel" htmlFor="sodc-phone">{phoneLabel}</label>
-              </div>
+              {!done ? (
+                <div className="sodc-sheet">
+                  <div className="sodc-agent">
+                    <div className="sodc-orb-wrap">{orb}</div>
+                    <div>
+                      <div className="sodc-agent-name">{agentName}</div>
+                      <div className="sodc-agent-st">{agentStatus}</div>
+                    </div>
+                  </div>
 
-              {/* honeypot — görünmez, botlar doldurur */}
-              <input
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }}
-                value={hp}
-                onChange={(e) => setHp(e.target.value)}
-              />
+                  <form className="sodc-form" onSubmit={submit} noValidate aria-busy={sending}>
+                    <div className={"sodc-field" + (name ? " has-value" : "") + (invalid === "name" ? " is-invalid" : "")}>
+                      <input
+                        id="sodc-name"
+                        className="sodc-input"
+                        type="text"
+                        autoComplete="name"
+                        value={name}
+                        onChange={(e) => { setName(e.target.value); clearErr(); }}
+                      />
+                      <label className="sodc-flabel" htmlFor="sodc-name">{nameLabel}</label>
+                    </div>
 
-              <label className={"sodc-consent" + (invalid === "consent" ? " is-invalid" : "")}>
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => { setConsent(e.target.checked); clearErr(); }}
-                />
-                <span>{consentText}</span>
-              </label>
+                    <div className={"sodc-field sodc-field--phone" + (digits ? " has-value" : "") + (invalid === "phone" ? " is-invalid" : "")}>
+                      <span className="sodc-prefix" aria-hidden="true">+90</span>
+                      <input
+                        id="sodc-phone"
+                        className="sodc-input"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        value={formatPhone(digits)}
+                        onChange={(e) => { setDigits(phoneDigits(e.target.value)); clearErr(); }}
+                      />
+                      <label className="sodc-flabel" htmlFor="sodc-phone">{phoneLabel}</label>
+                    </div>
 
-              {error && (
-                <div className="sodc-error" role="alert">
-                  <span aria-hidden="true">⚠</span>
-                  {error}
+                    {/* honeypot — görünmez, botlar doldurur */}
+                    <input
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }}
+                      value={hp}
+                      onChange={(e) => setHp(e.target.value)}
+                    />
+
+                    <label className={"sodc-consent" + (invalid === "consent" ? " is-invalid" : "")}>
+                      <input
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => { setConsent(e.target.checked); clearErr(); }}
+                      />
+                      <span>{consentText}</span>
+                    </label>
+
+                    {error && (
+                      <div className="sodc-error" role="alert">
+                        <span aria-hidden="true">⚠</span>
+                        {error}
+                      </div>
+                    )}
+
+                    <button className="sodc-btn" type="submit" disabled={sending}>
+                      {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon />}
+                      {sending ? sendingText : buttonText}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="sodc-callui" role="status">
+                  <div className="sodc-call-k">{successTitle}</div>
+                  <div className="sodc-call-name">{agentName}</div>
+                  <div className="sodc-call-num">+90 {formatPhone(digits)}</div>
+                  <div className="sodc-orb-wrap">
+                    {orb}
+                    <span className="sodc-ring" aria-hidden="true" />
+                    <span className="sodc-ring" aria-hidden="true" />
+                    <span className="sodc-ring" aria-hidden="true" />
+                  </div>
+                  <div className="sodc-call-dots" aria-hidden="true">
+                    <i /><i /><i />
+                  </div>
+                  <div className="sodc-call-x">{successText}</div>
                 </div>
               )}
-
-              <button className="sodc-btn" type="submit" disabled={sending}>
-                {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon />}
-                {sending ? sendingText : buttonText}
-              </button>
-            </form>
-          ) : (
-            <div className="sodc-call" role="status">
-              <div className="sodc-call-t">{successTitle}</div>
-              <div className="sodc-call-num">+90 {formatPhone(digits)}</div>
-              <div className="sodc-call-dots" aria-hidden="true">
-                <i /><i /><i />
-              </div>
-              <div className="sodc-call-x">{successText}</div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </section>

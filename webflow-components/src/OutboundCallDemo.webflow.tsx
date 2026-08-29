@@ -5,13 +5,13 @@ import { OutboundCallDemo } from "./OutboundCallDemo";
 export default declareComponent(OutboundCallDemo, {
   name: "Outbound Call Demo",
   description:
-    "'Sizi arayalım' canlı demo sahnesi — koyu/açık temalı split section: " +
-    "display tipografi + 3 adım şeridi + ses dalgası; cam panelde CANLI " +
-    "WebGL asistan orb'u, floating-label alanlar, +90 çipli canlı biçimlenen " +
-    "telefon girişi. Başarıda panel arama ekranına dönüşür (orb büyür, çalma " +
-    "halkaları + ekolayzer). Knovvu outbound proxy'sine gönderir " +
+    "'Sizi arayalım' canlı demo sahnesi — solda içerik + cam adım kartları, " +
+    "sağda CSS ile çizilmiş GERÇEKÇİ TELEFON: Dynamic Island, gerçek saatli " +
+    "status bar, ekranda bottom-sheet form (canlı WebGL asistan orb'u, +90 " +
+    "çipli canlı biçimlenen telefon girişi). Başarıda ekran arama ekranına " +
+    "döner (Aranıyor + halkalı orb). Knovvu outbound proxy'sine gönderir " +
     "(docs/outbound-demo-api.md); doğrulama + KVKK + honeypot + kalıcı " +
-    "cooldown içerir.",
+    "cooldown içerir. Font sayfadan miras alınır.",
   group: "Sestek",
   props: {
     theme: props.Variant({
@@ -98,14 +98,14 @@ export default declareComponent(OutboundCallDemo, {
     successTitle: props.Text({
       name: "Success title",
       group: "Form",
-      defaultValue: "Telefonunuz çalıyor",
+      defaultValue: "Aranıyor",
     }),
     successText: props.Text({
       name: "Success text",
       group: "Form",
       defaultValue:
-        "Knovvu sesli asistanı sizi arıyor — açtığınızda doğal bir sesle " +
-        "karşılaşacaksınız.",
+        "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal " +
+        "sesiyle karşılaşacaksınız.",
     }),
     endpoint: props.Text({
       name: "API endpoint",
