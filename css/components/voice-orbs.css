@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.css v2.6.0
+ * voice-orbs.css v2.7.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
@@ -13,6 +13,8 @@
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.7.0 — loop geri geldi (JS v3.4): .is-disabled / .vo-restart durumları
+ *          kaldırıldı
  * v2.6.0 — drag cursor/touch-action ve .vo-dot/[data-vo-dots] kuralları
  *          kaldırıldı (JS v3.3: drag ve dots yok)
  * v2.5.0 — slider paketi: grab/grabbing cursor + touch-action:pan-y,
@@ -243,13 +245,6 @@
 /* max(): dar ekranda offset kartın dışına taşarsa kenarda 12px'te durur */
 [data-vo-prev] { left: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
 [data-vo-next] { right: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
-
-/* İlk seste geri gidilemez; son seste › "başa dön" olur (JS basar).
- * .vo-restart görünümünü Webflow'da özelleştir (örn. ↺ ikonlu span'i göster). */
-[data-vo-prev].is-disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
 
 /* ── Reduced motion ──────────────────────────────────────────── */
 /* Shader HER ZAMAN çizer; burada yalnız layout geçişleri kapanır. */

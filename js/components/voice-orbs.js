@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.js v3.3.1
+ * voice-orbs.js v3.4.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
  * + 2 kenar), her orb'un altında başlık + açıklama, play/pause overlay.
  * AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer (film grenli);
@@ -33,9 +33,8 @@
  *
  * Component davranışı:
  *   • ←/→ klavye gezdirir; çalarken aktif orb çevresinde ilerleme halkası dolar.
- *   • LOOP YOK: liste uçludur. İlk seste ‹ oku .is-disabled alır; SON seste
- *     › oku .vo-restart sınıfını alır ve tıklanınca başa döner (ikonunu
- *     CSS'ten değiştirebilirsin, örn. ↺).
+ *   • SONSUZ DÖNGÜ: iki yönde de kesintisiz gezinilir (set DOM'da 3 kopya
+ *     dizilir, uçta görünmez zıplamayla süreklilik korunur).
  *   • Autoplay YOK: orb gövdesine tıklama ve ‹ › yalnız kaydırır (süren
  *     yayını durdurur). Çalma sadece play butonuyla — komşunun play'i
  *     oraya kaydırıp çalar, aktifte play/pause toggle eder.
@@ -57,6 +56,9 @@
  * fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
+ * v3.4.0 — sonsuz döngü geri geldi: set 3 kopya dizilir, uçta görünmez ±N
+ *          zıplamayla süreklilik korunur; ‹ › ve ←/→ iki yönde de hep
+ *          çalışır (.is-disabled / .vo-restart durumları kalktı)
  * v3.3.1 — çalarken seğirme düzeltildi: enerji toplam zamanı ÇARPIYORDU
  *          (her dalgalanmada shader fazı ileri-geri sıçrıyordu); faz artık
  *          JS'te entegre — enerji yalnız hızı/şiddeti artırır, faz sürekli.
@@ -335,17 +337,33 @@
         texPromise: null
       };
     });
-    var pos = 0;
     var centers = [], curTx = 0; // layout'un ürettiği görsel merkezler + track x
 
-    // Play/pause overlay enjeksiyonu + tıklama davranışı (klon yok, düz liste)
+    // ── SONSUZ DÖNGÜ: set 3 kopya dizilir (önce/orijinal/sonra), pos orta
+    // kopyada gezer; kenara taşınca scheduleNormalize görünmez ±N zıplar.
     items.forEach(function (el, i) {
       el.classList.add("vo-item");
+      el._voVoice = i;
+    });
+    function makeClone(i) {
+      var el = items[i].cloneNode(true);
+      el._voVoice = i;
+      return el;
+    }
+    voices.forEach(function (_, i) { track.insertBefore(makeClone(i), items[0]); });
+    voices.forEach(function (_, i) { track.appendChild(makeClone(i)); });
+    var els = Array.prototype.slice.call(track.children);
+    var pos = N; // orta kopyanın ilk sesi
+
+    // Play/pause overlay enjeksiyonu + tıklama davranışı (klonlar dahil)
+    els.forEach(function (el, i) {
+      var vi = el._voVoice;
       var orb = el.querySelector(".vo-orb");
       if (!orb) return;
       var btn = document.createElement("button");
       btn.className = "vo-play";
-      btn.setAttribute("aria-label", "Play " + (voices[i].name || "voice") + " preview");
+      btn.setAttribute("aria-label", "Play " + (voices[vi].name || "voice") + " preview");
+      if (i < N || i >= 2 * N) btn.setAttribute("tabindex", "-1"); // kopyalar tab dışı
       btn.innerHTML = PLAY_SVG + PAUSE_SVG;
       orb.appendChild(btn);
       // Orb gövdesi yalnız KAYDIRIR — autoplay yok
@@ -468,7 +486,7 @@
       L0 = Math.round(ladder[0] * s);
       track.style.gap = gapNow.toFixed(1) + "px";
       root.style.setProperty("--vo-zone", L0 + "px");
-      items.forEach(function (el) { el.style.width = L0 + "px"; });
+      els.forEach(function (el) { el.style.width = L0 + "px"; });
       if (viz) viz.resize(Math.round(L0 * Math.min(window.devicePixelRatio || 1, 2)));
       updateNavTop();
     }
@@ -479,7 +497,7 @@
       // ve aradaki farkı kapatan per-item translateX.
       var x = 0, activeCenter = 0;
       centers = [];
-      items.forEach(function (el, i) {
+      els.forEach(function (el, i) {
         var dist = Math.min(Math.abs(i - pos), ladder.length - 1);
         var size = ladder[dist] * s;
         var cVisual = x + size / 2;
@@ -500,7 +518,7 @@
     // ‹ › oklarını aktif başlığın dikey merkezine hizala (buton 40px).
     // Dikey konum geçişlerde değişmez — yalnız init + resize'da ölçülür.
     function updateNavTop() {
-      var cap = items[pos].querySelector(".vo-caption");
+      var cap = els[pos].querySelector(".vo-caption");
       if (!cap) return;
       var title = cap.querySelector(".vo-title") || cap;
       var rootTop = root.getBoundingClientRect().top;
@@ -512,13 +530,13 @@
     // Aktif sınıflar + canvas taşı + doku/renk yükle + komşuları önden ısıt
     var colorSeq = 0;
     function activate() {
-      items.forEach(function (el, i) {
+      els.forEach(function (el, i) {
         el.classList.toggle("is-active", i === pos);
         el.classList.toggle("vo-d1", Math.abs(i - pos) === 1);
         if (i !== pos) el.classList.remove("is-playing");
       });
       updateNav();
-      var orb = items[pos].querySelector(".vo-orb");
+      var orb = els[pos].querySelector(".vo-orb");
       if (orb && ring.parentNode !== orb) {
         ringCircle.style.strokeDashoffset = "100";
         orb.insertBefore(ring, orb.querySelector(".vo-play"));
@@ -527,7 +545,7 @@
       if (orb && canvas.parentNode !== orb) {
         orb.insertBefore(canvas, orb.querySelector(".vo-play"));
       }
-      var vi = pos, seq = ++colorSeq;
+      var vi = els[pos]._voVoice, seq = ++colorSeq;
       textureFor(vi).then(function (im) {
         if (seq !== colorSeq || !viz) return;
         if (viz.setImage(im)) return;
@@ -536,27 +554,16 @@
           viz.setColors(cols || DEFAULT_COLORS);
         });
       });
-      if (pos > 0) textureFor(pos - 1);       // komşuları önden yükle
-      if (pos < N - 1) textureFor(pos + 1);
+      textureFor((vi + 1) % N);               // komşuları önden yükle
+      textureFor((vi + N - 1) % N);
     }
 
-    // ── Nav durumları: başta ‹ disabled, sonda › "başa dön"
+    // ── Nav: sonsuz döngü — iki yönde de hep gezinilir
     var prevBtn = root.querySelector("[data-vo-prev]");
     var nextBtn = root.querySelector("[data-vo-next]");
-    function updateNav() {
-      if (prevBtn) prevBtn.classList.toggle("is-disabled", pos === 0);
-      if (nextBtn) {
-        var end = pos === N - 1;
-        nextBtn.classList.toggle("vo-restart", end);
-        nextBtn.setAttribute("aria-label", end ? "Back to start" : "Next voice");
-      }
-    }
-    if (prevBtn) prevBtn.addEventListener("click", function () {
-      if (pos > 0) goTo(pos - 1);
-    });
-    if (nextBtn) nextBtn.addEventListener("click", function () {
-      goTo(pos === N - 1 ? 0 : pos + 1);
-    });
+    function updateNav() {} // loop'ta durum sınıfı yok
+    if (prevBtn) prevBtn.addEventListener("click", function () { goTo(pos - 1); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { goTo(pos + 1); });
 
     // ── rAF: KOŞULSUZ döngü — idle'da da akar, çalarken analyser sürer.
     // Faz JS'te entegre edilir: enerji HIZI artırır, faz sürekli kalır
@@ -593,14 +600,14 @@
     // ── Playback
     function stop() {
       playing = false;
-      items.forEach(function (el) { el.classList.remove("is-playing"); });
+      els.forEach(function (el) { el.classList.remove("is-playing"); });
       audios.forEach(function (a) { a.pause(); });
       if (canvas) canvas.style.transform = ""; // pulse'ı sıfırla
     }
     var ctl = { stop: stop };
 
     function play() {
-      var v = voices[pos];
+      var v = voices[els[pos]._voVoice];
       if (!v.src) return;
       if (currentlyPlaying && currentlyPlaying !== ctl) currentlyPlaying.stop();
       currentlyPlaying = ctl;
@@ -620,17 +627,29 @@
         next.currentTime = 0;
         next.play().catch(function () {});
         playing = true;
-        items[pos].classList.add("is-playing");
+        els[pos].classList.add("is-playing");
       });
     }
     function toggle() { if (playing) { stop(); } else { play(); } }
     /* Kaydırma ÇALMAZ (autoplay yok) — süren yayını durdurur. */
     function goTo(index) {
-      if (index === pos || index < 0 || index >= N) return;
+      if (index === pos || index < 0 || index >= els.length) return;
       stop();
       pos = index;
       activate();
       layout(false);
+      scheduleNormalize();
+    }
+    // Kenar kopyasına taşındıysak animasyon bitince görünmez ±N zıplaması
+    var normalizeTimer = 0;
+    function scheduleNormalize() {
+      if (pos >= N && pos < 2 * N) return;
+      clearTimeout(normalizeTimer);
+      normalizeTimer = setTimeout(function () {
+        pos += pos < N ? N : -N;
+        activate();
+        layout(true);
+      }, 620);
     }
 
     var resizeT = 0;
@@ -639,10 +658,10 @@
       resizeT = setTimeout(function () { setStatic(); layout(true); }, 100);
     });
 
-    // ── Klavye: ← → gezdirir (sonda → başa döner)
+    // ── Klavye: ← → gezdirir (sonsuz döngü)
     root.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowLeft" && pos > 0) { goTo(pos - 1); e.preventDefault(); }
-      else if (e.key === "ArrowRight") { goTo(pos === N - 1 ? 0 : pos + 1); e.preventDefault(); }
+      if (e.key === "ArrowLeft") { goTo(pos - 1); e.preventDefault(); }
+      else if (e.key === "ArrowRight") { goTo(pos + 1); e.preventDefault(); }
     });
 
     activate();
