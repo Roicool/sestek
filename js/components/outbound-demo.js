@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.1.0
+ * outbound-demo.js v1.0.0
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -10,27 +10,16 @@
  * DOM (Webflow) — görünüm tamamen Designer'da, script yalnız davranış:
  *   <form data-outbound-demo
  *         data-od-endpoint="/demos/api/demos/outbound-call"  ← ops. (default bu)
- *         data-od-lang="TR"                                  ← ops. arama dili
- *         data-od-turnstile="0x4AAA...">                     ← Turnstile SITE key
+ *         data-od-lang="TR">                                 ← ops. arama dili
  *     <input  data-od-name  type="text">
  *     <input  data-od-phone type="tel">
  *     <label><input data-od-consent type="checkbox"> KVKK…</label>
  *     <input  data-od-hp type="text" tabindex="-1" autocomplete="off"
  *             style="position:absolute;left:-9999px">        ← honeypot (ops.)
- *     <div data-od-turnstile-slot></div>                     ← widget buraya
  *     <button data-od-submit type="submit">Beni ara</button>
  *     <div data-od-success hidden>Aramanız başlatıldı…</div>
  *     <div data-od-error   hidden>Bir şeyler ters gitti.</div>
  *   </form>
- *
- * Turnstile (bot koruması — canlıda ZORUNLU):
- *   data-od-turnstile'a Cloudflare Turnstile SITE key'ini ver. Script
- *   (challenges.cloudflare.com) yalnız o zaman ve tek sefer yüklenir; widget
- *   [data-od-turnstile-slot] içine render edilir (slot yoksa submit butonunun
- *   önüne otomatik açılır). Token payload'da `turnstileToken` olarak gider,
- *   sunucu siteverify ile doğrular; her denemeden sonra widget reset edilir
- *   (token'lar tek kullanımlık). Attribute YOKSA davranış eskisi gibi —
- *   token boş gider, sunucu secret tanımlıysa 403 captcha_failed döner.
  *
  * Davranış:
  *   • Client doğrulama: ad ≥ 2 karakter; telefon TR mobil formata normalize
@@ -49,9 +38,6 @@
  *   501 {ok:false,error:"not_configured"} · 502 {ok:false,error:"upstream"}
  *
  * Changelog
- * v1.1.0 — Cloudflare Turnstile entegrasyonu (data-od-turnstile ile site key;
- *          tek seferlik script yükleme, deneme sonrası reset, captcha_failed
- *          mesajı). Payload'a turnstileToken eklendi.
  * v1.0.0 — initial release
  */
 
@@ -64,7 +50,6 @@
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
-    captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
     upstream: "Arama başlatılamadı, lütfen daha sonra tekrar deneyin.",
     network: "Bağlantı kurulamadı — internetinizi kontrol edip tekrar deneyin.",
     generic: "Bir şeyler ters gitti, lütfen tekrar deneyin."
@@ -82,25 +67,6 @@
     if (d.slice(0, 2) === "90" && d.length === 12) d = d.slice(2);
     if (d.charAt(0) === "5" && d.length === 10) d = "0" + d;
     return /^05\d{9}$/.test(d) ? d : null;
-  }
-
-  /* Turnstile script'ini tek sefer yükle, hazır olunca cb(window.turnstile). */
-  var turnstileLoading = false;
-  function withTurnstile(cb) {
-    if (global.turnstile) return cb(global.turnstile);
-    if (!turnstileLoading) {
-      turnstileLoading = true;
-      var s = document.createElement("script");
-      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-      s.async = true;
-      document.head.appendChild(s);
-    }
-    var tries = 0;
-    (function poll() {
-      if (global.turnstile) return cb(global.turnstile);
-      if (++tries > 100) return cb(null); // ~10 sn — engellenmişse formu kilitleme
-      setTimeout(poll, 100);
-    })();
   }
 
   function setup(root) {
@@ -123,34 +89,6 @@
     var endpoint = root.getAttribute("data-od-endpoint") ||
       "/demos/api/demos/outbound-call";
     var lang = root.getAttribute("data-od-lang") || "TR";
-
-    // Turnstile widget'ı (site key verildiyse)
-    var tsKey = root.getAttribute("data-od-turnstile");
-    var tsWidget = null, tsApi = null;
-    if (tsKey) {
-      var slot = root.querySelector("[data-od-turnstile-slot]");
-      if (!slot) {
-        slot = document.createElement("div");
-        slot.setAttribute("data-od-turnstile-slot", "");
-        var anchor = submitEl || form.lastElementChild;
-        if (anchor) anchor.parentNode.insertBefore(slot, anchor);
-        else form.appendChild(slot);
-      }
-      withTurnstile(function (ts) {
-        if (!ts) return; // script gelmedi — token boş gider, sunucu karar verir
-        tsApi = ts;
-        tsWidget = ts.render(slot, { sitekey: tsKey });
-      });
-    }
-    function turnstileToken() {
-      if (!tsKey || !tsApi || tsWidget === null) return "";
-      try { return tsApi.getResponse(tsWidget) || ""; } catch (e) { return ""; }
-    }
-    function turnstileReset() {
-      if (tsApi && tsWidget !== null) {
-        try { tsApi.reset(tsWidget); } catch (e) {}
-      }
-    }
 
     var sending = false, cooldownUntil = 0;
     var defaultError = errorEl ? errorEl.textContent : "";
@@ -207,8 +145,7 @@
           phone: phone,
           consent: true,
           lang: lang,
-          hp: hpEl ? (hpEl.value || "") : "",
-          turnstileToken: turnstileToken()
+          hp: hpEl ? (hpEl.value || "") : ""
         })
       })
         .then(function (res) {
@@ -231,7 +168,6 @@
           sending = false;
           root.classList.remove("is-sending");
           if (submitEl) submitEl.disabled = false;
-          turnstileReset(); // token'lar tek kullanımlık — her deneme sonrası
         });
     });
 

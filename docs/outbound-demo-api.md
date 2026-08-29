@@ -44,8 +44,7 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
   "phone": "05444390406",
   "consent": true,
   "lang": "TR",
-  "hp": "",
-  "turnstileToken": "0.abc123…"
+  "hp": ""
 }
 ```
 
@@ -64,7 +63,6 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 | 400 | `{"ok":false,"error":"invalid_name"}` | Ad geçersiz |
 | 400 | `{"ok":false,"error":"invalid_phone"}` | Telefon geçersiz |
 | 400 | `{"ok":false,"error":"consent_required"}` | Rıza yok |
-| 403 | `{"ok":false,"error":"captcha_failed"}` | Turnstile doğrulaması geçmedi |
 | 429 | `{"ok":false,"error":"rate_limited","retryAfter":600}` | Limit aşıldı |
 | 501 | `{"ok":false,"error":"not_configured"}` | Env değişkenleri eksik (mevcut route'lardaki env-gate kalıbı) |
 | 502 | `{"ok":false,"error":"upstream"}` | Knovvu hata döndü |
@@ -83,7 +81,6 @@ Knovvu'nun ham hata gövdesini istemciye SIZDIRMA — logla, `upstream` dön.
 | `KNOVVU_OUTBOUND_URL` | `https://eu.va.knovvu.com/outbound-manager/api/external/outbound/call-request` |
 | `KNOVVU_PROJECT_NAME` | `TR_WebSite_BankingOutbound` |
 | `KNOVVU_SCOPE` | Opsiyonel — IdentityServer scope isterse |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile SECRET key (site key client'ta) |
 
 Env değişikliği yeni deploy ile aktifleşir ("Deploy latest commit").
 
@@ -149,24 +146,8 @@ yeterli; kalıcı istersen Cloudflare KV):
 - **IP başına:** saatte en fazla 5 istek (`CF-Connecting-IP` header'ı) → 429.
 - Map'i her istekte süresi geçen kayıtlardan arındır (bellek büyümesin).
 
-### 4. Turnstile doğrulaması (ZORUNLU — bot akınına karşı asıl kalkan)
-
-Client (outbound-demo.js v1.1.0+) widget'ı render edip token'ı
-`turnstileToken` alanında gönderiyor. Route, Knovvu'ya gitmeden ÖNCE doğrular:
-
-```
-POST https://challenges.cloudflare.com/turnstile/v0/siteverify
-Content-Type: application/x-www-form-urlencoded
-secret={TURNSTILE_SECRET_KEY}&response={turnstileToken}&remoteip={CF-Connecting-IP}
-```
-
-Yanıttaki `success !== true` (veya token boş) → **403 `captcha_failed`**,
-Knovvu'ya istek atılmaz. `TURNSTILE_SECRET_KEY` env'de tanımlı değilse bu
-adım atlanır (yalnız geliştirme kolaylığı — CANLIDA TANIMLI OLMALI).
-
-Kurulum: Cloudflare dashboard → Turnstile → widget oluştur (domain:
-sestek.com + varsa staging domain'i). **Site key** Webflow'daki form
-elementine `data-od-turnstile` olarak verilir, **secret key** buraya env'e.
+Opsiyonel güçlendirme (ayrı iş): Cloudflare Turnstile — client'a widget,
+route'ta `cf-turnstile-response` doğrulaması.
 
 ---
 
@@ -208,27 +189,11 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "not_configured" }, { status: 501 });
   }
 
-  const { name, phone, consent, lang, hp, turnstileToken } =
-    (await req.json().catch(() => ({}))) as {
-      name?: string; phone?: string; consent?: boolean; lang?: string;
-      hp?: string; turnstileToken?: string;
-    };
+  const { name, phone, consent, lang, hp } = (await req.json().catch(() => ({}))) as {
+    name?: string; phone?: string; consent?: boolean; lang?: string; hp?: string;
+  };
 
   if (hp) return Response.json({ ok: true }); // honeypot: sessiz başarı
-
-  // Turnstile (canlıda zorunlu — secret env'de yoksa atlanır)
-  const tsSecret = process.env.TURNSTILE_SECRET_KEY;
-  if (tsSecret) {
-    const ip0 = req.headers.get("cf-connecting-ip") ?? "";
-    const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret: tsSecret, response: turnstileToken ?? "", remoteip: ip0 }),
-    }).then((r) => r.json() as Promise<{ success?: boolean }>).catch(() => ({ success: false }));
-    if (!verify.success) {
-      return Response.json({ ok: false, error: "captcha_failed" }, { status: 403 });
-    }
-  }
   const cleanName = (name ?? "").trim();
   if (cleanName.length < 2 || cleanName.length > 100) {
     return Response.json({ ok: false, error: "invalid_name" }, { status: 400 });
@@ -321,8 +286,4 @@ export async function POST(req: Request) {
   `[data-od-consent]` / `[data-od-hp]` / `[data-od-submit]` /
   `[data-od-success]` / `[data-od-error]`
 - Endpoint override: `data-od-endpoint`; arama dili: `data-od-lang`
-- Turnstile: form elementine `data-od-turnstile="<SITE_KEY>"` + isteğe bağlı
-  `[data-od-turnstile-slot]` (yoksa widget submit'in önüne render edilir);
-  token payload'da `turnstileToken` olarak gelir, her denemeden sonra widget
-  reset edilir.
 - Client'ta da doğrulama + 60 sn cooldown var ama **güvenlik sunucununki**.
