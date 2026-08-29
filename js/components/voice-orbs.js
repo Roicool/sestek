@@ -1,10 +1,10 @@
 /*!
- * voice-orbs.js v2.3.0
+ * voice-orbs.js v3.0.0
  * Voice sample orb carousel — omnibox tarzı: 5 görünür orb (merkez + 2 komşu
- * + 2 kenar), her orb'un altında başlık + açıklama, dil filtresi, play/pause
- * overlay. AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer
- * (film grenli); ses çalarken akış hızı ve parlaklık AnalyserNode enerjisiyle
- * artar. Zero deps — geçişler CSS transition, shader dosyanın içinde gömülü.
+ * + 2 kenar), her orb'un altında başlık + açıklama, play/pause overlay.
+ * AKTİF orb PNG yerine sürekli akan WebGL fluid-gradient çizer (film grenli);
+ * ses çalarken akış hızı ve parlaklık AnalyserNode enerjisiyle artar.
+ * Shader HİÇBİR KOŞULDA durmaz — her zaman 60fps akar. Zero deps.
  * https://github.com/roicool/sestek
  *
  * Audio pipeline: iki <audio preload="none" crossorigin="anonymous"> —
@@ -14,14 +14,10 @@
  *
  * Markup (Webflow):
  *   <div data-voice-orbs>
- *     [ops.] filtre barı: <button data-vo-filter="all">All</button>
- *                         <button data-vo-filter="en">English</button> …
- *                         (üstte ve/veya altta; JS aktif olana .is-active basar)
  *     <div class="vo-viewport"><div class="vo-track">
  *       <div class="vo-item" data-vo-item
  *            data-vo-name="Characters"
  *            data-vo-src="https://…/preview.mp3"
- *            data-vo-lang="en,tr"                      ← filtre eşleşmesi
  *            data-vo-colors="#e08bd2,#7f7bd6,#f7c8b8"> ← ops. shader renkleri
  *         <div class="vo-orb"><img src="…orb.png" alt=""></div>
  *         <div class="vo-caption">
@@ -36,14 +32,16 @@
  *   </div>
  *
  * Component davranışı:
- *   • Orijinal .vo-item'lar şablon olarak alınır ve DOM'dan çıkarılır;
- *     track, aktif filtreye uyan seslerin 3 kopyasıyla (sonsuz döngü)
- *     yeniden kurulur. Play/pause butonunu her orb'a JS enjekte eder.
- *   • data-vo-colors yoksa renkler orb PNG'sinden otomatik örneklenir
- *     (CORS temiz olmalı); o da olmazsa Sestek pastel varsayılanları.
+ *   • LOOP YOK: liste uçludur. İlk seste ‹ oku .is-disabled alır; SON seste
+ *     › oku .vo-restart sınıfını alır ve tıklanınca başa döner (ikonunu
+ *     CSS'ten değiştirebilirsin, örn. ↺).
  *   • Autoplay YOK: orb gövdesine tıklama ve ‹ › yalnız kaydırır (süren
  *     yayını durdurur). Çalma sadece play butonuyla — komşunun play'i
  *     oraya kaydırıp çalar, aktifte play/pause toggle eder.
+ *   • Play/pause butonunu her orb'a JS enjekte eder; komşu orb'ların
+ *     dokuları önden yüklenir (kaydırınca shader beklemez).
+ *   • data-vo-colors yoksa renkler orb PNG'sinden otomatik örneklenir
+ *     (CORS temiz olmalı); o da olmazsa Sestek pastel varsayılanları.
  *
  * Root attributes (hepsi opsiyonel):
  *   data-vo-sizes      orb çapları merkez→dışa px (default "220,150,104")
@@ -55,25 +53,20 @@
  * servis edilmeli — analyser, renk örnekleme ve WebGL dokusu buna bağlı.
  *
  * Fallback'ler: WebGL yoksa canvas atlanır (PNG kalır, ses çalar);
- * prefers-reduced-motion → canvas yok, statik düzen, ses çalar; viewport
- * dışında rAF durur; fetch hatasında blob yerine doğrudan URL.
+ * fetch hatasında blob yerine doğrudan URL.
  *
  * Changelog
- * v2.3.0 — ‹ › okları aktif başlıkla aynı hizada: her layout'ta .vo-title'ın
- *          dikey merkezi ölçülüp --vo-nav-top olarak yazılır (kart padding'i
- *          ne olursa olsun hiza tutar)
- * v2.2.0 — autoplay kaldırıldı: orb'a tıklamak ve ‹ › yalnız KAYDIRIR (süren
- *          yayını durdurur); çalma sadece play butonuyla — komşunun play'i
- *          oraya kaydırıp çalar, aktifte toggle eder
- * v2.1.0 — daha ferah düzen: default orb merdiveni 256/190/132 → 220/150/104,
- *          orb aralığı (gap) mobil ölçeğiyle birlikte küçülür (dar ekranda
- *          oransal boşluk korunur, kalabalık görünüm gitti)
- * v2.0.0 — BREAKING yeniden tasarım: item Button → Div (.vo-orb + .vo-caption),
- *          caption alanı, dil filtresi (data-vo-filter / data-vo-lang),
- *          JS-enjekte play/pause overlay (hover'da komşularda görünür),
- *          5-orb düzeni (3 kademeli merdiven), aktif orb'da PNG yerine
- *          sürekli akan fluid-gradient shader (domain-warped fbm + gren;
- *          renkler data-vo-colors ya da PNG'den otomatik).
+ * v3.0.0 — BREAKING: dil filtresi kaldırıldı (data-vo-filter/data-vo-lang
+ *          yok); sonsuz döngü kaldırıldı — klonsuz düz liste, ilk seste ‹
+ *          disabled, son seste › "başa dön" (.vo-restart) olur; çizim önünde
+ *          hiçbir kapı kalmadı (IntersectionObserver ve reduced-motion
+ *          gate'leri kaldırıldı — shader her zaman çizer); komşu dokular
+ *          önden yüklenir.
+ * v2.3.0 — ‹ › okları aktif başlıkla aynı hizada (--vo-nav-top JS ölçümü)
+ * v2.2.0 — autoplay kaldırıldı; çalma sadece play butonuyla
+ * v2.1.0 — ferah düzen: 220/150/104 merdiveni, gap mobil ölçeğiyle küçülür
+ * v2.0.0 — BREAKING yeniden tasarım: caption, filtre, play overlay, 5-orb
+ *          düzen, fluid-gradient shader
  * v1.0.0 — initial release
  */
 
@@ -83,11 +76,6 @@
   var U = (global.Sestek && global.Sestek.util) || {};
   function attrNum(el, a, d) {
     return U.attrNum ? U.attrNum(el, a, d) : (parseFloat(el.getAttribute(a)) || d);
-  }
-  function reducedMotion() {
-    return U.prefersReducedMotion
-      ? U.prefersReducedMotion()
-      : window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
   /* Aynı anda tek instance ses çalsın. */
@@ -106,21 +94,16 @@
     '<svg class="vo-ic-pause" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">' +
     '<path d="M4.5 3.5h3v11h-3zM10.5 3.5h3v11h-3z" fill="currentColor"/></svg>';
 
-  /* ── WebGL fluid gradient ─────────────────────────────────────
-   * Domain-warped fbm: q ve w ara alanları üzerinden 3 rengi akıtır,
-   * küre hacmi için highlight + kenar gölgesi, üstüne canlı film greni.
-   * u_energy akış hızını ve parlaklığı sürer (0 = sakin idle akış).
+  /* ── WebGL fluid layer ────────────────────────────────────────
+   * Kaynak dokümanın tarifi: orb dokusunu fbm(uv+time) ile warp'la (şiddet
+   * uEnergy'yle ölçekli), noise dokusundan grain ekle. Warp "sıvı"
+   * seviyesinde ve idle'da da akar; energy hızı+şiddeti+parlaklığı artırır.
+   * PNG dokusu (CORS) alınamazsa u_c1..3 renklerinden aynı akışla sentez.
+   * NOT: fbm örnekleme koordinatları TEXEL ölçeğine indirgenir —
+   * yüksek frekansta ham random dokusu konfetiye döner.
    */
   var VERT = "attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}";
 
-  /*
-   * Kaynak dokümanın tarifi: orb dokusunu fbm(uv+time) ile warp'la (şiddet
-   * uEnergy'yle ölçekli), noise dokusundan grain ekle. Burada warp "sıvı"
-   * seviyesinde ve idle'da da akar; energy hızı+şiddeti+parlaklığı artırır.
-   * PNG dokusu (CORS) alınamazsa u_c1..3 renklerinden aynı akışla sentez.
-   * NOT: fbm örnekleme koordinatları TEXEL ölçeğine indirgenir (÷128) —
-   * yüksek frekansta ham random dokusu konfetiye döner.
-   */
   var FRAG = [
     "precision highp float;",
     "uniform sampler2D u_tex;",     // orb PNG
@@ -308,33 +291,51 @@
 
     var track = root.querySelector(".vo-track");
     var viewport = root.querySelector(".vo-viewport");
-    var originals = Array.prototype.slice.call(root.querySelectorAll("[data-vo-item]"));
-    if (!track || !viewport || !originals.length) {
+    var items = Array.prototype.slice.call(root.querySelectorAll("[data-vo-item]"));
+    if (!track || !viewport || !items.length) {
       console.warn("[voice-orbs] .vo-track/.vo-viewport veya [data-vo-item] yok.");
       return null;
     }
 
-    var reduce = reducedMotion();
     var ladder = (root.getAttribute("data-vo-sizes") || "220,150,104")
       .split(",").map(function (n) { return parseFloat(n) || 0; });
     var fit = attrNum(root, "data-vo-fit", 760);
     var minScale = attrNum(root, "data-vo-min-scale", 0.42);
 
-    // Şablonları topla, orijinalleri DOM'dan çıkar (track klonlarla kurulur)
-    var voices = originals.map(function (el) {
+    var N = items.length;
+    var voices = items.map(function (el) {
       var img = el.querySelector("img");
       return {
         name: el.getAttribute("data-vo-name") || "",
         src: el.getAttribute("data-vo-src") || "",
-        langs: (el.getAttribute("data-vo-lang") || "").toLowerCase()
-          .split(",").map(function (s) { return s.trim(); }).filter(Boolean),
         colors: parseColors(el.getAttribute("data-vo-colors")),
         imgSrc: img ? (img.currentSrc || img.src) : "",
-        tpl: el,
-        palettePromise: null
+        palettePromise: null,
+        texPromise: null
       };
     });
-    originals.forEach(function (el) { el.parentNode.removeChild(el); });
+    var pos = 0;
+
+    // Play/pause overlay enjeksiyonu + tıklama davranışı (klon yok, düz liste)
+    items.forEach(function (el, i) {
+      el.classList.add("vo-item");
+      var orb = el.querySelector(".vo-orb");
+      if (!orb) return;
+      var btn = document.createElement("button");
+      btn.className = "vo-play";
+      btn.setAttribute("aria-label", "Play " + (voices[i].name || "voice") + " preview");
+      btn.innerHTML = PLAY_SVG + PAUSE_SVG;
+      orb.appendChild(btn);
+      // Orb gövdesi yalnız KAYDIRIR — autoplay yok
+      orb.addEventListener("click", function () {
+        if (i !== pos) goTo(i);
+      });
+      // Play butonu açık niyettir: gerekirse kaydırır ve çalar
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (i === pos) { toggle(); } else { goTo(i); play(); }
+      });
+    });
 
     // ── Audio: double-buffer + blob cache + analyser
     var audios = [0, 1].map(function () {
@@ -349,7 +350,7 @@
     });
     var flip = 0, ac = null, analyser = null, freq = null;
     var blobCache = {};
-    var playing = false, playSeq = 0, visible = true, raf = 0;
+    var playing = false, playSeq = 0;
 
     function ensureGraph() {
       if (ac) return;
@@ -374,15 +375,12 @@
       return blobCache[url];
     }
 
-    // ── Visualizer (tek canvas, aktif orb'a taşınır; idle'da da akar)
-    var canvas = null, viz = null;
-    if (!reduce) {
-      canvas = document.createElement("canvas");
-      canvas.className = "vo-canvas";
-      canvas.setAttribute("aria-hidden", "true");
-      viz = createViz(canvas);
-      if (!viz) canvas = null;
-    }
+    // ── Visualizer (tek canvas, aktif orb'a taşınır; HEP çizer)
+    var canvas = document.createElement("canvas");
+    canvas.className = "vo-canvas";
+    canvas.setAttribute("aria-hidden", "true");
+    var viz = createViz(canvas);
+    if (!viz) canvas = null; // yalnız WebGL yoksa (PNG kalır, ses çalar)
 
     function paletteFor(vi) {
       var v = voices[vi];
@@ -390,8 +388,7 @@
       if (!v.palettePromise) v.palettePromise = extractPalette(v.imgSrc);
       return v.palettePromise;
     }
-
-    /* Aktif sesin PNG'sini CORS'lu Image olarak yükle (cache'li). */
+    /* Sesin PNG'sini CORS'lu Image olarak yükle (cache'li). */
     function textureFor(vi) {
       var v = voices[vi];
       if (!v.texPromise) {
@@ -407,82 +404,14 @@
       return v.texPromise;
     }
 
-    // ── View (aktif filtre) + track kurulumu
-    var view = [];   // görünür voice index'leri
-    var els = [];    // track'teki node'lar: {el, vi}
-    var pos = 0;
-    var normalizeTimer = 0;
-    var M = 0;       // view.length
-
-    function buildView(filterVal) {
-      stop();
-      clearTimeout(normalizeTimer);
-      filterVal = (filterVal || "all").toLowerCase();
-      view = [];
-      voices.forEach(function (v, i) {
-        var match = filterVal === "all" || !v.langs.length ||
-                    v.langs.indexOf(filterVal) !== -1;
-        if (match) view.push(i);
-      });
-      M = view.length;
-      track.innerHTML = "";
-      els = [];
-      if (!M) { console.warn("[voice-orbs] '" + filterVal + "' filtresi boş."); return; }
-
-      for (var copy = 0; copy < 3; copy++) {
-        view.forEach(function (vi) {
-          var v = voices[vi];
-          var el = v.tpl.cloneNode(true);
-          el.classList.add("vo-item");
-          var orb = el.querySelector(".vo-orb");
-          if (orb) {
-            var btn = document.createElement("button");
-            btn.className = "vo-play";
-            btn.setAttribute("aria-label", "Play " + (v.name || "voice") + " preview");
-            if (copy !== 1) btn.setAttribute("tabindex", "-1"); // klon kopyalar tab dışı
-            btn.innerHTML = PLAY_SVG + PAUSE_SVG;
-            orb.appendChild(btn);
-            (function (node) {
-              // Orb gövdesi yalnız KAYDIRIR — autoplay yok
-              orb.addEventListener("click", function () { onOrbClick(node, false); });
-              // Play butonu açık niyettir: gerekirse kaydırır ve çalar
-              btn.addEventListener("click", function (e) {
-                e.stopPropagation();
-                onOrbClick(node, true);
-              });
-            })(el);
-          }
-          track.appendChild(el);
-          els.push({ el: el, vi: vi });
-        });
-      }
-      pos = M; // orta kopyanın ilk sesi
-      activate();
-      layout(true);
-    }
-
-    function onOrbClick(node, wantPlay) {
-      var i = -1;
-      for (var k = 0; k < els.length; k++) if (els[k].el === node) { i = k; break; }
-      if (i === -1) return;
-      if (i === pos) {
-        if (wantPlay) toggle(); // aktif orb'da yalnız play butonu toggle eder
-      } else {
-        goTo(i);
-        if (wantPlay) play();
-      }
-    }
-
     // ── Layout
     function scaleNow() {
       var w = viewport.clientWidth || root.clientWidth;
       return Math.max(minScale, Math.min(1, w / fit));
     }
     function layout(noAnim) {
-      if (!els.length) return;
       var s = scaleNow();
-      // gap da orb'larla aynı oranda küçülür (taban: --vo-gap) — hem
-      // hesapta hem gerçek flex gap'inde aynı değer kullanılır
+      // gap da orb'larla aynı oranda küçülür (taban: --vo-gap)
       var baseGap = parseFloat(
         getComputedStyle(root).getPropertyValue("--vo-gap")
       ) || 64;
@@ -491,17 +420,17 @@
       root.style.setProperty("--vo-zone", Math.round(ladder[0] * s) + "px");
       if (noAnim) root.classList.add("vo-no-anim");
       var x = 0, activeCenter = 0;
-      els.forEach(function (o, i) {
+      items.forEach(function (el, i) {
         var dist = Math.min(Math.abs(i - pos), ladder.length - 1);
         var size = Math.round(ladder[dist] * s);
-        o.el.style.width = size + "px";
+        el.style.width = size + "px";
         if (i === pos) activeCenter = x + size / 2;
         x += size + gap;
       });
       var tx = (viewport.clientWidth / 2) - activeCenter;
       track.style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
       // ‹ › oklarını aktif başlığın dikey merkezine hizala (buton 40px)
-      var cap = els[pos].el.querySelector(".vo-caption");
+      var cap = items[pos].querySelector(".vo-caption");
       if (cap) {
         var title = cap.querySelector(".vo-title") || cap;
         var rootTop = root.getBoundingClientRect().top;
@@ -516,19 +445,21 @@
       if (viz) viz.resize(Math.round(ladder[0] * s * Math.min(window.devicePixelRatio || 1, 2)));
     }
 
-    // Aktif sınıflar + canvas'ı aktif orb'a taşı + renkleri yükle
+    // Aktif sınıflar + canvas taşı + doku/renk yükle + komşuları önden ısıt
+    var colorSeq = 0;
     function activate() {
-      els.forEach(function (o, i) {
-        o.el.classList.toggle("is-active", i === pos);
-        o.el.classList.toggle("vo-d1", Math.abs(i - pos) === 1);
-        if (i !== pos) o.el.classList.remove("is-playing");
+      items.forEach(function (el, i) {
+        el.classList.toggle("is-active", i === pos);
+        el.classList.toggle("vo-d1", Math.abs(i - pos) === 1);
+        if (i !== pos) el.classList.remove("is-playing");
       });
+      updateNav();
       if (!canvas) return;
-      var orb = els[pos] && els[pos].el.querySelector(".vo-orb");
-      if (orb && canvas.parentNode !== orb) orb.insertBefore(canvas, orb.querySelector(".vo-play"));
-      // Önce PNG dokusu (dokümandaki asıl teknik); CORS/tainted ise
-      // renk paletine düş (data-vo-colors → PNG örnekleme → varsayılan).
-      var vi = els[pos].vi, seq = ++colorSeq;
+      var orb = items[pos].querySelector(".vo-orb");
+      if (orb && canvas.parentNode !== orb) {
+        orb.insertBefore(canvas, orb.querySelector(".vo-play"));
+      }
+      var vi = pos, seq = ++colorSeq;
       textureFor(vi).then(function (im) {
         if (seq !== colorSeq || !viz) return;
         if (viz.setImage(im)) return;
@@ -537,51 +468,56 @@
           viz.setColors(cols || DEFAULT_COLORS);
         });
       });
-      startTick();
-    }
-    var colorSeq = 0;
-
-    function scheduleNormalize() {
-      if (pos >= M && pos < 2 * M) return;
-      clearTimeout(normalizeTimer);
-      normalizeTimer = setTimeout(function () {
-        pos += pos < M ? M : -M;
-        activate();
-        layout(true);
-      }, 600);
+      if (pos > 0) textureFor(pos - 1);       // komşuları önden yükle
+      if (pos < N - 1) textureFor(pos + 1);
     }
 
-    // ── rAF: idle'da da akar (enerji 0), çalarken analyser sürer
+    // ── Nav durumları: başta ‹ disabled, sonda › "başa dön"
+    var prevBtn = root.querySelector("[data-vo-prev]");
+    var nextBtn = root.querySelector("[data-vo-next]");
+    function updateNav() {
+      if (prevBtn) prevBtn.classList.toggle("is-disabled", pos === 0);
+      if (nextBtn) {
+        var end = pos === N - 1;
+        nextBtn.classList.toggle("vo-restart", end);
+        nextBtn.setAttribute("aria-label", end ? "Back to start" : "Next voice");
+      }
+    }
+    if (prevBtn) prevBtn.addEventListener("click", function () {
+      if (pos > 0) goTo(pos - 1);
+    });
+    if (nextBtn) nextBtn.addEventListener("click", function () {
+      goTo(pos === N - 1 ? 0 : pos + 1);
+    });
+
+    // ── rAF: KOŞULSUZ döngü — idle'da da akar, çalarken analyser sürer
     var t0 = performance.now();
     var energy = 0;
     function tick() {
-      raf = 0;
-      if (!visible || !viz || !els.length) return;
-      var target = 0;
-      if (playing && analyser) {
-        analyser.getByteFrequencyData(freq);
-        var sum = 0;
-        for (var i = 0; i < freq.length; i++) sum += freq[i];
-        target = (sum / freq.length) / 255;
+      if (viz) {
+        var target = 0;
+        if (playing && analyser) {
+          analyser.getByteFrequencyData(freq);
+          var sum = 0;
+          for (var i = 0; i < freq.length; i++) sum += freq[i];
+          target = (sum / freq.length) / 255;
+        }
+        energy += (target - energy) * 0.18; // yumuşatılmış enerji
+        viz.draw((performance.now() - t0) / 1000, energy);
       }
-      energy += (target - energy) * 0.18; // yumuşatılmış enerji
-      viz.draw((performance.now() - t0) / 1000, energy);
-      raf = requestAnimationFrame(tick);
+      requestAnimationFrame(tick);
     }
-    function startTick() { if (!raf && visible && viz) raf = requestAnimationFrame(tick); }
 
     // ── Playback
     function stop() {
       playing = false;
-      els.forEach(function (o) { o.el.classList.remove("is-playing"); });
+      items.forEach(function (el) { el.classList.remove("is-playing"); });
       audios.forEach(function (a) { a.pause(); });
     }
     var ctl = { stop: stop };
 
     function play() {
-      if (!els.length) return;
-      var vi = els[pos].vi;
-      var v = voices[vi];
+      var v = voices[pos];
       if (!v.src) return;
       if (currentlyPlaying && currentlyPlaying !== ctl) currentlyPlaying.stop();
       currentlyPlaying = ctl;
@@ -601,40 +537,18 @@
         next.currentTime = 0;
         next.play().catch(function () {});
         playing = true;
-        if (els[pos]) els[pos].el.classList.add("is-playing");
-        startTick();
+        items[pos].classList.add("is-playing");
       });
     }
     function toggle() { if (playing) { stop(); } else { play(); } }
     /* Kaydırma ÇALMAZ (autoplay yok) — süren yayını durdurur. */
     function goTo(index) {
-      if (M < 2 || index === pos) return;
+      if (index === pos || index < 0 || index >= N) return;
       stop();
       pos = index;
       activate();
-      layout(reduce);
-      scheduleNormalize();
+      layout(false);
     }
-
-    // ── Nav + filtre + resize + görünürlük
-    var prevBtn = root.querySelector("[data-vo-prev]");
-    var nextBtn = root.querySelector("[data-vo-next]");
-    if (prevBtn) prevBtn.addEventListener("click", function () { goTo(pos - 1); });
-    if (nextBtn) nextBtn.addEventListener("click", function () { goTo(pos + 1); });
-
-    var filterBtns = Array.prototype.slice.call(root.querySelectorAll("[data-vo-filter]"));
-    function setFilter(val) {
-      filterBtns.forEach(function (b) {
-        b.classList.toggle("is-active",
-          (b.getAttribute("data-vo-filter") || "").toLowerCase() === val);
-      });
-      buildView(val);
-    }
-    filterBtns.forEach(function (b) {
-      b.addEventListener("click", function () {
-        setFilter((b.getAttribute("data-vo-filter") || "all").toLowerCase());
-      });
-    });
 
     var resizeT = 0;
     window.addEventListener("resize", function () {
@@ -642,21 +556,9 @@
       resizeT = setTimeout(function () { layout(true); }, 100);
     });
 
-    if (typeof IntersectionObserver !== "undefined") {
-      new IntersectionObserver(function (entries) {
-        visible = entries[0].isIntersecting;
-        if (visible) startTick();
-      }).observe(root);
-    }
-
-    // İlk görünüm: .is-active işaretli filtre butonu varsa o, yoksa "all"
-    var initial = "all";
-    filterBtns.forEach(function (b) {
-      if (b.classList.contains("is-active")) {
-        initial = (b.getAttribute("data-vo-filter") || "all").toLowerCase();
-      }
-    });
-    setFilter(initial);
+    activate();
+    layout(true);
+    if (viz) requestAnimationFrame(tick);
 
     return ctl;
   }

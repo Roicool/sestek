@@ -23,26 +23,6 @@
       padding: 24px 0 96px;
       box-sizing: border-box;
     }
-    .vo-filters {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 0 32px 40px;
-    }
-    .vo-filters [data-vo-filter] {
-      border: 0;
-      background: transparent;
-      padding: 10px 22px;
-      border-radius: 9999px;
-      font-size: 15px;
-      color: #666;
-      cursor: pointer;
-    }
-    .vo-filters [data-vo-filter].is-active {
-      background: #fff;
-      color: #111;
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-    }
     .vo-title { font-size: 20px; }
     .vo-desc { font-size: 14px; line-height: 1.45; }
   </style>
@@ -51,11 +31,6 @@
 
   <div class="demo-card" data-voice-orbs>
 
-    <div class="vo-filters">
-      <button data-vo-filter="all" class="is-active">All</button>
-      <button data-vo-filter="en">English</button>
-      <button data-vo-filter="tr">Türkçe</button>
-    </div>
 
     <div class="vo-viewport">
       <div class="vo-track">
@@ -64,7 +39,7 @@
           img src → Webflow asset, data-vo-src → Cloudflare R2 (CORS şart!)
           data-vo-colors verilmezse renkler PNG'den örneklenir.
         -->
-        <div class="vo-item" data-vo-item data-vo-name="Advertisement" data-vo-lang="en"
+        <div class="vo-item" data-vo-item data-vo-name="Advertisement"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/ny5ykdiwmb.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-9.e00adc24.png" alt=""></div>
           <div class="vo-caption">
@@ -72,7 +47,7 @@
             <div class="vo-desc">Persuasive voices that drive action and brand recall.</div>
           </div>
         </div>
-        <div class="vo-item" data-vo-item data-vo-name="Characters" data-vo-lang="en,tr"
+        <div class="vo-item" data-vo-item data-vo-name="Characters"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/ovfai5i88jd.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-5.f21107e1.png" alt=""></div>
           <div class="vo-caption">
@@ -80,7 +55,7 @@
             <div class="vo-desc">Playful and engaging voices for cartoons or video games.</div>
           </div>
         </div>
-        <div class="vo-item" data-vo-item data-vo-name="Narration" data-vo-lang="en"
+        <div class="vo-item" data-vo-item data-vo-name="Narration"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/jicvfwkdre9.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-1.be8a6b68.png" alt=""></div>
           <div class="vo-caption">
@@ -88,7 +63,7 @@
             <div class="vo-desc">Expressive voices that bring audiobooks and podcasts to life.</div>
           </div>
         </div>
-        <div class="vo-item" data-vo-item data-vo-name="Conversational" data-vo-lang="tr"
+        <div class="vo-item" data-vo-item data-vo-name="Conversational"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/nvbceiamt1.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-4.60676b95.png" alt=""></div>
           <div class="vo-caption">
@@ -96,7 +71,7 @@
             <div class="vo-desc">Natural voices perfect for informal scenarios.</div>
           </div>
         </div>
-        <div class="vo-item" data-vo-item data-vo-name="Social Media" data-vo-lang="en,tr"
+        <div class="vo-item" data-vo-item data-vo-name="Social Media"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/ckn43hcxbxu.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-8.2ab723e3.png" alt=""></div>
           <div class="vo-caption">
@@ -104,7 +79,7 @@
             <div class="vo-desc">Trendy, attention-grabbing voices for short-form content.</div>
           </div>
         </div>
-        <div class="vo-item" data-vo-item data-vo-name="Corporate" data-vo-lang="en"
+        <div class="vo-item" data-vo-item data-vo-name="Corporate"
              data-vo-src="https://eleven-public-cdn.elevenlabs.io/payloadcms/v9grnli26c.mp3">
           <div class="vo-orb"><img src="https://eleven-public-cdn.elevenlabs.io/marketing_website/_next/static/media/creative-3.04cea590.png" alt=""></div>
           <div class="vo-caption">

@@ -1,5 +1,5 @@
 /*!
- * voice-orbs.css v2.2.0
+ * voice-orbs.css v2.3.0
  * Voice sample orb carousel — omnibox yapısının Sestek uyarlaması.
  * Pair with js/components/voice-orbs.js v2.
  * https://github.com/roicool/sestek
@@ -13,6 +13,10 @@
  *   --vo-zone         orb alanı yüksekliği — JS yazar, elle verme
  *
  * Changelog
+ * v2.3.0 — filtre kuralı kaldırıldı (JS v3: filtre yok); loop'suz nav
+ *          durumları: [data-vo-prev].is-disabled (ilk seste) ve
+ *          [data-vo-next].vo-restart (son seste "başa dön" — ikonu bu
+ *          sınıfla değiştirebilirsin); canvas fade'i reduce'tan muaf
  * v2.2.0 — nav okları başlık hizasında: --vo-nav-top (JS ölçer, top bottom'ı
  *          ezer); --vo-nav-bottom yalnız JS'siz fallback
  * v2.1.0 — sadece AKTİF item'ın caption'ı görünür (pasifler fade-out —
@@ -199,15 +203,18 @@
 [data-vo-prev] { left: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
 [data-vo-next] { right: max(12px, calc(50% - var(--vo-nav-offset, 230px))); }
 
-/* ── Filtre butonları ────────────────────────────────────────── */
-/* Görünümü Webflow'da stillendir; JS aktif butona .is-active basar. */
-[data-vo-filter] { cursor: pointer; }
+/* İlk seste geri gidilemez; son seste › "başa dön" olur (JS basar).
+ * .vo-restart görünümünü Webflow'da özelleştir (örn. ↺ ikonlu span'i göster). */
+[data-vo-prev].is-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
 
 /* ── Reduced motion ──────────────────────────────────────────── */
+/* Shader HER ZAMAN çizer; burada yalnız layout geçişleri kapanır. */
 @media (prefers-reduced-motion: reduce) {
   .vo-track,
   .vo-item,
-  .vo-canvas,
   .vo-play {
     transition: none;
   }
