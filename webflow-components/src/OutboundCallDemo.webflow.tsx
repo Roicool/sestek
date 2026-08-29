@@ -5,79 +5,70 @@ import { OutboundCallDemo } from "./OutboundCallDemo";
 export default declareComponent(OutboundCallDemo, {
   name: "Outbound Call Demo",
   description:
-    "'Sizi arayalım' canlı demo sahnesi — solda içerik + cam adım kartları, " +
-    "sağda CSS ile çizilmiş GERÇEKÇİ TELEFON: Dynamic Island, gerçek saatli " +
-    "status bar, ekranda bottom-sheet form (canlı WebGL asistan orb'u, +90 " +
-    "çipli canlı biçimlenen telefon girişi). Başarıda ekran arama ekranına " +
-    "döner (Aranıyor + halkalı orb). Knovvu outbound proxy'sine gönderir " +
-    "(docs/outbound-demo-api.md); doğrulama + KVKK + honeypot + kalıcı " +
-    "cooldown içerir. Font sayfadan miras alınır.",
+    "'Sizi arayalım' canlı demo kartı — minimal tek kart: sade başlık, " +
+    "ortada dev canlı orb + telefon butonu, sol altta caption, sağ altta " +
+    "özellik çipleri. Butona basınca orb küçülür, minimal form açılır " +
+    "(pill input'lar, +90 çipli canlı biçimlenen numara); gönderince orb " +
+    "büyür ve 'Aranıyor' sahnesine geçer. Knovvu outbound proxy'sine " +
+    "gönderir (docs/outbound-demo-api.md); doğrulama + KVKK + honeypot + " +
+    "kalıcı cooldown içerir. Font ve tipografi sayfadan miras alınır.",
   group: "Sestek",
   props: {
     theme: props.Variant({
       name: "Theme",
-      options: ["Deep", "Soft"],
-      defaultValue: "Deep",
-      tooltip: "Deep: koyu premium sahne · Soft: açık pastel",
-    }),
-    eyebrow: props.Text({
-      name: "Eyebrow",
-      group: "Content",
-      defaultValue: "Canlı Demo",
+      options: ["Soft", "Deep"],
+      defaultValue: "Soft",
+      tooltip: "Soft: açık minimal (referans görünüm) · Deep: koyu hali",
     }),
     heading: props.Text({
       name: "Heading",
       group: "Content",
-      defaultValue: "Knovvu sizi arasın,",
-    }),
-    headingAccent: props.Text({
-      name: "Heading accent",
-      group: "Content",
-      defaultValue: "kendiniz deneyimleyin",
-      tooltip: "Gradient renkli vurgu kısmı",
+      defaultValue: "Sizi Arayalım",
     }),
     description: props.Text({
-      name: "Description",
+      name: "Caption",
       group: "Content",
       defaultValue:
-        "Numaranızı bırakın; yapay zekâ destekli sesli asistanımız sizi " +
-        "saniyeler içinde arasın, gerçek bir görüşmede dinleyin.",
+        "Numaranızı bırakın, Knovvu sesli asistanı saniyeler içinde " +
+        "arasın — gerçek bir görüşmede dinleyin.",
+      tooltip: "Sol alttaki kısa açıklama",
     }),
-    step1: props.Text({
-      name: "Step 1",
+    chip1: props.Text({
+      name: "Chip 1",
       group: "Content",
-      defaultValue: "Numaranı bırak",
+      defaultValue: "Gerçek arama",
     }),
-    step2: props.Text({
-      name: "Step 2",
+    chip2: props.Text({
+      name: "Chip 2",
       group: "Content",
-      defaultValue: "Telefonun çalsın",
+      defaultValue: "Doğal ses",
     }),
-    step3: props.Text({
-      name: "Step 3",
+    chip3: props.Text({
+      name: "Chip 3",
       group: "Content",
-      defaultValue: "Knovvu ile konuş",
-      tooltip: "Boş bırakılan adımlar gizlenir",
+      defaultValue: "Saniyeler içinde",
+      tooltip: "Sağ alttaki çipler; boş bırakılan gizlenir",
     }),
     agentName: props.Text({
       name: "Agent name",
       group: "Content",
       defaultValue: "Knovvu Sesli Asistan",
+      tooltip: "Aranıyor sahnesinde görünür",
     }),
-    agentStatus: props.Text({
-      name: "Agent status",
-      group: "Content",
-      defaultValue: "Çevrimiçi",
+    backLabel: props.Text({
+      name: "Back label",
+      group: "Form",
+      defaultValue: "Geri",
     }),
     nameLabel: props.Text({
-      name: "Name label",
+      name: "Name placeholder",
       group: "Form",
       defaultValue: "Adınız",
     }),
     phoneLabel: props.Text({
-      name: "Phone label",
+      name: "Phone placeholder",
       group: "Form",
-      defaultValue: "Cep telefonunuz",
+      defaultValue: "5XX XXX XX XX",
     }),
     consentText: props.Text({
       name: "Consent text",
@@ -101,11 +92,12 @@ export default declareComponent(OutboundCallDemo, {
       defaultValue: "Aranıyor",
     }),
     successText: props.Text({
-      name: "Success text",
+      name: "Success caption",
       group: "Form",
       defaultValue:
         "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal " +
         "sesiyle karşılaşacaksınız.",
+      tooltip: "Aranıyor sahnesinde sol alt caption'ın yerini alır",
     }),
     endpoint: props.Text({
       name: "API endpoint",
