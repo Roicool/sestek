@@ -37,6 +37,8 @@ export interface OutboundCallDemoProps {
   nameLabel?: string;
   phoneLabel?: string;
   consentText?: string;
+  consentLinkText?: string;
+  consentLinkUrl?: string;
   buttonText?: string;
   sendingText?: string;
   successTitle?: string;
@@ -296,16 +298,16 @@ const CSS = `
 @keyframes sodc-dot{0%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
 /* ── Form (stage: form) ────────────────────────────────────── */
-.sodc-form{width:100%;display:grid;gap:var(--spacing--3,.75rem);
+.sodc-form{width:100%;display:grid;gap:var(--spacing--2-5,.625rem);
   align-content:start}
-.sodc-intro{margin:0 0 var(--spacing--2,.5rem);font-size:var(--text--sm,.875rem);
-  line-height:1.55;color:var(--x-muted)}
+.sodc-intro{margin:0 0 var(--spacing--1-5,.375rem);font-size:var(--text--sm,.875rem);
+  line-height:1.5;color:var(--x-muted)}
 @keyframes sodc-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .sodc-field{position:relative}
 .sodc-input{width:100%;font:inherit;font-size:var(--text--base,1rem);color:var(--x-text);
   background:var(--x-field);border:1px solid var(--x-field-line);
   border-radius:var(--radius--full,9999px);outline:none;
-  padding:.85em 1.35em;transition:border-color .2s,box-shadow .2s}
+  padding:.78em 1.25em;transition:border-color .2s,box-shadow .2s}
 .sodc-input::placeholder{color:var(--x-muted)}
 .sodc-input:focus{border-color:var(--x-text);
   box-shadow:0 0 0 3px rgba(20,18,30,.07)}
@@ -316,16 +318,18 @@ const CSS = `
   font-size:var(--text--sm,.875rem);font-weight:500;color:var(--x-muted);
   background:color-mix(in oklab,var(--x-text) 6%,transparent);
   border-radius:var(--radius--full,9999px);padding:.4em .8em;pointer-events:none}
-.sodc-consent{display:flex;gap:.6em;align-items:flex-start;cursor:pointer;
-  padding:0 .5em;font-size:var(--text--xs,.75rem);line-height:1.5;color:var(--x-muted)}
+.sodc-consent{display:flex;gap:.55em;align-items:flex-start;cursor:pointer;
+  padding:.15em .4em;font-size:var(--text--xs,.75rem);line-height:1.45;color:var(--x-muted)}
 .sodc-consent input{flex:none;width:1.05em;height:1.05em;margin-top:.2em;
   accent-color:var(--x-ink);cursor:pointer}
 .sodc-consent.is-invalid{color:var(--x-neg)}
+.sodc-consent a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.sodc-consent a:hover{color:var(--x-text)}
 .sodc-err{padding:0 .5em;font-size:var(--text--xs,.75rem);line-height:1.5;color:var(--x-neg)}
 .sodc-cta{font:inherit;font-size:var(--text--base,1rem);font-weight:500;color:#fff;
   width:100%;border:0;cursor:pointer;
   display:inline-flex;justify-content:center;align-items:center;gap:.55em;
-  padding:.9em 1.5em;border-radius:var(--radius--full,9999px);
+  padding:.82em 1.5em;border-radius:var(--radius--full,9999px);
   background:var(--x-ink);transition:background .2s,transform .2s}
 .sodc-cta:hover{background:var(--x-ink-hover);transform:translateY(-1px)}
 .sodc-cta:active{transform:none}
@@ -353,12 +357,12 @@ const CSS = `
   border-radius:var(--radius--3xl,24px);
   background:color-mix(in oklab,var(--x-text) 4%,var(--x-card));
   box-shadow:inset 0 0 0 1px var(--x-line);
-  padding:var(--spacing--10,2.5rem) var(--spacing--8,2rem) var(--spacing--8,2rem)}
+  padding:var(--spacing--8,2rem) var(--spacing--7,1.75rem) var(--spacing--7,1.75rem)}
 .sodc.is-deep .sodc-side{background:color-mix(in oklab,#000 22%,var(--x-card))}
-.sodc-side .sodc-t{margin-bottom:var(--spacing--6,1.5rem)}
-.sodc-side-cap{margin-top:auto;padding-top:var(--spacing--6,1.5rem);
-  font-size:var(--text--base,1rem);line-height:1.55;color:var(--x-muted);
-  max-width:20rem}
+.sodc-side .sodc-t{margin-bottom:var(--spacing--5,1.25rem)}
+.sodc-side-cap{margin-top:auto;padding-top:var(--spacing--5,1.25rem);
+  font-size:var(--text--xs,.75rem);line-height:1.5;color:var(--x-muted);
+  opacity:.85;max-width:17rem}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
 @media (max-width:991px){
@@ -403,24 +407,26 @@ const CHIP_ICONS = [PhoneIcon, WaveIcon, BoltIcon];
 
 export function OutboundCallDemo({
   theme = "Soft",
-  heading = "Sizi Arayalım",
-  description = "Numaranızı bırakın, Knovvu sesli asistanı saniyeler içinde arasın — gerçek bir görüşmede dinleyin.",
-  chip1 = "Gerçek arama",
-  chip2 = "Doğal ses",
-  chip3 = "Saniyeler içinde",
-  agentName = "Knovvu Sesli Asistan",
-  nameLabel = "Adınız",
+  heading = "Let Us Call You",
+  description = "Leave your number and Knovvu's voice agent will call you within seconds — hear it in a real conversation.",
+  chip1 = "Real phone call",
+  chip2 = "Natural voice",
+  chip3 = "Within seconds",
+  agentName = "Knovvu Voice Agent",
+  nameLabel = "Your name",
   phoneLabel = "5XX XXX XX XX",
-  consentText = "Kişisel verilerimin demo araması için işlenmesine onay veriyorum.",
-  buttonText = "Beni ara",
-  sendingText = "Bağlanıyor…",
-  successTitle = "Aranıyor",
-  successText = "Telefonunuz birazdan çalacak — açtığınızda Knovvu'nun doğal sesiyle karşılaşacaksınız.",
-  sideTitle = "Hemen deneyin",
-  sideIntro = "Adınızı ve numaranızı bırakın — başka hiçbir bilgi istemiyoruz.",
-  sideCaption = "Numaranız yalnız bu demo araması için kullanılır, kayıt tutulmaz.",
+  consentText = "I consent to my personal data being processed for this demo call.",
+  consentLinkText = "Privacy Policy",
+  consentLinkUrl = "",
+  buttonText = "Call me",
+  sendingText = "Connecting…",
+  successTitle = "Calling",
+  successText = "Your phone will ring in a moment — pick up and meet Knovvu's natural voice.",
+  sideTitle = "Try it now",
+  sideIntro = "Just your name and number — we don't ask for anything else.",
+  sideCaption = "Your number is used only for this demo call and never stored.",
   endpoint = "/demos/api/demos/outbound-call",
-  lang = "TR",
+  lang = "EN",
   cooldownSeconds = 600,
 }: OutboundCallDemoProps) {
   const [stage, setStage] = React.useState<Stage>("idle");
@@ -580,7 +586,22 @@ export function OutboundCallDemo({
                 checked={consent}
                 onChange={(e) => { setConsent(e.target.checked); clearErr(); }}
               />
-              <span>{consentText}</span>
+              <span>
+                {consentText}
+                {consentLinkText && consentLinkUrl && (
+                  <>
+                    {" "}
+                    <a
+                      href={consentLinkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {consentLinkText}
+                    </a>
+                  </>
+                )}
+              </span>
             </label>
             {error && <div className="sodc-err" role="alert">{error}</div>}
             <button className="sodc-cta" type="submit" disabled={sending}>
