@@ -701,6 +701,7 @@ DOM yapısı:
 | File | CDN (`@main`) |
 |---|---|
 | `js/components/hero.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero.js` |
+| `js/components/outbound-demo.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/outbound-demo.js` |
 | `js/components/voice-orbs.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/voice-orbs.js` |
 | `css/components/voice-orbs.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/voice-orbs.css` |
 | `css/components/hero.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/hero.css` |
