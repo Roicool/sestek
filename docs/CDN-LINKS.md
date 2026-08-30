@@ -2457,10 +2457,20 @@ const r = l.getBoundingClientRect();
 console.log(document.elementFromPoint(r.left + r.width/2, r.top + r.height/2));
 ```
 
-Çıkan element link değilse `[data-locale-switch]` üzerinde `--ls-z` değerini
-o katmanın z-index'inin üstüne çek (örn. `--ls-z: 300`). Trigger'ın kendisi
-tıklanmıyorsa blok bağlanmamıştır — konsoldaki `[Sestek.localeSwitch]`
-uyarısı hangi bloğun neden atlandığını elementiyle birlikte yazar.
+Nav'ın içinde bu genelde `.nav__dropdown` / `.nav__dropdown-wrap` çıkar:
+`.nav__bar` kendi stacking context'ini yarattığı için (`z-index:10`) panelimiz
+o context'in içinde tavanlanır ve yanındaki mega-menü katmanı (`z-index:50`)
+üste geçer — panel görünür ama tıklamalar oraya gider. **v1.2.0'dan itibaren
+JS bunu kendisi çözer:** panel açıkken ilk stacking-context atası panelin
+seviyesine kaldırılır, kapanınca eski değerine bırakılır. Bu yüzden bu durum
+`--ls-z` ile çözülemez (context'in içinden çıkılamaz); `--ls-z` yalnızca aynı
+context içindeki bir katmanın üstüne çıkmak için vardır.
+
+Trigger'ın kendisi tıklanmıyorsa blok bağlanmamıştır — konsoldaki
+`[Sestek.localeSwitch]` uyarısı hangi bloğun neden atlandığını elementiyle
+birlikte yazar. Panel açılıyor ama dil linki hiçbir yere gitmiyorsa href'i
+boş demektir (Webflow o sayfayı localize etmemiştir); script bunu da
+`A locale link has no href` uyarısıyla bildirir.
 
 **Görünüm (v1.2.0):** Trigger sakin bir chip — border yok, arka planı her
 zaman `lab(89.4% 0 0)` (= `#e1e1e1`, `--ls-bg`), hover'da/açıkken hafifçe

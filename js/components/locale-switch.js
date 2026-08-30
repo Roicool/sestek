@@ -1,5 +1,5 @@
 /*!
- * locale-switch.js v1.1.0
+ * locale-switch.js v1.2.0
  * Language switcher dropdown for the navbar — wraps Webflow's OWN Locales
  * list without touching its DOM.
  *
@@ -25,6 +25,11 @@
  *   • Responsive: the panel flips to the trigger's right edge when it would
  *     overflow the viewport (`data-locale-align` forces a side).
  *   • Optional hover-open to match the nav's mega-menus.
+ *   • Escapes the bar's stacking context while open: a parent like
+ *     .nav__bar (position:relative; z-index:10) caps the panel, so a higher
+ *     sibling layer (the mega-menu wrap at 50) would take the clicks — the
+ *     locales look fine but nothing responds. The parent is lifted for as
+ *     long as the panel is open and restored on close.
  *   • Re-running init is safe (bound roots are skipped). A switcher that
  *     appears LATER (page transition swapping the nav, CMS re-render) is
  *     wired automatically on its first click — no re-init needed.
@@ -67,6 +72,10 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.2.0 — fixes "the locales are visible but unclickable": the first
+ *          stacking-context ancestor is temporarily lifted to the panel's
+ *          z-index while open (no --ls-z value can escape it from inside),
+ *          and a locale link that Webflow left without an href is reported
  * v1.1.0 — self-healing: blocks added to the DOM after init are wired on
  *          their first click (page transitions no longer leave a dead
  *          switcher); per-block wiring split out into buildRoot()
@@ -216,6 +225,15 @@
         var current =
           link.classList.contains("w--current") || link.hasAttribute("aria-current");
         link.classList.toggle("is-current", current);
+
+        /* Webflow only fills these hrefs on a published, localized site — in
+         * the Designer or on a page with no localized counterpart they can
+         * come through empty, and clicking does nothing. Say so instead of
+         * letting it look like a broken dropdown. */
+        var href = link.getAttribute("href");
+        if (!current && (!href || href === "#")) {
+          warn("A locale link has no href — Webflow didn't localize it:", link);
+        }
       });
 
       if (panel.classList.contains("locale-switch__row")) {
@@ -236,6 +254,44 @@
 
     function isOpen() {
       return root.classList.contains("is-open");
+    }
+
+    /* An ancestor that creates its own stacking context CAPS the panel: the
+     * nav bar is `position:relative; z-index:10`, so our z-index:60 panel can
+     * still lose to the mega-menu wrapper next to the bar (z-index 50) — the
+     * locales stay visible but every click lands on that layer instead. No
+     * value of --ls-z can fix that from inside. So while the panel is open we
+     * lift that ancestor to the panel's level, and put it back exactly as it
+     * was on close (inline value restored, not guessed). */
+    var lifted = null;
+    var liftedPrev = "";
+
+    function liftStack() {
+      if (lifted) return;
+      var want = parseInt(getComputedStyle(panel).zIndex, 10);
+      if (isNaN(want)) return;
+
+      var el = root.parentElement;
+      while (el && el !== document.body) {
+        var cs = getComputedStyle(el);
+        var z = parseInt(cs.zIndex, 10);
+        if (cs.position !== "static" && !isNaN(z)) {
+          if (z < want) {
+            lifted = el;
+            liftedPrev = el.style.zIndex;
+            el.style.zIndex = String(want);
+          }
+          return; // first stacking context is the one that caps us
+        }
+        el = el.parentElement;
+      }
+    }
+
+    function dropStack() {
+      if (!lifted) return;
+      lifted.style.zIndex = liftedPrev;
+      lifted = null;
+      liftedPrev = "";
     }
 
     function setActive(index) {
@@ -269,6 +325,7 @@
       root.classList.add("is-open");
       panel.setAttribute("aria-hidden", "false");
       trigger.setAttribute("aria-expanded", "true");
+      liftStack();
       reposition();
     }
 
@@ -280,6 +337,7 @@
       root.classList.remove("is-open");
       panel.setAttribute("aria-hidden", "true");
       trigger.setAttribute("aria-expanded", "false");
+      dropStack();
       if (focusTrigger) trigger.focus();
     }
 
