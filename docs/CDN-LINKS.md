@@ -737,6 +737,8 @@ DOM yapısı:
 | `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
 | `js/components/dropdown.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/dropdown.js` |
 | `css/components/dropdown.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/dropdown.css` |
+| `js/components/locale-switch.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/locale-switch.js` |
+| `css/components/locale-switch.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/locale-switch.css` |
 | `js/components/page-transitions.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/page-transitions.js` |
 | `css/components/page-transitions.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/page-transitions.css` |
 | `js/components/logo-slider.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/logo-slider.js` |
@@ -2360,6 +2362,103 @@ sağda; açıkken border + ok ikonu Sestek pembesine (`#EC008C`) döner. Panel
 beyaz kart, `0.75rem` köşe, gölgeli; linkler hover/aktifken pembe
 (`--brand-primary--100`) arka plan + pembe metin alır — search sonuç
 kartlarıyla aynı tonlar.
+
+### Locale Switch (dil seçici)
+
+Navbar için dil seçici dropdown: **ikon taşıyan bir div** trigger olur, altında
+**Webflow'un kendi Locales listesi** panel olarak açılır. Webflow'un
+`Locales Wrapper → Locales List → Locale` hiyerarşisinin arasına hiçbir şey
+eklenemediği için trigger dışarıda ayrı bir div'dir; script sadece attribute ve
+class ekler (Webflow yapısına dokunmaz). Normal `dropdown.js`'ten ayrıdır.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/locale-switch.css">
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/locale-switch.js" defer></script>
+```
+
+Webflow `</body>` öncesi:
+
+```html
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    Sestek.initLocaleSwitch(); // tüm [data-locale-switch] bloklarını başlatır
+  });
+</script>
+```
+
+#### DOM yapısı
+
+```html
+<div data-locale-switch data-locale-align="right">
+
+  <!-- Trigger: düz bir div (Webflow'da Div Block) -->
+  <div data-locale-trigger>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path>
+    </svg>
+    <span data-locale-label>EN</span>
+    <svg class="locale-switch__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="m6 9 6 6 6-6"></path>
+    </svg>
+  </div>
+
+  <!-- Webflow Locales Wrapper — OLDUĞU GİBİ, sadece attribute eklendi -->
+  <div data-locale-panel class="w-locales-wrapper">
+    <div class="w-locales-list">
+      <a href="/" hreflang="en" class="w--current">English</a>
+      <a href="/tr" hreflang="tr">Türkçe</a>
+    </div>
+  </div>
+</div>
+```
+
+- **`[data-locale-trigger]`** — ikonun bulunduğu div; script `role="button"`,
+  `tabindex`, `aria-haspopup/expanded` ekler (Webflow'da buton kullanmak
+  gerekmez).
+- **`[data-locale-panel]`** — Webflow'un **Locales Wrapper**'ı. Attribute
+  vermeyi unutursan script `.w-locales-wrapper` / `.w-locales-list`'i kendisi
+  bulur.
+- **`[data-locale-label]`** — opsiyonel; aktif dilin kodu (EN/TR) otomatik
+  yazılır, sayfa başına elle girilmez.
+- Trigger **panelin dışında** olmalıdır (Webflow zaten araya eleman
+  koydurmuyor); içerideyse script o bloğu atlar ve konsola uyarı basar.
+
+#### Root attribute'ları (hepsi opsiyonel)
+
+| Attribute | Değerler | Varsayılan | Ne yapar |
+|---|---|---|---|
+| `data-locale-align` | `auto` · `left` · `right` | `auto` | Panel hizası. `auto` taşma olursa sağa çevirir; nav'ın sağ ucunda `right` önerilir. |
+| `data-locale-hover` | `true` · `false` | `false` | `true` → mega-menüler gibi hover ile açılır (yalnız hover destekli cihazlarda). |
+| `data-locale-label-mode` | `code` · `name` | `code` | Label'a `EN` mi `English` mi yazılacağı. |
+
+**Davranış (v1.0.0):**
+- Tıklama (veya trigger üzerinde **Enter/Space/↓**) paneli açar; biri açılınca
+  sayfadaki diğer dil seçiciler kapanır.
+- Dışarı tıklama, **ESC**, Tab ile çıkış veya bir dil seçimi paneli kapatır;
+  ESC focus'u trigger'a döndürür.
+- **↑/↓** diller arasında gezinir (wrap eder), **Home/End** ilk/son dile atlar.
+- Aktif dil (Webflow'un `.w--current`'ı) `.is-current` ile işaretlenir, sağında
+  nokta gösterilir ve kodu label'a yansır.
+- Panel viewport'tan taşacaksa otomatik olarak trigger'ın sağ kenarına
+  hizalanır; pencere yeniden boyutlandırıldığında güncellenir.
+- `Sestek.initLocaleSwitch()` **tekrar çağrılabilir** — bağlanmış bloklar
+  atlanır, yani page-transition sonrası yeniden başlatmak güvenlidir.
+
+**Temalama:** Renkler `[data-locale-switch]` üzerindeki custom prop'larla
+değişir — koyu bir bar için örneğin:
+
+```css
+--ls-fg: #fff;                    /* trigger metin/ikon */
+--ls-border: rgba(255,255,255,.22);
+--ls-fg-hover: #00FFEB;
+```
+
+Diğerleri: `--ls-bg`, `--ls-size`, `--ls-panel-bg`, `--ls-panel-w`,
+`--ls-item-fg`, `--ls-accent`, `--ls-accent-soft`.
+
+> CSS panel'i JS açana kadar gizler — **iki dosyayı birlikte yükle**, yoksa
+> dil listesi hiç görünmez.
 
 ### Logo Slider
 
