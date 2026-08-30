@@ -1,0 +1,55 @@
+/*!
+ * email-cta.css v1.0.0
+ * Email-only CTA → contact form handoff. Behavioural styles ONLY: the error
+ * message's hidden resting state (the script toggles `is-visible`) and the
+ * brief highlight on the contact field that arrived pre-filled. Everything
+ * else — the CTA band, the input, the button, the error message's own
+ * typography — is styled in the Webflow Designer.
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Error message — hidden until the script says the address is missing ──
+ * Kept in the DOM (not display:none-d away by Designer) so its Designer
+ * styling stays editable; the script adds `is-visible` on a bad submit and
+ * removes it on the next keystroke. */
+[data-email-cta-error] {
+  display: none;
+  color: var(--color-text--negative);
+  font-size: var(--text--sm);
+  margin-top: var(--spacing--2);
+}
+
+[data-email-cta-error].is-visible {
+  display: block;
+}
+
+/* Invalid state hook — the ring is drawn on the field, not the wrapper, so
+ * Designer's own border/radius on the input keeps working underneath. */
+[data-email-cta].is-invalid input[type="email"],
+[data-email-cta].is-invalid [data-email-cta-input] {
+  outline: 2px solid var(--color-text--negative);
+  outline-offset: 2px;
+}
+
+/* ── Prefilled field — a one-off "we brought this over for you" glow ──
+ * Fades out on its own; the script also drops the class the moment the
+ * visitor focuses or edits the field. */
+[data-email-cta-field].is-prefilled,
+[data-email-cta-form] input.is-prefilled {
+  animation: sestek-email-cta-prefill 1.6s ease-out 1;
+}
+
+@keyframes sestek-email-cta-prefill {
+  0%   { box-shadow: 0 0 0 0 var(--brand-primary--500); }
+  20%  { box-shadow: 0 0 0 3px var(--brand-primary--200); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+/* ── Reduced motion — no pulse, just a calm resting tint ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-email-cta-field].is-prefilled,
+  [data-email-cta-form] input.is-prefilled {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--brand-primary--200);
+  }
+}

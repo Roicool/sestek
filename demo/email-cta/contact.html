@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email CTA → Contact Form — demo (iletişim sayfası)</title>
+  <link rel="stylesheet" href="../../css/components/email-cta.css">
+  <style>
+    /* Demo-only: the RC design tokens the component CSS reads. */
+    :root {
+      --color-text--negative: #d92d20;
+      --text--sm: 0.875rem;
+      --spacing--2: 0.5rem;
+      --brand-primary--200: #e6e2dd;
+      --brand-primary--500: #9b9089;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #fff;
+      color: #232323;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 2rem;
+    }
+    .spacer { height: 70vh; display: grid; place-items: center; color: #9aa0a6; }
+    .wrap { width: min(560px, 100%); margin: 0 auto 6rem; }
+    h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 500; letter-spacing: -0.02em; margin: 0 0 1.5rem; }
+    label { display: block; font-size: 0.875rem; color: #4b4f58; margin: 0 0 0.35rem; }
+    input, textarea {
+      width: 100%; padding: 0.75rem 1rem; font: inherit; margin-bottom: 1rem;
+      border: 1px solid #d5d2ce; border-radius: 8px; background: #fff;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    input[type="submit"] { cursor: pointer; border: 0; background: #232323; color: #fff; }
+    .note { font-size: 0.875rem; color: #6b6f78; line-height: 1.6; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+
+  <div class="spacer">↓ form aşağıda — CTA'dan gelindiğinde otomatik kaydırılır</div>
+
+  <div class="wrap">
+    <h1>Bize yazın</h1>
+
+    <!-- The receiver. On the real site this is the native Webflow contact
+         form; only the [data-email-cta-form] wrapper is added. -->
+    <div data-email-cta-form>
+      <form>
+        <label for="email">E-posta</label>
+        <input type="email" id="email" name="Email">
+
+        <label for="name">Ad Soyad</label>
+        <input type="text" id="name" name="Name">
+
+        <label for="message">Mesajınız</label>
+        <textarea id="message" name="Message"></textarea>
+
+        <input type="submit" value="Gönder">
+      </form>
+    </div>
+
+    <p class="note">
+      CTA'dan geldiyseniz e-posta alanı dolu, odak “Ad Soyad”da ve adres
+      çubuğundaki <code>?email=…</code> temizlenmiş olmalı.
+      <a href="index.html">← CTA sayfasına dön</a>
+    </p>
+  </div>
+
+  <script src="../../js/components/email-cta.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      Sestek.initEmailCta();
+    });
+  </script>
+
+</body>
+</html>
