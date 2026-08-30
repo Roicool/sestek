@@ -1,6 +1,6 @@
-# Sestek Icon Library — v1.0.0
+# Sestek Icon Library — v1.1.0
 
-> Mega menu ve ürün kartlarında kullanılan **stroke ikon seti**.
+> Mega menu (Products + Company) ve ürün kartlarında kullanılan **stroke ikon seti**.
 > Kaynak dosyalar: `svg/icons/` · Önizleme: `demo/icon-library/index.html`
 > Tamamı tek bir çizim dili paylaşır — hepsi yan yana geldiğinde tek elden
 > çıkmış gibi durur (mevcut lucide ikonlarıyla da uyumlu).
@@ -17,7 +17,7 @@
 | Dolgu | `fill="none"` — tek istisna yok, hepsi outline |
 | Renk | `stroke="currentColor"` — rengi CSS'ten `color` ile ver |
 | Yaşayan alan | 24×24 içinde **20×20** (her kenarda 2px nefes payı) |
-| Yarıçaplar | 1 / 1.5 / 2 / 3 / 4 — ara değer kullanma |
+| Yarıçaplar | 1 / 1.5 / 2 / 2.5 / 3 / 4 — ara değer kullanma |
 | Detay | Maks. 3–4 path; 16px'te okunmayan detay eklenmez |
 | Erişilebilirlik | Dekoratifse `aria-hidden="true"`, tek başına anlam taşıyorsa `role="img"` + `<title>` |
 
@@ -27,23 +27,33 @@ SVG'nin kendi `width` değerinden değil.
 
 ---
 
-## Set
+## Set (23 ikon)
 
 | İkon | Dosya | Yer | Metafor |
 |---|---|---|---|
-| Agentic AI | `svg/icons/agentic-ai.svg` | Kategori başlığı | Bot yüzü — otonom ajan |
-| Agent Copilot | `svg/icons/agent-copilot.svg` | Kategori başlığı | Çift sparkle — AI yardımcı |
-| Conversation Intelligence | `svg/icons/conversation-intelligence.svg` | Kategori başlığı | Konuşma balonu + trend çizgisi |
+| Agentic AI | `svg/icons/agentic-ai.svg` | Products — kategori | Bot yüzü — otonom ajan |
+| Agent Copilot | `svg/icons/agent-copilot.svg` | Products — kategori | Çift sparkle — AI yardımcı |
+| Conversation Intelligence | `svg/icons/conversation-intelligence.svg` | Products — kategori | Konuşma balonu + trend çizgisi |
 | Text to Speech | `svg/icons/text-to-speech.svg` | Agentic AI | Hoparlör + iki ses dalgası |
 | Speech Recognition | `svg/icons/speech-recognition.svg` | Agentic AI | Mikrofon + dinleme yayı |
 | Virtual Translator | `svg/icons/virtual-translator.svg` | Agent Copilot | Karakter + “A” — çeviri |
 | Agent Assist | `svg/icons/agent-assist.svg` | Agent Copilot | Kulaklık + mikrofon kolu |
-| Coaching | `svg/icons/coaching.svg` | Conversation Intelligence | Mezuniyet kepi — eğitim/rehberlik |
+| Coaching | `svg/icons/coaching.svg` | Conversation Intelligence | Mezuniyet kepi — rehberlik |
 | AQM | `svg/icons/aqm.svg` | Conversation Intelligence | Clipboard + onay — kalite skorlama |
 | Analytics | `svg/icons/analytics.svg` | Conversation Intelligence | Sütun grafik + eksen |
-| Virtual Agent | `svg/icons/virtual-agent.svg` | Yedek (menü büyürse) | Konuşma balonu + bot yüzü |
-| Voice Biometrics | `svg/icons/voice-biometrics.svg` | Yedek (menü büyürse) | Kalkan + ses barları |
-| Knowledge Base | `svg/icons/knowledge-base.svg` | Yedek (menü büyürse) | Kitap |
+| Company | `svg/icons/company.svg` | Company — kategori | Bina + ek blok |
+| About Us | `svg/icons/about-us.svg` | Company | Ekip — iki figür |
+| R&D | `svg/icons/rnd.svg` | Company | Ampul — inovasyon |
+| Compliance & Security | `svg/icons/compliance-security.svg` | Company | Kalkan + onay |
+| Partners | `svg/icons/partners.svg` | Company | İç içe iki halka — ortaklık |
+| Careers | `svg/icons/careers.svg` | Company | Evrak çantası |
+| Support | `svg/icons/support.svg` | Company | Can simidi — destek |
+| Virtual Agent | `svg/icons/virtual-agent.svg` | Yedek | Konuşma balonu + bot yüzü |
+| Voice Biometrics | `svg/icons/voice-biometrics.svg` | Yedek | Kalkan + ses barları |
+| Knowledge Base | `svg/icons/knowledge-base.svg` | Yedek | Kitap |
+| Contact | `svg/icons/contact.svg` | Yedek | Zarf |
+| Newsroom | `svg/icons/newsroom.svg` | Yedek | Haber kartı |
+| Events | `svg/icons/events.svg` | Yedek | Takvim |
 
 ---
 
@@ -98,7 +108,7 @@ değişmesi gereken her yerde **inline embed** kullan.
 
 ## İkonlar — kopyala/yapıştır kod
 
-### Kategori başlıkları
+### Products — kategori başlıkları
 
 #### Agentic AI — `agentic-ai`
 
@@ -196,7 +206,7 @@ Kulaklık + mikrofon kolu
 
 #### Coaching — `coaching`
 
-Mezuniyet kepi — eğitim/rehberlik
+Mezuniyet kepi — rehberlik
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--coaching" aria-hidden="true">
@@ -228,6 +238,98 @@ Sütun grafik + eksen
   <path d="M8 17v-4"/>
   <path d="M13 17V9"/>
   <path d="M18 17v-6"/>
+</svg>
+```
+
+### Company
+
+#### Company — `company`
+
+Bina + ek blok
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--company" aria-hidden="true">
+  <path d="M3 21V5.5A2.5 2.5 0 0 1 5.5 3h6A2.5 2.5 0 0 1 14 5.5V21"/>
+  <path d="M14 11h4.5A2.5 2.5 0 0 1 21 13.5V21"/>
+  <path d="M2 21h20"/>
+  <path d="M6.5 7.5h4"/>
+  <path d="M6.5 12h4"/>
+  <path d="M6.5 16.5h4"/>
+  <path d="M17 16.5h1.5"/>
+</svg>
+```
+
+#### About Us — `about-us`
+
+Ekip — iki figür
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--about-us" aria-hidden="true">
+  <circle cx="9" cy="7" r="3.5"/>
+  <path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/>
+  <path d="M16.5 3.7a3.5 3.5 0 0 1 0 6.6"/>
+  <path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/>
+</svg>
+```
+
+#### R&D — `rnd`
+
+Ampul — inovasyon
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--rnd" aria-hidden="true">
+  <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>
+  <path d="M9 18h6"/>
+  <path d="M10 21.5h4"/>
+</svg>
+```
+
+#### Compliance & Security — `compliance-security`
+
+Kalkan + onay
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--compliance-security" aria-hidden="true">
+  <path d="M12 22s8-3.5 8-9.5V5.8L12 2.5 4 5.8v6.7C4 18.5 12 22 12 22Z"/>
+  <path d="m8.8 12 2.4 2.4 4.4-4.4"/>
+</svg>
+```
+
+#### Partners — `partners`
+
+İç içe iki halka — ortaklık
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--partners" aria-hidden="true">
+  <circle cx="8.5" cy="12" r="5.5"/>
+  <circle cx="15.5" cy="12" r="5.5"/>
+</svg>
+```
+
+#### Careers — `careers`
+
+Evrak çantası
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--careers" aria-hidden="true">
+  <rect x="2.5" y="7" width="19" height="13.5" rx="2.5"/>
+  <path d="M8.5 7V5.5A2.5 2.5 0 0 1 11 3h2a2.5 2.5 0 0 1 2.5 2.5V7"/>
+  <path d="M2.5 12.5h19"/>
+</svg>
+```
+
+#### Support — `support`
+
+Can simidi — destek
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--support" aria-hidden="true">
+  <circle cx="12" cy="12" r="9.5"/>
+  <circle cx="12" cy="12" r="4"/>
+  <path d="m5.3 5.3 3.9 3.9"/>
+  <path d="m14.8 14.8 3.9 3.9"/>
+  <path d="m18.7 5.3-3.9 3.9"/>
+  <path d="m9.2 14.8-3.9 3.9"/>
 </svg>
 ```
 
@@ -270,6 +372,44 @@ Kitap
 </svg>
 ```
 
+#### Contact — `contact`
+
+Zarf
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--contact" aria-hidden="true">
+  <rect x="2.5" y="5" width="19" height="14" rx="2.5"/>
+  <path d="m3.5 7.5 7.1 5a2.5 2.5 0 0 0 2.8 0l7.1-5"/>
+</svg>
+```
+
+#### Newsroom — `newsroom`
+
+Haber kartı
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--newsroom" aria-hidden="true">
+  <rect x="3" y="4.5" width="18" height="15" rx="2.5"/>
+  <rect x="6.5" y="8" width="5.5" height="4.5" rx="1"/>
+  <path d="M15.5 8.5h2"/>
+  <path d="M15.5 12h2"/>
+  <path d="M6.5 16h11"/>
+</svg>
+```
+
+#### Events — `events`
+
+Takvim
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--events" aria-hidden="true">
+  <rect x="3" y="5" width="18" height="16" rx="2.5"/>
+  <path d="M8 3v4"/>
+  <path d="M16 3v4"/>
+  <path d="M3 10.5h18"/>
+</svg>
+```
+
 ---
 
 ## Yeni ikon eklerken
@@ -281,4 +421,4 @@ Kitap
    okunmuyorsa detayı azalt, yeni bir ikon çiz.
 4. Bu dosyadaki tabloya + kod bloğuna ekle.
 5. Mevcut bir ikonun yolunu değiştirdiysen CDN cache'i için sürüm etiketini
-   (`@v1.0.1`) güncellemeyi unutma.
+   (`@v1.1.1`) güncellemeyi unutma.

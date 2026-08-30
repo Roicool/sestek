@@ -4270,7 +4270,9 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
 | `text-to-speech.svg` · `speech-recognition.svg` | Agentic AI kolonu |
 | `virtual-translator.svg` · `agent-assist.svg` | Agent Copilot kolonu |
 | `coaching.svg` · `aqm.svg` · `analytics.svg` | Conversation Intelligence kolonu |
-| `virtual-agent.svg` · `voice-biometrics.svg` · `knowledge-base.svg` | Yedek — menü büyürse |
+| `company.svg` | Company kategori başlığı |
+| `about-us.svg` · `rnd.svg` · `compliance-security.svg` · `partners.svg` · `careers.svg` · `support.svg` | Company menüsü |
+| `virtual-agent.svg` · `voice-biometrics.svg` · `knowledge-base.svg` · `contact.svg` · `newsroom.svg` · `events.svg` | Yedek — menü büyürse |
 
 > Rengin `currentColor`'dan gelmesi için ikonu **inline** göm (`<img src>` ile
 > renk değişmez). Boyutu kapsayıcı kutudan yönet, SVG `width` değerinden değil.
