@@ -64,10 +64,24 @@
   transition: color .35s ease, opacity .35s ease;
 }
 
-/* The active title takes its chapter's accent. Idle titles fall back to the
-   muted colour you set in Designer — override either side there. */
+/* Idle chapters sit back so the open one reads first. Tune the depth with
+   --ct-idle-opacity on the root (or on a single tab). */
+[data-ct-tab] {
+  opacity: var(--ct-idle-opacity, .35);
+}
+
+/* The active title takes its chapter's accent and comes up to full strength. */
 [data-ct-tab].is-active {
+  opacity: 1;
+}
+
+/* Designer usually puts the muted text class on the tab's INNER text node, not
+   the tab itself — so the accent has to reach the child or it never shows
+   (the child's own colour/opacity would win the cascade). */
+[data-ct-tab].is-active,
+[data-ct-tab].is-active * {
   color: var(--ct-accent, currentColor);
+  opacity: 1;
 }
 
 [data-ct-tab]:focus-visible {

@@ -1,5 +1,11 @@
 /*!
- * chapter-tabs.js v1.0.0
+ * chapter-tabs.js v1.1.0
+ * v1.1.0: the section can PIN and let scroll drive the chapters. Set
+ *         data-ct-pin on the root and the component sticks to the viewport
+ *         while vertical scroll advances the tabs one at a time — same
+ *         cross-fade as a click, just triggered by scroll position instead.
+ *         Opt-in, desktop-only by default, and it stands down entirely under
+ *         prefers-reduced-motion (the tabs stay clickable).
  * Colour-coordinated vertical tabs (Xref "Our journey so far" pattern): a
  * stack of big clickable titles on one side, a card panel on the other. Click
  * a title and its panel cross-fades in while the stage height morphs to the
@@ -35,6 +41,20 @@
  *   data-ct-start      index open on load                (default 0)
  *   data-ct-interval   autoplay ms, 0 = off              (default 0)
  *
+ * Scroll-pinned mode (opt-in — needs ScrollTrigger):
+ *   data-ct-pin        presence turns it on: the root pins and scroll walks
+ *                      the chapters in order, one per equal slice of travel.
+ *   data-ct-pin-per    viewport heights of scroll PER chapter (default 0.8) —
+ *                      the whole pin lasts n × this, so raise it to make each
+ *                      chapter linger.
+ *   data-ct-pin-bp     min viewport width in px for pinning (default 768).
+ *                      Below it nothing pins and the tabs behave normally —
+ *                      a pinned full-height stage is miserable on a phone.
+ *   data-ct-pin-start  ScrollTrigger start position   (default "top top").
+ *                      Use "top top+=80" to clear a fixed navbar.
+ *   Autoplay is ignored while pinned — scroll is the clock. Clicking a title
+ *   still works: it scrolls to that chapter's slice so the pin stays honest.
+ *
  * Accessibility: a real tablist — role="tab"/"tabpanel", aria-selected,
  * aria-controls, roving tabindex, ↑/↓/←/→/Home/End. Autoplay (when enabled)
  * pauses on hover, on focus, and while the tab is hidden.
@@ -52,6 +72,9 @@
     rise: 16,
     start: 0,
     interval: 0,
+    pinPer: 0.8,
+    pinBp: 768,
+    pinStart: "top top",
   };
 
   /** Bare "--token" → "var(--token)"; anything else passes through. */
@@ -95,6 +118,11 @@
     var reduce = util.prefersReducedMotion();
     var active = Math.min(Math.max(attrNum(root, "data-ct-start", DEFAULTS.start), 0), n - 1);
     var animating = false;
+    // Scroll can ask for a chapter mid-swap (fast flick past two at once).
+    // Remember the last one asked for and honour it when the swap lands,
+    // otherwise the tabs desync from the scroll position.
+    var pending = null;
+    var pinST = null;
 
     // Accent per chapter: authored on the tab, or on its panel. Normalised so
     // tokens keep working as live CSS variables (no computed-value snapshot).
@@ -177,6 +205,11 @@
         onComplete: function () {
           if (stage) gsap.set(stage, { height: "auto" });
           animating = false;
+          if (pending !== null) {
+            var next = pending;
+            pending = null;
+            show(next, true);
+          }
         },
       });
       if (stage && h1 && Math.abs(h1 - h0) > 1) {
@@ -189,7 +222,9 @@
 
     // ── Autoplay (opt-in, pause-aware) ──────────────────────────────────────
     var timer = null, paused = { hover: false, hidden: false };
-    function shouldRun() { return INTERVAL > 0 && !reduce && !paused.hover && !paused.hidden; }
+    // While pinned, scroll IS the clock — a timer fighting it would yank the
+    // tabs away from the scroll position.
+    function shouldRun() { return INTERVAL > 0 && !reduce && !pinST && !paused.hover && !paused.hidden; }
     function schedule() {
       clearTimeout(timer);
       if (shouldRun()) timer = setTimeout(function () { show((active + 1) % n, true); schedule(); }, INTERVAL);
@@ -213,10 +248,20 @@
     }
 
     // ── Interaction ─────────────────────────────────────────────────────────
+    // Pinned, the scroll position owns which chapter is open — so a click has
+    // to move the scroll too, or the next scroll tick would drag the tabs
+    // straight back. Aim at the middle of the target chapter's slice.
+    function syncScrollTo(i) {
+      if (!pinST) return;
+      var from = pinST.start, to = pinST.end;
+      pinST.scroll(from + (to - from) * ((i + 0.5) / n));
+    }
+
     tabs.forEach(function (tab, i) {
       tab.addEventListener("click", function (e) {
         e.preventDefault();                                   // tabs are often <a href="#">
         show(i, true);
+        syncScrollTo(i);
         schedule();
       });
     });
@@ -230,6 +275,7 @@
         else return;
         e.preventDefault();
         show(next, true);
+        syncScrollTo(next);
         schedule();
         tabs[next].focus();
       });
@@ -244,19 +290,71 @@
     window.addEventListener("resize", onResize);
     window.addEventListener("load", onResize);
 
+    // ── Scroll-pinned mode (opt-in) ─────────────────────────────────────────
+    // The root sticks to the viewport and the pin's progress is cut into n
+    // equal slices, one per chapter. No scrub: the cards still cross-fade at
+    // their own speed, scroll only decides WHICH one is open — scrubbing the
+    // fade would make it stutter with the scroll wheel.
+    var mm = null;
+    function buildPin() {
+      if (!root.hasAttribute("data-ct-pin")) return;
+      if (typeof ScrollTrigger === "undefined") {
+        console.warn("[Sestek ChapterTabs] data-ct-pin needs ScrollTrigger — not pinning.");
+        return;
+      }
+
+      var per      = attrNum(root, "data-ct-pin-per", DEFAULTS.pinPer);
+      var bp       = attrNum(root, "data-ct-pin-bp", DEFAULTS.pinBp);
+      var pinStart = root.getAttribute("data-ct-pin-start") || DEFAULTS.pinStart;
+
+      // matchMedia so the pin tears itself down cleanly below the breakpoint
+      // (and under reduced motion) instead of leaving pin-spacing behind.
+      mm = gsap.matchMedia();
+      mm.add("(min-width: " + bp + "px) and (prefers-reduced-motion: no-preference)", function () {
+        pinST = ScrollTrigger.create({
+          trigger: root,
+          start: pinStart,
+          // Function form so a resize re-measures instead of baking in the
+          // viewport height from first load.
+          end: function () { return "+=" + Math.round(n * per * window.innerHeight); },
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: function (self) {
+            var i = Math.floor(self.progress * n);
+            if (i > n - 1) i = n - 1;                         // progress hits 1 exactly at the end
+            if (i < 0) i = 0;
+            if (i === active) return;
+            if (animating) pending = i;                       // honoured when the swap lands
+            else show(i, true);
+          },
+        });
+        clearTimeout(timer);                                  // autoplay stands down while pinned
+        return function () {
+          if (pinST) { pinST.kill(true); pinST = null; }
+          schedule();                                         // hand the clock back to autoplay
+        };
+      });
+    }
+
     // ── Init state ──────────────────────────────────────────────────────────
     show(active, false);
     placeIndicator(false);
     schedule();
+    // Pin last: it measures the stage, so the first card has to be in flow
+    // and the indicator seated before ScrollTrigger reads any heights.
+    buildPin();
 
     root._chapterTabs = {
       el: root,
-      to: function (i) { show(i, true); schedule(); },
+      to: function (i) { show(i, true); syncScrollTo(i); schedule(); },
       _destroy: function () {
         clearTimeout(timer);
         clearTimeout(resizeTimer);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("load", onResize);
+        if (mm) mm.revert();
       },
     };
   }

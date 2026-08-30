@@ -1,5 +1,5 @@
 /*!
- * hero-cards.js v1.3.0
+ * hero-cards.js v1.4.2
  * v1.3.0: scroll drift — the cards rise gently as the hero scrolls away, each
  *         at its own rate (near/sharp cards travel further than the soft ones,
  *         same depth weighting the pointer parallax uses). Computed in the
@@ -182,6 +182,52 @@
 
     slots.forEach(function (s) { s.setAttribute("aria-hidden", "true"); });
 
+    // ── Shell heights ───────────────────────────────────────────────────────
+    // A shell has ONE height, but the stats swapped into it do not: a two-line
+    // description plus a wide logo needs more room than a one-line one, and the
+    // overflow spills the logo out below the card's background. The stat is
+    // random per round, so it only breaks some of the time.
+    //
+    // Two things pin a shell's height, and both have to be released:
+    //   1. an explicit height authored on the shell  → height:auto, with the
+    //      authored value kept as a min-height floor so short stats still fill
+    //      the designed box (offsetHeight, not getBoundingClientRect — the
+    //      latter would measure the live scale tween);
+    //   2. absolute positioning with BOTH top and bottom set — then the offsets
+    //      decide the height and height:auto is ignored entirely. One of the two
+    //      edges has to go, and WHICH one is what keeps the composition intact:
+    //      release the far edge and keep the near one, so a card near the top of
+    //      the stage grows downward and a card near the bottom grows upward.
+    //      Each card therefore stays visually anchored where it was authored.
+    //      This only runs when the content actually overflows, so a stat that
+    //      fits leaves the authored geometry completely untouched.
+    var authoredH = slots.map(function (el) { return el.offsetHeight; });
+    var warnedPinned = false;
+    function fitShells(only) {
+      slots.forEach(function (el, i) {
+        if (only != null && only !== i) return;
+        if (authoredH[i]) el.style.minHeight = authoredH[i] + "px";
+        el.style.height = "auto";
+
+        var cs = getComputedStyle(el);
+        var pinned = cs.position === "absolute" &&
+                     cs.top !== "auto" && cs.bottom !== "auto";
+        if (!pinned) return;
+        if (el.scrollHeight <= el.clientHeight + 1) return;   // it fits — leave it
+
+        if (parseFloat(cs.bottom) < parseFloat(cs.top)) el.style.top = "auto";
+        else el.style.bottom = "auto";
+
+        if (!warnedPinned) {
+          warnedPinned = true;
+          console.info("[Sestek HeroCards] A shell is pinned top AND bottom, so " +
+            "its height comes from those offsets and a taller stat overflows. " +
+            "The far edge was released; anchor each shell from one edge only to " +
+            "avoid this.");
+        }
+      });
+    }
+
     // ── Content pool ────────────────────────────────────────────────────────
     function renderInto(target, poolIdx) {
       var frag = document.createDocumentFragment();
@@ -192,6 +238,7 @@
 
     var visible = shuffle(poolItems.map(function (_, i) { return i; })).slice(0, slots.length);
     visible.forEach(function (poolIdx, slotIdx) { renderInto(targets[slotIdx], poolIdx); });
+    fitShells();
 
     // Pick stats that aren't on screen; fall back to any that isn't this
     // card's own so a small pool still rotates instead of freezing.
@@ -344,6 +391,10 @@
             visible[slotIdx] = nextPool[i];
             renderInto(targets[slotIdx], nextPool[i]);
             if (SHUFFLE) applyPreset(slotIdx, nextPos[slotIdx], true);
+            // Re-fit AFTER any new inset lands — the incoming stat may be taller
+            // than the one leaving, and the card is scaled to 0 right now so the
+            // resize is never seen.
+            fitShells(slotIdx);
             tweenCard(el, scales[slotIdx], UP, "power2.out");
           });
         });
@@ -467,6 +518,7 @@
         el.style.inset = presets[i];
         setCard(el, 1);
       });
+      fitShells();                    // the insets just landed — re-release them
       schedule();
       return function () {
         if (loopCall) { loopCall.kill(); loopCall = null; }
@@ -474,8 +526,11 @@
       };
     });
     mm.add("(max-width: " + (BP - 1) + "px)", function () {
+      // The carousel lays the cards out itself — an authored desktop height
+      // floor would only stretch them there.
+      slots.forEach(function (el) { el.style.minHeight = ""; el.style.height = ""; });
       mobileSetup();
-      return function () { mobileTeardown(); };
+      return function () { mobileTeardown(); fitShells(); };
     });
 
     // ── Pause when out of sight ─────────────────────────────────────────────
