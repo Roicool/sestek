@@ -1,0 +1,160 @@
+/*!
+ * glossary-nav.css v1.1.0
+ * Glossary A–Z letter bar — fixed pill docked bottom-center, Sestek palette:
+ * magenta indicator disc (white letter riding on it), soft pink hover tint.
+ * A single indicator glides between letters (CSS transform transition, JS
+ * only repositions it). Letters with no matching section on the page are
+ * removed from the bar by default (.is-hidden) or kept muted (.is-disabled)
+ * with data-glossary-nav-empty="dim". The whole bar slides up from the
+ * bottom edge only while the glossary content is on screen (hidden over
+ * the hero / past the footer).
+ * Mobile: same bar, edge-to-edge scrollable strip with soft fade masks.
+ * JS: js/components/glossary-nav.js
+ * https://github.com/roicool/sestek
+ */
+
+/* ── Bar — fixed, bottom center, hidden by default (JS adds .is-visible) ─── */
+[data-glossary-nav] {
+  position: fixed;
+  left: 50%;
+  bottom: var(--spacing--5, 1.25rem);
+  z-index: 90;
+  max-width: calc(100vw - var(--spacing--8, 2rem));
+  padding: var(--spacing--1-5, 0.375rem);
+  border-radius: var(--radius--full, 9999px);
+  background: color-mix(in oklch, var(--surface--base, #fff) 85%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border--color-border-muted, #f0f0f0);
+  box-shadow: 0 12px 32px -12px rgba(26, 26, 26, .22), 0 1px 2px rgba(26, 26, 26, .05);
+  /* hidden state: pushed below the viewport edge */
+  transform: translate(-50%, calc(100% + var(--spacing--8, 2rem)));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    visibility 0s linear 0.55s;
+}
+
+[data-glossary-nav].is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    visibility 0s;
+}
+
+/* ── Track — the letter row; scrolls horizontally when it can't fit ──────── */
+[data-glossary-nav-track] {
+  position: relative;              /* indicator coordinate space */
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--0-5, 0.125rem);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+[data-glossary-nav-track]::-webkit-scrollbar { display: none; }
+
+/* soft fade at both edges — JS adds .is-overflowing when the strip scrolls */
+[data-glossary-nav-track].is-overflowing {
+  -webkit-mask-image: linear-gradient(to right,
+    transparent 0, #000 var(--spacing--4, 1rem),
+    #000 calc(100% - var(--spacing--4, 1rem)), transparent 100%);
+  mask-image: linear-gradient(to right,
+    transparent 0, #000 var(--spacing--4, 1rem),
+    #000 calc(100% - var(--spacing--4, 1rem)), transparent 100%);
+}
+
+/* ── Indicator — one disc, created by JS, glides between letters ─────────── */
+.glossary-nav__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--radius--full, 9999px);
+  background: var(--brand-primary--500, #EC008C);
+  box-shadow: 0 6px 16px -6px rgba(236, 0, 140, .55);
+  transform-origin: center;
+  /* JS sets translateX + width; the transition is what animates the glide */
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease,
+    scale 0.25s ease;
+  pointer-events: none;
+}
+.glossary-nav__indicator.is-idle { opacity: 0; scale: 0.5; }
+
+/* ── Letter — square touch target, sits above the indicator ──────────────── */
+[data-glossary-nav-letter] {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing--10, 2.5rem);
+  height: var(--spacing--10, 2.5rem);
+  border-radius: var(--radius--full, 9999px);
+  font-size: var(--text--sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--color-text--base, #1a1a1a);
+  transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+}
+
+@media (hover: hover) {
+  [data-glossary-nav-letter]:hover:not(.is-active):not(.is-disabled) {
+    background: var(--brand-primary--100, #fde6f3);
+    color: var(--color-text--accent, #EC008C);
+  }
+}
+
+[data-glossary-nav-letter]:focus-visible {
+  outline: 2px solid var(--color-text--accent, #EC008C);
+  outline-offset: -2px;
+}
+
+/* active letter rides on the magenta indicator — flip the ink to white */
+[data-glossary-nav-letter].is-active {
+  color: var(--color-text--inverted, #fff);
+}
+
+/* empty letters — default mode: removed from the bar entirely (JS sets this) */
+[data-glossary-nav-letter].is-hidden {
+  display: none;
+}
+
+/* empty letters — data-glossary-nav-empty="dim": kept in place, muted */
+[data-glossary-nav-letter].is-disabled {
+  color: var(--color-text--muted, #71717a);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── Mobile — full-width strip hugging the bottom edge ───────────────────── */
+@media (max-width: 767px) {
+  [data-glossary-nav] {
+    bottom: var(--spacing--3, 0.75rem);
+    max-width: calc(100vw - var(--spacing--4, 1rem));
+  }
+  [data-glossary-nav-letter] {
+    width: var(--spacing--9, 2.25rem);
+    height: var(--spacing--9, 2.25rem);
+  }
+}
+
+/* ── Reduced motion — everything snaps, nothing glides ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-glossary-nav],
+  [data-glossary-nav].is-visible,
+  .glossary-nav__indicator,
+  [data-glossary-nav-letter] {
+    transition: none;
+  }
+}
