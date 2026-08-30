@@ -7,7 +7,8 @@
  *
  * Variant'lar:
  *   Align  — Left | Center (pill + caption hizası)
- *   Accent — Brand (site birincil rengi) | Lime | Ink (koyu)
+ *   Accent — SESTEK marka paleti: Magenta #EC008C | Lilac #7F81AE |
+ *            Turquoise #00FFEB | Gradient (üçünün geçişi)
  *   Theme  — Soft | Deep
  *
  * CRM'e DOĞRUDAN gönderir (CRMFORMSREPORT.md, formType frm-newsletter):
@@ -21,7 +22,7 @@ import * as React from "react";
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
 type Align = "Left" | "Center";
-type Accent = "Brand" | "Lime" | "Ink";
+type Accent = "Magenta" | "Lilac" | "Turquoise" | "Gradient";
 
 export interface NewsletterFormProps {
   theme?: Theme;
@@ -71,17 +72,17 @@ const CSS = `
   --n-muted:var(--color-text--muted,#8b8894);
   --n-pill:color-mix(in oklab,var(--n-text) 4%,#fff);
   --n-line:rgba(20,18,30,.08);--n-neg:#c9463a;
-  --n-btn:var(--interactive--color-primary-base,var(--brand-primary--600,#6f5fe6));
-  --n-btn-h:var(--interactive--color-primary-hover,var(--brand-primary--700,#5c4ed0));
-  --n-btn-fg:#fff;
+  --n-btn:#EC008C;--n-btn-h:#d3007d;--n-btn-fg:#fff;--n-ok:#EC008C;
   color:var(--n-text);font:inherit;max-width:34rem}
 .snlf.is-deep{--n-text:#f4f2fb;--n-muted:#a09aba;
-  --n-pill:#211d33;--n-line:rgba(255,255,255,.11);--n-neg:#ff8274;
-  --n-btn:var(--brand-primary--400,#9d90f0);
-  --n-btn-h:var(--brand-primary--300,#b3a8f5);--n-btn-fg:#17151f}
-.snlf.ac-lime{--n-btn:#e3f337;--n-btn-h:#d6ea1f;--n-btn-fg:#17151f}
-.snlf.ac-ink{--n-btn:#17151f;--n-btn-h:#2a2736;--n-btn-fg:#fff}
-.snlf.is-deep.ac-ink{--n-btn:#f4f2fb;--n-btn-h:#ffffff;--n-btn-fg:#17151f}
+  --n-pill:#211d33;--n-line:rgba(255,255,255,.11);--n-neg:#ff8274}
+/* SESTEK paleti */
+.snlf.ac-lilac{--n-btn:#7F81AE;--n-btn-h:#6f719e;--n-btn-fg:#fff;--n-ok:#7F81AE}
+.snlf.ac-turq{--n-btn:#00FFEB;--n-btn-h:#00e8d6;--n-btn-fg:#17151f;--n-ok:#00b5a7}
+.snlf.ac-grad{--n-btn-fg:#fff;--n-ok:#EC008C}
+.snlf.ac-grad .snlf-btn{
+  background:linear-gradient(100deg,#EC008C 0%,#7F81AE 55%,#00FFEB 130%)}
+.snlf.ac-grad .snlf-btn:hover{filter:brightness(.94)}
 .snlf *{box-sizing:border-box}
 .snlf.is-center{margin-inline:auto}
 
@@ -117,8 +118,7 @@ const CSS = `
   animation:snlf-in .4s cubic-bezier(.22,1,.36,1)}
 @keyframes snlf-in{from{opacity:0;transform:translateY(6px)}
   to{opacity:1;transform:none}}
-.snlf-ok svg{flex:none;width:1.05em;height:1.05em;color:var(--n-btn)}
-.snlf.ac-lime .snlf-ok svg{color:#9aa717}
+.snlf-ok svg{flex:none;width:1.05em;height:1.05em;color:var(--n-ok)}
 
 /* ── Alt satırlar ──────────────────────────────────────────── */
 .snlf-cap{margin:.7rem .25rem 0;font-size:var(--text--sm,.875rem);
@@ -151,7 +151,7 @@ const CheckIcon = () => (
 export function NewsletterForm({
   theme = "Soft",
   align = "Left",
-  accent = "Brand",
+  accent = "Magenta",
   placeholder = "What's your work email?",
   buttonText = "Subscribe",
   sendingText = "Sending…",
@@ -217,7 +217,9 @@ export function NewsletterForm({
     "snlf" +
     (theme === "Deep" ? " is-deep" : "") +
     (align === "Center" ? " is-center" : "") +
-    (accent === "Lime" ? " ac-lime" : accent === "Ink" ? " ac-ink" : "") +
+    (accent === "Lilac" ? " ac-lilac"
+      : accent === "Turquoise" ? " ac-turq"
+      : accent === "Gradient" ? " ac-grad" : "") +
     (error ? " is-invalid" : "");
 
   return (

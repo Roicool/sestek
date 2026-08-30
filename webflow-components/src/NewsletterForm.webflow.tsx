@@ -26,11 +26,11 @@ export default declareComponent(NewsletterForm, {
     }),
     accent: props.Variant({
       name: "Accent",
-      options: ["Brand", "Lime", "Ink"],
-      defaultValue: "Brand",
+      options: ["Magenta", "Lilac", "Turquoise", "Gradient"],
+      defaultValue: "Magenta",
       tooltip:
-        "Buton rengi — Brand: site birincil rengi · Lime: fosforlu sarı " +
-        "· Ink: siyah",
+        "SESTEK paleti — Magenta #EC008C · Lilac #7F81AE · Turquoise " +
+        "#00FFEB · Gradient: üçünün geçişi",
     }),
     placeholder: props.Text({
       name: "Placeholder",
