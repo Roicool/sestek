@@ -4254,6 +4254,29 @@ Webflow `</body>` öncesi:
 
 ---
 
+## Icon Library (`svg/icons/`)
+
+Mega menu / ürün kartı ikon seti — 24×24 grid, 2px stroke, `currentColor`.
+Tam liste, tasarım kuralları ve kopyala-yapıştır kodlar:
+[`ICON-LIBRARY.md`](./ICON-LIBRARY.md) · Önizleme: `demo/icon-library/index.html`
+
+```
+https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
+```
+
+| İkon dosyası | Kullanım |
+|---|---|
+| `agentic-ai.svg` · `agent-copilot.svg` · `conversation-intelligence.svg` | Kategori başlıkları |
+| `text-to-speech.svg` · `speech-recognition.svg` | Agentic AI kolonu |
+| `virtual-translator.svg` · `agent-assist.svg` | Agent Copilot kolonu |
+| `coaching.svg` · `aqm.svg` · `analytics.svg` | Conversation Intelligence kolonu |
+| `virtual-agent.svg` · `voice-biometrics.svg` · `knowledge-base.svg` | Yedek — menü büyürse |
+
+> Rengin `currentColor`'dan gelmesi için ikonu **inline** göm (`<img src>` ile
+> renk değişmez). Boyutu kapsayıcı kutudan yönet, SVG `width` değerinden değil.
+
+---
+
 ## Dependency CDNs (External)
 
 ### Lenis

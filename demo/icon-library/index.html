@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sestek Icon Library — demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f7f7fb; color: #14141c; padding: 48px 24px 96px;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    h1 { font-size: 28px; letter-spacing: -0.02em; }
+    .sub { color: #6b6b80; margin: 8px 0 40px; font-size: 15px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+         color: #8a8aa0; margin: 40px 0 16px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+    .card { display: flex; align-items: center; gap: 14px; background: #fff;
+            border: 1px solid #ececf2; border-radius: 14px; padding: 14px; }
+    .tile { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 11px;
+            background: #f0f0f6; display: grid; place-items: center; color: #14141c; }
+    .tile svg { width: 22px; height: 22px; }
+    figcaption { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    figcaption b { font-size: 14px; }
+    figcaption code { font-size: 11px; color: #8a8aa0; }
+    figcaption small { font-size: 11px; color: #6b6b80; }
+    .menu { margin-top: 56px; background: #fff; border: 1px solid #ececf2;
+            border-radius: 24px; padding: 40px; display: grid; gap: 48px;
+            grid-template-columns: repeat(3, 1fr); }
+    .col > h3 { font-size: 20px; letter-spacing: -0.01em; }
+    .col > p { color: #5c5c70; font-size: 14px; margin: 8px 0 20px; }
+    .col hr { border: 0; border-top: 1px solid #ececf2; margin-bottom: 20px; }
+    .mi { display: flex; gap: 14px; align-items: center; text-decoration: none;
+          color: inherit; padding: 8px; border-radius: 12px; }
+    .mi + .mi { margin-top: 4px; }
+    .mi:hover { background: #f5f5fa; }
+    .mi__ico { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 11px;
+               background: #f0f0f6; display: grid; place-items: center; }
+    .mi__ico svg { width: 22px; height: 22px; }
+    .mi__txt { display: flex; flex-direction: column; }
+    .mi__txt b { font-size: 16px; font-weight: 600; }
+    .mi__txt small { font-size: 13px; color: #5c5c70; }
+    .sizes { display: flex; align-items: flex-end; gap: 28px; margin-top: 24px;
+             background: #fff; border: 1px solid #ececf2; border-radius: 14px; padding: 24px; }
+    .sizes div { display: grid; place-items: center; gap: 8px; font-size: 11px; color: #8a8aa0; }
+    @media (max-width: 900px) { .menu { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Sestek Icon Library</h1>
+    <p class="sub">24×24 grid · 2px stroke · currentColor · lucide uyumlu. Kaynak: <code>svg/icons/</code></p>
+    <h2>Kategori</h2>
+    <div class="grid">
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agentic-ai" aria-hidden="true">
+          <rect x="5" y="8" width="14" height="12" rx="4"/>
+          <path d="M12 5.5V8"/>
+          <circle cx="12" cy="4" r="1.5"/>
+          <path d="M9.5 13.5v1.5"/>
+          <path d="M14.5 13.5v1.5"/>
+          <path d="M3 13v2"/>
+          <path d="M21 13v2"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Agentic AI</b>
+          <code>agentic-ai.svg</code>
+          <small>Bot / otonom ajan</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agent-copilot" aria-hidden="true">
+          <path d="M10.5 3.5 12.3 8.2 17 10l-4.7 1.8-1.8 4.7-1.8-4.7L4 10l4.7-1.8Z"/>
+          <path d="M17.8 14.7 18.6 17.4 21.3 18.2 18.6 19 17.8 21.7 17 19 14.3 18.2 17 17.4Z"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Agent Copilot</b>
+          <code>agent-copilot.svg</code>
+          <small>Sparkle — AI yardımcı</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--conversation-intelligence" aria-hidden="true">
+          <path d="M20.5 14.5A2.5 2.5 0 0 1 18 17H8.5L4 21V5.5A2.5 2.5 0 0 1 6.5 3H18a2.5 2.5 0 0 1 2.5 2.5Z"/>
+          <path d="m8 12.5 3-3 2.5 2.5 3.5-4"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Conversation Intelligence</b>
+          <code>conversation-intelligence.svg</code>
+          <small>Konuşma + içgörü</small>
+        </figcaption>
+      </figure>
+    </div>
+    <h2>Agentic AI</h2>
+    <div class="grid">
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
+          <path d="M7 9.5H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h3l4.5 3.5V6z"/>
+          <path d="M15 9.5a4 4 0 0 1 0 5"/>
+          <path d="M18 7a8 8 0 0 1 0 10"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Text to Speech</b>
+          <code>text-to-speech.svg</code>
+          <small>Hoparlör + ses dalgaları</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M18 11v1a6 6 0 0 1-12 0v-1"/>
+          <path d="M12 18v3"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Speech Recognition</b>
+          <code>speech-recognition.svg</code>
+          <small>Mikrofon + dinleme yayı</small>
+        </figcaption>
+      </figure>
+    </div>
+    <h2>Agent Copilot</h2>
+    <div class="grid">
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--virtual-translator" aria-hidden="true">
+          <path d="M3 5h9"/>
+          <path d="M7.5 3v2"/>
+          <path d="M10 5c0 4.6-2.9 8.4-7 10"/>
+          <path d="M5 10c1.3 2.7 3.4 4.7 6 5.6"/>
+          <path d="m12.5 21 4.5-10 4.5 10"/>
+          <path d="M14.3 17h5.4"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Virtual Translator</b>
+          <code>virtual-translator.svg</code>
+          <small>Diller (A / karakter)</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agent-assist" aria-hidden="true">
+          <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a9 9 0 1 1 18 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>
+          <path d="M18.5 18v1.5a2.5 2.5 0 0 1-2.5 2.5h-2"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Agent Assist</b>
+          <code>agent-assist.svg</code>
+          <small>Kulaklık + mikrofon kolu</small>
+        </figcaption>
+      </figure>
+    </div>
+    <h2>Conversation Intelligence</h2>
+    <div class="grid">
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--coaching" aria-hidden="true">
+          <path d="m12 3 9.5 4.5L12 12 2.5 7.5Z"/>
+          <path d="M6.5 9.8V15c0 1.9 2.5 3.2 5.5 3.2s5.5-1.3 5.5-3.2V9.8"/>
+          <path d="M20.5 8v6"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Coaching</b>
+          <code>coaching.svg</code>
+          <small>Mezuniyet kepi — eğitim</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--aqm" aria-hidden="true">
+          <rect x="8" y="2" width="8" height="4" rx="1.5"/>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <path d="m9 14 2 2 4-4"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>AQM</b>
+          <code>aqm.svg</code>
+          <small>Clipboard + onay — skorlama</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--analytics" aria-hidden="true">
+          <path d="M3 3v16a2 2 0 0 0 2 2h16"/>
+          <path d="M8 17v-4"/>
+          <path d="M13 17V9"/>
+          <path d="M18 17v-6"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Analytics</b>
+          <code>analytics.svg</code>
+          <small>Sütun grafik + eksen</small>
+        </figcaption>
+      </figure>
+    </div>
+    <h2>Yedek</h2>
+    <div class="grid">
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--virtual-agent" aria-hidden="true">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+          <path d="M9.5 11.5h.01"/>
+          <path d="M14.5 11.5h.01"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Virtual Agent</b>
+          <code>virtual-agent.svg</code>
+          <small>Konuşma balonu + bot yüzü</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--voice-biometrics" aria-hidden="true">
+          <path d="M12 22s8-3.5 8-9.5V5.8L12 2.5 4 5.8v6.7C4 18.5 12 22 12 22Z"/>
+          <path d="M9 11.5v3"/>
+          <path d="M12 9.5v7"/>
+          <path d="M15 11.5v3"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Voice Biometrics</b>
+          <code>voice-biometrics.svg</code>
+          <small>Kalkan + ses barları</small>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <span class="tile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--knowledge-base" aria-hidden="true">
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M9 7h6"/>
+          </svg>
+        </span>
+        <figcaption>
+          <b>Knowledge Base</b>
+          <code>knowledge-base.svg</code>
+          <small>Kitap</small>
+        </figcaption>
+      </figure>
+    </div>
+
+    <h2>Mega menu — gerçek yerleşim</h2>
+    <div class="menu">
+      <div class="col">
+        <h3>Agentic AI</h3>
+        <p>Automate resolutions with autonomous AI agents.</p>
+        <hr>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">  <path d="M7 9.5H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h3l4.5 3.5V6z"/><path d="M15 9.5a4 4 0 0 1 0 5"/><path d="M18 7a8 8 0 0 1 0 10"/></svg></span>
+          <span class="mi__txt"><b>Text to Speech</b><small>Hoparlör + ses dalgaları</small></span>
+        </a>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>
+          <span class="mi__txt"><b>Speech Recognition</b><small>Mikrofon + dinleme yayı</small></span>
+        </a>
+      </div>
+      <div class="col">
+        <h3>Agent Copilot</h3>
+        <p>Empower your agents with real-time AI guidance.</p>
+        <hr>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--virtual-translator" aria-hidden="true">  <path d="M3 5h9"/><path d="M7.5 3v2"/><path d="M10 5c0 4.6-2.9 8.4-7 10"/><path d="M5 10c1.3 2.7 3.4 4.7 6 5.6"/><path d="m12.5 21 4.5-10 4.5 10"/><path d="M14.3 17h5.4"/></svg></span>
+          <span class="mi__txt"><b>Virtual Translator</b><small>Diller (A / karakter)</small></span>
+        </a>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agent-assist" aria-hidden="true">  <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a9 9 0 1 1 18 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/><path d="M18.5 18v1.5a2.5 2.5 0 0 1-2.5 2.5h-2"/></svg></span>
+          <span class="mi__txt"><b>Agent Assist</b><small>Kulaklık + mikrofon kolu</small></span>
+        </a>
+      </div>
+      <div class="col">
+        <h3>Conversation Intelligence</h3>
+        <p>Analyze 100% of interactions to uncover hidden insights.</p>
+        <hr>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--coaching" aria-hidden="true">  <path d="m12 3 9.5 4.5L12 12 2.5 7.5Z"/><path d="M6.5 9.8V15c0 1.9 2.5 3.2 5.5 3.2s5.5-1.3 5.5-3.2V9.8"/><path d="M20.5 8v6"/></svg></span>
+          <span class="mi__txt"><b>Coaching</b><small>Mezuniyet kepi — eğitim</small></span>
+        </a>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--aqm" aria-hidden="true">  <rect x="8" y="2" width="8" height="4" rx="1.5"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></span>
+          <span class="mi__txt"><b>AQM</b><small>Clipboard + onay — skorlama</small></span>
+        </a>
+        <a class="mi" href="#">
+          <span class="mi__ico"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--analytics" aria-hidden="true">  <path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-4"/><path d="M13 17V9"/><path d="M18 17v-6"/></svg></span>
+          <span class="mi__txt"><b>Analytics</b><small>Sütun grafik + eksen</small></span>
+        </a>
+      </div>
+    </div>
+
+    <h2>Ölçek testi (16 / 20 / 24 / 32 / 48px)</h2>
+    <div class="sizes">
+      <div><span style="width:16px;height:16px;display:block"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>16px</div>
+      <div><span style="width:20px;height:20px;display:block"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>20px</div>
+      <div><span style="width:24px;height:24px;display:block"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>24px</div>
+      <div><span style="width:32px;height:32px;display:block"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>32px</div>
+      <div><span style="width:48px;height:48px;display:block"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">  <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M18 11v1a6 6 0 0 1-12 0v-1"/><path d="M12 18v3"/></svg></span>48px</div>
+    </div>
+  </div>
+</body>
+</html>
