@@ -4256,7 +4256,8 @@ Webflow `</body>` öncesi:
 
 ## Icon Library (`svg/icons/`)
 
-Mega menu / ürün kartı ikon seti — 24×24 grid, 2px stroke, `currentColor`.
+Mega menu / ürün kartı ikon seti — SESTEK'e özel çizim dili: 24×24 grid,
+1.5px açık kontur + 2.5px ses aksanı (`.sst-icon__accent`), `currentColor`.
 Tam liste, tasarım kuralları ve kopyala-yapıştır kodlar:
 [`ICON-LIBRARY.md`](./ICON-LIBRARY.md) · Önizleme: `demo/icon-library/index.html`
 
@@ -4274,8 +4275,10 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
 | `about-us.svg` · `rnd.svg` · `compliance-security.svg` · `partners.svg` · `careers.svg` · `support.svg` | Company menüsü |
 | `virtual-agent.svg` · `voice-biometrics.svg` · `knowledge-base.svg` · `contact.svg` · `newsroom.svg` · `events.svg` | Yedek — menü büyürse |
 
-> Rengin `currentColor`'dan gelmesi için ikonu **inline** göm (`<img src>` ile
-> renk değişmez). Boyutu kapsayıcı kutudan yönet, SVG `width` değerinden değil.
+> Rengin `currentColor` ve `--sst-icon-accent`'ten gelmesi için ikonu **inline**
+> göm (`<img src>` ile renk değişmez). Boyutu kapsayıcı kutudan yönet, SVG
+> `width` değerinden değil. Aksan barlarını markaya boyamak için:
+> `.sst-icon__accent { stroke: var(--sst-icon-accent, currentColor); }`
 
 ---
 
