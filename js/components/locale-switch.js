@@ -1,5 +1,5 @@
 /*!
- * locale-switch.js v1.0.0
+ * locale-switch.js v1.0.1
  * Language switcher dropdown for the navbar — wraps Webflow's OWN Locales
  * list without touching its DOM.
  *
@@ -66,6 +66,8 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.0.1 — the "skipping a block" warning now names which part is missing
+ *          (trigger vs locales wrapper) and logs the element itself
  * v1.0.0 — initial release
  */
 
@@ -76,9 +78,10 @@
   var instances = [];
   var docBound = false;
 
-  function warn(msg) {
+  function warn(msg, el) {
     if (global.console && typeof global.console.warn === "function") {
-      global.console.warn("[Sestek.localeSwitch] " + msg);
+      if (el) global.console.warn("[Sestek.localeSwitch] " + msg, el);
+      else global.console.warn("[Sestek.localeSwitch] " + msg);
     }
   }
 
@@ -141,9 +144,16 @@
 
       if (!trigger || !panel) {
         warn(
-          "Skipping a [data-locale-switch] block — needs [data-locale-trigger] " +
-          "and a locales wrapper (tag it [data-locale-panel] if it isn't a " +
-          "Webflow .w-locales-wrapper)."
+          "Skipping a [data-locale-switch] block — " +
+          (!trigger ? "no [data-locale-trigger] inside it" : "") +
+          (!trigger && !panel ? ", and " : "") +
+          (!panel
+            ? "no locales wrapper inside it (add Webflow's Locales element, " +
+              "or tag the wrapper [data-locale-panel] if it isn't a " +
+              ".w-locales-wrapper)"
+            : "") +
+          ". Element:",
+          root
         );
         return;
       }

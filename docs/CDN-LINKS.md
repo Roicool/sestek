@@ -2445,17 +2445,29 @@ Webflow `</body>` öncesi:
 - `Sestek.initLocaleSwitch()` **tekrar çağrılabilir** — bağlanmış bloklar
   atlanır, yani page-transition sonrası yeniden başlatmak güvenlidir.
 
+**Görünüm (v1.1.0):** Trigger sakin — border/dolgu yok, sadece globe +
+dil kodu; hover'da ve açıkken nötr bir gri wash (`--ls-hover-bg`) alır.
+Panel 12px köşeli, hairline border + katmanlı yumuşak gölge, satırlar
+kompakt; satır hover'ı da nötr, marka rengi yalnız aktif dilin yanındaki
+küçük noktada kullanılır. Chevron `order` ile her zaman en sağa alınır —
+Webflow'da label'ın önüne koymuş olsan bile doğru sırada görünür.
+
 **Temalama:** Renkler `[data-locale-switch]` üzerindeki custom prop'larla
-değişir — koyu bir bar için örneğin:
+değişir. Açık zeminde ekstra bir şey gerekmez; koyu bir bar için:
 
 ```css
---ls-fg: #fff;                    /* trigger metin/ikon */
---ls-border: rgba(255,255,255,.22);
---ls-fg-hover: #00FFEB;
+--ls-fg: rgba(255,255,255,.7);      /* trigger, durağan */
+--ls-fg-strong: #fff;               /* trigger, hover/açık */
+--ls-hover-bg: rgba(255,255,255,.1);
+/* panel de koyu zeminde duracaksa: */
+--ls-panel-bg: #1c1930;
+--ls-panel-line: rgba(255,255,255,.1);
+--ls-item-fg: rgba(255,255,255,.66);
+--ls-item-fg-strong: #fff;
 ```
 
-Diğerleri: `--ls-bg`, `--ls-size`, `--ls-panel-bg`, `--ls-panel-w`,
-`--ls-item-fg`, `--ls-accent`, `--ls-accent-soft`.
+Diğerleri: `--ls-bg`, `--ls-border` (hairline istersen bir renk ver),
+`--ls-size`, `--ls-panel-w`, `--ls-accent` (aktif dil noktası).
 
 > CSS panel'i JS açana kadar gizler — **iki dosyayı birlikte yükle**, yoksa
 > dil listesi hiç görünmez.
