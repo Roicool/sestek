@@ -24,7 +24,12 @@
 }
 
 /* Stacking order: later panels must paint OVER earlier ones since pinSpacing
-   is false and they physically overlap during the transition. */
+   is false and they physically overlap during the transition.
+   DİKKAT (v1.3.0): pin kurulduğu anda ScrollTrigger her paneli bir
+   "pin-spacer" div'ine sarar ve aşağıdaki ~ kardeş kuralı artık EŞLEŞMEZ —
+   asıl katmanlama JS'ten inline z-index (idx+1) ile yazılır
+   (stack-panels.js v1.3.0). Buradaki kurallar yalnızca pin kurulmayan
+   hallerin (reduced / pin-blocked / JS öncesi ilk boya) fallback'idir. */
 [data-stack-panels] [data-sp-panel] {
   z-index: 1;
 }

@@ -1,5 +1,42 @@
 /*!
- * stack-panels.js v1.2.1
+ * stack-panels.js v1.3.2
+ * v1.3.2 — BAYAT-ARALIK düzeltmesi: scroll sürerken resize gelirse
+ * (masaüstünde pencere/ekran değişimi, mobilde adres çubuğu) ScrollTrigger
+ * kendi refresh'ini scroll durana dek erteliyor — o pencerede tüm pinlerin
+ * start/end'leri bayat kalıyor, kartlar yanlış scroll konumlarında
+ * çözülüyor/pinleniyor ve scroll durunca geç refresh görünür bir sıçramayla
+ * düzeltiyordu. 100vh paneller resize'da büyüdüğünden kayma büyük ekranda
+ * daha büyüktü ("büyük ekranda daha kötü" vakası). Artık kısa debounce'lu
+ * kendi resize→refresh guard'ımız bu pencereyi kapatır; destroy'da söker.
+ * v1.3.1 — geri scroll'da görünür POP düzeltmesi: son hızlı fade (midFade→0)
+ * yalnızca ~%5'lik bir scroll bandına sıkışıktır ve bunun görünmez kalması,
+ * o anda kartın GELEN panelce tamamen örtülmüş olmasına bağlıdır. Gelen panel
+ * viewport'tan kısaysa (kısa son kart; mobilde adres çubuğu gizlenince
+ * 100svh < innerHeight kalması) kart hiç örtülmez → iki yönde de pop:
+ * aşağı inerken kart aniden kaybolur, yukarı çıkarken "zıplayarak" belirir.
+ * Fade payı artık gelen panelin örtemediği viewport oranı kadar genişletilir;
+ * tam örten panelde davranış birebir aynı kalır (görsel sıfır fark).
+ * Ayrıca initStackPanels artık gsap.registerPlugin(ScrollTrigger) çağırır —
+ * yükleme sırası guard'ı (kayıtsız pluginde scrollTrigger config'i sessizce
+ * yok sayılırdı).
+ * v1.3.0 — SAĞLAMLAŞTIRMA (zıplama/atlama vakaları):
+ * · KRİTİK: ScrollTrigger her pinli paneli init anında bir "pin-spacer"
+ *   div'ine sarar — o andan itibaren CSS'teki
+ *   [data-sp-panel] ~ [data-sp-panel] { z-index:2 } kardeş seçicisi HİÇBİR
+ *   panele eşleşmez (paneller artık kardeş değil, her biri kendi spacer'ının
+ *   tek çocuğu). Katmanlama DOM boyama sırasının şansına kalıyordu: son kart
+ *   girerken arkaya giden kartın ÖNE boyanması / yukarı scroll'da arkadaki
+ *   kartın "zıplayarak" belirmesi bunun belirtisi. z-index artık JS'ten her
+ *   panele INLINE yazılır (sıra = DOM sırası, sonraki üstte) — spacer
+ *   sarmalamasından etkilenmez. Var olan inline z-index'e dokunulmaz.
+ * · anticipatePin BİLE BİLE YOK: denendi, sıçramalı scroll girdisinde
+ *   (trackpad flick, sentetik scroll) pin'i erken kurup panelin merkeze
+ *   40px'e varan SIÇRAMASINA yol açtığı ölçüldü — çözdüğünden büyük atlama
+ *   yaratıyor, ekleme.
+ * · Tall panel fake-scroll tween'inin y değeri artık function-based: viewport
+ *   yüksekliği değişince (mobil adres çubuğu, resize) refresh'te taze
+ *   window.innerHeight ile yeniden hesaplanır — bayat mesafe kaynaklı
+ *   içerik zıplaması kalmaz (invalidateOnRefresh zaten açıktı).
  * v1.2.1 — KRİTİK: [data-sp-inner]'sız bir panel viewport'tan uzunsa init
  * TypeError ile çöküyordu (fake-scroll marjı null inner'dan offsetHeight
  * okuyordu) → section'ın TÜM pinleri sessizce yok oluyordu. Panel yüksek
@@ -182,6 +219,15 @@
       return;
     }
 
+    // Stacking order INLINE olarak yazılır: ScrollTrigger pin kurulur kurulmaz
+    // panelleri pin-spacer'lara sardığı için stack-panels.css'teki
+    // [data-sp-panel] ~ [data-sp-panel] kardeş kuralı ölür — sonraki panelin
+    // öncekinin ÜSTÜNE boyanması garantisi buradan gelir. Elle verilmiş bir
+    // inline z-index varsa ona saygı duyulur.
+    panels.forEach(function (panel, idx) {
+      if (!panel.style.zIndex) panel.style.zIndex = String(idx + 1);
+    });
+
     var triggers = [];
     var marginRefreshers = [];
     // The LAST panel never pins/dissolves — it's the final resting layer.
@@ -242,7 +288,10 @@
       if (fakeRatio) {
         tl.to(inner, {
           yPercent: -100,
-          y: windowH,
+          // function-based: invalidateOnRefresh her refresh'te taze viewport
+          // yüksekliğiyle yeniden çözer (mobil adres çubuğu / resize) — bayat
+          // windowH ile içerik yanlış mesafeye taşınıp zıplamasın.
+          y: function () { return window.innerHeight; },
           ease: "none",
           duration: 1 / (1 - fakeRatio) - 1,
         });
@@ -258,12 +307,25 @@
       // The premium beat: outgoing panel scales down + dims (+ optional blur/
       // upward drift for depth), then a quick final fade to 0 — same shape as
       // the reference (0.9 scale/dim, 0.1 fade), enriched.
+      //
+      // GÖRÜNÜR-POP KORUMASI (v1.3.1): hızlı fade'in "hızlı" olabilmesinin
+      // önkoşulu, o anda kartın GELEN panel tarafından tamamen örtülmüş
+      // olmasıdır. Gelen panel viewport'tan KISAysa (kısa son kart; ya da
+      // mobilde adres çubuğu gizlenince 100svh < innerHeight kalması) kart
+      // hiç örtülmez ve ~%5'lik scroll bandına sıkışan 0.5→0 fade'i iki yönde
+      // de gözle görülür POP yapar (yukarı çıkarken kart "zıplayarak" belirir).
+      // Fade payı bu yüzden gelen panelin ÖRTEMEDİĞİ viewport oranı kadar
+      // genişletilir: tam örten panelde değer aynen data-sp-fade-portion
+      // kalır (görsel sıfır fark), örtemeyen panelde pop yumuşak fade olur.
+      var next = panels[i + 1];
+      var uncovered = next ? 1 - Math.min(1, next.offsetHeight / windowH) : 0;
+      var fadeDur = Math.min(0.9, Math.max(fadePortion, uncovered));
       var fromVars = { scale: 1, opacity: 1 };
-      var toVars   = { scale: endScale, opacity: midFade, duration: 1 - fadePortion, ease: "none" };
+      var toVars   = { scale: endScale, opacity: midFade, duration: 1 - fadeDur, ease: "none" };
       if (blurPx > 0) { fromVars.filter = "blur(0px)"; toVars.filter = "blur(" + blurPx + "px)"; }
       if (liftPx)     { fromVars.y = 0; toVars.y = -liftPx; }
       tl.fromTo(panel, fromVars, toVars)
-        .to(panel, { opacity: 0, duration: fadePortion, ease: "none" });
+        .to(panel, { opacity: 0, duration: fadeDur, ease: "none" });
 
       triggers.push(tl);
     });
@@ -274,7 +336,28 @@
       ScrollTrigger.addEventListener("refreshInit", onRefreshInit);
     }
 
+    // BAYAT-ARALIK KORUMASI (v1.3.2): scroll SÜRERKEN resize olursa
+    // (masaüstünde pencere/ekran değişimi, mobilde adres çubuğu gizlenmesi)
+    // ScrollTrigger kendi refresh'ini scroll durana dek ERTELER — o pencerede
+    // tüm pinlerin start/end'leri bayat kalır: kartlar yanlış scroll
+    // konumlarında çözülür/pinlenir, scroll durunca da geç refresh görünür bir
+    // sıçramayla düzeltir. 100vh paneller resize'da büyüdüğü için kayma büyük
+    // ekranda daha büyüktür. Kısa debounce'lu kendi refresh'imiz bu pencereyi
+    // kapatır (scroll ortasında doğrudan refresh'in temiz hizaladığı headless
+    // ölçümle doğrulandı). Tek listener yeter — refresh zaten sayfa geneli.
+    var resizeTimer = null;
+    var onResize = function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (global.Sestek && Sestek.refreshScroll) Sestek.refreshScroll();
+        else ScrollTrigger.refresh();
+      }, 150);
+    };
+    window.addEventListener("resize", onResize);
+
     root._stackPanelsDestroy = function () {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(resizeTimer);
       if (onRefreshInit) ScrollTrigger.removeEventListener("refreshInit", onRefreshInit);
       triggers.forEach(function (tl) {
         tl.scrollTrigger && tl.scrollTrigger.kill();
@@ -289,6 +372,10 @@
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
       console.error("[Sestek StackPanels] GSAP + ScrollTrigger required."); return;
     }
+    // Script yükleme sırasından bağımsız güvence: kayıtsız pluginle kurulan
+    // gsap.timeline({scrollTrigger}) config'i SESSİZCE yok sayar — tüm
+    // paneller anında dissolve olup görünmez kalırdı (v2 ile aynı guard).
+    gsap.registerPlugin(ScrollTrigger);
     var roots = document.querySelectorAll(selector || "[data-stack-panels]");
     if (!roots.length) return;
     Array.prototype.forEach.call(roots, wire);
