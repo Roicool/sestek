@@ -81,7 +81,7 @@ const CSS = `
   --n-pill:color-mix(in oklab,var(--n-text) 4%,#fff);
   --n-line:rgba(20,18,30,.08);--n-neg:#c9463a;
   --n-btn:#EC008C;--n-btn-h:#d3007d;--n-btn-fg:#fff;--n-ok:#EC008C;
-  color:var(--n-text);font:inherit;max-width:34rem}
+  color:var(--n-text);font:inherit;max-width:30rem}
 .snlf.is-deep{--n-text:#f4f2fb;--n-muted:#a09aba;
   --n-pill:#211d33;--n-line:rgba(255,255,255,.11);--n-neg:#ff8274}
 /* SESTEK paleti */
@@ -95,21 +95,21 @@ const CSS = `
 .snlf.is-center{margin-inline:auto}
 
 /* ── Pill ──────────────────────────────────────────────────── */
-.snlf-pill{display:flex;align-items:stretch;gap:.4rem;
-  padding:.4rem;border-radius:var(--radius--full,9999px);
+.snlf-pill{display:flex;align-items:stretch;gap:.35rem;
+  padding:.3rem;border-radius:var(--radius--full,9999px);
   background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
   transition:box-shadow .2s}
 .snlf-pill:focus-within{box-shadow:inset 0 0 0 1px var(--n-text)}
 .snlf.is-invalid .snlf-pill{box-shadow:inset 0 0 0 1px var(--n-neg)}
 .snlf-input{flex:1;min-width:0;font:inherit;
-  font-size:var(--text--base,1rem);color:var(--n-text);
+  font-size:var(--text--sm,.875rem);color:var(--n-text);
   background:transparent;border:0;outline:none;
-  padding:.55em 0 .55em 1.1em}
+  padding:.5em 0 .5em 1.1em}
 .snlf-input::placeholder{color:var(--n-muted)}
-.snlf-btn{flex:none;font:inherit;font-size:var(--text--base,1rem);
+.snlf-btn{flex:none;font:inherit;font-size:var(--text--sm,.875rem);
   font-weight:500;color:var(--n-btn-fg);border:0;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:.5em;
-  padding:.62em 1.4em;border-radius:var(--radius--full,9999px);
+  padding:.55em 1.25em;border-radius:var(--radius--full,9999px);
   background:var(--n-btn);white-space:nowrap;
   transition:background .2s,transform .2s}
 .snlf-btn:hover{background:var(--n-btn-h);transform:translateY(-1px)}
@@ -122,14 +122,14 @@ const CSS = `
 
 /* ── Başarı: pill içeriği onaya döner ──────────────────────── */
 .snlf-ok{display:flex;align-items:center;gap:.6em;flex:1;
-  padding:.62em 1.1em;font-size:var(--text--base,1rem);
+  padding:.55em 1.1em;font-size:var(--text--sm,.875rem);
   animation:snlf-in .4s cubic-bezier(.22,1,.36,1)}
 @keyframes snlf-in{from{opacity:0;transform:translateY(6px)}
   to{opacity:1;transform:none}}
 .snlf-ok svg{flex:none;width:1.05em;height:1.05em;color:var(--n-ok)}
 
 /* ── Alt satırlar ──────────────────────────────────────────── */
-.snlf-cap{margin:.7rem .25rem 0;font-size:var(--text--sm,.875rem);
+.snlf-cap{margin:.6rem .25rem 0;font-size:var(--text--xs,.75rem);
   line-height:1.5;color:var(--n-muted)}
 .snlf-err{margin:.55rem .25rem 0;font-size:var(--text--xs,.75rem);
   line-height:1.5;color:var(--n-neg)}
