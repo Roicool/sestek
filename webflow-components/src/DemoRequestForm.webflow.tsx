@@ -22,14 +22,24 @@ export default declareComponent(DemoRequestForm, {
     heading: props.Text({
       name: "Heading (H2)",
       group: "Content",
-      defaultValue: "See Knovvu in action",
+      defaultValue: "Request a Demo",
     }),
     description: props.Text({
       name: "Description",
       group: "Content",
       defaultValue:
-        "Tell us a little about yourself and our team will set up a " +
-        "personalized demo — real use cases, your industry, your language.",
+        "See how SESTEK helps you elevate the customer experience with " +
+        "AI-powered solutions, analyzing 100% of customer conversations, " +
+        "and providing deeper insights and better results for your business.",
+    }),
+    description2: props.Text({
+      name: "Description 2",
+      group: "Content",
+      defaultValue:
+        "Support your agents more efficiently and help them solve customer " +
+        "problems in a heartbeat, with our market-leading speech " +
+        "recognition accuracy (>97%).",
+      tooltip: "İkinci paragraf — boş bırakılırsa görünmez",
     }),
     imageUrl: props.Text({
       name: "Image URL",
@@ -45,7 +55,8 @@ export default declareComponent(DemoRequestForm, {
     formTitle: props.Text({
       name: "Form title",
       group: "Form",
-      defaultValue: "Request a demo",
+      defaultValue: "Tell us about yourself",
+      tooltip: "H2 zaten 'Request a Demo' olduğundan kart başlığı farklı",
     }),
     formIntro: props.Text({
       name: "Form intro",

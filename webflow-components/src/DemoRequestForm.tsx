@@ -25,6 +25,7 @@ export interface DemoRequestFormProps {
   theme?: Theme;
   heading?: string;
   description?: string;
+  description2?: string;
   imageUrl?: string;
   imageAlt?: string;
   formTitle?: string;
@@ -210,11 +211,12 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
 
 export function DemoRequestForm({
   theme = "Soft",
-  heading = "See Knovvu in action",
-  description = "Tell us a little about yourself and our team will set up a personalized demo — real use cases, your industry, your language.",
+  heading = "Request a Demo",
+  description = "See how SESTEK helps you elevate the customer experience with AI-powered solutions, analyzing 100% of customer conversations, and providing deeper insights and better results for your business.",
+  description2 = "Support your agents more efficiently and help them solve customer problems in a heartbeat, with our market-leading speech recognition accuracy (>97%).",
   imageUrl = "",
   imageAlt = "",
-  formTitle = "Request a demo",
+  formTitle = "Tell us about yourself",
   formIntro = "We'll get back to you within one business day.",
   firstNameLabel = "First name",
   lastNameLabel = "Last name",
@@ -330,6 +332,7 @@ export function DemoRequestForm({
         <div className="sdrf-copy">
           <h2 className="sdrf-h">{heading}</h2>
           {description && <p className="sdrf-d">{description}</p>}
+          {description2 && <p className="sdrf-d">{description2}</p>}
           {imageUrl && (
             <div className="sdrf-img">
               <img src={imageUrl} alt={imageAlt} loading="lazy" />
