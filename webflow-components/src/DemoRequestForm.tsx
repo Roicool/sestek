@@ -359,6 +359,15 @@ export function DemoRequestForm({
   const [error, setError] = React.useState<string | null>(null);
   const [invalid, setInvalid] = React.useState<string | null>(null);
 
+  /* Newsletter pill'inin Demo modu e-postayı ?email=… ile getirir —
+   * Business email alanını önceden doldur. */
+  React.useEffect(() => {
+    try {
+      const pre = new URLSearchParams(location.search).get("email");
+      if (pre && pre.length <= 254) setEmail(pre);
+    } catch { /* URL okunamadıysa boş kalır */ }
+  }, []);
+
   const stepped = layout === "Steps";
   const t = MESSAGES[lang] || MESSAGES.EN;
   const msg = (code: string) => t[code] || t.generic;

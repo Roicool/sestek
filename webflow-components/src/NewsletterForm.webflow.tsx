@@ -18,6 +18,21 @@ export default declareComponent(NewsletterForm, {
       defaultValue: "Soft",
       tooltip: "Soft: açık zemin · Deep: koyu zemin üzeri",
     }),
+    mode: props.Variant({
+      name: "Type",
+      options: ["Subscribe", "Demo"],
+      defaultValue: "Subscribe",
+      tooltip:
+        "Subscribe: CRM'e newsletter kaydı gönderir · Demo: e-postayı " +
+        "alıp Request a Demo sayfasına taşır (Business email önceden " +
+        "dolu gelir), kayıt atılmaz",
+    }),
+    demoUrl: props.Text({
+      name: "Demo page URL",
+      group: "API",
+      defaultValue: "/request-a-demo",
+      tooltip: "Type=Demo iken yönlendirilecek sayfa",
+    }),
     align: props.Variant({
       name: "Align",
       options: ["Left", "Center"],

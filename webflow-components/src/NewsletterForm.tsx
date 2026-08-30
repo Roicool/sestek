@@ -6,12 +6,17 @@
  * RC token köprüleri, font sayfadan miras).
  *
  * Variant'lar:
+ *   Type   — Subscribe: CRM'e newsletter kaydı gönderir
+ *            Demo: e-postayı alıp demoUrl sayfasına ?email=… ile taşır;
+ *            Demo Request Form oradaki Business email alanını bununla
+ *            önceden doldurur. İstek atılmaz, honeypot/consent gerekmez.
  *   Align  — Left | Center (pill + caption hizası)
  *   Accent — SESTEK marka paleti: Magenta #EC008C | Lilac #7F81AE |
  *            Turquoise #00FFEB | Gradient (üçünün geçişi)
  *   Theme  — Soft | Deep
  *
- * CRM'e DOĞRUDAN gönderir (CRMFORMSREPORT.md, formType frm-newsletter):
+ * Subscribe modunda CRM'e DOĞRUDAN gönderir (CRMFORMSREPORT.md,
+ * formType frm-newsletter):
  *   { formType, emailaddress1, pageUrl, utm, hp }
  * UTM'ler sticky-utms'in "sestek_utms" sessionStorage anahtarından okunur.
  * Honeypot doluysa istek çıkmaz ama başarı gösterilir. Başarıda pill'in
@@ -23,11 +28,14 @@ type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
 type Align = "Left" | "Center";
 type Accent = "Magenta" | "Lilac" | "Turquoise" | "Gradient";
+type Mode = "Subscribe" | "Demo";
 
 export interface NewsletterFormProps {
   theme?: Theme;
+  mode?: Mode;
   align?: Align;
   accent?: Accent;
+  demoUrl?: string;
   placeholder?: string;
   buttonText?: string;
   sendingText?: string;
@@ -150,8 +158,10 @@ const CheckIcon = () => (
 
 export function NewsletterForm({
   theme = "Soft",
+  mode = "Subscribe",
   align = "Left",
   accent = "Magenta",
+  demoUrl = "/request-a-demo",
   placeholder = "What's your work email?",
   buttonText = "Subscribe",
   sendingText = "Sending…",
@@ -177,6 +187,14 @@ export function NewsletterForm({
 
     const clean = email.trim().toLowerCase();
     if (!EMAIL_RE.test(clean)) return setError(msg("invalid_email"));
+
+    /* Demo modu: kayıt yok — e-postayı demo sayfasına taşı; Demo Request
+     * Form ?email parametresini Business email alanına önceden doldurur. */
+    if (mode === "Demo") {
+      const sep = demoUrl.indexOf("?") === -1 ? "?" : "&";
+      location.href = demoUrl + sep + "email=" + encodeURIComponent(clean);
+      return;
+    }
 
     /* Honeypot doluysa (bot) istek atmadan başarı göster. */
     if (hp) {
