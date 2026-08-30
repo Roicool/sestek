@@ -1,5 +1,5 @@
 /*!
- * locale-switch.css v1.1.0
+ * locale-switch.css v1.2.0
  * Language switcher dropdown for the navbar — an icon trigger div with
  * Webflow's own Locales list floating underneath it.
  *
@@ -19,7 +19,8 @@
  * (a dark bar needs only --ls-fg and --ls-hover-bg):
  *   --ls-fg           trigger text/icon colour   (muted at rest)
  *   --ls-fg-strong    trigger colour on hover/open
- *   --ls-bg           trigger background         (default transparent)
+ *   --ls-bg           trigger background   (default lab(89.4% 0 0) = #e1e1e1)
+ *   --ls-bg-hover     trigger background on hover/open
  *   --ls-border       trigger border             (default none — set a
  *                                                 colour to add a hairline)
  *   --ls-hover-bg     hover/open wash on the trigger and the locale rows
@@ -34,6 +35,12 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.2.0 — the trigger is a always-on light chip (--ls-bg #e1e1e1, deepening
+ *          to --ls-bg-hover) instead of a transparent control, and its row is
+ *          aligned wrapper-proof: every direct child is its own centred flex
+ *          box, the trigger's inline strut is removed (line-height:0), the
+ *          chevron class works on the <svg> or on a Webflow embed <div>
+ *          around it, and the uppercase label is optically nudged.
  * v1.1.0 — quieter, tighter styling: borderless trigger with a neutral
  *          hover wash (was an outlined pill that flipped to brand pink),
  *          smaller icon/label, 12px panel radius with a layered hairline
@@ -45,9 +52,11 @@
  */
 
 [data-locale-switch] {
-  --ls-fg: var(--color-text--muted, rgba(23, 21, 31, 0.62));
+  --ls-fg: rgba(23, 21, 31, 0.78);
   --ls-fg-strong: var(--color-text--base, #17151f);
-  --ls-bg: transparent;
+  /* Always-on chip background — lab(89.4% 0 0) */
+  --ls-bg: #e1e1e1;
+  --ls-bg-hover: #d7d7d7;
   --ls-border: transparent;
   --ls-hover-bg: rgba(23, 21, 31, 0.05);
   --ls-size: 2rem;
@@ -62,16 +71,23 @@
   display: inline-block;
 }
 
+/* The chip must be exactly --ls-size tall wherever it lands, so it can't
+   inherit content-box sizing and grow by its border. */
+[data-locale-switch],
+[data-locale-switch] * {
+  box-sizing: border-box;
+}
+
 /* ── Trigger (a plain div — Webflow can't nest a button here) ──────── */
-/* Quiet by default: no border, no fill. It only picks up a soft wash on
-   hover / while open, the way a nav utility control should. */
+/* A quiet chip: always the same light background, no border; it only
+   deepens slightly on hover / while open. */
 .locale-switch__trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  min-height: var(--ls-size);
-  padding: 0 0.5rem;
+  height: var(--ls-size);
+  padding: 0 0.5625rem;
   border: 1px solid var(--ls-border);
   border-radius: var(--radius--full, 9999px);
   background: var(--ls-bg);
@@ -79,7 +95,9 @@
   font: inherit;
   font-size: 0.8125rem;
   font-weight: var(--font-weight--medium, 500);
-  line-height: 1;
+  /* line-height:0 kills the inline strut, so nothing rides a text baseline;
+     each child re-declares its own. */
+  line-height: 0;
   letter-spacing: 0.02em;
   cursor: pointer;
   user-select: none;
@@ -90,7 +108,7 @@
 .locale-switch__trigger:hover,
 [data-locale-switch].is-open .locale-switch__trigger {
   color: var(--ls-fg-strong);
-  background: var(--ls-hover-bg);
+  background: var(--ls-bg-hover);
 }
 
 .locale-switch__trigger:focus-visible {
@@ -98,29 +116,44 @@
   outline-offset: 2px;
 }
 
-/* The globe/flag icon lives inside the trigger (Webflow embed or asset). */
+/* Every direct child is centred as its own flex box — this is what keeps the
+   row aligned when Webflow wraps an icon in an embed <div> instead of
+   dropping a bare <svg> in. */
+.locale-switch__trigger > * {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* The globe/flag icon (bare, or inside a Webflow embed wrapper). */
 .locale-switch__trigger svg,
 .locale-switch__trigger img {
-  flex: 0 0 auto;
   width: 0.9375rem;
   height: 0.9375rem;
   display: block;
 }
 
-/* Optional chevron: add class="locale-switch__chevron" to it. `order` pushes
-   it to the end of the row, so it stays right of the label even if Webflow's
-   DOM has it before. */
+/* Optional chevron — put class="locale-switch__chevron" on the <svg> OR on
+   its embed wrapper; both are handled. `order` pushes it to the end of the
+   row, so it stays right of the label whatever Webflow's DOM order is. */
 .locale-switch__chevron {
   order: 9;
-  width: 0.5625rem !important;
-  height: 0.5625rem !important;
-  opacity: 0.5;
+  opacity: 0.55;
   transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+svg.locale-switch__chevron,
+.locale-switch__chevron svg {
+  width: 0.625rem !important;
+  height: 0.625rem !important;
+  display: block;
 }
 
 .locale-switch__trigger:hover .locale-switch__chevron,
 [data-locale-switch].is-open .locale-switch__chevron {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 [data-locale-switch].is-open .locale-switch__chevron {
@@ -130,6 +163,9 @@
 [data-locale-label] {
   font-variant-numeric: tabular-nums;
   text-transform: uppercase;
+  /* Optical centring: an all-caps label reserves descender space it never
+     uses, so its ink reads a hair high next to the icons — nudge it back. */
+  transform: translateY(0.03em);
 }
 
 /* ── Panel (Webflow's Locales Wrapper) ─────────────────────────────── */

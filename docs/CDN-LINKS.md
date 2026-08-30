@@ -2445,8 +2445,13 @@ Webflow `</body>` öncesi:
 - `Sestek.initLocaleSwitch()` **tekrar çağrılabilir** — bağlanmış bloklar
   atlanır, yani page-transition sonrası yeniden başlatmak güvenlidir.
 
-**Görünüm (v1.1.0):** Trigger sakin — border/dolgu yok, sadece globe +
-dil kodu; hover'da ve açıkken nötr bir gri wash (`--ls-hover-bg`) alır.
+**Görünüm (v1.2.0):** Trigger sakin bir chip — border yok, arka planı her
+zaman `lab(89.4% 0 0)` (= `#e1e1e1`, `--ls-bg`), hover'da/açıkken hafifçe
+koyulaşır (`--ls-bg-hover`). Satır hizası Webflow'un embed sarmalayıcılarına
+dayanıklıdır: her doğrudan çocuk kendi ortalanmış flex kutusudur, trigger'ın
+satır strut'ı kapatılmıştır ve chevron class'ı `<svg>`'ye de onu saran
+`w-embed` div'ine de verilebilir; `box-sizing` sabitlendiği için chip her
+yerde tam `--ls-size` yüksekliğindedir.
 Panel 12px köşeli, hairline border + katmanlı yumuşak gölge, satırlar
 kompakt; satır hover'ı da nötr, marka rengi yalnız aktif dilin yanındaki
 küçük noktada kullanılır. Chevron `order` ile her zaman en sağa alınır —
