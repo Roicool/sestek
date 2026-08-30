@@ -1,5 +1,5 @@
 /*!
- * locale-switch.css v1.2.0
+ * locale-switch.css v1.3.0
  * Language switcher dropdown for the navbar — an icon trigger div with
  * Webflow's own Locales list floating underneath it.
  *
@@ -31,10 +31,14 @@
  *   --ls-item-fg      locale link colour
  *   --ls-item-fg-strong  hovered / current link colour
  *   --ls-accent       the current-locale dot
+ *   --ls-z            panel stacking order            (default 60)
  *
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.3.0 — the panel's z-index is now the --ls-z prop, so it can be raised
+ *          when something in the bar paints over the open panel (locales
+ *          visible but unclickable)
  * v1.2.0 — the trigger is a always-on light chip (--ls-bg #e1e1e1, deepening
  *          to --ls-bg-hover) instead of a transparent control, and its row is
  *          aligned wrapper-proof: every direct child is its own centred flex
@@ -173,7 +177,12 @@ svg.locale-switch__chevron,
   position: absolute;
   top: calc(100% + 0.375rem);
   left: 0;
-  z-index: 60;
+  /* Raise --ls-z if something in the bar (a mega-menu container, an overlay)
+     paints over the open panel — the locales stay visible but clicks land on
+     that element instead. Deliberately set on the panel, not on the block:
+     a z-index on the block would cap the panel inside a new stacking context
+     and could make that worse. */
+  z-index: var(--ls-z, 60);
   min-width: var(--ls-panel-w);
   max-width: min(16rem, calc(100vw - 2rem));
   max-height: 17rem;

@@ -1,5 +1,5 @@
 /*!
- * locale-switch.js v1.0.1
+ * locale-switch.js v1.1.0
  * Language switcher dropdown for the navbar — wraps Webflow's OWN Locales
  * list without touching its DOM.
  *
@@ -25,8 +25,9 @@
  *   • Responsive: the panel flips to the trigger's right edge when it would
  *     overflow the viewport (`data-locale-align` forces a side).
  *   • Optional hover-open to match the nav's mega-menus.
- *   • Re-running init is safe (bound roots are skipped), so it survives
- *     Barba/page-transition swaps.
+ *   • Re-running init is safe (bound roots are skipped). A switcher that
+ *     appears LATER (page transition swapping the nav, CMS re-render) is
+ *     wired automatically on its first click — no re-init needed.
  *
  * API:
  *   Sestek.initLocaleSwitch()   — wire every [data-locale-switch] block
@@ -66,6 +67,9 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.1.0 — self-healing: blocks added to the DOM after init are wired on
+ *          their first click (page transitions no longer leave a dead
+ *          switcher); per-block wiring split out into buildRoot()
  * v1.0.1 — the "skipping a block" warning now names which part is missing
  *          (trigger vs locales wrapper) and logs the element itself
  * v1.0.0 — initial release
@@ -97,6 +101,19 @@
     docBound = true;
 
     document.addEventListener("click", function (e) {
+      /* Self-healing: a switcher that entered the DOM after init — a page
+       * transition swapping the nav, a CMS/Designer re-render — is wired on
+       * its first click and toggled here, because the listener buildRoot()
+       * puts on the trigger cannot fire for the click already in flight. */
+      var hit = e.target.closest && e.target.closest("[data-locale-trigger]");
+      if (hit) {
+        var root = hit.closest("[data-locale-switch]");
+        if (root && !root.__localeSwitch) {
+          var late = buildRoot(root);
+          if (late) late.toggle();
+        }
+      }
+
       instances.forEach(function (inst) {
         if (inst.isOpen() && !inst.el.contains(e.target)) inst.close();
       });
@@ -121,233 +138,241 @@
     return (link.textContent || "").trim().slice(0, 2).toUpperCase();
   }
 
+  /* Wires ONE block and returns its controller (null when the block isn't a
+   * usable switcher). Already-wired blocks return the controller they got the
+   * first time, so this is safe to call again and again. */
+  function buildRoot(root) {
+    if (root.__localeSwitch) return root.__localeSwitch;
+
+    var trigger = root.querySelector("[data-locale-trigger]");
+
+    /* Panel: explicit tag first, then Webflow's own locale containers. */
+    var panel =
+      root.querySelector("[data-locale-panel]") ||
+      root.querySelector(".w-locales-wrapper") ||
+      root.querySelector(".w-locales-list");
+
+    if (!trigger || !panel) {
+      warn(
+        "Skipping a [data-locale-switch] block — " +
+        (!trigger ? "no [data-locale-trigger] inside it" : "") +
+        (!trigger && !panel ? ", and " : "") +
+        (!panel
+          ? "no locales wrapper inside it (add Webflow's Locales element, " +
+            "or tag the wrapper [data-locale-panel] if it isn't a " +
+            ".w-locales-wrapper)"
+          : "") +
+        ". Element:",
+        root
+      );
+      return;
+    }
+    if (panel.contains(trigger)) {
+      warn("Skipping a block — the trigger must sit OUTSIDE the locales wrapper.");
+      return;
+    }
+
+    var label     = trigger.querySelector("[data-locale-label]");
+    var labelMode = root.getAttribute("data-locale-label-mode") || "code";
+    var align     = root.getAttribute("data-locale-align") || "auto";
+    var hoverOpen = root.getAttribute("data-locale-hover") === "true";
+
+    root.__localeSwitchBound = true;
+    root.classList.add("locale-switch");
+    trigger.classList.add("locale-switch__trigger");
+    panel.classList.add("locale-switch__panel");
+
+    trigger.setAttribute("role", "button");
+    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-expanded", "false");
+    if (!trigger.hasAttribute("tabindex")) trigger.setAttribute("tabindex", "0");
+    if (!trigger.hasAttribute("aria-label")) {
+      trigger.setAttribute("aria-label", "Change language");
+    }
+    panel.setAttribute("aria-hidden", "true");
+
+    var items = [];
+    var activeIndex = -1;
+    var hoverTimer = null;
+
+    /* Webflow's markup nests link → item row → list. Tag each level so the
+     * CSS can style it deterministically, whatever classes Webflow used. */
+    function refreshItems() {
+      items = Array.prototype.slice.call(panel.querySelectorAll("a"));
+      activeIndex = -1;
+
+      items.forEach(function (link) {
+        link.classList.add("locale-switch__item");
+        link.classList.remove("is-active");
+        link.setAttribute("tabindex", "-1");
+
+        var row = link.parentElement;
+        if (row && row !== panel) {
+          row.classList.add("locale-switch__row");
+          var list = row.parentElement;
+          if (list && list !== panel) list.classList.add("locale-switch__list");
+        }
+
+        var current =
+          link.classList.contains("w--current") || link.hasAttribute("aria-current");
+        link.classList.toggle("is-current", current);
+      });
+
+      if (panel.classList.contains("locale-switch__row")) {
+        panel.classList.remove("locale-switch__row");
+      }
+    }
+
+    /* Mirror the active locale onto the bar (EN / TR / English…). */
+    function syncLabel() {
+      if (!label) return;
+      var current = items.filter(function (l) {
+        return l.classList.contains("is-current");
+      })[0];
+      if (!current) return;
+      label.textContent =
+        labelMode === "name" ? (current.textContent || "").trim() : codeFrom(current);
+    }
+
+    function isOpen() {
+      return root.classList.contains("is-open");
+    }
+
+    function setActive(index) {
+      if (activeIndex >= 0 && items[activeIndex]) {
+        items[activeIndex].classList.remove("is-active");
+      }
+      activeIndex = index;
+      if (activeIndex >= 0 && items[activeIndex]) {
+        items[activeIndex].classList.add("is-active");
+        items[activeIndex].focus();
+      }
+    }
+
+    /* Flip to the trigger's right edge when the panel would run off-screen —
+     * a nav switcher usually sits at the right end of the bar. */
+    function reposition() {
+      if (align === "left" || align === "right") {
+        root.classList.toggle("is-align-right", align === "right");
+        return;
+      }
+      root.classList.remove("is-align-right");
+      var rect = panel.getBoundingClientRect();
+      var vw = global.innerWidth || document.documentElement.clientWidth;
+      if (rect.right > vw - 8) root.classList.add("is-align-right");
+    }
+
+    function open() {
+      if (isOpen()) return;
+      closeAll(instance);
+      refreshItems();
+      root.classList.add("is-open");
+      panel.setAttribute("aria-hidden", "false");
+      trigger.setAttribute("aria-expanded", "true");
+      reposition();
+    }
+
+    function close(focusTrigger) {
+      if (activeIndex >= 0 && items[activeIndex]) {
+        items[activeIndex].classList.remove("is-active");
+      }
+      activeIndex = -1;
+      root.classList.remove("is-open");
+      panel.setAttribute("aria-hidden", "true");
+      trigger.setAttribute("aria-expanded", "false");
+      if (focusTrigger) trigger.focus();
+    }
+
+    function toggle() {
+      if (isOpen()) close(true); else open();
+    }
+
+    trigger.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggle();
+    });
+
+    trigger.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (!isOpen()) open();
+        setActive(0);
+      }
+    });
+
+    if (hoverOpen) {
+      root.addEventListener("mouseenter", function () {
+        if (global.matchMedia && !global.matchMedia("(hover: hover)").matches) return;
+        clearTimeout(hoverTimer);
+        open();
+      });
+      root.addEventListener("mouseleave", function () {
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function () { close(); }, HOVER_CLOSE_DELAY);
+      });
+    }
+
+    panel.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive(activeIndex < items.length - 1 ? activeIndex + 1 : 0);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive(activeIndex > 0 ? activeIndex - 1 : items.length - 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setActive(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setActive(items.length - 1);
+      } else if (e.key === "Tab") {
+        close();
+      }
+    });
+
+    /* Delegated — the locale links navigate, but close anyway so a
+     * cancelled navigation doesn't leave the panel hanging open. */
+    panel.addEventListener("click", function (e) {
+      if (e.target.closest("a")) close();
+    });
+
+    global.addEventListener("resize", function () {
+      if (isOpen()) reposition();
+    });
+
+    refreshItems();
+    syncLabel();
+    close();
+
+    var instance = {
+      el: root,
+      open: open,
+      close: close,
+      toggle: toggle,
+      isOpen: isOpen,
+    };
+    instances.push(instance);
+    root.__localeSwitch = instance;
+    return instance;
+  }
+
   function initLocaleSwitch(selector) {
+    bindDocument();
+
     var roots = document.querySelectorAll(selector || "[data-locale-switch]");
     if (!roots.length) {
       warn("No [data-locale-switch] blocks found — nothing to init.");
       return [];
     }
 
-    bindDocument();
     var built = [];
-
     Array.prototype.forEach.call(roots, function (root) {
-      if (root.__localeSwitchBound) return; // idempotent re-init
-
-      var trigger = root.querySelector("[data-locale-trigger]");
-
-      /* Panel: explicit tag first, then Webflow's own locale containers. */
-      var panel =
-        root.querySelector("[data-locale-panel]") ||
-        root.querySelector(".w-locales-wrapper") ||
-        root.querySelector(".w-locales-list");
-
-      if (!trigger || !panel) {
-        warn(
-          "Skipping a [data-locale-switch] block — " +
-          (!trigger ? "no [data-locale-trigger] inside it" : "") +
-          (!trigger && !panel ? ", and " : "") +
-          (!panel
-            ? "no locales wrapper inside it (add Webflow's Locales element, " +
-              "or tag the wrapper [data-locale-panel] if it isn't a " +
-              ".w-locales-wrapper)"
-            : "") +
-          ". Element:",
-          root
-        );
-        return;
-      }
-      if (panel.contains(trigger)) {
-        warn("Skipping a block — the trigger must sit OUTSIDE the locales wrapper.");
-        return;
-      }
-
-      var label     = trigger.querySelector("[data-locale-label]");
-      var labelMode = root.getAttribute("data-locale-label-mode") || "code";
-      var align     = root.getAttribute("data-locale-align") || "auto";
-      var hoverOpen = root.getAttribute("data-locale-hover") === "true";
-
-      root.__localeSwitchBound = true;
-      root.classList.add("locale-switch");
-      trigger.classList.add("locale-switch__trigger");
-      panel.classList.add("locale-switch__panel");
-
-      trigger.setAttribute("role", "button");
-      trigger.setAttribute("aria-haspopup", "true");
-      trigger.setAttribute("aria-expanded", "false");
-      if (!trigger.hasAttribute("tabindex")) trigger.setAttribute("tabindex", "0");
-      if (!trigger.hasAttribute("aria-label")) {
-        trigger.setAttribute("aria-label", "Change language");
-      }
-      panel.setAttribute("aria-hidden", "true");
-
-      var items = [];
-      var activeIndex = -1;
-      var hoverTimer = null;
-
-      /* Webflow's markup nests link → item row → list. Tag each level so the
-       * CSS can style it deterministically, whatever classes Webflow used. */
-      function refreshItems() {
-        items = Array.prototype.slice.call(panel.querySelectorAll("a"));
-        activeIndex = -1;
-
-        items.forEach(function (link) {
-          link.classList.add("locale-switch__item");
-          link.classList.remove("is-active");
-          link.setAttribute("tabindex", "-1");
-
-          var row = link.parentElement;
-          if (row && row !== panel) {
-            row.classList.add("locale-switch__row");
-            var list = row.parentElement;
-            if (list && list !== panel) list.classList.add("locale-switch__list");
-          }
-
-          var current =
-            link.classList.contains("w--current") || link.hasAttribute("aria-current");
-          link.classList.toggle("is-current", current);
-        });
-
-        if (panel.classList.contains("locale-switch__row")) {
-          panel.classList.remove("locale-switch__row");
-        }
-      }
-
-      /* Mirror the active locale onto the bar (EN / TR / English…). */
-      function syncLabel() {
-        if (!label) return;
-        var current = items.filter(function (l) {
-          return l.classList.contains("is-current");
-        })[0];
-        if (!current) return;
-        label.textContent =
-          labelMode === "name" ? (current.textContent || "").trim() : codeFrom(current);
-      }
-
-      function isOpen() {
-        return root.classList.contains("is-open");
-      }
-
-      function setActive(index) {
-        if (activeIndex >= 0 && items[activeIndex]) {
-          items[activeIndex].classList.remove("is-active");
-        }
-        activeIndex = index;
-        if (activeIndex >= 0 && items[activeIndex]) {
-          items[activeIndex].classList.add("is-active");
-          items[activeIndex].focus();
-        }
-      }
-
-      /* Flip to the trigger's right edge when the panel would run off-screen —
-       * a nav switcher usually sits at the right end of the bar. */
-      function reposition() {
-        if (align === "left" || align === "right") {
-          root.classList.toggle("is-align-right", align === "right");
-          return;
-        }
-        root.classList.remove("is-align-right");
-        var rect = panel.getBoundingClientRect();
-        var vw = global.innerWidth || document.documentElement.clientWidth;
-        if (rect.right > vw - 8) root.classList.add("is-align-right");
-      }
-
-      function open() {
-        if (isOpen()) return;
-        closeAll(instance);
-        refreshItems();
-        root.classList.add("is-open");
-        panel.setAttribute("aria-hidden", "false");
-        trigger.setAttribute("aria-expanded", "true");
-        reposition();
-      }
-
-      function close(focusTrigger) {
-        if (activeIndex >= 0 && items[activeIndex]) {
-          items[activeIndex].classList.remove("is-active");
-        }
-        activeIndex = -1;
-        root.classList.remove("is-open");
-        panel.setAttribute("aria-hidden", "true");
-        trigger.setAttribute("aria-expanded", "false");
-        if (focusTrigger) trigger.focus();
-      }
-
-      function toggle() {
-        if (isOpen()) close(true); else open();
-      }
-
-      trigger.addEventListener("click", function (e) {
-        e.preventDefault();
-        toggle();
-      });
-
-      trigger.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggle();
-        } else if (e.key === "ArrowDown") {
-          e.preventDefault();
-          if (!isOpen()) open();
-          setActive(0);
-        }
-      });
-
-      if (hoverOpen) {
-        root.addEventListener("mouseenter", function () {
-          if (global.matchMedia && !global.matchMedia("(hover: hover)").matches) return;
-          clearTimeout(hoverTimer);
-          open();
-        });
-        root.addEventListener("mouseleave", function () {
-          clearTimeout(hoverTimer);
-          hoverTimer = setTimeout(function () { close(); }, HOVER_CLOSE_DELAY);
-        });
-      }
-
-      panel.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setActive(activeIndex < items.length - 1 ? activeIndex + 1 : 0);
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setActive(activeIndex > 0 ? activeIndex - 1 : items.length - 1);
-        } else if (e.key === "Home") {
-          e.preventDefault();
-          setActive(0);
-        } else if (e.key === "End") {
-          e.preventDefault();
-          setActive(items.length - 1);
-        } else if (e.key === "Tab") {
-          close();
-        }
-      });
-
-      /* Delegated — the locale links navigate, but close anyway so a
-       * cancelled navigation doesn't leave the panel hanging open. */
-      panel.addEventListener("click", function (e) {
-        if (e.target.closest("a")) close();
-      });
-
-      global.addEventListener("resize", function () {
-        if (isOpen()) reposition();
-      });
-
-      refreshItems();
-      syncLabel();
-      close();
-
-      var instance = {
-        el: root,
-        open: open,
-        close: close,
-        toggle: toggle,
-        isOpen: isOpen,
-      };
-      instances.push(instance);
-      built.push(instance);
+      var inst = buildRoot(root);
+      if (inst) built.push(inst);
     });
-
     return built;
   }
 

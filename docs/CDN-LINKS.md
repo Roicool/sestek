@@ -2443,7 +2443,24 @@ Webflow `</body>` öncesi:
 - Panel viewport'tan taşacaksa otomatik olarak trigger'ın sağ kenarına
   hizalanır; pencere yeniden boyutlandırıldığında güncellenir.
 - `Sestek.initLocaleSwitch()` **tekrar çağrılabilir** — bağlanmış bloklar
-  atlanır, yani page-transition sonrası yeniden başlatmak güvenlidir.
+  atlanır. Init'ten SONRA DOM'a giren bir switcher (sayfa geçişi nav'ı
+  değiştirirse, CMS yeniden render ederse) ilk tıklamada kendini bağlar;
+  yeniden init gerekmez.
+
+**Tıklanamıyor mu?** Panel görünüyor ama linkler tıklanmıyorsa üstünü başka
+bir katman örtüyordur (nav'ın mega-menü konteyneri, overlay). Konsolda şunu
+çalıştır — linkin üstündeki gerçek elementi söyler:
+
+```js
+const l = document.querySelector('.locale-switch__item:not(.is-current)');
+const r = l.getBoundingClientRect();
+console.log(document.elementFromPoint(r.left + r.width/2, r.top + r.height/2));
+```
+
+Çıkan element link değilse `[data-locale-switch]` üzerinde `--ls-z` değerini
+o katmanın z-index'inin üstüne çek (örn. `--ls-z: 300`). Trigger'ın kendisi
+tıklanmıyorsa blok bağlanmamıştır — konsoldaki `[Sestek.localeSwitch]`
+uyarısı hangi bloğun neden atlandığını elementiyle birlikte yazar.
 
 **Görünüm (v1.2.0):** Trigger sakin bir chip — border yok, arka planı her
 zaman `lab(89.4% 0 0)` (= `#e1e1e1`, `--ls-bg`), hover'da/açıkken hafifçe
