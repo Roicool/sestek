@@ -19,6 +19,20 @@ export default declareComponent(DemoRequestForm, {
       defaultValue: "Soft",
       tooltip: "Soft: açık minimal · Deep: koyu hali",
     }),
+    layout: props.Variant({
+      name: "Layout",
+      options: ["Single", "Steps"],
+      defaultValue: "Single",
+      tooltip:
+        "Single: tüm alanlar tek ekranda · Steps: 3 adımlı sihirbaz " +
+        "(kimlik → iletişim → mesaj+onay) + ilerleme çubuğu",
+    }),
+    tagline: props.Text({
+      name: "Eyebrow",
+      group: "Content",
+      defaultValue: "Live demo",
+      tooltip: "H2 üstündeki küçük rozet — boş bırakılırsa görünmez",
+    }),
     heading: props.Text({
       name: "Heading (H2)",
       group: "Content",
@@ -40,6 +54,22 @@ export default declareComponent(DemoRequestForm, {
         "problems in a heartbeat, with our market-leading speech " +
         "recognition accuracy (>97%).",
       tooltip: "İkinci paragraf — boş bırakılırsa görünmez",
+    }),
+    bullet1: props.Text({
+      name: "Bullet 1",
+      group: "Content",
+      defaultValue: "100% of customer conversations analyzed",
+    }),
+    bullet2: props.Text({
+      name: "Bullet 2",
+      group: "Content",
+      defaultValue: ">97% speech recognition accuracy",
+    }),
+    bullet3: props.Text({
+      name: "Bullet 3",
+      group: "Content",
+      defaultValue: "Personalized demo for your industry",
+      tooltip: "Özellik listesi — boş bırakılanlar gizlenir",
     }),
     imageUrl: props.Text({
       name: "Image URL",
@@ -111,6 +141,30 @@ export default declareComponent(DemoRequestForm, {
       group: "Form",
       defaultValue: "",
       tooltip: "KVKK / Privacy Policy sayfası (boşsa link görünmez)",
+    }),
+    consentLink2Text: props.Text({
+      name: "Consent link 2 text",
+      group: "Form",
+      defaultValue: "KVKK",
+      tooltip: "İkinci link (örn. KVKK/GDPR aydınlatma metni)",
+    }),
+    consentLink2Url: props.Text({
+      name: "Consent link 2 URL",
+      group: "Form",
+      defaultValue: "",
+      tooltip: "Boşsa ikinci link görünmez",
+    }),
+    nextText: props.Text({
+      name: "Next text",
+      group: "Form",
+      defaultValue: "Continue",
+      tooltip: "Steps layout'ta ileri butonu",
+    }),
+    backText: props.Text({
+      name: "Back text",
+      group: "Form",
+      defaultValue: "Back",
+      tooltip: "Steps layout'ta geri butonu",
     }),
     buttonText: props.Text({
       name: "Button text",
