@@ -1,11 +1,28 @@
 /*!
- * nav.js v2.7.2
+ * nav.js v2.7.4
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.4 — fix mega-menus clipped by a few pixels at the bottom: the panel was
+ *           flipped to position:relative to be measured, which drops its block
+ *           formatting context, so a vertical margin on any descendant at the
+ *           panel's top/bottom edge collapsed out of the measured height. It
+ *           then rendered (absolute, BFC restored) taller than the container —
+ *           two of four live panels were short by 21px and 18px. The panel now
+ *           stays absolute throughout and its height is read after the measured
+ *           width is applied, from the box it will actually render in. Adds a
+ *           ResizeObserver so a panel that grows later (webfont swap, lazy
+ *           image, CMS copy) takes the container with it.
+ * v2.7.3 — fix mega-menus being cut off on wide screens: the panel was measured
+ *           against the full-width .nav__dropdown-wrap, but the box that clips
+ *           it is .nav__dropdown (max-width: 90rem, margin-inline:auto). On a
+ *           viewport wider than that cap, GSAP got a width CSS immediately
+ *           clamped back, so overflow:hidden sliced the panel's right edge —
+ *           and the height, measured at that too-wide width, came up short and
+ *           cut the bottom too. Measured against the dropdown's own box now.
  * v2.7.2 — mobile menu also gets `inert` while closed, not just aria-hidden:
  *           aria-hidden alone doesn't remove descendants from the tab order,
  *           so its links/buttons stayed keyboard-focusable while hidden
@@ -157,6 +174,7 @@
     var isOpen       = false;
     var closeTimer   = null;
     var pendingReset = null;   // GSAP delayedCall that resets panels after close
+    var targetH      = 0;      // height the container is currently animating to
 
     // Honour reduced-motion: snap instead of animate (kept live via listener).
     var reduceMotion = false;
@@ -186,38 +204,82 @@
     }
 
     /**
-     * Briefly positions the panel as relative + shrink-to-content + invisible
-     * to read BOTH its natural width and height (no visible flash, no CSS
-     * transition). Width is capped to the available bar width so a very wide
-     * panel can never overflow the page. This is what lets each mega-menu have
-     * its own width and the container morph between them.
+     * Briefly shrinks the panel to its content, invisibly, to read the width
+     * each mega-menu wants — capped to the box that clips it — then reads the
+     * height back at exactly that width. This is what lets each mega-menu have
+     * its own size and the container morph between them.
+     *
+     * Two rules keep the numbers honest, and breaking either one clips the menu:
+     *
+     * 1. The panel stays ABSOLUTELY positioned the whole time. Flipping it to
+     *    position:relative to measure drops its block formatting context, so a
+     *    vertical margin on any descendant sitting at the panel's top or bottom
+     *    edge COLLAPSES straight out of the measurement. The panel then renders
+     *    (absolute, BFC restored) taller than the number GSAP was handed, and
+     *    overflow:hidden eats the difference — measured live on four panels,
+     *    two came up 18px and 21px short exactly this way.
+     * 2. The height is read AFTER the measured width is applied, from the real
+     *    box, never from the shrink-to-fit one: the two wrap text differently.
      */
     function measurePanel(id) {
       var p = getPanel(id);
       if (!p) return { w: 0, h: 0 };
       var s = p.style;
       var prev = {
-        opacity : s.opacity, position: s.position, width: s.width,
-        maxWidth: s.maxWidth, left: s.left, right: s.right,
+        opacity : s.opacity, width: s.width, maxWidth: s.maxWidth, right: s.right,
       };
-      s.opacity  = "0";
-      s.position = "relative";
-      s.left     = "auto";
-      s.right    = "auto";
-      s.width    = "max-content";
-      // Cap to the wrap's width so an over-wide panel doesn't break the page.
-      var capEl = (dropdown.parentElement || dropdown);
-      var cap   = capEl.clientWidth || 0;
+      s.opacity = "0";
+      s.right   = "auto";        // release the CSS left:0/right:0 stretch
+      s.width   = "max-content";
+      // Cap to the box that actually CLIPS the panel — the dropdown itself,
+      // not its full-width wrap. The dropdown is usually narrower than the wrap
+      // (max-width: 90rem + margin-inline:auto), so measuring against the wrap
+      // would report a width the clip box can never show: GSAP sets that width,
+      // CSS max-width clamps it back, and overflow:hidden cuts the panel off on
+      // the right. Reading it needs the animated inline width off for a moment
+      // so CSS decides the real box.
+      var prevDropW = dropdown.style.width;
+      dropdown.style.width = "";
+      var cap = dropdown.clientWidth || 0;
+      dropdown.style.width = prevDropW;
+      if (!cap) {
+        var capEl = (dropdown.parentElement || dropdown);
+        cap = capEl.clientWidth || 0;
+      }
       if (cap) s.maxWidth = cap + "px";
+
       var w = p.offsetWidth;
-      var h = p.offsetHeight;
+      s.width  = w + "px";       // the geometry it will be rendered with…
+      var h = p.offsetHeight;    // …so this is the height it will really need
+
       s.opacity  = prev.opacity;
-      s.position = prev.position;
       s.width    = prev.width;
       s.maxWidth = prev.maxWidth;
-      s.left     = prev.left;
       s.right    = prev.right;
       return { w: w, h: h };
+    }
+
+    /*
+     * Safety net for everything a one-shot measurement can't see: content that
+     * changes height AFTER it was measured — a webfont swapping in and rewrapping
+     * the text, a lazy image landing, CMS copy streaming into a panel. Without
+     * this the container keeps the stale height and overflow:hidden clips the
+     * overflow for good. Compared against the height we last animated TO (not
+     * the container's live height) so it never fights the open/close tween.
+     */
+    var panelWatcher = null;
+    if (typeof ResizeObserver !== "undefined") {
+      panelWatcher = new ResizeObserver(function () {
+        if (!isOpen || !activeId) return;
+        var p = getPanel(activeId);
+        if (!p) return;
+        var h = p.offsetHeight;
+        if (!h || Math.abs(h - targetH) < 1) return;
+        targetH = h;
+        if (reduceMotion) gsap.set(dropdown, { height: h });
+        else gsap.to(dropdown, { height: h, duration: 0.2, ease: "power2.out" });
+      });
+      panels.forEach(function (p) { panelWatcher.observe(p); });
     }
 
     /** Sync a trigger's visual + a11y open state. */
@@ -319,6 +381,7 @@
 
       isOpen   = true;
       activeId = id;
+      targetH  = h;
       nav.classList.add("nav--open");
 
       gsap.killTweensOf(dropdown);
@@ -414,6 +477,7 @@
       isOpen = false;
       var closingId = activeId;
       activeId = null;
+      targetH  = 0;
       nav.classList.remove("nav--open");
 
       triggers.forEach(function (t) { markTrigger(t, false); });
@@ -761,6 +825,7 @@
       _destroy: function () {
         clearTimeout(closeTimer);
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
+        if (panelWatcher) { panelWatcher.disconnect(); panelWatcher = null; }
         if (indicator) gsap.killTweensOf(indicator);
         panels.forEach(function (p) { gsap.killTweensOf(staggerTargets(p)); });
         if (_mq && _onMq) {

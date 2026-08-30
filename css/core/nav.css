@@ -1,9 +1,16 @@
 /*!
- * nav.css v2.3.0
+ * nav.css v2.4.0
  * Mega-menu navbar — positioning, animation containers, state classes
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.4.0 — bar items get a hover/open pill behind the label: a colour-only
+ *           hover washes out while the bar is transparent over a hero, so the
+ *           active item became hard to read. Painted as a pseudo-element inset
+ *           outside the text box (no padding needed, never shifts the layout),
+ *           tinted from the item's own colour so it works on a dark and a light
+ *           bar alike. Tune with --nav-item-hover-bg / --nav-item-open-bg /
+ *           --nav-item-hover-radius / --nav-item-hover-inset.
  * v2.3.0 — dropdown shadow is now bound to .nav--open (fades in on open, lifts
  *           off the page when every menu closes) instead of being always-on —
  *           box-shadow renders outside the box, so a closed height:0 dropdown
@@ -147,6 +154,63 @@
   background      : transparent;
   border          : none;
   white-space     : nowrap;
+  position        : relative;   /* positions the hover pill below */
+}
+
+/* ── Hover / open pill ───────────────────────────────────────────
+ * The bar sits on whatever the page puts behind it — a photo hero while
+ * transparent, a solid surface once scrolled — so a colour-only hover can
+ * wash out and become unreadable. This paints a soft plate behind the label.
+ *
+ * Drawn as a pseudo-element inset OUTSIDE the text box, so it needs no padding
+ * on the item and can never shift the bar's layout. The default tint is mixed
+ * from the item's own text colour, which means it reads correctly on a dark
+ * bar AND on a light one without this file knowing the palette.
+ *
+ * Override on .nav (or per item) in Webflow:
+ *   --nav-item-hover-bg     : rgba(255,255,255,.14);   pill colour
+ *   --nav-item-open-bg      : rgba(255,255,255,.2);    while its menu is open
+ *   --nav-item-hover-radius : 0.5rem;
+ *   --nav-item-hover-inset  : -0.375rem -0.625rem;     vertical / horizontal
+ */
+.nav__trigger::before,
+.nav__link::before {
+  content        : "";
+  position       : absolute;
+  inset          : var(--nav-item-hover-inset, -0.375rem -0.625rem);
+  z-index        : -1;   /* behind the label, above the bar's own background */
+  border-radius  : var(--nav-item-hover-radius, 0.5rem);
+  background     : var(--nav-item-hover-bg, rgba(128, 128, 128, 0.16));
+  opacity        : 0;
+  pointer-events : none;
+  transition     : opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav__trigger[data-state="open"]::before {
+  background : var(--nav-item-open-bg,
+                 var(--nav-item-hover-bg, rgba(128, 128, 128, 0.22)));
+}
+
+/* Tint mixed from the live text colour — adapts to the bar's current state. */
+@supports (background: color-mix(in srgb, currentColor 12%, transparent)) {
+  .nav__trigger::before,
+  .nav__link::before {
+    background : var(--nav-item-hover-bg,
+                   color-mix(in srgb, currentColor 12%, transparent));
+  }
+  .nav__trigger[data-state="open"]::before {
+    background : var(--nav-item-open-bg,
+                   var(--nav-item-hover-bg,
+                     color-mix(in srgb, currentColor 18%, transparent)));
+  }
+}
+
+.nav__trigger:hover::before,
+.nav__link:hover::before,
+.nav__trigger:focus-visible::before,
+.nav__link:focus-visible::before,
+.nav__trigger[data-state="open"]::before {
+  opacity : 1;
 }
 
 /* Chevron animation is driven by data-state on the trigger */
