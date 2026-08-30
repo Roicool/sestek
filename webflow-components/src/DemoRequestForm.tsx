@@ -162,10 +162,11 @@ const CSS = `
   color:var(--x-acc);background:var(--x-acc-soft)}
 .sdrf-feats svg{width:.7rem;height:.7rem}
 
-.sdrf-img{margin-top:var(--spacing--8,2rem);
+/* Görsel kısa bir bant: 16/5, dar ekranda 16/7 — taşan kısım kırpılır */
+.sdrf-img{margin-top:var(--spacing--8,2rem);aspect-ratio:16/5;
   border-radius:var(--radius--3xl,24px);overflow:hidden;
   box-shadow:inset 0 0 0 1px var(--x-line)}
-.sdrf-img img{display:block;width:100%;height:auto}
+.sdrf-img img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* ── Sağ: form kartı ───────────────────────────────────────── */
 .sdrf-card{border-radius:var(--radius--3xl,24px);background:var(--x-card);
@@ -278,6 +279,7 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
 @media (max-width:991px){
   .sdrf-grid{grid-template-columns:1fr}
   .sdrf-copy{padding-top:0}
+  .sdrf-img{aspect-ratio:16/7}
 }
 @media (max-width:479px){
   .sdrf-row{grid-template-columns:1fr}
