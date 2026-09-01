@@ -1,13 +1,21 @@
 /**
- * ReportDownloadForm — lead-magnet indirme formu (Opus Report vb.).
+ * ReportDownloadForm — lead-magnet formu (Opus Report vb.), iki düzende.
  *
- * Tek kompakt kart: ad+soyad, şirket, kurumsal e-posta (floating label
- * pill'ler), zorunlu privacy onayı (iki linkli), honeypot, marka renkli
- * CTA. Demo Request Form ile aynı görsel dil; font sayfadan miras.
+ * Layout:
+ *   Hero — SAYFA HERO'SU: solda eyebrow + H1 + açıklama + kanıt satırları,
+ *          sağda form kartı; arkada (veya sol sütunda) görsel. Outbound Call
+ *          Demo'nun ikili düzeniyle aynı dil, orb yok. Dikeyde ortalı, hero
+ *          nefes payı, mobilde alt alta.
+ *   Card — yalnız form kartı; sayfa içinde bir bölüme gömmek için.
  *
- * Gönderim başarılı olunca kart onay sahnesine döner ve fileUrl doluysa
- * "Download the report" butonu çıkar (yeni sekmede açılır) — teslimat
- * kararı: success'te indirme butonu.
+ * Görsel: imageStyle="Background" tüm hero'ya yayar (metin okunsun diye
+ * gradient scrim + açık tipografi) · "Panel" sol sütunda yuvarlak köşeli bir
+ * panel olarak gösterir. imageUrl boşsa hiç görünmez, düzen bozulmaz.
+ *
+ * Form: ad+soyad, şirket, kurumsal e-posta (floating label pill'ler),
+ * zorunlu privacy onayı (iki linkli), honeypot, marka renkli CTA. Gönderim
+ * başarılı olunca kart onay sahnesine döner ve fileUrl doluysa "Download the
+ * report" butonu çıkar (yeni sekmede) — teslimat kararı: success'te indirme.
  *
  * CRM'e DOĞRUDAN gönderir (CRMFORMSREPORT.md, formType frm-opus-report;
  * rapor başına farklı tip için formType prop'u değiştirilir):
@@ -21,9 +29,22 @@ import * as React from "react";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
+type Layout = "Hero" | "Card";
+type ImageStyle = "Background" | "Panel";
 
 export interface ReportDownloadFormProps {
   theme?: Theme;
+  layout?: Layout;
+  headingTag?: "H1" | "H2";
+  tagline?: string;
+  heading?: string;
+  description?: string;
+  bullet1?: string;
+  bullet2?: string;
+  bullet3?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageStyle?: ImageStyle;
   formTitle?: string;
   formIntro?: string;
   firstNameLabel?: string;
@@ -95,6 +116,69 @@ const CSS = `
   --r-text:#f4f2fb;--r-muted:#a09aba;--r-field:#211d33;
   --r-field-line:rgba(255,255,255,.13);--r-neg:#ff8274}
 .srpf *{box-sizing:border-box}
+
+/* ── Hero düzeni ───────────────────────────────────────────── */
+/* Kartın max-width'i hero'da geçersiz: genişliği grid belirler. */
+/* Sayfa hero'su olduğu için varsayılan full-bleed; bir bölümün içine
+   gömüp yuvarlatmak istersen --srpf-hero-radius ver. */
+.srpf.is-hero{max-width:none;position:relative;isolation:isolate;
+  border-radius:var(--srpf-hero-radius,0);overflow:hidden}
+.srpf-hero{position:relative;z-index:1;
+  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:clamp(2rem,5vw,4.5rem);align-items:center;
+  max-width:var(--container--2xl,96rem);margin-inline:auto;
+  min-height:min(44rem,calc(100svh - 8rem));
+  padding:clamp(2.5rem,7vh,5rem) clamp(1.25rem,4vw,3rem)}
+
+/* Arka plan görseli + okunabilirlik scrim'i */
+.srpf-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.srpf-bg img{width:100%;height:100%;object-fit:cover;display:block}
+.srpf-bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,
+    rgba(12,10,20,.88) 0%,rgba(12,10,20,.74) 44%,rgba(12,10,20,.32) 100%)}
+/* Görselin üstünde tipografi açığa döner; form kartı beyaz kalır. */
+.srpf.on-image{--r-text:#ffffff;--r-muted:rgba(255,255,255,.78);
+  --r-line:rgba(255,255,255,.14)}
+
+/* ── Sol sütun ─────────────────────────────────────────────── */
+.srpf-copy{display:flex;flex-direction:column;min-width:0}
+.srpf-eyebrow{display:inline-flex;align-items:center;gap:.5em;
+  align-self:flex-start;margin-bottom:var(--spacing--4,1rem);
+  padding:.35em .9em;border-radius:var(--radius--full,9999px);
+  font-size:var(--text--xs,.75rem);font-weight:500;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--r-acc);
+  background:color-mix(in oklab,var(--r-acc) 12%,transparent)}
+.srpf.on-image .srpf-eyebrow{color:#fff;background:rgba(255,255,255,.14);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.srpf-h{margin:0;font-size:clamp(2.25rem,4.2vw,var(--text--6xl,3.75rem));
+  font-weight:500;line-height:1.05;letter-spacing:-.025em;
+  text-wrap:balance;max-width:14em}
+.srpf-d{margin:var(--spacing--5,1.25rem) 0 0;max-width:34em;
+  font-size:var(--text--lg,1.125rem);line-height:1.6;color:var(--r-muted)}
+.srpf-feats{display:flex;flex-wrap:wrap;
+  gap:var(--spacing--3,.75rem) var(--spacing--6,1.5rem);
+  margin:var(--spacing--7,1.75rem) 0 0;padding:0;list-style:none}
+.srpf-feats li{display:flex;align-items:center;gap:.55em;
+  font-size:var(--text--sm,.875rem);line-height:1.35;color:var(--r-muted)}
+.srpf-feats i{flex:none;display:grid;place-items:center;font-style:normal;
+  width:1.1rem;height:1.1rem;color:var(--r-acc)}
+.srpf.on-image .srpf-feats i{color:#fff}
+.srpf-feats svg{width:.85rem;height:.85rem}
+
+/* Görselin "Panel" hali — arka plan yerine sol sütunda durur */
+.srpf-panel{margin-top:var(--spacing--8,2rem);aspect-ratio:16/7;
+  border-radius:var(--radius--2xl,20px);overflow:hidden;
+  box-shadow:inset 0 0 0 1px var(--r-line)}
+.srpf-panel img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* Hero'da kart biraz daha ferah, görselin üstünde daha belirgin durur */
+.srpf.is-hero .srpf-card{
+  padding:var(--spacing--8,2rem) var(--spacing--7,1.75rem);
+  box-shadow:inset 0 0 0 1px var(--r-line),
+    0 32px 80px -40px rgba(12,10,20,.55)}
+.srpf.on-image .srpf-card{--r-text:var(--color-text--base,#17151f);
+  --r-muted:var(--color-text--muted,#8b8894);--r-line:rgba(20,18,30,.08);
+  color:var(--r-text);box-shadow:0 32px 80px -36px rgba(12,10,20,.6)}
 
 .srpf-card{border-radius:var(--radius--3xl,24px);background:var(--r-card);
   box-shadow:inset 0 0 0 1px var(--r-line),0 24px 60px -36px rgba(20,18,30,.18);
@@ -174,6 +258,14 @@ const CSS = `
   color:var(--r-muted)}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
+@media (max-width:991px){
+  .srpf-hero{grid-template-columns:1fr;min-height:0;align-items:start;
+    gap:var(--spacing--8,2rem);
+    padding:clamp(2rem,5vh,3rem) clamp(1.25rem,4vw,2rem)}
+  /* Dar ekranda scrim dikey akar: metin üstte, kart altta okunur kalır. */
+  .srpf-bg::after{background:linear-gradient(180deg,
+    rgba(12,10,20,.88) 0%,rgba(12,10,20,.8) 55%,rgba(12,10,20,.7) 100%)}
+}
 @media (max-width:479px){
   .srpf{max-width:none}
   .srpf-row{grid-template-columns:1fr}
@@ -201,6 +293,17 @@ const DownloadIcon = () => (
 
 export function ReportDownloadForm({
   theme = "Soft",
+  layout = "Hero",
+  headingTag = "H1",
+  tagline = "Opus Research report",
+  heading = "The state of conversational AI, in one report",
+  description = "Independent analysis of where enterprise voice and conversational AI actually deliver — benchmarks, buyer criteria and what separates a pilot from production.",
+  bullet1 = "Independent market analysis",
+  bullet2 = "Vendor evaluation criteria",
+  bullet3 = "Free, instant download",
+  imageUrl = "",
+  imageAlt = "",
+  imageStyle = "Background",
   formTitle = "Get the Opus Report",
   formIntro = "Fill in your details and the report is yours instantly.",
   firstNameLabel = "First name",
@@ -326,10 +429,11 @@ export function ReportDownloadForm({
     </div>
   );
 
-  return (
-    <div className={"srpf" + (theme === "Deep" ? " is-deep" : "")}>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className="srpf-card">
+  const bullets = [bullet1, bullet2, bullet3].filter(Boolean);
+  const onImage = layout === "Hero" && !!imageUrl && imageStyle === "Background";
+
+  const card = (
+    <div className="srpf-card">
         {!done ? (
           <form className="srpf-form" onSubmit={submit} noValidate aria-busy={sending}>
             {formTitle && <h3 className="srpf-t">{formTitle}</h3>}
@@ -394,7 +498,54 @@ export function ReportDownloadForm({
             )}
           </div>
         )}
-      </div>
     </div>
+  );
+
+  if (layout === "Card") {
+    return (
+      <div className={"srpf" + (theme === "Deep" ? " is-deep" : "")}>
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        {card}
+      </div>
+    );
+  }
+
+  const Heading = headingTag === "H2" ? "h2" : "h1";
+
+  return (
+    <section
+      className={
+        "srpf is-hero" +
+        (theme === "Deep" ? " is-deep" : "") +
+        (onImage ? " on-image" : "")
+      }
+    >
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      {onImage && (
+        <div className="srpf-bg" aria-hidden={imageAlt ? undefined : true}>
+          <img src={imageUrl} alt={imageAlt} />
+        </div>
+      )}
+      <div className="srpf-hero">
+        <div className="srpf-copy">
+          {tagline && <span className="srpf-eyebrow">{tagline}</span>}
+          <Heading className="srpf-h">{heading}</Heading>
+          {description && <p className="srpf-d">{description}</p>}
+          {bullets.length > 0 && (
+            <ul className="srpf-feats">
+              {bullets.map((b, i) => (
+                <li key={i}><i><CheckIcon /></i>{b}</li>
+              ))}
+            </ul>
+          )}
+          {imageUrl && imageStyle === "Panel" && (
+            <div className="srpf-panel">
+              <img src={imageUrl} alt={imageAlt} loading="lazy" />
+            </div>
+          )}
+        </div>
+        {card}
+      </div>
+    </section>
   );
 }

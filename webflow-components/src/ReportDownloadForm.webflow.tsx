@@ -5,7 +5,10 @@ import { ReportDownloadForm } from "./ReportDownloadForm";
 export default declareComponent(ReportDownloadForm, {
   name: "Report Download Form",
   description:
-    "Lead-magnet indirme kartı (Opus Report vb.) — ad, soyad, şirket, " +
+    "Opus Report lead-magnet'i, iki düzende. HERO: solda eyebrow + H1 + " +
+    "açıklama + kanıt satırları, sağda form kartı, arkada (ya da sol " +
+    "sütunda) görsel — Outbound Call Demo'nun ikili dili, orb yok. CARD: " +
+    "yalnız form kartı. Form: ad, soyad, şirket, " +
     "kurumsal e-posta + zorunlu privacy onayı + honeypot. CRM lead " +
     "endpoint'ine DOĞRUDAN gönderir (formType frm-opus-report; rapor " +
     "başına prop'la değiştirilir), UTM'leri sticky-utms'ten ekler. " +
@@ -18,6 +21,74 @@ export default declareComponent(ReportDownloadForm, {
       options: ["Soft", "Deep"],
       defaultValue: "Soft",
       tooltip: "Soft: açık minimal · Deep: koyu hali",
+    }),
+    layout: props.Variant({
+      name: "Layout",
+      options: ["Hero", "Card"],
+      defaultValue: "Hero",
+      tooltip:
+        "Hero: sayfa hero'su (görsel + H1 + açıklama + sağda form) · " +
+        "Card: yalnız form kartı, bölüm içine gömmek için",
+    }),
+    headingTag: props.Variant({
+      name: "Heading tag",
+      options: ["H1", "H2"],
+      defaultValue: "H1",
+      tooltip: "Hero sayfanın ana başlığıysa H1, değilse H2",
+    }),
+    tagline: props.Text({
+      name: "Eyebrow",
+      group: "Hero",
+      defaultValue: "Opus Research report",
+      tooltip: "Başlığın üstündeki küçük rozet — boşsa görünmez",
+    }),
+    heading: props.Text({
+      name: "Heading",
+      group: "Hero",
+      defaultValue: "The state of conversational AI, in one report",
+    }),
+    description: props.Text({
+      name: "Description",
+      group: "Hero",
+      defaultValue:
+        "Independent analysis of where enterprise voice and conversational " +
+        "AI actually deliver — benchmarks, buyer criteria and what " +
+        "separates a pilot from production.",
+    }),
+    bullet1: props.Text({
+      name: "Bullet 1",
+      group: "Hero",
+      defaultValue: "Independent market analysis",
+    }),
+    bullet2: props.Text({
+      name: "Bullet 2",
+      group: "Hero",
+      defaultValue: "Vendor evaluation criteria",
+    }),
+    bullet3: props.Text({
+      name: "Bullet 3",
+      group: "Hero",
+      defaultValue: "Free, instant download",
+      tooltip: "Boş bırakılan satır gizlenir",
+    }),
+    imageUrl: props.Text({
+      name: "Image URL",
+      group: "Hero",
+      defaultValue: "",
+      tooltip: "Hero görseli — boş bırakılırsa hero düz zeminde çalışır",
+    }),
+    imageAlt: props.Text({
+      name: "Image alt",
+      group: "Hero",
+      defaultValue: "",
+    }),
+    imageStyle: props.Variant({
+      name: "Image style",
+      options: ["Background", "Panel"],
+      defaultValue: "Background",
+      tooltip:
+        "Background: tüm hero'ya yayılır (metin okunsun diye scrim + açık " +
+        "tipografi) · Panel: sol sütunda yuvarlak köşeli görsel",
     }),
     formTitle: props.Text({
       name: "Form title",
