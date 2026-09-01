@@ -1,0 +1,224 @@
+<div data-rt-embed-type='true'><div class="sroi">
+  <form autocomplete="off" id="calculation-form" class="sroi__form" onsubmit="return false">
+
+    <!-- LEFT PANEL -->
+    <div class="sroi__left">
+      <h3 class="sroi__title">Automated Quality Management ROI Calculator</h3>
+
+      <label class="sroi__field">
+        <span>Number of agents</span>
+        <input name="number_of_agents" type="text" value="100" inputmode="numeric">
+      </label>
+      <label class="sroi__field">
+        <span>Number of team leaders</span>
+        <input name="number_of_leaders" type="text" value="10" inputmode="numeric">
+      </label>
+      <label class="sroi__field">
+        <span>Cost of team leader (USD / month)</span>
+        <input name="cost_per_leader" type="text" value="3000" inputmode="numeric">
+      </label>
+      <label class="sroi__field">
+        <span>Number of QM evaluators</span>
+        <input name="number_of_qm" type="text" value="2" inputmode="numeric">
+      </label>
+      <label class="sroi__field">
+        <span>Cost of QM evaluator (USD / month)</span>
+        <input name="cost_per_qm" type="text" value="4000" inputmode="numeric">
+      </label>
+
+      <input type="hidden" name="time_saved" value="40%">
+
+      <p class="sroi__assume">Assumption: AQM saves on average <b>40%</b> of team
+        leader and evaluator time. Team leader and evaluator counts update
+        automatically when you change the number of agents.</p>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="sroi__right">
+      <h4 class="sroi__resTitle">Annual savings</h4>
+      <p class="sroi__resLead">The yearly cost impact of automating your quality
+        management operations.</p>
+
+      <p class="sroi__hero savings-field" id="anual_savings">$0</p>
+
+      <div class="sroi__stats">
+        <div class="sroi__stat">
+          <span>Monthly savings</span>
+          <b class="savings-field" id="monthly_savings">$0</b>
+        </div>
+        <div class="sroi__stat">
+          <span>FTE savings (QM evaluator)</span>
+          <b class="savings-field" id="saving_fte">0</b>
+        </div>
+        <div class="sroi__stat">
+          <span>Total cost of team leaders</span>
+          <input class="sroi__out" disabled name="total_cost_of_leaders" type="text">
+        </div>
+        <div class="sroi__stat">
+          <span>Total cost of QM evaluators</span>
+          <input class="sroi__out" disabled name="total_cost_of_qm" type="text">
+        </div>
+        <div class="sroi__stat">
+          <span>Total cost of QM ops</span>
+          <input class="sroi__out sroi__out--accent" disabled name="total_cost_of_qm_ops" type="text">
+        </div>
+      </div>
+
+      <p class="sroi__note">Estimates are for illustrative purposes only; actual
+        results may vary depending on implementation and usage conditions.</p>
+    </div>
+
+  </form>
+</div>
+
+<style>
+  .sroi{
+    --magenta:#EC009C; --navy:#16183c; --ink:#1a1a2e; --muted:#71717a;
+    width:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .sroi *{ box-sizing:border-box; }
+
+  .sroi__form{ display:grid; grid-template-columns:1fr 1.3fr; gap:24px; }
+  @media (max-width:820px){ .sroi__form{ grid-template-columns:1fr; } }
+
+  /* LEFT */
+  .sroi__left{ background:#f5f5f7; border:1px solid #eceaf0; border-radius:20px; padding:clamp(24px,4vw,40px); }
+  .sroi__title{ margin:0 0 28px; font-size:clamp(20px,2.4vw,24px); font-weight:600; color:var(--ink); letter-spacing:-.01em; }
+  .sroi__field{ display:block; margin-bottom:22px; }
+  .sroi__field > span{ display:block; margin-bottom:8px; font-size:14px; font-weight:500; color:var(--ink); }
+  .sroi__field input{
+    width:100%; height:52px; padding:0 16px;
+    border:1px solid #dcdae2; border-radius:12px; background:#fff;
+    font-size:16px; color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  .sroi__field input:focus{ border-color:var(--magenta); box-shadow:0 0 0 3px rgba(236,0,156,.12); }
+  .sroi__assume{ margin:28px 0 0; font-size:13px; line-height:1.5; color:var(--muted); }
+  .sroi__assume b{ color:var(--magenta); }
+
+  /* RIGHT — container query context: numbers scale to the panel */
+  .sroi__right{
+    container-type:inline-size;
+    position:relative; overflow:hidden; border-radius:20px; padding:clamp(24px,4vw,40px);
+    background:radial-gradient(120% 90% at 100% 0%, #23264f 0%, var(--navy) 60%); color:#eceaf4;
+  }
+  .sroi__resTitle{ margin:0 0 12px; font-size:clamp(18px,2.2vw,22px); font-weight:600; color:#fff; }
+  .sroi__resLead{ max-width:34em; margin:0; font-size:15px; line-height:1.5; color:#a9abce; }
+
+  /* HERO — scales to the panel, stays on one line, never overflows */
+  .sroi__hero{
+    margin:14px 0 26px;
+    font-size:clamp(28px, 12cqi, 104px);
+    line-height:1.02; font-weight:700; letter-spacing:-.03em; color:var(--magenta);
+    white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+
+  .sroi__stats{
+    display:grid; grid-template-columns:1fr 1fr; gap:24px 40px;
+    padding-top:26px; border-top:1px solid rgba(255,255,255,.14);
+  }
+  .sroi__stat{ min-width:0; }
+  .sroi__stat > span{ display:block; margin-bottom:8px; font-size:13px; color:#a9abce; }
+  .sroi__stat b{
+    display:block; font-size:clamp(20px, 6cqi, 34px); font-weight:700; letter-spacing:-.02em; color:#fff;
+    white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+
+  .sroi__out{
+    border:0; background:transparent; padding:0; width:100%; min-width:0;
+    font-size:clamp(18px, 5.5cqi, 26px); font-weight:600; color:#fff;
+    font-variant-numeric:tabular-nums;
+  }
+  .sroi__out:disabled{ -webkit-text-fill-color:#fff; opacity:1; }
+  .sroi__out--accent{ color:var(--magenta); }
+  .sroi__out--accent:disabled{ -webkit-text-fill-color:var(--magenta); }
+  .sroi__pair{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .sroi__pair .sroi__out{ width:auto; }
+  .sroi__arrow{ color:#7d7fa6; flex:none; }
+
+  .sroi__note{ margin:28px 0 0; padding-top:20px; border-top:1px solid rgba(255,255,255,.14);
+    font-size:12px; line-height:1.5; color:#8688b0; }
+
+  @container (max-width: 380px){
+    .sroi__stats{ grid-template-columns:1fr; }
+    .sroi__hero{ font-size:clamp(30px, 15cqi, 72px); }
+  }
+</style>
+
+<!-- ↓↓↓ JS: identical to the sestek page (unchanged) ↓↓↓ -->
+<script>
+    document.addEventListener("DOMContentLoaded", function(event) {
+        $('input[name="cost_per_leader"], input[name="cost_per_qm"], input[name="number_of_leaders"], input[name="number_of_qm"]').on('change', function() {
+            calculate_roi();
+        });
+
+        $('input[name="number_of_agents"]').on('change', function() {
+            let number_of_agents = parseFloat($('input[name="number_of_agents"]').val());
+
+            let number_of_leaders = Math.ceil(number_of_agents / 10);
+            let number_of_qm = Math.ceil(number_of_agents / 50);
+
+            $('input[name="number_of_leaders"]').val(number_format(number_of_leaders, 0));
+            $('input[name="number_of_qm"]').val(number_format(number_of_qm, 0));
+
+            calculate_roi();
+        });
+
+        calculate_roi();
+    });
+
+    function calculate_roi() {
+        let number_of_agents = parseFloat($('input[name="number_of_agents"]').val());
+        let cost_per_leader = parseFloat($('input[name="cost_per_leader"]').val());
+        let cost_per_qm = parseFloat($('input[name="cost_per_qm"]').val());
+        let number_of_leaders = parseFloat($('input[name="number_of_leaders"]').val());
+        let number_of_qm =parseFloat($('input[name="number_of_qm"]').val());
+
+        number_of_agents = isNaN(number_of_agents) ? 0 : number_of_agents;
+        cost_per_leader = isNaN(cost_per_leader) ? 0 : cost_per_leader;
+        cost_per_qm = isNaN(cost_per_qm) ? 0 : cost_per_qm;
+
+        let time_saved = parseFloat($('input[name="time_saved"]').val());
+
+        let total_cost_of_leaders = number_of_leaders * cost_per_leader;
+        let total_cost_of_qm = number_of_qm * cost_per_qm;
+        let total_cost_of_qm_ops = (total_cost_of_leaders * 0.3) + total_cost_of_qm;
+
+        // Savings
+        let monthly_savings = (total_cost_of_qm_ops * time_saved) / 100;
+        let anual_savings = monthly_savings * 12;
+        let saving_fte = monthly_savings / cost_per_qm;
+
+        $('input[name="total_cost_of_leaders"]').val('$' + number_format(total_cost_of_leaders, 0));
+        $('input[name="total_cost_of_qm"]').val('$' + number_format(total_cost_of_qm, 0));
+        $('input[name="total_cost_of_qm_ops"]').val('$' + number_format(total_cost_of_qm_ops, 0));
+
+        $('#monthly_savings').text('$' + number_format(monthly_savings, 0));
+        $('#anual_savings').text('$' + number_format(anual_savings, 0));
+        $('#saving_fte').text(number_format(saving_fte, 1));
+    }
+
+    function number_format(number, decimals = null) {
+        var decimals = decimals === null ? 2 : decimals;
+        var thousands_sep = ',';
+        var dec_point = '.';
+
+        var n = !isFinite(+number) ? 0 : +number,
+            prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+            sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+            dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+            toFixedFix = function(n, prec) {
+                var k = Math.pow(10, prec);
+                return Math.round(n * k) / k;
+            },
+            s = (prec ? toFixedFix(n, prec) : Math.round(n)).toString().split('.');
+        if (s[0].length > 3) {
+            s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+        }
+        if ((s[1] || '').length < prec) {
+            s[1] = s[1] || '';
+            s[1] += new Array(prec - s[1].length + 1).join('0');
+        }
+        return s.join(dec);
+    }
+</script></div>
