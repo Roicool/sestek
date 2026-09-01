@@ -7,10 +7,9 @@
     </linearGradient>
   </defs>
   <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
-    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(45 12 12)" fill="none" stroke-width="2"/>
-    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(-45 12 12)" fill="none" stroke-width="2"/>
+    <ellipse cx="12" cy="12" rx="9" ry="4.4" transform="rotate(-28 12 12)" fill="none" stroke-width="2.4"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-rnd)" stroke="url(#sstg-rnd)">
-    <circle cx="12" cy="12" r="2.6" stroke="none"/>
+    <circle cx="12" cy="12" r="3.4" stroke="none"/>
   </g>
 </svg>

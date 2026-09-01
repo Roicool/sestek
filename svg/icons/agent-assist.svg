@@ -10,8 +10,8 @@
     <path d="M6.5 3.8h11a4 4 0 0 1 4 4v6.4a4 4 0 0 1-4 4h-7.2l-4.4 3.6a1 1 0 0 1-1.6-.8V7.8a4 4 0 0 1 4-4Z" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-agent-assist)" stroke="url(#sstg-agent-assist)">
-    <rect x="8.2" y="8.1" width="2.2" height="4.8" rx="1.1" stroke="none"/>
-    <rect x="11.1" y="6.7" width="2.2" height="7.6" rx="1.1" stroke="none"/>
-    <rect x="14" y="8.9" width="2.2" height="3.2" rx="1.1" stroke="none"/>
+    <rect x="8" y="8.1" width="2.5" height="4.8" rx="1.25" stroke="none"/>
+    <rect x="11.1" y="6.6" width="2.5" height="7.8" rx="1.25" stroke="none"/>
+    <rect x="14.2" y="8.9" width="2.5" height="3.2" rx="1.25" stroke="none"/>
   </g>
 </svg>

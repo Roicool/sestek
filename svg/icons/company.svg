@@ -11,9 +11,8 @@
     <rect x="12.6" y="10.4" width="8" height="10" rx="2.6" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-company)" stroke="url(#sstg-company)">
-    <rect x="6" y="8" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="6" y="11.6" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="6" y="15.2" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="15" y="14.4" width="3.4" height="1.8" rx="0.9" stroke="none"/>
+    <rect x="6" y="8.2" width="3.8" height="2.4" rx="1.2" stroke="none"/>
+    <rect x="6" y="12.6" width="3.8" height="2.4" rx="1.2" stroke="none"/>
+    <rect x="14.8" y="14" width="3.6" height="2.4" rx="1.2" stroke="none"/>
   </g>
 </svg>

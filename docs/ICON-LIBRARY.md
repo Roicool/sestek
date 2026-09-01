@@ -71,16 +71,16 @@ aynı kalır ve koyu zeminde daha da parlar.
 | Agentic AI | `svg/icons/agentic-ai.svg` | Products — kategori | Çip gövde + gradyan yörünge + çekirdek |
 | Agent Copilot | `svg/icons/agent-copilot.svg` | Products — kategori | Temsilci + gradyan AI parıltısı |
 | Conversation Intelligence | `svg/icons/conversation-intelligence.svg` | Products — kategori | Konuşma balonu + gradyan içgörü çizgisi |
-| Text to Speech | `svg/icons/text-to-speech.svg` | Agentic AI | Metin bloğu + gradyan ses barları |
+| Text to Speech | `svg/icons/text-to-speech.svg` | Agentic AI | “A” harfi + iki gradyan ses barı |
 | Speech Recognition | `svg/icons/speech-recognition.svg` | Agentic AI | Gradyan mikrofon kapsülü + dinleme kasesi |
-| Virtual Translator | `svg/icons/virtual-translator.svg` | Agent Copilot | Gradyan ses ↔ nötr ses + değişim okları |
+| Virtual Translator | `svg/icons/virtual-translator.svg` | Agent Copilot | Karşılıklı iki ses kümesi — biri gradyan |
 | Agent Assist | `svg/icons/agent-assist.svg` | Agent Copilot | Konuşma balonu + gradyan canlı ses |
 | Coaching | `svg/icons/coaching.svg` | Conversation Intelligence | Rota + duraklar, hedef gradyan |
 | AQM | `svg/icons/aqm.svg` | Conversation Intelligence | Skor halkası + gradyan skor yayı + onay |
 | Analytics | `svg/icons/analytics.svg` | Conversation Intelligence | Yükselen barlar, son ikisi gradyan |
 | Company | `svg/icons/company.svg` | Company — kategori | İki blok + gradyan pencereler |
 | About Us | `svg/icons/about-us.svg` | Company | İki figür — biri gradyan |
-| R&D | `svg/icons/rnd.svg` | Company | Çift yörünge + gradyan çekirdek |
+| R&D | `svg/icons/rnd.svg` | Company | Yörünge halkası + gradyan çekirdek |
 | Compliance & Security | `svg/icons/compliance-security.svg` | Company | Kalkan + gradyan onay |
 | Partners | `svg/icons/partners.svg` | Company | İç içe iki halka — biri gradyan |
 | Careers | `svg/icons/careers.svg` | Company | Figür + gradyan artı (katıl) |
@@ -89,8 +89,8 @@ aynı kalır ve koyu zeminde daha da parlar.
 | Voice Biometrics | `svg/icons/voice-biometrics.svg` | Yedek | Kalkan + gradyan ses imzası |
 | Knowledge Base | `svg/icons/knowledge-base.svg` | Yedek | Kitap + gradyan sırt |
 | Contact | `svg/icons/contact.svg` | Yedek | Zarf + gradyan kapak |
-| Newsroom | `svg/icons/newsroom.svg` | Yedek | Haber sayfası + gradyan görsel bloğu |
-| Events | `svg/icons/events.svg` | Yedek | Takvim + gradyan gün noktaları |
+| Newsroom | `svg/icons/newsroom.svg` | Yedek | Haber kartı + gradyan görsel bloğu |
+| Events | `svg/icons/events.svg` | Yedek | Takvim + gradyan gün bloğu |
 
 ---
 
@@ -230,7 +230,7 @@ Konuşma balonu + gradyan içgörü çizgisi
 
 #### Text to Speech — `text-to-speech`
 
-Metin bloğu + gradyan ses barları
+“A” harfi + iki gradyan ses barı
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
@@ -241,18 +241,13 @@ Metin bloğu + gradyan ses barları
       <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
     </linearGradient>
   </defs>
-  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
-    <rect x="2" y="4" width="10.5" height="16" rx="3.2" stroke="none"/>
-  </g>
   <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
-    <rect x="4.6" y="8.2" width="5.2" height="1.7" rx="0.85" stroke="none"/>
-    <rect x="4.6" y="11.6" width="3.4" height="1.7" rx="0.85" stroke="none"/>
-    <rect x="4.6" y="15" width="4.4" height="1.7" rx="0.85" stroke="none"/>
+    <path d="M3.4 17 7.3 6.9 11.2 17" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 13.4h4.6" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-text-to-speech)" stroke="url(#sstg-text-to-speech)">
-    <rect x="14.6" y="9.3" width="2.2" height="5.4" rx="1.1" stroke="none"/>
-    <rect x="17.4" y="7.2" width="2.2" height="9.6" rx="1.1" stroke="none"/>
-    <rect x="20.2" y="8.7" width="2.2" height="6.6" rx="1.1" stroke="none"/>
+    <rect x="15.2" y="9.2" width="3" height="5.6" rx="1.5" stroke="none"/>
+    <rect x="19" y="6.8" width="3" height="10.4" rx="1.5" stroke="none"/>
   </g>
 </svg>
 ```
@@ -284,7 +279,7 @@ Gradyan mikrofon kapsülü + dinleme kasesi
 
 #### Virtual Translator — `virtual-translator`
 
-Gradyan ses ↔ nötr ses + değişim okları
+Karşılıklı iki ses kümesi — biri gradyan
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--virtual-translator" aria-hidden="true">
@@ -296,16 +291,12 @@ Gradyan ses ↔ nötr ses + değişim okları
     </linearGradient>
   </defs>
   <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
-    <path d="M10.2 10h3.5" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="m12.4 8.7 1.4 1.3-1.4 1.3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M13.8 14.4h-3.5" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="m11.6 15.7-1.4-1.3 1.4-1.3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="15.4" y="10.2" width="2.2" height="3.6" rx="1.1" stroke="none"/>
-    <rect x="18.6" y="8.4" width="2.2" height="7.2" rx="1.1" stroke="none"/>
+    <rect x="14.4" y="9.8" width="2.8" height="4.4" rx="1.4" stroke="none"/>
+    <rect x="18.2" y="7.4" width="2.8" height="9.2" rx="1.4" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-virtual-translator)" stroke="url(#sstg-virtual-translator)">
-    <rect x="3.2" y="8.4" width="2.2" height="7.2" rx="1.1" stroke="none"/>
-    <rect x="6.4" y="10.2" width="2.2" height="3.6" rx="1.1" stroke="none"/>
+    <rect x="3" y="7.4" width="2.8" height="9.2" rx="1.4" stroke="none"/>
+    <rect x="6.8" y="9.8" width="2.8" height="4.4" rx="1.4" stroke="none"/>
   </g>
 </svg>
 ```
@@ -327,9 +318,9 @@ Konuşma balonu + gradyan canlı ses
     <path d="M6.5 3.8h11a4 4 0 0 1 4 4v6.4a4 4 0 0 1-4 4h-7.2l-4.4 3.6a1 1 0 0 1-1.6-.8V7.8a4 4 0 0 1 4-4Z" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-agent-assist)" stroke="url(#sstg-agent-assist)">
-    <rect x="8.2" y="8.1" width="2.2" height="4.8" rx="1.1" stroke="none"/>
-    <rect x="11.1" y="6.7" width="2.2" height="7.6" rx="1.1" stroke="none"/>
-    <rect x="14" y="8.9" width="2.2" height="3.2" rx="1.1" stroke="none"/>
+    <rect x="8" y="8.1" width="2.5" height="4.8" rx="1.25" stroke="none"/>
+    <rect x="11.1" y="6.6" width="2.5" height="7.8" rx="1.25" stroke="none"/>
+    <rect x="14.2" y="8.9" width="2.5" height="3.2" rx="1.25" stroke="none"/>
   </g>
 </svg>
 ```
@@ -431,10 +422,9 @@ Yükselen barlar, son ikisi gradyan
     <rect x="12.6" y="10.4" width="8" height="10" rx="2.6" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-company)" stroke="url(#sstg-company)">
-    <rect x="6" y="8" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="6" y="11.6" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="6" y="15.2" width="3.4" height="1.8" rx="0.9" stroke="none"/>
-    <rect x="15" y="14.4" width="3.4" height="1.8" rx="0.9" stroke="none"/>
+    <rect x="6" y="8.2" width="3.8" height="2.4" rx="1.2" stroke="none"/>
+    <rect x="6" y="12.6" width="3.8" height="2.4" rx="1.2" stroke="none"/>
+    <rect x="14.8" y="14" width="3.6" height="2.4" rx="1.2" stroke="none"/>
   </g>
 </svg>
 ```
@@ -465,7 +455,7 @@ Yükselen barlar, son ikisi gradyan
 
 #### R&D — `rnd`
 
-Çift yörünge + gradyan çekirdek
+Yörünge halkası + gradyan çekirdek
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--rnd" aria-hidden="true">
@@ -477,11 +467,10 @@ Yükselen barlar, son ikisi gradyan
     </linearGradient>
   </defs>
   <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
-    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(45 12 12)" fill="none" stroke-width="2"/>
-    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(-45 12 12)" fill="none" stroke-width="2"/>
+    <ellipse cx="12" cy="12" rx="9" ry="4.4" transform="rotate(-28 12 12)" fill="none" stroke-width="2.4"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-rnd)" stroke="url(#sstg-rnd)">
-    <circle cx="12" cy="12" r="2.6" stroke="none"/>
+    <circle cx="12" cy="12" r="3.4" stroke="none"/>
   </g>
 </svg>
 ```
@@ -621,9 +610,9 @@ Kalkan + gradyan ses imzası
     <path d="M12 2.6 4.6 5.5v6.6c0 4.8 4.6 7.7 7.4 8.9 2.8-1.2 7.4-4.1 7.4-8.9V5.5Z" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-voice-biometrics)" stroke="url(#sstg-voice-biometrics)">
-    <rect x="8.7" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
-    <rect x="11" y="8.4" width="2" height="8.2" rx="1" stroke="none"/>
-    <rect x="13.3" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
+    <rect x="8.5" y="10.3" width="2.3" height="4.4" rx="1.15" stroke="none"/>
+    <rect x="10.9" y="8.2" width="2.3" height="8.6" rx="1.15" stroke="none"/>
+    <rect x="13.3" y="10.3" width="2.3" height="4.4" rx="1.15" stroke="none"/>
   </g>
 </svg>
 ```
@@ -678,7 +667,7 @@ Zarf + gradyan kapak
 
 #### Newsroom — `newsroom`
 
-Haber sayfası + gradyan görsel bloğu
+Haber kartı + gradyan görsel bloğu
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--newsroom" aria-hidden="true">
@@ -693,19 +682,18 @@ Haber sayfası + gradyan görsel bloğu
     <rect x="3" y="4.4" width="18" height="15.2" rx="3.2" stroke="none"/>
   </g>
   <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
-    <rect x="13.4" y="8.2" width="4.8" height="1.6" rx="0.8" stroke="none"/>
-    <rect x="13.4" y="11.4" width="4.8" height="1.6" rx="0.8" stroke="none"/>
-    <rect x="6" y="15.4" width="12.2" height="1.6" rx="0.8" stroke="none"/>
+    <rect x="13.2" y="9" width="5" height="1.9" rx="0.95" stroke="none"/>
+    <rect x="13.2" y="12.4" width="5" height="1.9" rx="0.95" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-newsroom)" stroke="url(#sstg-newsroom)">
-    <rect x="5.8" y="8" width="5.6" height="5" rx="1.6" stroke="none"/>
+    <rect x="5.8" y="8" width="5.6" height="6.4" rx="1.8" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Events — `events`
 
-Takvim + gradyan gün noktaları
+Takvim + gradyan gün bloğu
 
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--events" aria-hidden="true">
@@ -722,10 +710,7 @@ Takvim + gradyan gün noktaları
     <rect x="15" y="2.6" width="1.8" height="4.2" rx="0.9" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-events)" stroke="url(#sstg-events)">
-    <circle cx="8.6" cy="13.4" r="1.5" stroke="none"/>
-    <circle cx="12" cy="13.4" r="1.5" stroke="none"/>
-    <circle cx="15.4" cy="13.4" r="1.5" stroke="none"/>
-    <circle cx="8.6" cy="17.2" r="1.5" stroke="none"/>
+    <rect x="7.4" y="11.8" width="4.2" height="4.2" rx="1.4" stroke="none"/>
   </g>
 </svg>
 ```

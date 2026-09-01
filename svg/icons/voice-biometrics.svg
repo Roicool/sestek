@@ -10,8 +10,8 @@
     <path d="M12 2.6 4.6 5.5v6.6c0 4.8 4.6 7.7 7.4 8.9 2.8-1.2 7.4-4.1 7.4-8.9V5.5Z" stroke="none"/>
   </g>
   <g class="sst-icon__accent" fill="url(#sstg-voice-biometrics)" stroke="url(#sstg-voice-biometrics)">
-    <rect x="8.7" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
-    <rect x="11" y="8.4" width="2" height="8.2" rx="1" stroke="none"/>
-    <rect x="13.3" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
+    <rect x="8.5" y="10.3" width="2.3" height="4.4" rx="1.15" stroke="none"/>
+    <rect x="10.9" y="8.2" width="2.3" height="8.6" rx="1.15" stroke="none"/>
+    <rect x="13.3" y="10.3" width="2.3" height="4.4" rx="1.15" stroke="none"/>
   </g>
 </svg>
