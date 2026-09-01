@@ -4257,7 +4257,8 @@ Webflow `</body>` öncesi:
 ## Icon Library (`svg/icons/`)
 
 Mega menu / ürün kartı ikon seti — SESTEK'e özel çizim dili: 24×24 grid,
-1.5px açık kontur + 2.5px ses aksanı (`.sst-icon__accent`), `currentColor`.
+dolgu tabanlı üç katman (`soft` / `solid` / `accent`) ve accent katmanında
+marka gradyanı (`#EC008C → #7F81AE → #00FFEB`).
 Tam liste, tasarım kuralları ve kopyala-yapıştır kodlar:
 [`ICON-LIBRARY.md`](./ICON-LIBRARY.md) · Önizleme: `demo/icon-library/index.html`
 
@@ -4275,10 +4276,10 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
 | `about-us.svg` · `rnd.svg` · `compliance-security.svg` · `partners.svg` · `careers.svg` · `support.svg` | Company menüsü |
 | `virtual-agent.svg` · `voice-biometrics.svg` · `knowledge-base.svg` · `contact.svg` · `newsroom.svg` · `events.svg` | Yedek — menü büyürse |
 
-> Rengin `currentColor` ve `--sst-icon-accent`'ten gelmesi için ikonu **inline**
-> göm (`<img src>` ile renk değişmez). Boyutu kapsayıcı kutudan yönet, SVG
-> `width` değerinden değil. Aksan barlarını markaya boyamak için:
-> `.sst-icon__accent { stroke: var(--sst-icon-accent, currentColor); }`
+> Soft/solid katmanları `currentColor`'dan geldiği için ikonu **inline** göm
+> (`<img src>` ile bu katmanlar siyaha düşer). Boyutu kapsayıcı kutudan yönet.
+> Gradyan durakları `--sst-c1/--sst-c2/--sst-c3` ile değiştirilebilir; mono
+> varyant için `.sst-icon--mono .sst-icon__accent { fill: currentColor }`.
 
 ---
 

@@ -1,9 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
-  <path d="M3.5 16.25 7 7.75l3.5 8.5"/>
-  <path d="M4.9 12.9h4.2"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M14.75 10.5v3"/>
-    <path d="M17.75 8.5v7"/>
-    <path d="M20.75 10.75v2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-text-to-speech" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="2" y="4" width="10.5" height="16" rx="3.2" stroke="none"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <rect x="4.6" y="8.2" width="5.2" height="1.7" rx="0.85" stroke="none"/>
+    <rect x="4.6" y="11.6" width="3.4" height="1.7" rx="0.85" stroke="none"/>
+    <rect x="4.6" y="15" width="4.4" height="1.7" rx="0.85" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-text-to-speech)" stroke="url(#sstg-text-to-speech)">
+    <rect x="14.6" y="9.3" width="2.2" height="5.4" rx="1.1" stroke="none"/>
+    <rect x="17.4" y="7.2" width="2.2" height="9.6" rx="1.1" stroke="none"/>
+    <rect x="20.2" y="8.7" width="2.2" height="6.6" rx="1.1" stroke="none"/>
   </g>
 </svg>

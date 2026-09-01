@@ -1,32 +1,50 @@
-# Sestek Icon Library — v2.0.0
+# Sestek Icon Library — v3.0.0
 
-> Mega menu (Products + Company) ve ürün kartları için **SESTEK'e özel** ikon seti.
+> Mega menu (Products + Company) ve ürün kartları için markalı ikon seti.
 > Kaynak: `svg/icons/` · Önizleme: `demo/icon-library/index.html`
 
-Set hazır bir kütüphanenin (lucide, Feather vb.) kopyası **değil**; repodaki
-`svg/orbit/` yörünge dili ve voice-orbs/waveline bileşenlerinden türetilmiş
-üç ilkeye dayanıyor:
+Set **dolgu tabanlı ve gradyanlı**; hazır outline kütüphanelerinden (lucide,
+Feather, Heroicons) ayrılmasının sebebi de bu. Her ikon üç katmandan kurulur:
 
-| İlke | Ne demek |
-|---|---|
-| **Ses genliği barları** | Yuvarlak uçlu, farklı boylardaki dikey barlar — markanın "sesi". Ürün ikonlarının çoğunda çekirdek eleman. |
-| **Açık kontur** | Hiçbir kapalı form tam kapanmaz; halkada, kalkanda, balonda daima bir "nefes" boşluğu var (orbit koleksiyonundaki açık yaylarla aynı dil). |
-| **Node noktaları** | Yörüngedeki/rotadaki duraklar — nokta olarak. |
-
-Bu üç eleman **iki farklı kalınlıkta** çizilir; ikonlara duotone bir ritim veren
-ve onları jenerik outline setlerden ayıran şey bu:
-
-| Katman | Kalınlık | Ne çizer | Sınıf |
+| Katman | Sınıf | Renk | Ne çizer |
 |---|---|---|---|
-| **Yapı** | `1.5` | Konturlar, yaylar, çerçeveler | — |
-| **Aksan** | `2.5` | Ses barları ve node'lar | `.sst-icon__accent` |
+| **Soft** | `.sst-icon__soft` | `currentColor` @ `.22` | Gövde / kütle — balon, kalkan, plaka, halka |
+| **Solid** | `.sst-icon__solid` | `currentColor` | Anlamı taşıyan net detay — metin satırı, onay işareti, node |
+| **Accent** | `.sst-icon__accent` | **marka gradyanı** | "Ses" olan her şey — barlar, dalga, skor yayı, parıltı |
 
-Aksan katmanı ayrı bir `<g>` içinde olduğu için **markanın rengini** taşıyabilir:
+Gradyan repodaki orbit koleksiyonuyla aynı: `#EC008C → #7F81AE → #00FFEB`,
+sol alttan sağ üste. Her ikon kendi `<linearGradient>` tanımını taşır
+(`id="sstg-<isim>"`), yani sayfaya tek başına gömülür, harici bir defs
+dosyasına bağımlı değildir.
+
+**Kural:** bir ikonda gradyan yoksa o ikon bu setin parçası değildir. Gradyan,
+ürünün "ses" tarafını işaret eder — ikonun neyi vurguladığını da bu belirler.
+
+---
+
+## Renkleri değiştirme
+
+Gradyan durakları CSS değişkenlerinden okunur, hard-code değildir:
 
 ```css
-.sst-icon__accent { stroke: var(--sst-icon-accent, currentColor); }
-.menu-item__icon  { --sst-icon-accent: #ec008c; }   /* aksanlar marka pembesi */
+.menu-item__icon {
+  color: #14141c;          /* soft + solid katmanları */
+  --sst-c1: #EC008C;       /* gradyan başlangıcı  (varsayılan) */
+  --sst-c2: #7F81AE;       /* orta durak */
+  --sst-c3: #00FFEB;       /* bitiş */
+}
 ```
+
+**Mono varyant** — gradyanı tamamen kapatmak için (tek renkli bağlamlar,
+baskı, e-posta imzası):
+
+```css
+.sst-icon--mono .sst-icon__accent { fill: currentColor; stroke: currentColor; }
+```
+
+**Koyu zemin** — soft ve solid `currentColor`'dan geldiği için zemin
+değiştiğinde ayrıca bir şey yapmanız gerekmez; `color` beyaza döner, gradyan
+aynı kalır ve koyu zeminde daha da parlar.
 
 ---
 
@@ -35,16 +53,14 @@ Aksan katmanı ayrı bir `<g>` içinde olduğu için **markanın rengini** taş�
 | Kural | Değer |
 |---|---|
 | viewBox | `0 0 24 24` |
-| Yapı çizgisi | `stroke-width="1.5"` |
-| Aksan çizgisi | `stroke-width="2.5"`, `<g class="sst-icon__accent">` içinde |
-| Uç / köşe | `stroke-linecap="round"`, `stroke-linejoin="round"` |
-| Dolgu | `fill="none"` |
-| Renk | `stroke="currentColor"`; aksanlar `--sst-icon-accent` ile ayrılabilir |
-| Bar ritmi | Barlar **3 birim** aralıklı, boylar kısa-uzun-orta; asla eşit boy değil |
-| Node | `<path d="M12 12h.01"/>` — yuvarlak uçlu nokta |
-| Kapalı form | Yok. Her halka/kalkan/çerçevede görünür bir açıklık bırak |
 | Yaşayan alan | 24×24 içinde 20×20 |
-| Detay | Maks. 3–4 yapı + 4 aksan elemanı; 16px'te okunmayan detay girmez |
+| Soft opaklık | `.22` — grup düzeyinde, eleman düzeyinde değil (üst üste binen şekiller koyulaşmasın) |
+| Bar geometrisi | `rx` = genişliğin yarısı (tam yuvarlak uç), genişlik `2.2`, aralık `2.9` |
+| Bar ritmi | Boylar kısa-uzun-orta; asla eşit değil |
+| Kontur | Sadece halka/yay gibi zorunlu yerlerde, `stroke-width` 2–3, yuvarlak uç |
+| Solid kullanımı | Az; sadece okunurluk için gereken net detayda. Havada duran siyah parça bırakma — gövdeye ait her şey soft |
+| Gradyan | Her ikonda **bir** gradyan grubu; ikonun ana mesajını taşıyan eleman |
+| Detay | Maks. 2 soft + 3 solid + 4 accent eleman; 16px'te okunmayan detay girmez |
 
 ---
 
@@ -52,29 +68,29 @@ Aksan katmanı ayrı bir `<g>` içinde olduğu için **markanın rengini** taş�
 
 | İkon | Dosya | Yer | Kurgu |
 |---|---|---|---|
-| Agentic AI | `svg/icons/agentic-ai.svg` | Products — kategori | Açık yörünge + ses çekirdeği |
-| Agent Copilot | `svg/icons/agent-copilot.svg` | Products — kategori | Eşlik eden iki yay + puls |
-| Conversation Intelligence | `svg/icons/conversation-intelligence.svg` | Products — kategori | Analiz halkası içinde ses barları |
-| Text to Speech | `svg/icons/text-to-speech.svg` | Agentic AI | “A” harfi → yükselen ses barları |
-| Speech Recognition | `svg/icons/speech-recognition.svg` | Agentic AI | Ses barlarından kurulu mikrofon |
-| Virtual Translator | `svg/icons/virtual-translator.svg` | Agent Copilot | İki ses grubu + değişim okları |
-| Agent Assist | `svg/icons/agent-assist.svg` | Agent Copilot | Açık konuşma balonu + canlı ses |
-| Coaching | `svg/icons/coaching.svg` | Conversation Intelligence | Yükselen rota + üç ilerleme node’u |
-| AQM | `svg/icons/aqm.svg` | Conversation Intelligence | Skor göstergesi + ibre |
-| Analytics | `svg/icons/analytics.svg` | Conversation Intelligence | Ses barları + konuşma tabanı |
-| Company | `svg/icons/company.svg` | Company — kategori | Bina + accent pencereler |
-| About Us | `svg/icons/about-us.svg` | Company | İki node + açık omuz yayı |
-| R&D | `svg/icons/rnd.svg` | Company | Çift yörünge + çekirdek node |
-| Compliance & Security | `svg/icons/compliance-security.svg` | Company | Açık kalkan + kilit |
-| Partners | `svg/icons/partners.svg` | Company | İç içe iki halka + ortak node |
-| Careers | `svg/icons/careers.svg` | Company | Yükselen basamaklar + hedef node |
-| Support | `svg/icons/support.svg` | Company | Kulaklık bandı + accent kulaklıklar |
-| Virtual Agent | `svg/icons/virtual-agent.svg` | Yedek | Açık bot gövdesi + ses gözleri |
-| Voice Biometrics | `svg/icons/voice-biometrics.svg` | Yedek | Kalkan + ses imzası |
-| Knowledge Base | `svg/icons/knowledge-base.svg` | Yedek | Açık kitap + accent satırlar |
-| Contact | `svg/icons/contact.svg` | Yedek | Açık zarf |
-| Newsroom | `svg/icons/newsroom.svg` | Yedek | Haber sayfası + kolon barları |
-| Events | `svg/icons/events.svg` | Yedek | Takvim + gün node’ları |
+| Agentic AI | `svg/icons/agentic-ai.svg` | Products — kategori | Çip gövde + gradyan yörünge + çekirdek |
+| Agent Copilot | `svg/icons/agent-copilot.svg` | Products — kategori | Temsilci + gradyan AI parıltısı |
+| Conversation Intelligence | `svg/icons/conversation-intelligence.svg` | Products — kategori | Konuşma balonu + gradyan içgörü çizgisi |
+| Text to Speech | `svg/icons/text-to-speech.svg` | Agentic AI | Metin bloğu + gradyan ses barları |
+| Speech Recognition | `svg/icons/speech-recognition.svg` | Agentic AI | Gradyan mikrofon kapsülü + dinleme kasesi |
+| Virtual Translator | `svg/icons/virtual-translator.svg` | Agent Copilot | Gradyan ses ↔ nötr ses + değişim okları |
+| Agent Assist | `svg/icons/agent-assist.svg` | Agent Copilot | Konuşma balonu + gradyan canlı ses |
+| Coaching | `svg/icons/coaching.svg` | Conversation Intelligence | Rota + duraklar, hedef gradyan |
+| AQM | `svg/icons/aqm.svg` | Conversation Intelligence | Skor halkası + gradyan skor yayı + onay |
+| Analytics | `svg/icons/analytics.svg` | Conversation Intelligence | Yükselen barlar, son ikisi gradyan |
+| Company | `svg/icons/company.svg` | Company — kategori | İki blok + gradyan pencereler |
+| About Us | `svg/icons/about-us.svg` | Company | İki figür — biri gradyan |
+| R&D | `svg/icons/rnd.svg` | Company | Çift yörünge + gradyan çekirdek |
+| Compliance & Security | `svg/icons/compliance-security.svg` | Company | Kalkan + gradyan onay |
+| Partners | `svg/icons/partners.svg` | Company | İç içe iki halka — biri gradyan |
+| Careers | `svg/icons/careers.svg` | Company | Figür + gradyan artı (katıl) |
+| Support | `svg/icons/support.svg` | Company | Kulaklık + gradyan kulaklıklar |
+| Virtual Agent | `svg/icons/virtual-agent.svg` | Yedek | Bot gövdesi + gradyan ses gözleri |
+| Voice Biometrics | `svg/icons/voice-biometrics.svg` | Yedek | Kalkan + gradyan ses imzası |
+| Knowledge Base | `svg/icons/knowledge-base.svg` | Yedek | Kitap + gradyan sırt |
+| Contact | `svg/icons/contact.svg` | Yedek | Zarf + gradyan kapak |
+| Newsroom | `svg/icons/newsroom.svg` | Yedek | Haber sayfası + gradyan görsel bloğu |
+| Events | `svg/icons/events.svg` | Yedek | Takvim + gradyan gün noktaları |
 
 ---
 
@@ -82,13 +98,20 @@ Aksan katmanı ayrı bir `<g>` içinde olduğu için **markanın rengini** taş�
 
 ```html
 <div class="menu-item__icon">
-  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
-    <path d="M3.5 16.25 7 7.75l3.5 8.5"/>
-    <path d="M4.9 12.9h4.2"/>
-    <g class="sst-icon__accent" stroke-width="2.5">
-      <path d="M14.75 10.5v3"/>
-      <path d="M17.75 8.5v7"/>
-      <path d="M20.75 10.75v2.5"/>
+  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">
+    <defs>
+      <linearGradient id="sstg-speech-recognition" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+        <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+        <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+      </linearGradient>
+    </defs>
+    <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+      <path d="M6 12.2a6 6 0 0 0 12 0" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="11.1" y="17.4" width="1.8" height="4" rx="0.9" stroke="none"/>
+    </g>
+    <g class="sst-icon__accent" fill="url(#sstg-speech-recognition)" stroke="url(#sstg-speech-recognition)">
+      <rect x="9.4" y="2.5" width="5.2" height="10.6" rx="2.6" stroke="none"/>
     </g>
   </svg>
 </div>
@@ -102,25 +125,20 @@ Aksan katmanı ayrı bir `<g>` içinde olduğu için **markanın rengini** taş�
   background: #f0f0f6;
   display: grid;
   place-items: center;
-  color: #14141c;                    /* yapı çizgileri */
-  --sst-icon-accent: #14141c;        /* aksan barları — istersen #ec008c */
+  color: #14141c;
 }
 .menu-item__icon .sst-icon { width: 22px; height: 22px; }
-.sst-icon__accent { stroke: var(--sst-icon-accent, currentColor); }
 
-.menu-item:hover .menu-item__icon {
-  background: #ec008c14;
-  color: #14141c;
-  --sst-icon-accent: #ec008c;        /* hover'da sadece ses barları renklenir */
-}
+.menu-item:hover .menu-item__icon { background: #ec008c14; }
 ```
 
-Tek bir ikonu ayrıca hedeflemen gerekirse her ikonun `sst-icon--<isim>`
-sınıfı var:
+Hover'da gradyanı değiştirmek istersen `--sst-c1/2/3`'ü hover üzerinde
+yeniden tanımlaman yeterli — SVG'ye dokunmadan.
 
-```css
-.sst-icon--virtual-translator { transform: translateY(.5px); }
-```
+> **Not:** Aynı ikonu bir sayfada iki kez gömerseniz gradyan `id`'si tekrar
+> eder. Tarayıcı ilk tanımı kullanır ve ikisi birebir aynı olduğu için görsel
+> bir fark oluşmaz; yine de bir sayfada aynı ikonu tekrarlıyorsanız
+> `id`/`url(#…)` çiftine bir sonek eklemek en temizi.
 
 ## Kullanım — CDN (jsDelivr)
 
@@ -128,8 +146,9 @@ sınıfı var:
 https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
 ```
 
-`<img>` ile çağırırsan ne `currentColor` ne de `--sst-icon-accent` çalışır —
-renk gerektiren her yerde **inline embed** kullan.
+`<img>` ile çağrıldığında gradyan görünür (SVG'nin içinde tanımlı) ama
+`currentColor` çalışmaz — soft/solid katmanlar siyaha düşer. Renk uyumu
+gereken her yerde **inline embed** kullanın.
 
 ---
 
@@ -139,44 +158,70 @@ renk gerektiren her yerde **inline embed** kullan.
 
 #### Agentic AI — `agentic-ai`
 
-Açık yörünge + ses çekirdeği
+Çip gövde + gradyan yörünge + çekirdek
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agentic-ai" aria-hidden="true">
-  <path d="M15.9 5.3A7.75 7.75 0 1 0 18.7 15.9"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9 11v2"/>
-    <path d="M12 9.25v5.5"/>
-    <path d="M15 11v2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--agentic-ai" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-agentic-ai" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3.6" y="3.6" width="16.8" height="16.8" rx="5.6" stroke="none"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <circle cx="12" cy="12" r="1.9" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-agentic-ai)" stroke="url(#sstg-agentic-ai)">
+    <path d="M12 6.2a5.8 5.8 0 1 1-4.1 1.7" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
 ```
 
 #### Agent Copilot — `agent-copilot`
 
-Eşlik eden iki yay + puls
+Temsilci + gradyan AI parıltısı
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agent-copilot" aria-hidden="true">
-  <path d="M9.5 4.5a8 8 0 0 0 0 15"/>
-  <path d="M14.25 6.75a5.75 5.75 0 0 0 0 10.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M19 10.25v3.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--agent-copilot" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-agent-copilot" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <circle cx="9.4" cy="9.6" r="3.5" stroke="none"/>
+    <path d="M2.9 20.6a6.5 6.5 0 0 1 13 0Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-agent-copilot)" stroke="url(#sstg-agent-copilot)">
+    <path d="M18.2 3.6c.55 2.9 1.75 4.1 4.65 4.65-2.9.55-4.1 1.75-4.65 4.65-.55-2.9-1.75-4.1-4.65-4.65 2.9-.55 4.1-1.75 4.65-4.65Z" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Conversation Intelligence — `conversation-intelligence`
 
-Analiz halkası içinde ses barları
+Konuşma balonu + gradyan içgörü çizgisi
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--conversation-intelligence" aria-hidden="true">
-  <path d="M12 20.5A8.5 8.5 0 1 1 20.5 12"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9 14.5v-2.5"/>
-    <path d="M12 14.5v-5"/>
-    <path d="M15 14.5v-3.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--conversation-intelligence" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-conversation-intelligence" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M6.5 3.8h11a4 4 0 0 1 4 4v6.4a4 4 0 0 1-4 4h-7.2l-4.4 3.6a1 1 0 0 1-1.6-.8V7.8a4 4 0 0 1 4-4Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-conversation-intelligence)" stroke="url(#sstg-conversation-intelligence)">
+    <path d="m7.6 12.6 3-3.2 2.6 2.6 3.6-4.4" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
 ```
@@ -185,32 +230,52 @@ Analiz halkası içinde ses barları
 
 #### Text to Speech — `text-to-speech`
 
-“A” harfi → yükselen ses barları
+Metin bloğu + gradyan ses barları
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
-  <path d="M3.5 16.25 7 7.75l3.5 8.5"/>
-  <path d="M4.9 12.9h4.2"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M14.75 10.5v3"/>
-    <path d="M17.75 8.5v7"/>
-    <path d="M20.75 10.75v2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-text-to-speech" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="2" y="4" width="10.5" height="16" rx="3.2" stroke="none"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <rect x="4.6" y="8.2" width="5.2" height="1.7" rx="0.85" stroke="none"/>
+    <rect x="4.6" y="11.6" width="3.4" height="1.7" rx="0.85" stroke="none"/>
+    <rect x="4.6" y="15" width="4.4" height="1.7" rx="0.85" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-text-to-speech)" stroke="url(#sstg-text-to-speech)">
+    <rect x="14.6" y="9.3" width="2.2" height="5.4" rx="1.1" stroke="none"/>
+    <rect x="17.4" y="7.2" width="2.2" height="9.6" rx="1.1" stroke="none"/>
+    <rect x="20.2" y="8.7" width="2.2" height="6.6" rx="1.1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Speech Recognition — `speech-recognition`
 
-Ses barlarından kurulu mikrofon
+Gradyan mikrofon kapsülü + dinleme kasesi
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">
-  <path d="M6.5 13.25a5.5 5.5 0 0 0 11 0"/>
-  <path d="M12 18.75v2.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9 7.25v5.5"/>
-    <path d="M12 4.75v10.5"/>
-    <path d="M15 7.25v5.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--speech-recognition" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-speech-recognition" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M6 12.2a6 6 0 0 0 12 0" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="11.1" y="17.4" width="1.8" height="4" rx="0.9" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-speech-recognition)" stroke="url(#sstg-speech-recognition)">
+    <rect x="9.4" y="2.5" width="5.2" height="10.6" rx="2.6" stroke="none"/>
   </g>
 </svg>
 ```
@@ -219,34 +284,52 @@ Ses barlarından kurulu mikrofon
 
 #### Virtual Translator — `virtual-translator`
 
-İki ses grubu + değişim okları
+Gradyan ses ↔ nötr ses + değişim okları
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--virtual-translator" aria-hidden="true">
-  <path d="M9.5 9.5h5.25"/>
-  <path d="m13 7.75 1.75 1.75L13 11.25"/>
-  <path d="M14.5 14.5H9.25"/>
-  <path d="m11 12.75-1.75 1.75L11 16.25"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M3.75 9.75v4.5"/>
-    <path d="M6.75 11.25v1.5"/>
-    <path d="M17.25 11.25v1.5"/>
-    <path d="M20.25 9.75v4.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--virtual-translator" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-virtual-translator" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M10.2 10h3.5" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m12.4 8.7 1.4 1.3-1.4 1.3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.8 14.4h-3.5" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m11.6 15.7-1.4-1.3 1.4-1.3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="15.4" y="10.2" width="2.2" height="3.6" rx="1.1" stroke="none"/>
+    <rect x="18.6" y="8.4" width="2.2" height="7.2" rx="1.1" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-virtual-translator)" stroke="url(#sstg-virtual-translator)">
+    <rect x="3.2" y="8.4" width="2.2" height="7.2" rx="1.1" stroke="none"/>
+    <rect x="6.4" y="10.2" width="2.2" height="3.6" rx="1.1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Agent Assist — `agent-assist`
 
-Açık konuşma balonu + canlı ses
+Konuşma balonu + gradyan canlı ses
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--agent-assist" aria-hidden="true">
-  <path d="M15 4.5h1.5A3.5 3.5 0 0 1 20 8v5.5a3.5 3.5 0 0 1-3.5 3.5H9l-4.5 3.5V8A3.5 3.5 0 0 1 8 4.5h3.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9.5 9.75v2.5"/>
-    <path d="M12.5 8.25v5.5"/>
-    <path d="M15.5 10.25v1.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--agent-assist" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-agent-assist" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M6.5 3.8h11a4 4 0 0 1 4 4v6.4a4 4 0 0 1-4 4h-7.2l-4.4 3.6a1 1 0 0 1-1.6-.8V7.8a4 4 0 0 1 4-4Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-agent-assist)" stroke="url(#sstg-agent-assist)">
+    <rect x="8.2" y="8.1" width="2.2" height="4.8" rx="1.1" stroke="none"/>
+    <rect x="11.1" y="6.7" width="2.2" height="7.6" rx="1.1" stroke="none"/>
+    <rect x="14" y="8.9" width="2.2" height="3.2" rx="1.1" stroke="none"/>
   </g>
 </svg>
 ```
@@ -255,46 +338,75 @@ Açık konuşma balonu + canlı ses
 
 #### Coaching — `coaching`
 
-Yükselen rota + üç ilerleme node’u
+Rota + duraklar, hedef gradyan
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--coaching" aria-hidden="true">
-  <path d="M5 19c3-.5 5.5-2.5 7-5.5S17 8 19 7.25"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M5 19h.01"/>
-    <path d="M12 13.5h.01"/>
-    <path d="M19 7.25h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--coaching" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-coaching" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M4.8 18.4c3.2-.4 5.8-2.4 7.3-5.5S16.9 7.6 19.4 6.9" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <circle cx="4.9" cy="18.4" r="1.5" stroke="none"/>
+    <circle cx="11.9" cy="13.1" r="1.5" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-coaching)" stroke="url(#sstg-coaching)">
+    <circle cx="19.4" cy="6.9" r="2.1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### AQM — `aqm`
 
-Skor göstergesi + ibre
+Skor halkası + gradyan skor yayı + onay
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--aqm" aria-hidden="true">
-  <path d="M6.2 17.8A8.25 8.25 0 1 1 17.8 17.8"/>
-  <path d="m12 12.75 4-4.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M12 12.75h.01"/>
-    <path d="M6.2 17.8A8.25 8.25 0 0 1 8.9 6"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--aqm" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-aqm" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M12 4a8 8 0 1 1-5.6 13.7" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <path d="m9.2 12.1 2 2 3.6-4" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-aqm)" stroke="url(#sstg-aqm)">
+    <path d="M6.4 17.7A8 8 0 0 1 12 4" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
 ```
 
 #### Analytics — `analytics`
 
-Ses barları + konuşma tabanı
+Yükselen barlar, son ikisi gradyan
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--analytics" aria-hidden="true">
-  <path d="M3.5 20.25c5 1.75 12 1.75 17 0"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M5.75 17v-3.5"/>
-    <path d="M9.9 17v-7"/>
-    <path d="M14.1 17v-4.5"/>
-    <path d="M18.25 17v-9.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--analytics" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-analytics" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3.4" y="14" width="3.6" height="6.4" rx="1.8" stroke="none"/>
+    <rect x="8.2" y="11" width="3.6" height="9.4" rx="1.8" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-analytics)" stroke="url(#sstg-analytics)">
+    <rect x="13" y="8" width="3.6" height="12.4" rx="1.8" stroke="none"/>
+    <rect x="17.8" y="4.6" width="3.6" height="15.8" rx="1.8" stroke="none"/>
   </g>
 </svg>
 ```
@@ -303,102 +415,165 @@ Ses barları + konuşma tabanı
 
 #### Company — `company`
 
-Bina + accent pencereler
+İki blok + gradyan pencereler
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--company" aria-hidden="true">
-  <path d="M4.5 20.5V6.75A2.25 2.25 0 0 1 6.75 4.5h4.5a2.25 2.25 0 0 1 2.25 2.25V20.5"/>
-  <path d="M13.5 11.5h3.75a2.25 2.25 0 0 1 2.25 2.25V20.5"/>
-  <path d="M3 20.5h18"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M8 9v2"/>
-    <path d="M8 14.5v2"/>
-    <path d="M16.5 15.5v2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--company" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-company" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3.4" y="4.6" width="8.6" height="15.8" rx="2.6" stroke="none"/>
+    <rect x="12.6" y="10.4" width="8" height="10" rx="2.6" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-company)" stroke="url(#sstg-company)">
+    <rect x="6" y="8" width="3.4" height="1.8" rx="0.9" stroke="none"/>
+    <rect x="6" y="11.6" width="3.4" height="1.8" rx="0.9" stroke="none"/>
+    <rect x="6" y="15.2" width="3.4" height="1.8" rx="0.9" stroke="none"/>
+    <rect x="15" y="14.4" width="3.4" height="1.8" rx="0.9" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### About Us — `about-us`
 
-İki node + açık omuz yayı
+İki figür — biri gradyan
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--about-us" aria-hidden="true">
-  <path d="M3.75 18.75a4.25 4.25 0 0 1 8.5 0"/>
-  <path d="M11.75 18.75a4.25 4.25 0 0 1 8.5 0"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M8 11h.01"/>
-    <path d="M16 11h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--about-us" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-about-us" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <circle cx="8.4" cy="8.6" r="3.3" stroke="none"/>
+    <path d="M2.6 20.6a5.8 5.8 0 0 1 11.6 0Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-about-us)" stroke="url(#sstg-about-us)">
+    <circle cx="16.6" cy="9.6" r="2.7" stroke="none"/>
+    <path d="M11.8 20.6a4.8 4.8 0 0 1 9.6 0Z" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### R&D — `rnd`
 
-Çift yörünge + çekirdek node
+Çift yörünge + gradyan çekirdek
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--rnd" aria-hidden="true">
-  <ellipse cx="12" cy="12" rx="8.75" ry="4" transform="rotate(45 12 12)"/>
-  <ellipse cx="12" cy="12" rx="8.75" ry="4" transform="rotate(-45 12 12)"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M12 12h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--rnd" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-rnd" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(45 12 12)" fill="none" stroke-width="2"/>
+    <ellipse cx="12" cy="12" rx="8.8" ry="4" transform="rotate(-45 12 12)" fill="none" stroke-width="2"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-rnd)" stroke="url(#sstg-rnd)">
+    <circle cx="12" cy="12" r="2.6" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Compliance & Security — `compliance-security`
 
-Açık kalkan + kilit
+Kalkan + gradyan onay
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--compliance-security" aria-hidden="true">
-  <path d="M12 3.25 5.25 5.9v6.35c0 4.55 4.4 7.35 6.75 8.5 2.35-1.15 6.75-3.95 6.75-8.5V5.9l-4.25-1.65"/>
-  <path d="M10.4 12.4v-1.15a1.6 1.6 0 0 1 3.2 0v1.15"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M12 13.75v2.25"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--compliance-security" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-compliance-security" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M12 2.6 4.6 5.5v6.6c0 4.8 4.6 7.7 7.4 8.9 2.8-1.2 7.4-4.1 7.4-8.9V5.5Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-compliance-security)" stroke="url(#sstg-compliance-security)">
+    <path d="m8.7 12 2.4 2.4 4.5-4.8" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
 ```
 
 #### Partners — `partners`
 
-İç içe iki halka + ortak node
+İç içe iki halka — biri gradyan
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--partners" aria-hidden="true">
-  <circle cx="9.5" cy="12" r="5.25"/>
-  <path d="M18.52 8.63A5.25 5.25 0 1 0 18.52 15.37"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M12 12h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--partners" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-partners" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <circle cx="9.2" cy="12" r="5.2" fill="none" stroke-width="2.6"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-partners)" stroke="url(#sstg-partners)">
+    <circle cx="14.8" cy="12" r="5.2" fill="none" stroke-width="2.6"/>
   </g>
 </svg>
 ```
 
 #### Careers — `careers`
 
-Yükselen basamaklar + hedef node
+Figür + gradyan artı (katıl)
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--careers" aria-hidden="true">
-  <path d="M4 19.5h4.5V15H13v-4.5h4.5V8"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M17.5 5.9h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--careers" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-careers" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <circle cx="9.6" cy="8.2" r="3.3" stroke="none"/>
+    <path d="M3.8 20.4a5.8 5.8 0 0 1 11.6 0Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-careers)" stroke="url(#sstg-careers)">
+    <rect x="17.3" y="12.6" width="2" height="7.4" rx="1" stroke="none"/>
+    <rect x="14.8" y="15.1" width="7" height="2" rx="1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Support — `support`
 
-Kulaklık bandı + accent kulaklıklar
+Kulaklık + gradyan kulaklıklar
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--support" aria-hidden="true">
-  <path d="M5 13.75V12a7 7 0 0 1 14 0v1.75"/>
-  <path d="M19 17.5v.75a2.75 2.75 0 0 1-2.75 2.75H13.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M5 13.5v3.25"/>
-    <path d="M19 13.5v3.25"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--support" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-support" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M4.8 13.6V11a7.2 7.2 0 0 1 14.4 0v2.6" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M19.2 18.6v.5a2.6 2.6 0 0 1-2.6 2.6h-2.4" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-support)" stroke="url(#sstg-support)">
+    <rect x="3" y="12.4" width="3.8" height="6.4" rx="1.9" stroke="none"/>
+    <rect x="17.2" y="12.4" width="3.8" height="6.4" rx="1.9" stroke="none"/>
   </g>
 </svg>
 ```
@@ -407,90 +582,150 @@ Kulaklık bandı + accent kulaklıklar
 
 #### Virtual Agent — `virtual-agent`
 
-Açık bot gövdesi + ses gözleri
+Bot gövdesi + gradyan ses gözleri
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--virtual-agent" aria-hidden="true">
-  <path d="M12 6.5h4A3.5 3.5 0 0 1 19.5 10v4a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 14v-4A3.5 3.5 0 0 1 8 6.5h1"/>
-  <path d="M12 3.5v3"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9.5 11v2"/>
-    <path d="M14.5 11v2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--virtual-agent" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-virtual-agent" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3.6" y="6.4" width="16.8" height="13.2" rx="4.6" stroke="none"/>
+    <rect x="11.1" y="2.6" width="1.8" height="3.8" rx="0.9" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-virtual-agent)" stroke="url(#sstg-virtual-agent)">
+    <rect x="8.3" y="10.8" width="2.2" height="4.4" rx="1.1" stroke="none"/>
+    <rect x="13.5" y="10.8" width="2.2" height="4.4" rx="1.1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Voice Biometrics — `voice-biometrics`
 
-Kalkan + ses imzası
+Kalkan + gradyan ses imzası
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--voice-biometrics" aria-hidden="true">
-  <path d="M12 3.25 5.25 5.9v6.35c0 4.55 4.4 7.35 6.75 8.5 2.35-1.15 6.75-3.95 6.75-8.5V5.9l-4.25-1.65"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9.25 11v2.5"/>
-    <path d="M12 9v6.5"/>
-    <path d="M14.75 11v2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--voice-biometrics" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-voice-biometrics" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M12 2.6 4.6 5.5v6.6c0 4.8 4.6 7.7 7.4 8.9 2.8-1.2 7.4-4.1 7.4-8.9V5.5Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-voice-biometrics)" stroke="url(#sstg-voice-biometrics)">
+    <rect x="8.7" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
+    <rect x="11" y="8.4" width="2" height="8.2" rx="1" stroke="none"/>
+    <rect x="13.3" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Knowledge Base — `knowledge-base`
 
-Açık kitap + accent satırlar
+Kitap + gradyan sırt
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--knowledge-base" aria-hidden="true">
-  <path d="M8 4.5h9.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8"/>
-  <path d="M8 4.5A3.5 3.5 0 0 0 4.5 8v8A3.5 3.5 0 0 0 8 19.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M11 9.5h5.5"/>
-    <path d="M11 13h3.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--knowledge-base" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-knowledge-base" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="5.2" y="3.6" width="15" height="16.8" rx="3" stroke="none"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <rect x="8.8" y="8.4" width="7.4" height="1.7" rx="0.85" stroke="none"/>
+    <rect x="8.8" y="11.8" width="5" height="1.7" rx="0.85" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-knowledge-base)" stroke="url(#sstg-knowledge-base)">
+    <rect x="3.2" y="3.6" width="3.6" height="16.8" rx="1.8" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Contact — `contact`
 
-Açık zarf
+Zarf + gradyan kapak
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--contact" aria-hidden="true">
-  <path d="M9 5.5h8.5A3 3 0 0 1 20.5 8.5v7a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3H7"/>
-  <path d="m5 8.5 5.6 4.4a2.25 2.25 0 0 0 2.8 0L19 8.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--contact" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-contact" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="2.4" y="5" width="19.2" height="14" rx="3.4" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-contact)" stroke="url(#sstg-contact)">
+    <path d="m4.4 8.2 6.2 4.9a2.3 2.3 0 0 0 2.8 0l6.2-4.9" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
 ```
 
 #### Newsroom — `newsroom`
 
-Haber sayfası + kolon barları
+Haber sayfası + gradyan görsel bloğu
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--newsroom" aria-hidden="true">
-  <path d="M8 4.5h11.5v13a2.5 2.5 0 0 1-2.5 2.5H6a2.5 2.5 0 0 1-2.5-2.5V8H8V4.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M8 9.5v4"/>
-    <path d="M11.5 9.5v4"/>
-    <path d="M15 9.5v4"/>
-    <path d="M8 17h7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--newsroom" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-newsroom" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3" y="4.4" width="18" height="15.2" rx="3.2" stroke="none"/>
+  </g>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <rect x="13.4" y="8.2" width="4.8" height="1.6" rx="0.8" stroke="none"/>
+    <rect x="13.4" y="11.4" width="4.8" height="1.6" rx="0.8" stroke="none"/>
+    <rect x="6" y="15.4" width="12.2" height="1.6" rx="0.8" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-newsroom)" stroke="url(#sstg-newsroom)">
+    <rect x="5.8" y="8" width="5.6" height="5" rx="1.6" stroke="none"/>
   </g>
 </svg>
 ```
 
 #### Events — `events`
 
-Takvim + gün node’ları
+Takvim + gradyan gün noktaları
 
 ```html
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--events" aria-hidden="true">
-  <path d="M8 5.5h8a3.5 3.5 0 0 1 3.5 3.5v8a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 17V9A3.5 3.5 0 0 1 8 5.5"/>
-  <path d="M8 3.5v4"/>
-  <path d="M16 3.5v4"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9 13h.01"/>
-    <path d="M12 13h.01"/>
-    <path d="M15 13h.01"/>
-    <path d="M9 16.5h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--events" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-events" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3" y="5.4" width="18" height="15" rx="3.4" stroke="none"/>
+    <rect x="7.2" y="2.6" width="1.8" height="4.2" rx="0.9" stroke="none"/>
+    <rect x="15" y="2.6" width="1.8" height="4.2" rx="0.9" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-events)" stroke="url(#sstg-events)">
+    <circle cx="8.6" cy="13.4" r="1.5" stroke="none"/>
+    <circle cx="12" cy="13.4" r="1.5" stroke="none"/>
+    <circle cx="15.4" cy="13.4" r="1.5" stroke="none"/>
+    <circle cx="8.6" cy="17.2" r="1.5" stroke="none"/>
   </g>
 </svg>
 ```
@@ -499,9 +734,15 @@ Takvim + gün node’ları
 
 ## Yeni ikon eklerken
 
-1. Önce metaforu üç ilkeye çevir: hangi eleman **ses barı**, hangisi **açık kontur**,
-   nerede **node** var? Hiçbiri yoksa ikon bu setin parçası değildir.
-2. Yapıyı 1.5px, aksanı `<g class="sst-icon__accent" stroke-width="2.5">` içinde çiz.
-3. `svg/icons/<kebab-case-isim>.svg` olarak kaydet, `class="sst-icon sst-icon--<isim>"` ver.
-4. `demo/icon-library/index.html` içinde **22px ve 16px**'te kontrol et.
-5. Bu dosyadaki tabloya + kod bloğuna ekle; CDN cache'i için sürüm etiketini güncelle.
+1. Metaforu üç katmana böl: **soft** ne olacak (gövde), **solid** ne olacak
+   (net detay), **accent** ne olacak (ürünün sesi/özü). Accent'e koyacak bir
+   şey bulamıyorsan metaforu değiştir.
+2. Barları ve node'ları hazır ölçülerle çiz: bar genişliği `2.2`, aralık
+   `2.9`, `rx` = 1.1; node yarıçapı `1.5–2.6`.
+3. Gradyanı `id="sstg-<isim>"` ile tanımla, accent grubunda
+   `fill="url(#sstg-<isim>)"` kullan.
+4. `svg/icons/<kebab-case-isim>.svg` olarak kaydet,
+   `class="sst-icon sst-icon--<isim>"` ver.
+5. `demo/icon-library/index.html` içinde **22px, mono ve koyu zemin**
+   varyantlarında kontrol et.
+6. Bu dosyadaki tabloya + kod bloğuna ekle.

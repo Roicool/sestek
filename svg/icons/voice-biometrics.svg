@@ -1,8 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--voice-biometrics" aria-hidden="true">
-  <path d="M12 3.25 5.25 5.9v6.35c0 4.55 4.4 7.35 6.75 8.5 2.35-1.15 6.75-3.95 6.75-8.5V5.9l-4.25-1.65"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M9.25 11v2.5"/>
-    <path d="M12 9v6.5"/>
-    <path d="M14.75 11v2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--voice-biometrics" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-voice-biometrics" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M12 2.6 4.6 5.5v6.6c0 4.8 4.6 7.7 7.4 8.9 2.8-1.2 7.4-4.1 7.4-8.9V5.5Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-voice-biometrics)" stroke="url(#sstg-voice-biometrics)">
+    <rect x="8.7" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
+    <rect x="11" y="8.4" width="2" height="8.2" rx="1" stroke="none"/>
+    <rect x="13.3" y="10.4" width="2" height="4.2" rx="1" stroke="none"/>
   </g>
 </svg>

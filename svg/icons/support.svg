@@ -1,8 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--support" aria-hidden="true">
-  <path d="M5 13.75V12a7 7 0 0 1 14 0v1.75"/>
-  <path d="M19 17.5v.75a2.75 2.75 0 0 1-2.75 2.75H13.5"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M5 13.5v3.25"/>
-    <path d="M19 13.5v3.25"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--support" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-support" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <path d="M4.8 13.6V11a7.2 7.2 0 0 1 14.4 0v2.6" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M19.2 18.6v.5a2.6 2.6 0 0 1-2.6 2.6h-2.4" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-support)" stroke="url(#sstg-support)">
+    <rect x="3" y="12.4" width="3.8" height="6.4" rx="1.9" stroke="none"/>
+    <rect x="17.2" y="12.4" width="3.8" height="6.4" rx="1.9" stroke="none"/>
   </g>
 </svg>

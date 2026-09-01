@@ -1,6 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--careers" aria-hidden="true">
-  <path d="M4 19.5h4.5V15H13v-4.5h4.5V8"/>
-  <g class="sst-icon__accent" stroke-width="2.5">
-    <path d="M17.5 5.9h.01"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--careers" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-careers" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <circle cx="9.6" cy="8.2" r="3.3" stroke="none"/>
+    <path d="M3.8 20.4a5.8 5.8 0 0 1 11.6 0Z" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-careers)" stroke="url(#sstg-careers)">
+    <rect x="17.3" y="12.6" width="2" height="7.4" rx="1" stroke="none"/>
+    <rect x="14.8" y="15.1" width="7" height="2" rx="1" stroke="none"/>
   </g>
 </svg>

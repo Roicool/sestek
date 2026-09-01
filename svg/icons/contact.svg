@@ -1,4 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sst-icon sst-icon--contact" aria-hidden="true">
-  <path d="M9 5.5h8.5A3 3 0 0 1 20.5 8.5v7a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3H7"/>
-  <path d="m5 8.5 5.6 4.4a2.25 2.25 0 0 0 2.8 0L19 8.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--contact" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-contact" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="2.4" y="5" width="19.2" height="14" rx="3.4" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-contact)" stroke="url(#sstg-contact)">
+    <path d="m4.4 8.2 6.2 4.9a2.3 2.3 0 0 0 2.8 0l6.2-4.9" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
