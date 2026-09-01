@@ -5,9 +5,9 @@ import { ReportDownloadForm } from "./ReportDownloadForm";
 export default declareComponent(ReportDownloadForm, {
   name: "Report Download Form",
   description:
-    "Opus Report lead-magnet'i, iki düzende. HERO: solda eyebrow + H1 + " +
-    "açıklama + kanıt satırları, sağda form kartı, arkada (ya da sol " +
-    "sütunda) görsel — Outbound Call Demo'nun ikili dili, orb yok. CARD: " +
+    "Opus Report lead-magnet'i, iki düzende. HERO: Outbound Call Demo gibi " +
+    "İKİ AYRI KART — solda içerik kartı (eyebrow + H1 + açıklama + kanıt " +
+    "satırları, görsel kartın içinde), sağda form kartı; orb yok. CARD: " +
     "yalnız form kartı. Form: ad, soyad, şirket, " +
     "kurumsal e-posta + zorunlu privacy onayı + honeypot. CRM lead " +
     "endpoint'ine DOĞRUDAN gönderir (formType frm-opus-report; rapor " +
@@ -75,7 +75,7 @@ export default declareComponent(ReportDownloadForm, {
       name: "Image URL",
       group: "Hero",
       defaultValue: "",
-      tooltip: "Hero görseli — boş bırakılırsa hero düz zeminde çalışır",
+      tooltip: "Sol kartın görseli — boşsa kart düz zeminde çalışır",
     }),
     imageAlt: props.Text({
       name: "Image alt",
@@ -87,8 +87,8 @@ export default declareComponent(ReportDownloadForm, {
       options: ["Background", "Panel"],
       defaultValue: "Background",
       tooltip:
-        "Background: tüm hero'ya yayılır (metin okunsun diye scrim + açık " +
-        "tipografi) · Panel: sol sütunda yuvarlak köşeli görsel",
+        "Background: sol kartı doldurur (scrim + açık tipografi) · " +
+        "Panel: sol kartta metnin altında 16/7 bant",
     }),
     formTitle: props.Text({
       name: "Form title",

@@ -2,15 +2,16 @@
  * ReportDownloadForm — lead-magnet formu (Opus Report vb.), iki düzende.
  *
  * Layout:
- *   Hero — SAYFA HERO'SU: solda eyebrow + H1 + açıklama + kanıt satırları,
- *          sağda form kartı; arkada (veya sol sütunda) görsel. Outbound Call
- *          Demo'nun ikili düzeniyle aynı dil, orb yok. Dikeyde ortalı, hero
- *          nefes payı, mobilde alt alta.
+ *   Hero — SAYFA HERO'SU, Outbound Call Demo ile AYNI KURGU: İKİ AYRI KART
+ *          yan yana — solda içerik kartı (eyebrow + H1 + açıklama + kanıt
+ *          satırları), sağda form kartı. Orb yok. Kartlar eşit yükseklikte,
+ *          mobilde alt alta.
  *   Card — yalnız form kartı; sayfa içinde bir bölüme gömmek için.
  *
- * Görsel: imageStyle="Background" tüm hero'ya yayar (metin okunsun diye
- * gradient scrim + açık tipografi) · "Panel" sol sütunda yuvarlak köşeli bir
- * panel olarak gösterir. imageUrl boşsa hiç görünmez, düzen bozulmaz.
+ * Görsel SOL KARTIN içindedir (sayfaya yayılan bir zemin değil):
+ * imageStyle="Background" kartı doldurur (scrim + açık tipografi, sağdaki
+ * form kartı etkilenmez) · "Panel" metnin altında 16/7 bir bant olur.
+ * imageUrl boşsa sol kart düz zeminde koyu tipografiyle çalışır.
  *
  * Form: ad+soyad, şirket, kurumsal e-posta (floating label pill'ler),
  * zorunlu privacy onayı (iki linkli), honeypot, marka renkli CTA. Gönderim
@@ -117,68 +118,79 @@ const CSS = `
   --r-field-line:rgba(255,255,255,.13);--r-neg:#ff8274}
 .srpf *{box-sizing:border-box}
 
-/* ── Hero düzeni ───────────────────────────────────────────── */
-/* Kartın max-width'i hero'da geçersiz: genişliği grid belirler. */
-/* Sayfa hero'su olduğu için varsayılan full-bleed; bir bölümün içine
-   gömüp yuvarlatmak istersen --srpf-hero-radius ver. */
-.srpf.is-hero{max-width:none;position:relative;isolation:isolate;
-  border-radius:var(--srpf-hero-radius,0);overflow:hidden}
-.srpf-hero{position:relative;z-index:1;
-  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
-  gap:clamp(2rem,5vw,4.5rem);align-items:center;
-  max-width:var(--container--2xl,96rem);margin-inline:auto;
-  min-height:min(44rem,calc(100svh - 8rem));
-  padding:clamp(2.5rem,7vh,5rem) clamp(1.25rem,4vw,3rem)}
+/* ── Hero düzeni: İKİ AYRI KART ───────────────────────────────
+   Outbound Call Demo ile aynı kurgu — solda içerik kartı, sağda form
+   kartı, eşit yükseklikte yan yana. Tek bir zemine yayılan görsel yok:
+   fotoğraf SOL KARTIN içindedir. */
+.srpf.is-hero{max-width:none;
+  padding:clamp(1.5rem,4vh,3rem) clamp(1rem,3vw,2rem)}
+.srpf-grid{display:grid;
+  grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  gap:var(--spacing--5,1.25rem);align-items:stretch;
+  max-width:var(--container--2xl,96rem);margin-inline:auto}
 
-/* Arka plan görseli + okunabilirlik scrim'i */
-.srpf-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+/* Sol: içerik kartı */
+.srpf-hcard{position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;
+  min-height:min(34rem,calc(100svh - 12rem));
+  border-radius:var(--radius--3xl,24px);
+  background:var(--r-card);
+  box-shadow:inset 0 0 0 1px var(--r-line);
+  padding:clamp(1.75rem,3.2vw,2.75rem)}
+
+/* Fotoğraf: sol kartı doldurur, üstüne okunabilirlik scrim'i gelir */
+.srpf-bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
 .srpf-bg img{width:100%;height:100%;object-fit:cover;display:block}
 .srpf-bg::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(100deg,
-    rgba(12,10,20,.88) 0%,rgba(12,10,20,.74) 44%,rgba(12,10,20,.32) 100%)}
-/* Görselin üstünde tipografi açığa döner; form kartı beyaz kalır. */
-.srpf.on-image{--r-text:#ffffff;--r-muted:rgba(255,255,255,.78);
-  --r-line:rgba(255,255,255,.14)}
+  background:linear-gradient(180deg,
+    rgba(12,10,20,.82) 0%,rgba(12,10,20,.62) 45%,rgba(12,10,20,.78) 100%)}
+/* Fotoğraflı kartta tipografi açığa döner (sağdaki form kartı etkilenmez) */
+.srpf-hcard.on-image{--r-text:#ffffff;--r-muted:rgba(255,255,255,.8);
+  --r-line:rgba(255,255,255,.16);color:#fff;box-shadow:none}
 
-/* ── Sol sütun ─────────────────────────────────────────────── */
-.srpf-copy{display:flex;flex-direction:column;min-width:0}
+.srpf-copy{display:flex;flex-direction:column;min-width:0;height:100%}
 .srpf-eyebrow{display:inline-flex;align-items:center;gap:.5em;
   align-self:flex-start;margin-bottom:var(--spacing--4,1rem);
   padding:.35em .9em;border-radius:var(--radius--full,9999px);
   font-size:var(--text--xs,.75rem);font-weight:500;letter-spacing:.06em;
   text-transform:uppercase;color:var(--r-acc);
   background:color-mix(in oklab,var(--r-acc) 12%,transparent)}
-.srpf.on-image .srpf-eyebrow{color:#fff;background:rgba(255,255,255,.14);
+.srpf-hcard.on-image .srpf-eyebrow{color:#fff;background:rgba(255,255,255,.14);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.srpf-h{margin:0;font-size:clamp(2.25rem,4.2vw,var(--text--6xl,3.75rem));
-  font-weight:500;line-height:1.05;letter-spacing:-.025em;
-  text-wrap:balance;max-width:14em}
-.srpf-d{margin:var(--spacing--5,1.25rem) 0 0;max-width:34em;
-  font-size:var(--text--lg,1.125rem);line-height:1.6;color:var(--r-muted)}
+.srpf-h{margin:0;font-size:clamp(2rem,3.4vw,var(--text--5xl,3rem));
+  font-weight:500;line-height:1.06;letter-spacing:-.02em;
+  text-wrap:balance;max-width:15em}
+.srpf-d{margin:var(--spacing--4,1rem) 0 0;max-width:32em;
+  font-size:var(--text--base,1rem);line-height:1.6;color:var(--r-muted)}
+
+/* Kanıt satırları kartın altına yaslanır — kart dolu görünür */
 .srpf-feats{display:flex;flex-wrap:wrap;
-  gap:var(--spacing--3,.75rem) var(--spacing--6,1.5rem);
-  margin:var(--spacing--7,1.75rem) 0 0;padding:0;list-style:none}
+  gap:var(--spacing--3,.75rem) var(--spacing--5,1.25rem);
+  margin:var(--spacing--8,2rem) 0 0;padding:0;list-style:none}
+.srpf-copy > .srpf-feats:last-child{margin-top:auto;
+  padding-top:var(--spacing--8,2rem)}
 .srpf-feats li{display:flex;align-items:center;gap:.55em;
   font-size:var(--text--sm,.875rem);line-height:1.35;color:var(--r-muted)}
 .srpf-feats i{flex:none;display:grid;place-items:center;font-style:normal;
   width:1.1rem;height:1.1rem;color:var(--r-acc)}
-.srpf.on-image .srpf-feats i{color:#fff}
+.srpf-hcard.on-image .srpf-feats i{color:#fff}
 .srpf-feats svg{width:.85rem;height:.85rem}
 
-/* Görselin "Panel" hali — arka plan yerine sol sütunda durur */
-.srpf-panel{margin-top:var(--spacing--8,2rem);aspect-ratio:16/7;
+/* Görselin "Panel" hali — kartın zemini yerine metnin altında bant.
+   Bant kartın altına yaslandığı için üstündeki satırlara nefes payı
+   verilir (auto margin boşluk bırakmaz). */
+.srpf-feats:has(+ .srpf-panel){padding-bottom:var(--spacing--5,1.25rem)}
+.srpf-panel{margin-top:auto;aspect-ratio:16/7;
   border-radius:var(--radius--2xl,20px);overflow:hidden;
   box-shadow:inset 0 0 0 1px var(--r-line)}
 .srpf-panel img{display:block;width:100%;height:100%;object-fit:cover}
 
-/* Hero'da kart biraz daha ferah, görselin üstünde daha belirgin durur */
-.srpf.is-hero .srpf-card{
-  padding:var(--spacing--8,2rem) var(--spacing--7,1.75rem);
-  box-shadow:inset 0 0 0 1px var(--r-line),
-    0 32px 80px -40px rgba(12,10,20,.55)}
-.srpf.on-image .srpf-card{--r-text:var(--color-text--base,#17151f);
-  --r-muted:var(--color-text--muted,#8b8894);--r-line:rgba(20,18,30,.08);
-  color:var(--r-text);box-shadow:0 32px 80px -36px rgba(12,10,20,.6)}
+/* Sağ: form kartı — sol kartla aynı yükseklik, form dikeyde ortalı */
+.srpf.is-hero .srpf-card{height:100%;display:flex;flex-direction:column;
+  justify-content:center;
+  padding:clamp(1.75rem,3.2vw,2.5rem) clamp(1.5rem,2.6vw,2rem);
+  background:color-mix(in oklab,var(--r-text) 3%,var(--r-card))}
+
 
 .srpf-card{border-radius:var(--radius--3xl,24px);background:var(--r-card);
   box-shadow:inset 0 0 0 1px var(--r-line),0 24px 60px -36px rgba(20,18,30,.18);
@@ -259,12 +271,9 @@ const CSS = `
 
 /* ── Responsive / reduced motion ───────────────────────────── */
 @media (max-width:991px){
-  .srpf-hero{grid-template-columns:1fr;min-height:0;align-items:start;
-    gap:var(--spacing--8,2rem);
-    padding:clamp(2rem,5vh,3rem) clamp(1.25rem,4vw,2rem)}
-  /* Dar ekranda scrim dikey akar: metin üstte, kart altta okunur kalır. */
-  .srpf-bg::after{background:linear-gradient(180deg,
-    rgba(12,10,20,.88) 0%,rgba(12,10,20,.8) 55%,rgba(12,10,20,.7) 100%)}
+  .srpf-grid{grid-template-columns:1fr}
+  .srpf-hcard{min-height:22rem}
+  .srpf.is-hero .srpf-card{height:auto}
 }
 @media (max-width:479px){
   .srpf{max-width:none}
@@ -513,37 +522,36 @@ export function ReportDownloadForm({
   const Heading = headingTag === "H2" ? "h2" : "h1";
 
   return (
-    <section
-      className={
-        "srpf is-hero" +
-        (theme === "Deep" ? " is-deep" : "") +
-        (onImage ? " on-image" : "")
-      }
-    >
+    <section className={"srpf is-hero" + (theme === "Deep" ? " is-deep" : "")}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      {onImage && (
-        <div className="srpf-bg" aria-hidden={imageAlt ? undefined : true}>
-          <img src={imageUrl} alt={imageAlt} />
-        </div>
-      )}
-      <div className="srpf-hero">
-        <div className="srpf-copy">
-          {tagline && <span className="srpf-eyebrow">{tagline}</span>}
-          <Heading className="srpf-h">{heading}</Heading>
-          {description && <p className="srpf-d">{description}</p>}
-          {bullets.length > 0 && (
-            <ul className="srpf-feats">
-              {bullets.map((b, i) => (
-                <li key={i}><i><CheckIcon /></i>{b}</li>
-              ))}
-            </ul>
-          )}
-          {imageUrl && imageStyle === "Panel" && (
-            <div className="srpf-panel">
-              <img src={imageUrl} alt={imageAlt} loading="lazy" />
+      <div className="srpf-grid">
+        {/* Sol wrapper: içerik kartı */}
+        <div className={"srpf-hcard" + (onImage ? " on-image" : "")}>
+          {onImage && (
+            <div className="srpf-bg" aria-hidden={imageAlt ? undefined : true}>
+              <img src={imageUrl} alt={imageAlt} />
             </div>
           )}
+          <div className="srpf-copy">
+            {tagline && <span className="srpf-eyebrow">{tagline}</span>}
+            <Heading className="srpf-h">{heading}</Heading>
+            {description && <p className="srpf-d">{description}</p>}
+            {bullets.length > 0 && (
+              <ul className="srpf-feats">
+                {bullets.map((b, i) => (
+                  <li key={i}><i><CheckIcon /></i>{b}</li>
+                ))}
+              </ul>
+            )}
+            {imageUrl && imageStyle === "Panel" && (
+              <div className="srpf-panel">
+                <img src={imageUrl} alt={imageAlt} loading="lazy" />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Sağ wrapper: form kartı */}
         {card}
       </div>
     </section>
