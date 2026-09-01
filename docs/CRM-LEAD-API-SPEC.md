@@ -266,7 +266,63 @@ export async function POST(req: Request) {
 
 ---
 
-## 8. Test / doğrulama
+## 8. E-posta bildirimi (opsiyonel özellik)
+
+Newsletter formu (`frm-newsletter`) için: lead **Dynamics'e başarıyla
+yazıldıktan sonra** (204 alındıktan sonra) belirlenen adrese bir bildirim
+e-postası gönderilir. Diğer form tipleri bu özelliğin dışındadır — ama
+tip başına açılabilir olması için konfigürasyon form tipi listesi alır.
+
+### Davranış
+
+- Sıra: önce Dynamics'e yaz → başarılıysa mail dene. Mail gönderimi
+  **best-effort**tur: mail servisi hata verse bile endpoint `200` döner
+  (lead oluştu, asıl iş tamam); mail hatası yalnızca loglanır.
+- Dynamics'e yazılamadıysa mail **gönderilmez** ("eğer düşerse gönderilsin"
+  şartı).
+- Mail içeriği: form tipi, gönderilen alanlar (newsletter'da e-posta),
+  sayfa URL'i ve varsa UTM'ler. Düz metin yeterli.
+
+### Konfigürasyon (env)
+
+| Değişken | Açıklama |
+|---|---|
+| `NOTIFY_FORM_TYPES` | Bildirim açık form tipleri, virgüllü. Örn. `frm-newsletter`. Boş/tanımsız = özellik kapalı. |
+| `NOTIFY_EMAIL_TO` | Alıcı adres(ler), virgüllü. Kullanıcı tarafından girilecek. |
+| `NOTIFY_EMAIL_FROM` | Gönderen adres (seçilen yönteme göre, aşağıda). |
+
+Alıcı adresi koda yazılmaz — `NOTIFY_EMAIL_TO` env değeri Webflow Cloud
+panelinden değiştirilerek güncellenir, deploy gerekmez.
+
+### Gönderen (sender) seçenekleri
+
+Cloudflare Workers üzerinde SMTP soketi açılamaz; gönderim bir HTTP API
+üzerinden olmalı. İki gerçekçi seçenek:
+
+**Seçenek A — Microsoft Graph `sendMail` (önerilen):** Elimizde zaten bir
+Azure AD app'i var. Aynı tenant'ta app'e **`Mail.Send` application
+permission**'ı verilir (admin consent gerekir — danışman/BT'den istenecek)
+ve mail bir kurumsal posta kutusu üzerinden çıkar
+(`POST https://graph.microsoft.com/v1.0/users/{NOTIFY_EMAIL_FROM}/sendMail`).
+Token, CRM ile aynı client_credentials akışıyla ama `scope=https://graph.microsoft.com/.default`
+ile alınır (ayrı cache'lenir). Artı: yeni servis/abonelik yok, SPF/DKIM
+zaten kurumsal domain'de kurulu. Eksi: `Mail.Send` izni tenant'taki tüm
+kutulara gönderim yetkisi verir — güvenlik için Exchange tarafında
+**ApplicationAccessPolicy** ile tek kutuya kısıtlanması istenmelidir.
+
+**Seçenek B — Transactional mail servisi (Resend / SendGrid vb.):** Bir API
+key (`NOTIFY_MAIL_API_KEY`) ile tek HTTP çağrısı. Artı: Azure izni gerekmez,
+kurulum hızlı. Eksi: yeni hesap + gönderici domain doğrulaması (SPF/DKIM
+DNS kayıtları) gerekir; ücretsiz kotalar sınırlıdır.
+
+Karar kullanıcıya/danışmana ait; endpoint iki yöntemi de tek bir
+`sendNotification()` fonksiyonu arkasına saklamalı, yöntem env ile seçilmeli
+(örn. `NOTIFY_MAIL_PROVIDER=graph|resend`). Env eksikse özellik sessizce
+devre dışı kalır — CRM akışını asla bloklamaz.
+
+---
+
+## 9. Test / doğrulama
 
 1. **Env yokken:** `POST /api/crm/lead` → `501` `CRM is not configured`.
 2. **Geçersiz istek:** `formType` yok / bilinmeyen / e-posta bozuk → `400`.
@@ -279,7 +335,7 @@ export async function POST(req: Request) {
 
 ---
 
-## 9. Bu repoda kalan karşı parça (bilgi amaçlı)
+## 10. Bu repoda kalan karşı parça (bilgi amaçlı)
 
 Site tarafı `js/components/crm-forms.js` olarak burada geliştirilecek:
 Webflow formları **native kalır** (Webflow submit + e-posta bildirimi + success
