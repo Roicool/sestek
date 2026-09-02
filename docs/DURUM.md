@@ -9,6 +9,8 @@
 > - Sunucu / Webflow Cloud app: `waelkhatibsestek/sestek-webflow-demo-app`
 >
 > Sunucu işlerinin iş emri: [`docs/SUNUCU-GOREVLERI.md`](./SUNUCU-GOREVLERI.md)
+> Sunucu agent'ına verilecek prompt'lar ve devir notu:
+> [`docs/SUNUCU-AGENT-PROMPTLARI.md`](./SUNUCU-AGENT-PROMPTLARI.md)
 
 ---
 
