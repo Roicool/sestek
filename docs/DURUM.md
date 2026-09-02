@@ -29,6 +29,7 @@
 | 11 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
 | 12 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key aynı anda değişir, sonrasında test gönderimi |
 | 13 | Designer'da 4 component'e ve `data-crm-turnstile`'a site key'in girilmesi | Bizde | Sunucu `TURNSTILE_SECRET`'ı aldıktan SONRA; sıra tersine dönerse hiçbir form gönderilemez |
+| 14 | Turnstile'ın gerçek anahtarla uçtan uca teyidi (jeton üretiliyor mu, siteverify geçiyor mu, meydan okuma çıkınca form gönderilebiliyor mu) | Bizde | Geliştirme ortamından `challenges.cloudflare.com` kapalı olduğu için stub ile test edildi; gerçek doğrulama yayında yapılacak |
 
 ### Sestek / danışman tarafında bekleyenler
 
@@ -93,6 +94,14 @@
   Devirde iki anahtar AYNI ANDA değişmeli, aksi halde doğrulama kırılır.
 - **Formlar:** demo/contact/newsletter/opus-report React component olarak;
   `crm-forms.js` kalan native Webflow formları için köprü olarak duruyor.
+- **`crm-forms.js` köprüsünde Turnstile'ın sınırı kabul edildi:** Webflow'un
+  kendi submit'i senkron olduğundan jeton o anda hazır olmak zorunda. Widget
+  init'te çizildiği için sıradan ziyaretçide sorun çıkmaz, ama ziyaretçi
+  gerçekten meydan okumaya düşerse CRM kopyası 8 saniye bekleyip sessizce
+  düşer. Webflow'un kendi gönderimi bundan hiç etkilenmez (kayıt inbox'ta,
+  bildirim maili gider). Dört ana formda bu sorun yok, çünkü React
+  component'ler jetonu bekleyebiliyor. Köprüye düşen formların kritikliği
+  artarsa çözüm onları da component'e taşımak.
 - **Outbound EN dili:** sayfa bazlı, dil seçici yok.
 
 ## Notlar
