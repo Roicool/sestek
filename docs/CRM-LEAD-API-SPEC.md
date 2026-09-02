@@ -24,7 +24,7 @@ Webflow Cloud app — bu endpoint          ← SECRET'LAR YALNIZCA BURADA (env)
         │  1) Azure AD'den token (cache'li)
         │  2) Dynamics'e lead POST
         ▼
-Microsoft Dynamics (sestek.crm4.dynamics.com)
+Microsoft Dynamics ({CRM_BASE_URL})
 ```
 
 Tarayıcı hiçbir zaman Azure AD veya Dynamics ile doğrudan konuşmaz.
@@ -39,10 +39,15 @@ ayrı bir kanalla gelecek.
 
 | Değişken | Örnek / açıklama |
 |---|---|
-| `CRM_TENANT_ID` | `547963ae-c689-4d38-bbc2-33fa2d810803` |
+| `CRM_TENANT_ID` | Azure AD directory (tenant) id — gerçek değer env'de |
 | `CRM_CLIENT_ID` | Azure AD app registration client id |
 | `CRM_CLIENT_SECRET` | Azure AD client secret |
-| `CRM_BASE_URL` | `https://sestek.crm4.dynamics.com` |
+| `CRM_BASE_URL` | Dynamics org adresi, `https://<org>.crm<n>.dynamics.com` |
+
+> ⚠️ **Bu dosya public bir repoda duruyor.** Tenant id, org adresi, client id
+> gibi gerçek değerler buraya YAZILMAZ; yalnızca Webflow Cloud environment
+> değişkenlerinde ve ekip içi güvenli kanalda tutulur. Tablodaki her satır
+> yalnızca değişkenin ne olduğunu tarif eder.
 
 Türetilen sabitler (koda yazılabilir, env gerekmez):
 
@@ -114,7 +119,7 @@ alanlar Dynamics payload'ına **hiç konmaz** (boş string gönderilmez).
 gövde `application/x-www-form-urlencoded`:
 
 ```
-client_id=…&client_secret=…&grant_type=client_credentials&scope=https://sestek.crm4.dynamics.com/.default
+client_id=…&client_secret=…&grant_type=client_credentials&scope={CRM_BASE_URL}/.default
 ```
 
 Yanıt: `{ "access_token": "…", "expires_in": 3599, … }`

@@ -75,12 +75,16 @@ Knovvu'nun ham hata gövdesini istemciye SIZDIRMA — logla, `upstream` dön.
 
 | Değişken | Değer / Not |
 |---|---|
-| `KNOVVU_CLIENT_ID` | `va_external_outboundmanager_client_caiusecases-aiagent` |
+| `KNOVVU_CLIENT_ID` | Knovvu outbound manager client id — gerçek değer env'de |
 | `KNOVVU_CLIENT_SECRET` | (rotasyon SONRASI yeni secret) |
-| `KNOVVU_IDENTITY_URL` | `https://identity.eu.va.knovvu.com/connect/token` |
-| `KNOVVU_OUTBOUND_URL` | `https://eu.va.knovvu.com/outbound-manager/api/external/outbound/call-request` |
-| `KNOVVU_PROJECT_NAME` | `TR_WebSite_BankingOutbound` |
+| `KNOVVU_IDENTITY_URL` | Knovvu IdentityServer token adresi (bölgeye göre) |
+| `KNOVVU_OUTBOUND_URL` | Outbound Manager call-request adresi (bölgeye göre) |
+| `KNOVVU_PROJECT_NAME` | Knovvu tarafındaki proje adı — gerçek değer env'de |
 | `KNOVVU_SCOPE` | Opsiyonel — IdentityServer scope isterse |
+
+> ⚠️ **Bu dosya public bir repoda duruyor.** Client id, proje adı ve servis
+> adresleri dahil hiçbir gerçek değer buraya yazılmaz; hepsi Webflow Cloud
+> environment değişkenlerinde tutulur ve ekip içi güvenli kanalda paylaşılır.
 
 Env değişikliği yeni deploy ile aktifleşir ("Deploy latest commit").
 
@@ -174,7 +178,7 @@ async function getToken(force = false): Promise<string | null> {
   });
   if (process.env.KNOVVU_SCOPE) body.set("scope", process.env.KNOVVU_SCOPE);
   const res = await fetch(
-    process.env.KNOVVU_IDENTITY_URL ?? "https://identity.eu.va.knovvu.com/connect/token",
+    process.env.KNOVVU_IDENTITY_URL!,
     { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body }
   );
   if (!res.ok) return null;
@@ -185,7 +189,10 @@ async function getToken(force = false): Promise<string | null> {
 }
 
 export async function POST(req: Request) {
-  if (!process.env.KNOVVU_CLIENT_ID || !process.env.KNOVVU_CLIENT_SECRET) {
+  // Gömülü varsayılan YOK: her adres/ad env'den gelir, eksikse 501.
+  if (!process.env.KNOVVU_CLIENT_ID || !process.env.KNOVVU_CLIENT_SECRET ||
+      !process.env.KNOVVU_IDENTITY_URL || !process.env.KNOVVU_OUTBOUND_URL ||
+      !process.env.KNOVVU_PROJECT_NAME) {
     return Response.json({ ok: false, error: "not_configured" }, { status: 501 });
   }
 
@@ -220,7 +227,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "rate_limited", retryAfter: 3600 }, { status: 429 });
   }
 
-  const project = process.env.KNOVVU_PROJECT_NAME ?? "TR_WebSite_BankingOutbound";
+  const project = process.env.KNOVVU_PROJECT_NAME!;
   const payload = {
     projectName: project,
     callRequests: [{
@@ -236,8 +243,7 @@ export async function POST(req: Request) {
     }],
   };
 
-  const url = process.env.KNOVVU_OUTBOUND_URL ??
-    "https://eu.va.knovvu.com/outbound-manager/api/external/outbound/call-request";
+  const url = process.env.KNOVVU_OUTBOUND_URL!;
 
   async function send(token: string) {
     return fetch(url, {
