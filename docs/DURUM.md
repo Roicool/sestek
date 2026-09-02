@@ -28,13 +28,14 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 | S-02 | Outbound + CRM: `Content-Type` zorunluluğu ve Origin allowlist | Sunucu repo | Yüksek. `text/plain` preflight'sız geçiyor, cross-site arama tetiklenebiliyor |
 | S-03 | Outbound numara/IP sayacını kalıcı depoya taşı | Sunucu repo | Yüksek. Limit var ve çalışıyor ama isolate değişince sıfırlanıyor |
 | S-04 | Turnstile doğrulaması (`TURNSTILE_SECRET` + siteverify) | Sunucu repo | Yüksek. İstemci tarafı BİTTİ, jeton zaten gönderiliyor |
+| S-10 | Outbound: dile göre Knovvu proje seçimi (`KNOVVU_PROJECT_NAME_TR` / `_EN`) | Sunucu repo | Yüksek. Knovvu 02.09 cevabı: EN'de proje adı da değişiyor, yalnız `Language` değil |
 | S-05 | E-posta politikasının sunucuda uygulanması | Sunucu repo | Orta |
 | S-06 | Günlük toplam arama tavanı + devre kesici | Sunucu repo | Orta. Dağıtık kötüye kullanımda fatura koruması |
 | S-07 | Saatlik arama sayacı + eşik alarmı | Sunucu repo | Orta |
 | S-08 | `x-opennext` header'ının kaldırılması | Sunucu repo | Bilgi seviyesi |
 | S-09 | CSV export'ta formül enjeksiyonu sanitizasyonu | Sunucu repo | Düşük |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
-| B-02 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
+| B-02 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu dil cevabında telefon hâlâ TR formatında geldi; yurt dışı numara desteği ayrıca soruldu, cevap beklenirken doğrulama gevşetilmeyecek |
 | B-03 | Designer'da site key'in girilmesi (4 component + `data-crm-turnstile`) | Bizde | S-04 bittikten SONRA; sıra tersine dönerse formlar 403 alır |
 | B-04 | Turnstile'ın gerçek anahtarla uçtan uca teyidi | Bizde | Geliştirme ortamından Cloudflare kapalı, stub ile test edildi; gerçeği yayında |
 | B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |
@@ -50,6 +51,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 | Honeypot teyidi: `hp` dolu istekte telefon çalmadı mı, CRM'e kayıt düştü mü | Dışarıdan ölçülemiyor |
 | Mass assignment teyidi: `ownerid`/`statuscode` alanları Dynamics'e geçti mi | Dışarıdan ölçülemiyor |
 | `ses_formtype` option-set değerleri (4 tip) Dynamics'te tanımlı mı | Lead yazımı buna bağlı |
+| EN demoda yurt dışı telefon numarası kabul ediliyor mu (E.164) | Dil cevabındaki örnek hâlâ TR mobil formatında, EN ziyaretçinin numarası TR olmayacak |
 | Opus Report kapsamı: tek rapora mı özel, genel lead-magnet mi | Ek raporlarda tip adlandırması |
 | Newsletter CRM'de lead mi olacak, ayrı liste mi | Lead havuzunu şişirmemek için |
 | KVKK onayının CRM'e taşınması gerekiyor mu | Şu an onay yalnız istemcide tutuluyor |
@@ -110,7 +112,9 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   bildirim maili gider). Dört ana formda bu sorun yok, çünkü React
   component'ler jetonu bekleyebiliyor. Köprüye düşen formların kritikliği
   artarsa çözüm onları da component'e taşımak.
-- **Outbound EN dili:** sayfa bazlı, dil seçici yok.
+- **Outbound EN dili:** sayfa bazlı, dil seçici yok. Knovvu 02.09'da netleştirdi:
+  TR ve EN **ayrı Knovvu projeleri**, proje adı da dile göre değişiyor. İstemci
+  `lang` göndermeye devam ediyor, seçimi sunucu yapıyor (S-10).
 
 ## Notlar
 

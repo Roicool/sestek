@@ -263,6 +263,44 @@ olarak çalışmıyor.
 
 ---
 
+## S-10 · Outbound: dile göre Knovvu proje seçimi
+
+**Öncelik:** Yüksek · **Kaynak:** Knovvu ekibinin 02.09 tarihli cevabı
+
+Türkçe sitede TR, İngilizce sitede EN demosu çalışacak. İstemci `lang` alanını
+zaten `"TR"` veya `"EN"` olarak gönderiyor, sunucu şu an bunu yalnız
+`Language` parametresine yazıyor. **Eksik olan: proje adı da değişiyor.**
+EN için gelen örnekte proje adı `EN_` önekli, TR'dekinden farklı bir proje.
+
+Tam sözleşme `docs/outbound-demo-api.md` §2 "Dil: proje adı `lang`'e göre
+DEĞİŞİR" başlığında.
+
+**Yapılacak**
+
+- Tek `KNOVVU_PROJECT_NAME` env'ini ikiye ayır: `KNOVVU_PROJECT_NAME_TR` ve
+  `KNOVVU_PROJECT_NAME_EN`. Gerçek değerler env'de, repoda değil.
+- `lang === "EN"` ise EN projesi, aksi halde TR projesi kullanılır.
+- Gövdedeki `projectName` ile `parameters` içindeki `ProjectName` **aynı
+  değer** olmalı; ikisi de seçilen projeye göre dolar.
+- Bilinmeyen bir `lang` gelirse TR'ye düş, 400 dönme.
+- Env-gate kontrolüne iki değişken de eklenir (biri eksikse 501).
+
+**Kabul kriteri**
+
+- `lang: "EN"` ile gönderilen istekte Knovvu'ya giden gövdede hem
+  `projectName` hem `ProjectName` EN projesi, `Language` ise `"EN"`.
+- `lang: "TR"` ve `lang` hiç gönderilmemiş hâlde TR projesi kullanılır.
+- Gerçek bir EN araması yapıldı ve karşı taraf İngilizce konuştu (test
+  numarası aşağıda).
+
+**Açık soru — Sestek'e sorulacak:** EN örneğinde telefon hâlâ TR mobil
+formatında (`05444390406`). İngilizce siteye gelen ziyaretçinin numarası
+büyük ihtimalle TR olmayacak. Knovvu yurt dışı numara çevirebiliyor mu, E.164
+(`+44…`) kabul ediyor mu? Cevap gelene kadar sunucudaki `/^05\d{9}$/`
+doğrulaması **olduğu gibi kalsın**; gevşetme.
+
+---
+
 ## Sestek / danışman tarafında bekleyenler (sunucu agent'ının işi değil)
 
 Bunlar bilgi olsun diye burada; kod işi değil, teyit veya erişim işi.

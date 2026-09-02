@@ -86,7 +86,8 @@ Knovvu'nun ham hata gövdesini istemciye SIZDIRMA — logla, `upstream` dön.
 | `KNOVVU_CLIENT_SECRET` | (rotasyon SONRASI yeni secret) |
 | `KNOVVU_IDENTITY_URL` | Knovvu IdentityServer token adresi (bölgeye göre) |
 | `KNOVVU_OUTBOUND_URL` | Outbound Manager call-request adresi (bölgeye göre) |
-| `KNOVVU_PROJECT_NAME` | Knovvu tarafındaki proje adı — gerçek değer env'de |
+| `KNOVVU_PROJECT_NAME_TR` | Türkçe demo projesinin Knovvu'daki adı — gerçek değer env'de |
+| `KNOVVU_PROJECT_NAME_EN` | İngilizce demo projesinin adı (TR'dekinden farklı, `EN_` önekli) |
 | `KNOVVU_SCOPE` | Opsiyonel — IdentityServer scope isterse |
 | `TURNSTILE_SECRET` | Cloudflare Turnstile SECRET key. Tanımlıysa jeton doğrulaması zorunlu olur; tanımlı değilse alan yok sayılır |
 
@@ -124,7 +125,7 @@ Header: `Authorization: Bearer {access_token}`, `Content-Type: application/json`
 
 ```json
 {
-  "projectName": "{KNOVVU_PROJECT_NAME}",
+  "projectName": "{proje adı — dile göre seçilir, aşağıya bak}",
   "callRequests": [
     {
       "callRequestId": "{crypto.randomUUID()}",
@@ -132,14 +133,33 @@ Header: `Authorization: Bearer {access_token}`, `Content-Type: application/json`
       "endUser": { "name": "{name}", "phone": "{phone}", "email": "" },
       "parameters": [
         { "Name": "CustomerName", "Value": "{name}" },
-        { "Name": "ProjectName", "Value": "{KNOVVU_PROJECT_NAME}" },
-        { "Name": "Language", "Value": "{lang || 'TR'}" }
+        { "Name": "ProjectName", "Value": "{aynı proje adı}" },
+        { "Name": "Language", "Value": "{lang — 'TR' veya 'EN'}" }
       ],
       "locale": ""
     }
   ]
 }
 ```
+
+#### Dil: proje adı `lang`'e göre DEĞİŞİR
+
+Knovvu ekibinin 02.09 tarihli cevabı: Türkçe sitede TR, İngilizce sitede EN
+gönderilecek ve sistem ona göre ilgili demoyu çalıştıracak. Ama değişen
+yalnız `Language` parametresi değil — **`projectName` de değişiyor.** EN için
+gelen örnekte proje adının başına `EN_` öneki geliyor.
+
+Bu yüzden tek bir `KNOVVU_PROJECT_NAME` yetmez, iki ayrı env değişkeni gerekir:
+
+| `lang` | Kullanılacak env | `Language` parametresi |
+|---|---|---|
+| `TR` (varsayılan) | `KNOVVU_PROJECT_NAME_TR` | `TR` |
+| `EN` | `KNOVVU_PROJECT_NAME_EN` | `EN` |
+
+- `projectName` ve `parameters` içindeki `ProjectName` **aynı değer** olmalı.
+- Bilinmeyen bir `lang` gelirse TR'ye düş, 400 dönme.
+- Proje adlarının gerçek değerleri env'de durur; bu dosya public repoda,
+  buraya yazılmaz.
 
 Dikkat:
 
@@ -232,7 +252,7 @@ export async function POST(req: Request) {
   // Gömülü varsayılan YOK: her adres/ad env'den gelir, eksikse 501.
   if (!process.env.KNOVVU_CLIENT_ID || !process.env.KNOVVU_CLIENT_SECRET ||
       !process.env.KNOVVU_IDENTITY_URL || !process.env.KNOVVU_OUTBOUND_URL ||
-      !process.env.KNOVVU_PROJECT_NAME) {
+      !process.env.KNOVVU_PROJECT_NAME_TR || !process.env.KNOVVU_PROJECT_NAME_EN) {
     return Response.json({ ok: false, error: "not_configured" }, { status: 501 });
   }
 
@@ -275,7 +295,11 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "rate_limited", retryAfter: 3600 }, { status: 429 });
   }
 
-  const project = process.env.KNOVVU_PROJECT_NAME!;
+  // Dil projeyi seçer: EN ayrı bir Knovvu projesi, TR varsayılan.
+  const isEN = (lang ?? "TR").toUpperCase() === "EN";
+  const project = isEN
+    ? process.env.KNOVVU_PROJECT_NAME_EN!
+    : process.env.KNOVVU_PROJECT_NAME_TR!;
   const payload = {
     projectName: project,
     callRequests: [{
@@ -285,7 +309,7 @@ export async function POST(req: Request) {
       parameters: [
         { Name: "CustomerName", Value: cleanName },
         { Name: "ProjectName", Value: project },
-        { Name: "Language", Value: (lang ?? "TR").toUpperCase().slice(0, 5) },
+        { Name: "Language", Value: isEN ? "EN" : "TR" },
       ],
       locale: "",
     }],
