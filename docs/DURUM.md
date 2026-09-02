@@ -7,6 +7,8 @@
 > Repolar:
 > - Site (bu repo, public): `roicool/sestek`
 > - Sunucu / Webflow Cloud app: `waelkhatibsestek/sestek-webflow-demo-app`
+>
+> Sunucu işlerinin iş emri: [`docs/SUNUCU-GOREVLERI.md`](./SUNUCU-GOREVLERI.md)
 
 ---
 
@@ -14,22 +16,28 @@
 
 Öncelik sırasıyla. "Kim" sütunu işin hangi tarafta olduğunu söyler.
 
+**Sunucu repo'sundaki işler ayrı bir iş emrinde:**
+[`docs/SUNUCU-GOREVLERI.md`](./SUNUCU-GOREVLERI.md). Orası kendi başına
+ayakta durur — her görevin gerekçesi ve kabul kriteri var — ve doğrudan bir
+agent'a verilebilir. Burada sunucu işleri yalnız **S-xx** kimliği ve tek
+satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
+
 | # | İş | Kim | Not |
 |---|---|---|---|
-| 1 | CRM lead endpoint'ine kalıcı rate limit (KV / Durable Objects) | Sunucu repo | Güvenlik testi B-01, Yüksek. Şu an hiç limit yok, 10/10 istek geçti |
-| 2 | Outbound: `Content-Type: application/json` zorunluluğu + Origin allowlist | Sunucu repo | B-03. `text/plain` preflight'sız geçiyor, cross-site arama tetiklenebiliyor |
-| 3 | Outbound numara/IP sayacını bellekten kalıcı depoya taşı | Sunucu repo | Şu an modül seviyesi `Map`; isolate değişince sıfırlanır |
-| 4 | Turnstile doğrulaması (`TURNSTILE_SECRET` + siteverify) | Sunucu repo | İstemci tarafı BİTTİ; spec `docs/outbound-demo-api.md` §4 ve `docs/CRM-LEAD-API-SPEC.md` §6'da |
-| 5 | E-posta politikasının sunucuda uygulanması | Sunucu repo | Liste ve hata kodları `docs/CRM-LEAD-API-SPEC.md` §2.1'de |
-| 6 | Günlük toplam arama tavanı + devre kesici | Sunucu repo | Dağıtık kötüye kullanımda fatura koruması |
-| 7 | Saatlik arama sayacı + eşik alarmı | Sunucu repo | Anormalliği erken görmek için |
-| 8 | `x-opennext` header'ının kaldırılması | Sunucu repo | B-04, Bilgi seviyesi |
-| 9 | Formül enjeksiyonu sanitizasyonu (`=`, `+`, `-`, `@` öneki) | Sunucu repo | B-05, CSV export güvenliği |
-| 10 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
-| 11 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
-| 12 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key aynı anda değişir, sonrasında test gönderimi |
-| 13 | Designer'da 4 component'e ve `data-crm-turnstile`'a site key'in girilmesi | Bizde | Sunucu `TURNSTILE_SECRET`'ı aldıktan SONRA; sıra tersine dönerse hiçbir form gönderilemez |
-| 14 | Turnstile'ın gerçek anahtarla uçtan uca teyidi (jeton üretiliyor mu, siteverify geçiyor mu, meydan okuma çıkınca form gönderilebiliyor mu) | Bizde | Geliştirme ortamından `challenges.cloudflare.com` kapalı olduğu için stub ile test edildi; gerçek doğrulama yayında yapılacak |
+| S-01 | CRM lead endpoint'ine kalıcı rate limit | Sunucu repo | Yüksek. Şu an hiç limit yok, 10/10 istek geçti |
+| S-02 | Outbound + CRM: `Content-Type` zorunluluğu ve Origin allowlist | Sunucu repo | Yüksek. `text/plain` preflight'sız geçiyor, cross-site arama tetiklenebiliyor |
+| S-03 | Outbound numara/IP sayacını kalıcı depoya taşı | Sunucu repo | Yüksek. Limit var ve çalışıyor ama isolate değişince sıfırlanıyor |
+| S-04 | Turnstile doğrulaması (`TURNSTILE_SECRET` + siteverify) | Sunucu repo | Yüksek. İstemci tarafı BİTTİ, jeton zaten gönderiliyor |
+| S-05 | E-posta politikasının sunucuda uygulanması | Sunucu repo | Orta |
+| S-06 | Günlük toplam arama tavanı + devre kesici | Sunucu repo | Orta. Dağıtık kötüye kullanımda fatura koruması |
+| S-07 | Saatlik arama sayacı + eşik alarmı | Sunucu repo | Orta |
+| S-08 | `x-opennext` header'ının kaldırılması | Sunucu repo | Bilgi seviyesi |
+| S-09 | CSV export'ta formül enjeksiyonu sanitizasyonu | Sunucu repo | Düşük |
+| B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
+| B-02 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
+| B-03 | Designer'da site key'in girilmesi (4 component + `data-crm-turnstile`) | Bizde | S-04 bittikten SONRA; sıra tersine dönerse formlar 403 alır |
+| B-04 | Turnstile'ın gerçek anahtarla uçtan uca teyidi | Bizde | Geliştirme ortamından Cloudflare kapalı, stub ile test edildi; gerçeği yayında |
+| B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |
 
 ### Sestek / danışman tarafında bekleyenler
 
