@@ -27,13 +27,14 @@
 | 9 | Formül enjeksiyonu sanitizasyonu (`=`, `+`, `-`, `@` öneki) | Sunucu repo | B-05, CSV export güvenliği |
 | 10 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
 | 11 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
+| 12 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key aynı anda değişir, sonrasında test gönderimi |
 
 ### Sestek / danışman tarafında bekleyenler
 
 | İş | Neden |
 |---|---|
 | Knovvu client secret rotasyonu | Postman koleksiyonu içinde canlı secret dolaştı |
-| Turnstile anahtarları (site key + secret key) | Cloudflare hesabında 5 dakikalık iş, ücretsiz |
+| Turnstile anahtarlarının Sestek hesabına devri | Geçici olarak ajans hesabında açılıyor, sonra devredilecek (aşağıdaki karara bak) |
 | Knovvu tarafında proje bazlı günlük/saatlik arama kotası | Bizden bağımsız son emniyet hattı |
 | CRM'deki QATEST kayıtlarının temizlenmesi | Güvenlik testinden ~11-12 kayıt kaldı |
 | Honeypot teyidi: `hp` dolu istekte telefon çalmadı mı, CRM'e kayıt düştü mü | Dışarıdan ölçülemiyor |
@@ -76,6 +77,12 @@
 - **Newsletter e-posta politikası:** ücretsiz sağlayıcılar serbest. Huninin
   en üstü, gmail'i engellemek abone kaybettirir.
 - **Turnstile:** ilk turda ertelenmişti, güvenlik testinden sonra sıraya alındı.
+  Anahtarlar **geçici olarak ajans Cloudflare hesabında** açılıyor ki iş
+  beklemesin; Sestek'e yazılı bildirilecek ve devredilecek. Bu yüzden **site
+  key koda gömülmez, Designer prop'u olur** — devir kod değişikliği ve yeniden
+  yayın gerektirmesin. Secret key yalnız Webflow Cloud env'inde durur.
+  Widget hostname listesine staging ve canlı alan adlarının hepsi eklenir.
+  Devirde iki anahtar AYNI ANDA değişmeli, aksi halde doğrulama kırılır.
 - **Formlar:** demo/contact/newsletter/opus-report React component olarak;
   `crm-forms.js` kalan native Webflow formları için köprü olarak duruyor.
 - **Outbound EN dili:** sayfa bazlı, dil seçici yok.
