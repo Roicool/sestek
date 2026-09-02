@@ -44,7 +44,8 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
   "phone": "05444390406",
   "consent": true,
   "lang": "TR",
-  "hp": ""
+  "hp": "",
+  "turnstileToken": "0.abc…"
 }
 ```
 
@@ -54,6 +55,11 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 - `consent !== true` → 400 (KVKK: kullanıcıyı arıyoruz, açık rıza şart).
 - `hp` (honeypot) doluysa → bot. **200 `{ok:true}` dön ama Knovvu'ya istek
   ATMA** (bota başarısız olduğunu belli etme).
+- `turnstileToken` Cloudflare Turnstile jetonu. `TURNSTILE_SECRET` env'i
+  TANIMLIYSA doğrulama **zorunludur**: jeton yoksa veya siteverify başarısızsa
+  403 `captcha_failed` dön, Knovvu'ya hiç dokunma. Env tanımlı DEĞİLSE alan
+  yok sayılır — bu, anahtar girilene kadar sitenin çalışmaya devam etmesini
+  sağlayan kademeli açılıştır. Jetonlar tek kullanımlıktır, tekrar kabul etme.
 
 ### Yanıt sözleşmesi (client buna göre mesaj basar — değiştirme)
 
@@ -63,6 +69,7 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 | 400 | `{"ok":false,"error":"invalid_name"}` | Ad geçersiz |
 | 400 | `{"ok":false,"error":"invalid_phone"}` | Telefon geçersiz |
 | 400 | `{"ok":false,"error":"consent_required"}` | Rıza yok |
+| 403 | `{"ok":false,"error":"captcha_failed"}` | Turnstile jetonu yok / doğrulanamadı |
 | 429 | `{"ok":false,"error":"rate_limited","retryAfter":600}` | Limit aşıldı |
 | 501 | `{"ok":false,"error":"not_configured"}` | Env değişkenleri eksik (mevcut route'lardaki env-gate kalıbı) |
 | 502 | `{"ok":false,"error":"upstream"}` | Knovvu hata döndü |
@@ -81,6 +88,7 @@ Knovvu'nun ham hata gövdesini istemciye SIZDIRMA — logla, `upstream` dön.
 | `KNOVVU_OUTBOUND_URL` | Outbound Manager call-request adresi (bölgeye göre) |
 | `KNOVVU_PROJECT_NAME` | Knovvu tarafındaki proje adı — gerçek değer env'de |
 | `KNOVVU_SCOPE` | Opsiyonel — IdentityServer scope isterse |
+| `TURNSTILE_SECRET` | Cloudflare Turnstile SECRET key. Tanımlıysa jeton doğrulaması zorunlu olur; tanımlı değilse alan yok sayılır |
 
 > ⚠️ **Bu dosya public bir repoda duruyor.** Client id, proje adı ve servis
 > adresleri dahil hiçbir gerçek değer buraya yazılmaz; hepsi Webflow Cloud
@@ -150,8 +158,40 @@ yeterli; kalıcı istersen Cloudflare KV):
 - **IP başına:** saatte en fazla 5 istek (`CF-Connecting-IP` header'ı) → 429.
 - Map'i her istekte süresi geçen kayıtlardan arındır (bellek büyümesin).
 
-Opsiyonel güçlendirme (ayrı iş): Cloudflare Turnstile — client'a widget,
-route'ta `cf-turnstile-response` doğrulaması.
+### 4. Cloudflare Turnstile (istemci hazır — sunucu doğrulaması bekleniyor)
+
+İstemci jetonu gövdede `turnstileToken` olarak gönderir. Rate limit'ten ÖNCE,
+Knovvu'ya dokunmadan doğrula:
+
+```ts
+async function verifyTurnstile(token: string, ip: string | null) {
+  const secret = process.env.TURNSTILE_SECRET;
+  if (!secret) return true;          // anahtar girilmemiş → kontrol kapalı
+  if (!token) return false;
+  const body = new URLSearchParams({ secret, response: token });
+  if (ip) body.set("remoteip", ip);  // CF-Connecting-IP — Cloudflare koyar
+  const r = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    { method: "POST", body }
+  );
+  const j = (await r.json().catch(() => ({}))) as { success?: boolean };
+  return j.success === true;
+}
+```
+
+Kurallar:
+
+- Başarısızsa 403 `{"ok":false,"error":"captcha_failed"}` — istemci bu kodu
+  kendi mesajına çevirir, widget'ı reset eder.
+- `remoteip` olarak YALNIZ `CF-Connecting-IP` kullan. `X-Forwarded-For` ve
+  `X-Real-IP` istemci tarafından yazılabilir, güvenilmez.
+- Jetonlar TEK KULLANIMLIK. Aynı jeton ikinci kez gelirse siteverify zaten
+  reddeder; ayrıca kendi tarafında tekrar kullanımı loglamak faydalı.
+- Turnstile rate limit'in YERİNE GEÇMEZ. Jeton çözen bir bot yine ardışık
+  arama tetikleyebilir; numara/IP limitleri kalıcı depoda ayrıca durmalı.
+- Site key gizli değildir (HTML'de görünür), secret key yalnız bu env'de
+  durur. Anahtarlar geçici olarak ajans Cloudflare hesabında; Sestek hesabına
+  devirde site key ve secret key AYNI ANDA değişmelidir.
 
 ---
 
@@ -196,11 +236,19 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "not_configured" }, { status: 501 });
   }
 
-  const { name, phone, consent, lang, hp } = (await req.json().catch(() => ({}))) as {
-    name?: string; phone?: string; consent?: boolean; lang?: string; hp?: string;
-  };
+  const { name, phone, consent, lang, hp, turnstileToken } =
+    (await req.json().catch(() => ({}))) as {
+      name?: string; phone?: string; consent?: boolean; lang?: string;
+      hp?: string; turnstileToken?: string;
+    };
 
   if (hp) return Response.json({ ok: true }); // honeypot: sessiz başarı
+
+  const ip = req.headers.get("CF-Connecting-IP");
+  if (!(await verifyTurnstile(turnstileToken ?? "", ip))) {
+    return Response.json({ ok: false, error: "captcha_failed" }, { status: 403 });
+  }
+
   const cleanName = (name ?? "").trim();
   if (cleanName.length < 2 || cleanName.length > 100) {
     return Response.json({ ok: false, error: "invalid_name" }, { status: 400 });

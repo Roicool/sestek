@@ -21,6 +21,7 @@
  * WebGL yoksa / reduced-motion'da orb statik gradient'e düşer.
  */
 import * as React from "react";
+import { createTurnstile } from "./turnstile";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -48,6 +49,7 @@ export interface OutboundCallDemoProps {
   sideCaption?: string;
   endpoint?: string;
   lang?: Lang;
+  turnstileSiteKey?: string;
   cooldownSeconds?: number;
 }
 
@@ -56,6 +58,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_name: "Lütfen adınızı girin.",
     invalid_phone: "Lütfen geçerli bir cep telefonu girin.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
+    captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
     upstream: "Arama başlatılamadı, lütfen daha sonra tekrar deneyin.",
@@ -66,6 +69,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_name: "Please enter your name.",
     invalid_phone: "Please enter a valid mobile number.",
     consent_required: "Please tick the consent box to continue.",
+    captcha_failed: "Security check could not be completed — please try again.",
     rate_limited: "You requested a call just now — please try again in a few minutes.",
     not_configured: "The demo is unavailable right now, please try again later.",
     upstream: "We couldn't start the call, please try again later.",
@@ -381,6 +385,8 @@ const CSS = `
   .sodc-dots i,.st-calling .sodc-ringx,.sodc-spin{animation:none}
   .sodc-orbwrap{transition:none}
 }
+.sodc-ts{margin-top:var(--spacing--3,.75rem)}
+.sodc-ts:empty{display:none;margin:0}
 `;
 
 const PhoneIcon = ({ size = 20 }: { size?: number }) => (
@@ -427,8 +433,12 @@ export function OutboundCallDemo({
   sideCaption = "Your number is used only for this demo call and never stored.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "EN",
+  turnstileSiteKey = "",
   cooldownSeconds = 600,
 }: OutboundCallDemoProps) {
+  /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
+  const ts = createTurnstile(React, turnstileSiteKey);
+
   const [stage, setStage] = React.useState<Stage>("idle");
   const [name, setName] = React.useState("");
   const [digits, setDigits] = React.useState("");
@@ -468,11 +478,18 @@ export function OutboundCallDemo({
     }
 
     setSending(true);
-    fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: cleanName, phone, consent: true, lang, hp }),
-    })
+    /* Turnstile jetonu istekle birlikte gider; anahtar yoksa "" olur ve
+     * akış hiç değişmez. Doğrulama sunucuda yapılır. */
+    ts.getToken()
+      .then((turnstileToken) =>
+        fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: cleanName, phone, consent: true, lang, hp, turnstileToken,
+          }),
+        })
+      )
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.status === 200 && body?.ok) {
@@ -483,7 +500,10 @@ export function OutboundCallDemo({
         }
       })
       .catch(() => fail("network"))
-      .finally(() => setSending(false));
+      .finally(() => {
+        setSending(false);
+        ts.reset(); // jetonlar tek kullanımlık
+      });
   }
 
   const chips = [chip1, chip2, chip3].filter(Boolean);
@@ -604,6 +624,9 @@ export function OutboundCallDemo({
               </span>
             </label>
             {error && <div className="sodc-err" role="alert">{error}</div>}
+            {/* Turnstile — appearance interaction-only, yalnız meydan okuma
+                gerektiğinde görünür; aksi halde yer kaplamaz. */}
+            {ts.enabled && <div className="sodc-ts" ref={ts.slotRef} />}
             <button className="sodc-cta" type="submit" disabled={sending}>
               {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon size={15} />}
               {sending ? sendingText : buttonText}

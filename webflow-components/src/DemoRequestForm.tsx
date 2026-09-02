@@ -27,6 +27,7 @@
  */
 import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
+import { createTurnstile } from "./turnstile";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -67,6 +68,7 @@ export interface DemoRequestFormProps {
   endpoint?: string;
   formType?: string;
   freeEmail?: "Block" | "Allow";
+  turnstileSiteKey?: string;
   lang?: Lang;
 }
 
@@ -81,6 +83,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Lütfen geçerli bir telefon numarası girin.",
     invalid_message: "Lütfen kısaca ihtiyacınızı yazın.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
+    captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
     rate_limited: "Kısa süre önce bir istek gönderdiniz — lütfen biraz sonra tekrar deneyin.",
     network: "Bağlantı kurulamadı — internetinizi kontrol edip tekrar deneyin.",
     generic: "Bir şeyler ters gitti, lütfen tekrar deneyin.",
@@ -96,6 +99,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Please enter a valid phone number.",
     invalid_message: "Please tell us briefly what you need.",
     consent_required: "Please tick the consent box to continue.",
+    captcha_failed: "Security check could not be completed — please try again.",
     rate_limited: "You just sent a request — please try again in a few minutes.",
     network: "Connection failed — check your internet and try again.",
     generic: "Something went wrong, please try again.",
@@ -299,6 +303,8 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
   .sdrf-done,.sdrf-stepin{animation:none}
   .sdrf-prog-bar b{transition:none}
 }
+.sdrf-ts{margin-top:var(--spacing--3,.75rem)}
+.sdrf-ts:empty{display:none;margin:0}
 `;
 
 const CheckIcon = () => (
@@ -350,8 +356,12 @@ export function DemoRequestForm({
   endpoint = "/demos/api/crm/lead",
   formType = "frm-demo",
   freeEmail = "Block",
+  turnstileSiteKey = "",
   lang = "EN",
 }: DemoRequestFormProps) {
+  /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
+  const ts = createTurnstile(React, turnstileSiteKey);
+
   const [firstname, setFirstname] = React.useState("");
   const [lastname, setLastname] = React.useState("");
   const [company, setCompany] = React.useState("");
@@ -456,11 +466,16 @@ export function DemoRequestForm({
     if (utms) payload.utm = utms;
 
     setSending(true);
-    fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+    /* Turnstile jetonu istekle birlikte gider; anahtar yoksa "" olur ve
+     * akış hiç değişmez. Doğrulama sunucuda yapılır. */
+    ts.getToken()
+      .then((turnstileToken) =>
+        fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, turnstileToken }),
+        })
+      )
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
@@ -472,7 +487,10 @@ export function DemoRequestForm({
         }
       })
       .catch(() => fail("network"))
-      .finally(() => setSending(false));
+      .finally(() => {
+        setSending(false);
+        ts.reset(); // jetonlar tek kullanımlık
+      });
   }
 
   const field = (key: string, extra = "") =>
@@ -619,6 +637,9 @@ export function DemoRequestForm({
               />
 
               {error && <div className="sdrf-err" role="alert">{error}</div>}
+              {/* Turnstile — appearance interaction-only, yalnız meydan okuma
+                  gerektiğinde görünür; aksi halde yer kaplamaz. */}
+              {ts.enabled && <div className="sdrf-ts" ref={ts.slotRef} />}
 
               {!stepped ? (
                 submitBtn(buttonText)

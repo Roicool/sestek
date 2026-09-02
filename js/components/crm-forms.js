@@ -1,5 +1,5 @@
 /*!
- * crm-forms.js v1.1.0
+ * crm-forms.js v1.2.0
  * Mirrors Webflow form submissions to the CRM lead endpoint (Microsoft
  * Dynamics, proxied by the Webflow Cloud app — see docs/CRM spec).
  *
@@ -21,6 +21,10 @@
  *     disposable domain, or (outside frm-newsletter) from a free consumer
  *     provider — the Webflow submission itself is untouched
  *   • Identical back-to-back payloads are deduped (double-click / resubmit)
+ *   • Cloudflare Turnstile: when data-crm-turnstile carries the SITE key, a
+ *     widget is rendered into each marked form and its single-use token rides
+ *     along as `turnstileToken`. Without the attribute nothing is loaded and
+ *     behaviour is unchanged
  *
  * Requires: nothing (no GSAP). Integrates with sticky-utms.js if present.
  * CSS: none.
@@ -55,6 +59,19 @@
  * Attributes (optional, on the <form> or any ancestor incl. <body>):
  *   data-crm-endpoint    override the endpoint URL
  *                        (default "/demos/api/crm/lead" — same-origin mount)
+ *   data-crm-turnstile   Cloudflare Turnstile SITE key. Not a secret (it is
+ *                        visible in the HTML); the SECRET key lives only in
+ *                        the server's environment and never appears here.
+ *                        Absent → no script is loaded, no token is sent.
+ *
+ * Turnstile caveat for this bridge: the native Webflow submit is synchronous,
+ * so the token has to already exist when `submit` fires. The widget is
+ * rendered on init with appearance "interaction-only", which resolves
+ * silently for ordinary visitors well before they finish typing. If a visitor
+ * is actually challenged, the CRM copy waits up to 8 s for the token and is
+ * dropped after that — the Webflow submission itself is never affected. The
+ * React form components do this properly (they await the token), so prefer
+ * them for the four primary forms.
  *
  * API:
  *   Sestek.initCrmForms([selector])   — wire all [data-crm-form] forms
@@ -68,6 +85,7 @@
   var DEFAULT_ENDPOINT = "/demos/api/crm/lead";
   var UTM_STORAGE_KEY  = "sestek_utms";       /* written by sticky-utms.js */
   var HP_NAME          = "website";           /* tempting name for bots    */
+  var TOKEN_WAIT_MS    = 8000;                /* max wait for a Turnstile token */
 
   var FORM_TYPES = ["frm-contact", "frm-demo", "frm-newsletter", "frm-opus-report"];
 
@@ -173,6 +191,89 @@
     }
     if (!allowFree && FREE_EMAIL[domain]) return "free";
     return "ok";
+  }
+
+  /* ── Cloudflare Turnstile ───────────────────────────────────────
+   * Script is loaded once, on demand, and only when a site key is given. */
+  var turnstileLoading = false;
+  function withTurnstile(cb) {
+    if (global.turnstile) return cb(global.turnstile);
+    if (!turnstileLoading) {
+      turnstileLoading = true;
+      var el = document.createElement("script");
+      el.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      el.async = true;
+      el.defer = true;
+      document.head.appendChild(el);
+    }
+    var tries = 0;
+    (function poll() {
+      if (global.turnstile) return cb(global.turnstile);
+      if (++tries > 100) return cb(null); /* ~10 s — never block the form */
+      setTimeout(poll, 100);
+    })();
+  }
+
+  /** Nearest data-crm-turnstile on the form or an ancestor, else "". */
+  function resolveSiteKey(form) {
+    var el = form;
+    while (el && el.getAttribute) {
+      var v = el.getAttribute("data-crm-turnstile");
+      if (v) return v.trim();
+      el = el.parentElement;
+    }
+    return "";
+  }
+
+  /**
+   * Renders a widget into `form` and returns a handle.
+   * `token(cb)` calls back with the token, "" when there is no site key, or
+   * "" after TOKEN_WAIT_MS if the visitor has not solved a challenge yet.
+   */
+  function setupTurnstile(form) {
+    var key = resolveSiteKey(form);
+    if (!key) return { token: function (cb) { cb(""); }, reset: function () {} };
+
+    var api = null, widget = null;
+    var slot = form.querySelector("[data-crm-turnstile-slot]");
+    if (!slot) {
+      slot = document.createElement("div");
+      slot.setAttribute("data-crm-turnstile-slot", "");
+      form.appendChild(slot);
+    }
+    withTurnstile(function (ts) {
+      if (!ts) return; /* blocked — token stays empty, server decides */
+      api = ts;
+      try {
+        widget = ts.render(slot, {
+          sitekey: key,
+          appearance: "interaction-only",
+          "refresh-expired": "auto",
+        });
+      } catch (_) { /* double render / bad key */ }
+    });
+
+    function read() {
+      if (!api || widget === null) return "";
+      try { return api.getResponse(widget) || ""; } catch (_) { return ""; }
+    }
+    return {
+      token: function (cb) {
+        var t = read();
+        if (t) return cb(t);
+        var waited = 0;
+        (function poll() {
+          var v = read();
+          if (v) return cb(v);
+          waited += 200;
+          if (waited >= TOKEN_WAIT_MS) return cb("");
+          setTimeout(poll, 200);
+        })();
+      },
+      reset: function () {
+        if (api && widget !== null) { try { api.reset(widget); } catch (_) {} }
+      },
+    };
   }
 
   /** Resolve which CRM field (if any) an input element feeds. */
@@ -288,6 +389,7 @@
 
     form.__sestekCrmWired = true;
     var hp = injectHoneypot(form);
+    var ts = setupTurnstile(form);
     var lastSent = null; /* dedupe identical consecutive payloads */
 
     form.addEventListener("submit", function () {
@@ -311,7 +413,12 @@
       if (fingerprint === lastSent) return; /* double-click / retry */
       lastSent = fingerprint;
 
-      send(resolveEndpoint(form), payload);
+      var endpoint = resolveEndpoint(form);
+      ts.token(function (token) {
+        payload.turnstileToken = token;
+        send(endpoint, payload);
+        ts.reset(); /* tokens are single-use */
+      });
     });
   }
 

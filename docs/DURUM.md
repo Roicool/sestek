@@ -19,7 +19,7 @@
 | 1 | CRM lead endpoint'ine kalıcı rate limit (KV / Durable Objects) | Sunucu repo | Güvenlik testi B-01, Yüksek. Şu an hiç limit yok, 10/10 istek geçti |
 | 2 | Outbound: `Content-Type: application/json` zorunluluğu + Origin allowlist | Sunucu repo | B-03. `text/plain` preflight'sız geçiyor, cross-site arama tetiklenebiliyor |
 | 3 | Outbound numara/IP sayacını bellekten kalıcı depoya taşı | Sunucu repo | Şu an modül seviyesi `Map`; isolate değişince sıfırlanır |
-| 4 | Turnstile: widget (istemci) + doğrulama (sunucu) | Bizde + sunucu repo | İstemci tarafı commit `2831a0e`'de duruyor, geri açılacak |
+| 4 | Turnstile doğrulaması (`TURNSTILE_SECRET` + siteverify) | Sunucu repo | İstemci tarafı BİTTİ; spec `docs/outbound-demo-api.md` §4 ve `docs/CRM-LEAD-API-SPEC.md` §6'da |
 | 5 | E-posta politikasının sunucuda uygulanması | Sunucu repo | Liste ve hata kodları `docs/CRM-LEAD-API-SPEC.md` §2.1'de |
 | 6 | Günlük toplam arama tavanı + devre kesici | Sunucu repo | Dağıtık kötüye kullanımda fatura koruması |
 | 7 | Saatlik arama sayacı + eşik alarmı | Sunucu repo | Anormalliği erken görmek için |
@@ -28,6 +28,7 @@
 | 10 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
 | 11 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu cevabı bekleniyor, ~10 satırlık iş |
 | 12 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key aynı anda değişir, sonrasında test gönderimi |
+| 13 | Designer'da 4 component'e ve `data-crm-turnstile`'a site key'in girilmesi | Bizde | Sunucu `TURNSTILE_SECRET`'ı aldıktan SONRA; sıra tersine dönerse hiçbir form gönderilemez |
 
 ### Sestek / danışman tarafında bekleyenler
 
@@ -52,6 +53,7 @@
 
 | Tarih | İş | Commit |
 |---|---|---|
+| 02.09 | Turnstile istemci tarafı: 4 React component'te `Turnstile site key` prop'u, `outbound-demo.js` v1.2.0 ve `crm-forms.js` v1.2.0'da `data-*-turnstile`. Jeton `turnstileToken` olarak gider, her denemeden sonra reset edilir. Sunucu doğrulaması iki spec'e yazıldı | (bu commit) |
 | 02.09 | Public repodaki altyapı kimlikleri temizlendi (tenant id, org URL, Knovvu client id, proje adı); referans koddan gömülü fallback'ler kaldırıldı | `5685ba7` |
 | 02.09 | Kurumsal e-posta politikası: ücretsiz sağlayıcılar B2B formlarında engelli, newsletter'da serbest; tek kullanımlık adresler her yerde engelli. Sunucu spec'ine de yazıldı | `59b5cb7` |
 | 02.09 | Güvenlik ve kısıt testi yapıldı (dış ekip), rapor alındı: kimlik sızıntısı yok, CRM rate limit yok, outbound beklenenden sağlam | — |
@@ -76,6 +78,12 @@
   gönderim veya thank-you sayfası değil).
 - **Newsletter e-posta politikası:** ücretsiz sağlayıcılar serbest. Huninin
   en üstü, gmail'i engellemek abone kaybettirir.
+- **Turnstile devreye alma sırası:** ÖNCE sunucuya `TURNSTILE_SECRET` girilir,
+  SONRA Designer'da site key'ler girilir. Ters sırada jeton gönderilir ama
+  doğrulanmaz (zararsız); doğru sırada da kısa bir süre secret tanımlıyken
+  jeton boş gelir, o yüzden secret girildikten hemen sonra site key girilmeli.
+  Anahtar BOŞKEN hiçbir script yüklenmez ve davranış birebir eskisi gibidir —
+  yayınlamak risksiz, geri almak tek alanı silmek kadar kolay.
 - **Turnstile:** ilk turda ertelenmişti, güvenlik testinden sonra sıraya alındı.
   Anahtarlar **geçici olarak ajans Cloudflare hesabında** açılıyor ki iş
   beklemesin; Sestek'e yazılı bildirilecek ve devredilecek. Bu yüzden **site

@@ -224,5 +224,15 @@ export default declareComponent(DemoRequestForm, {
       defaultValue: "EN",
       tooltip: "Doğrulama/hata mesajlarının dili",
     }),
+    turnstileSiteKey: props.Text({
+      name: "Turnstile site key",
+      group: "API",
+      defaultValue: "",
+      tooltip:
+        "Cloudflare Turnstile SITE key (gizli değildir, HTML'de görünür). " +
+        "Boş bırakılırsa bot koruması devre dışı kalır ve hiçbir script " +
+        "yüklenmez. Secret key yalnız sunucunun ortam değişkeninde durur, " +
+        "buraya ASLA yazılmaz.",
+    }),
   },
 });

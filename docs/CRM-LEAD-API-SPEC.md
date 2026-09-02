@@ -43,6 +43,7 @@ ayrı bir kanalla gelecek.
 | `CRM_CLIENT_ID` | Azure AD app registration client id |
 | `CRM_CLIENT_SECRET` | Azure AD client secret |
 | `CRM_BASE_URL` | Dynamics org adresi, `https://<org>.crm<n>.dynamics.com` |
+| `TURNSTILE_SECRET` | Cloudflare Turnstile SECRET key. Tanımlıysa jeton doğrulaması zorunlu olur; tanımlı değilse alan yok sayılır (bkz. §6) |
 
 > ⚠️ **Bu dosya public bir repoda duruyor.** Tenant id, org adresi, client id
 > gibi gerçek değerler buraya YAZILMAZ; yalnızca Webflow Cloud environment
@@ -110,7 +111,8 @@ deploy edilebilir; site tarafı 501'i sessizce yutar.
     "utm_source": "…", "utm_medium": "…", "utm_campaign": "…",
     "utm_term": "…", "utm_content": "…"
   },
-  "hp": ""                            // honeypot — bkz. §6
+  "hp": "",                           // honeypot — bkz. §6
+  "turnstileToken": "0.abc…"           // Cloudflare Turnstile — bkz. §6
 }
 ```
 
@@ -125,6 +127,7 @@ alanlar Dynamics payload'ına **hiç konmaz** (boş string gönderilmez).
 | `200` | `{"ok":true}` | Lead oluştu |
 | `400` | `{"ok":false,"reason":"…"}` | Eksik/geçersiz alan, bilinmeyen formType, JSON parse hatası |
 | `403` | `{"ok":false}` | Origin kontrolü geçemedi (bkz. §6) |
+| `403` | `{"ok":false,"reason":"captcha_failed"}` | Turnstile jetonu yok / doğrulanamadı |
 | `429` | `{"ok":false,"reason":"rate limited"}` | Rate limit |
 | `501` | `{"ok":false,"reason":"CRM is not configured"}` | Env tanımsız |
 | `502` | `{"ok":false,"reason":"upstream <status>"}` | Azure AD veya Dynamics hatası |
@@ -223,9 +226,39 @@ payload'a konmaz. (Danışman newsletter'ın da lead olarak açılmasını bu ş
 - **Origin kontrolü:** `Origin`/`Referer` header'ı varsa `sestek.com` /
   `www.sestek.com` (ve lokal dev origin'leri) dışındaysa `403`. Header hiç
   yoksa engelleme (bazı tarayıcı/proxy kombinasyonları göndermez).
-- **Rate limit:** IP başına basit sınır (örn. 10 istek/dk). Workers'ta
-  module-scope `Map` ile best-effort yeterli; Webflow Cloud KV/DO sunuyorsa
-  o da kullanılabilir. Aşımda `429`.
+- **Rate limit:** IP başına sınır (örn. 10 istek/dk). Module-scope `Map`
+  **yetmez** — Workers isolate'ı değişince sıfırlanır; güvenlik testinde
+  ardışık 10 isteğin 10'u da geçti. Kalıcı sayaç (KV / Durable Objects /
+  Workers Rate Limiting binding) gerekir. Aşımda `429`.
+- **Cloudflare Turnstile:** İstemci jetonu gövdede `turnstileToken` olarak
+  gönderir (4 React form component'i ve `crm-forms.js` köprüsü hazır).
+  `TURNSTILE_SECRET` env'i TANIMLIYSA doğrulama zorunludur; jeton yoksa veya
+  siteverify başarısızsa CRM'e yazmadan `403 captcha_failed` dön. Env tanımlı
+  DEĞİLSE alan yok sayılır — anahtar girilene kadar site çalışmaya devam eder
+  (kademeli açılış). Doğrulama honeypot'tan sonra, Azure AD token'ından önce
+  yapılmalı:
+
+  ```ts
+  const secret = env.TURNSTILE_SECRET;
+  if (secret) {
+    if (!turnstileToken) return json({ ok: false, reason: "captcha_failed" }, 403);
+    const body = new URLSearchParams({ secret, response: turnstileToken });
+    const ip = req.headers.get("CF-Connecting-IP");   // Cloudflare koyar
+    if (ip) body.set("remoteip", ip);                 // XFF güvenilmez
+    const r = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      { method: "POST", body }
+    );
+    const v = (await r.json().catch(() => ({}))) as { success?: boolean };
+    if (v.success !== true) {
+      return json({ ok: false, reason: "captcha_failed" }, 403);
+    }
+  }
+  ```
+
+  Jetonlar tek kullanımlıktır. Turnstile rate limit'in yerine geçmez: ikisi
+  birlikte durmalı. Site key gizli değildir (HTML'de görünür), secret key
+  yalnız bu env'de durur ve hiçbir repoya yazılmaz.
 - **Boyut sınırı:** description ≤ 4000, diğer string alanlar ≤ 250 karakter;
   fazlası kırpılır. Gövde ≥ 32 KB ise `400`.
 - **Sanitizasyon:** Alanlar string'e zorlanır (`String(v).trim()`); obje/dizi

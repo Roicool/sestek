@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.1.0
+ * outbound-demo.js v1.2.0
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -11,16 +11,28 @@
  *   <form data-outbound-demo
  *         data-od-endpoint="/demos/api/demos/outbound-call"  ← ops. (default bu)
  *         data-od-lang="TR"                                  ← ops. arama dili
- *         data-od-cooldown="600">                            ← ops. numara başına sn
+ *         data-od-cooldown="600"                             ← ops. numara başına sn
+ *         data-od-turnstile="0x4AAA…">                       ← ops. Turnstile SITE key
  *     <input  data-od-name  type="text">
  *     <input  data-od-phone type="tel">
  *     <label><input data-od-consent type="checkbox"> KVKK…</label>
  *     <input  data-od-hp type="text" tabindex="-1" autocomplete="off"
  *             style="position:absolute;left:-9999px">        ← honeypot (ops.)
+ *     <div data-od-turnstile-slot></div>                     ← widget buraya (ops.)
  *     <button data-od-submit type="submit">Beni ara</button>
  *     <div data-od-success hidden>Aramanız başlatıldı…</div>
  *     <div data-od-error   hidden>Bir şeyler ters gitti.</div>
  *   </form>
+ *
+ * Turnstile (bot koruması):
+ *   data-od-turnstile'a Cloudflare Turnstile SITE key'ini ver — o zaman ve
+ *   yalnız o zaman challenges.cloudflare.com script'i (tek sefer) yüklenir,
+ *   widget [data-od-turnstile-slot] içine çizilir (slot yoksa submit
+ *   butonunun önüne otomatik açılır), jeton payload'a `turnstileToken` olarak
+ *   eklenir. Jetonlar tek kullanımlık olduğundan her denemeden sonra widget
+ *   reset edilir. Attribute YOKSA davranış aynen eskisi gibi kalır: jeton boş
+ *   gider ve kararı sunucu verir (secret tanımlıysa 403 captcha_failed).
+ *   Site key gizli değildir; secret key yalnız sunucu ortamında durur.
  *
  * Davranış:
  *   • Client doğrulama: ad ≥ 2 karakter; telefon TR mobil formata normalize
@@ -43,6 +55,9 @@
  *   501 {ok:false,error:"not_configured"} · 502 {ok:false,error:"upstream"}
  *
  * Changelog
+ * v1.2.0 — Cloudflare Turnstile: data-od-turnstile ile site key verildiğinde
+ *          widget çizilir, jeton `turnstileToken` olarak gönderilir, her
+ *          denemeden sonra reset edilir; captcha_failed mesajı eklendi
  * v1.1.0 — kalıcı client cooldown: başarılı gönderimler localStorage'da
  *          tutulur; aynı numara data-od-cooldown sn (default 600) içinde
  *          tekrar gönderilemez, genel 60 sn form kilidi de kalıcı
@@ -58,6 +73,7 @@
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
+    captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
     upstream: "Arama başlatılamadı, lütfen daha sonra tekrar deneyin.",
     network: "Bağlantı kurulamadı — internetinizi kontrol edip tekrar deneyin.",
     generic: "Bir şeyler ters gitti, lütfen tekrar deneyin."
@@ -75,6 +91,27 @@
     if (d.slice(0, 2) === "90" && d.length === 12) d = d.slice(2);
     if (d.charAt(0) === "5" && d.length === 10) d = "0" + d;
     return /^05\d{9}$/.test(d) ? d : null;
+  }
+
+  /* Turnstile script'ini tek sefer yükle; hazır olunca cb(window.turnstile),
+   * gelmezse (ad blocker / ağ) cb(null) — form asla kilitlenmez. */
+  var turnstileLoading = false;
+  function withTurnstile(cb) {
+    if (global.turnstile) return cb(global.turnstile);
+    if (!turnstileLoading) {
+      turnstileLoading = true;
+      var s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      s.async = true;
+      s.defer = true;
+      document.head.appendChild(s);
+    }
+    var tries = 0;
+    (function poll() {
+      if (global.turnstile) return cb(global.turnstile);
+      if (++tries > 100) return cb(null); // ~10 sn
+      setTimeout(poll, 100);
+    })();
   }
 
   /* Kalıcı gönderim kaydı — localStorage yoksa bellekte (oturumluk). */
@@ -132,6 +169,40 @@
       "/demos/api/demos/outbound-call";
     var lang = root.getAttribute("data-od-lang") || "TR";
     var perPhoneMs = (parseFloat(root.getAttribute("data-od-cooldown")) || 600) * 1000;
+
+    /* Turnstile widget'ı — yalnız site key verilmişse. */
+    var tsKey = root.getAttribute("data-od-turnstile");
+    var tsApi = null, tsWidget = null;
+    if (tsKey) {
+      var slot = root.querySelector("[data-od-turnstile-slot]");
+      if (!slot) {
+        slot = document.createElement("div");
+        slot.setAttribute("data-od-turnstile-slot", "");
+        var anchor = submitEl || form.lastElementChild;
+        if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(slot, anchor);
+        else form.appendChild(slot);
+      }
+      withTurnstile(function (ts) {
+        if (!ts) return; // script gelmedi — jeton boş gider, sunucu karar verir
+        tsApi = ts;
+        try {
+          tsWidget = ts.render(slot, {
+            sitekey: tsKey,
+            appearance: "interaction-only",
+            "refresh-expired": "auto"
+          });
+        } catch (e) { /* çift render / geçersiz anahtar */ }
+      });
+    }
+    function turnstileToken() {
+      if (!tsApi || tsWidget === null) return "";
+      try { return tsApi.getResponse(tsWidget) || ""; } catch (e) { return ""; }
+    }
+    function turnstileReset() {
+      if (tsApi && tsWidget !== null) {
+        try { tsApi.reset(tsWidget); } catch (e) {}
+      }
+    }
 
     var sending = false;
     var defaultError = errorEl ? errorEl.textContent : "";
@@ -191,7 +262,8 @@
           phone: phone,
           consent: true,
           lang: lang,
-          hp: hpEl ? (hpEl.value || "") : ""
+          hp: hpEl ? (hpEl.value || "") : "",
+          turnstileToken: turnstileToken()
         })
       })
         .then(function (res) {
@@ -214,6 +286,7 @@
           sending = false;
           root.classList.remove("is-sending");
           if (submitEl) submitEl.disabled = false;
+          turnstileReset(); // jetonlar tek kullanımlık
         });
     });
 
