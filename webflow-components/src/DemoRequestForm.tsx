@@ -26,6 +26,7 @@
  * Honeypot doluysa istek hiç çıkmaz ama başarı gösterilir.
  */
 import * as React from "react";
+import { classifyEmail } from "./emailPolicy";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -65,6 +66,7 @@ export interface DemoRequestFormProps {
   formCaption?: string;
   endpoint?: string;
   formType?: string;
+  freeEmail?: "Block" | "Allow";
   lang?: Lang;
 }
 
@@ -74,6 +76,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_lastname: "Lütfen soyadınızı girin.",
     invalid_company: "Lütfen şirket adınızı girin.",
     invalid_email: "Lütfen geçerli bir kurumsal e-posta girin.",
+    free_email: "Lütfen kurumsal e-posta adresinizi kullanın.",
+    disposable_email: "Geçici e-posta adresleri kabul edilmiyor.",
     invalid_phone: "Lütfen geçerli bir telefon numarası girin.",
     invalid_message: "Lütfen kısaca ihtiyacınızı yazın.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
@@ -87,6 +91,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_lastname: "Please enter your last name.",
     invalid_company: "Please enter your company name.",
     invalid_email: "Please enter a valid business email.",
+    free_email: "Please use your work email address.",
+    disposable_email: "Temporary email addresses aren't accepted.",
     invalid_phone: "Please enter a valid phone number.",
     invalid_message: "Please tell us briefly what you need.",
     consent_required: "Please tick the consent box to continue.",
@@ -343,6 +349,7 @@ export function DemoRequestForm({
   formCaption = "Your details are used only to respond to this request.",
   endpoint = "/demos/api/crm/lead",
   formType = "frm-demo",
+  freeEmail = "Block",
   lang = "EN",
 }: DemoRequestFormProps) {
   const [firstname, setFirstname] = React.useState("");
@@ -391,8 +398,12 @@ export function DemoRequestForm({
         return fail("invalid_lastname", "lastname");
       if (f === "company" && company.trim().length < 2)
         return fail("invalid_company", "company");
-      if (f === "email" && !EMAIL_RE.test(email.trim()))
-        return fail("invalid_email", "email");
+      if (f === "email") {
+        const verdict = classifyEmail(email, freeEmail === "Allow");
+        if (verdict === "invalid") return fail("invalid_email", "email");
+        if (verdict === "disposable") return fail("disposable_email", "email");
+        if (verdict === "free") return fail("free_email", "email");
+      }
       if (f === "phone" && !phoneOk(phone.trim()))
         return fail("invalid_phone", "phone");
       if (f === "message" && message.trim().length < 2)

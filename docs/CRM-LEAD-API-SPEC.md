@@ -55,6 +55,30 @@ Türetilen sabitler (koda yazılabilir, env gerekmez):
 - Scope: `{CRM_BASE_URL}/.default`
 - Lead endpoint: `{CRM_BASE_URL}/api/data/v9.2/leads`
 
+## 2.1 Kurumsal e-posta politikası (sunucuda ZORUNLU)
+
+İstemci tarafı (React formları ve `crm-forms.js`) aynı kontrolü zaten yapar,
+ama curl ile atlanabildiği için **asıl kontrol burada** olmalı. İki liste:
+
+| Liste | Ne | Hangi formda |
+|---|---|---|
+| FREE | Ücretsiz tüketici sağlayıcıları (gmail, hotmail, outlook, yahoo, yandex, icloud…) | `frm-contact`, `frm-demo`, `frm-opus-report` → **reddet**. `frm-newsletter` → **kabul et** |
+| DISPOSABLE | Tek kullanımlık adresler (mailinator, yopmail, 10minutemail…) | **Her formda reddet** (alt alan adları dahil: `*.mailinator.com`) |
+
+Referans listeler: `js/components/crm-forms.js` ve
+`webflow-components/src/emailPolicy.ts`. Sunucudaki liste bu ikisinin üst
+kümesi olmalı ve **deploy gerektirmeden güncellenebilmeli** (env veya KV).
+
+Yanıt: `400 {"ok":false,"error":"free_email"}` ve
+`400 {"ok":false,"error":"disposable_email"}`. İstemci bu iki kodu ayrı
+mesajla gösterir; bilinmeyen kod gelirse genel hataya düşer.
+
+> Bu bir **kalite filtresidir, güvenlik kontrolü değildir**: kendi alan adını
+> alan biri listeyi aşar. Kötüye kullanım için rate limit ve Turnstile gerekir.
+
+Opsiyonel güçlendirme: alan adının **MX kaydı** var mı diye bakmak (Worker
+içinden DNS-over-HTTPS). Yazım hatalarını ve uydurma alan adlarını da yakalar.
+
 **Env eksikse** endpoint `501` + `{"ok":false,"reason":"CRM is not configured"}`
 döner (mevcut TTS proxy'sindeki desenle aynı). Böylece kod, secret'lar gelmeden
 deploy edilebilir; site tarafı 501'i sessizce yutar.

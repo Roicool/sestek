@@ -87,6 +87,16 @@ export default declareComponent(NewsletterForm, {
       defaultValue: "frm-newsletter",
       tooltip: "Dynamics ses_formtype değeri",
     }),
+    freeEmail: props.Variant({
+      name: "Free email",
+      group: "API",
+      options: ["Block", "Allow"],
+      defaultValue: "Allow",
+      tooltip:
+        "Block: gmail/hotmail gibi ücretsiz sağlayıcılar reddedilir " +
+        "(kurumsal e-posta zorunlu) · Allow: kabul edilir. Tek kullanımlık " +
+        "adresler her iki durumda da reddedilir.",
+    }),
     lang: props.Variant({
       name: "Language",
       group: "API",

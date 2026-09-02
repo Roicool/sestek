@@ -23,6 +23,7 @@
  * içeriği onay mesajına döner.
  */
 import * as React from "react";
+import { classifyEmail } from "./emailPolicy";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -43,18 +44,23 @@ export interface NewsletterFormProps {
   successText?: string;
   endpoint?: string;
   formType?: string;
+  freeEmail?: "Block" | "Allow";
   lang?: Lang;
 }
 
 const MESSAGES: Record<Lang, Record<string, string>> = {
   TR: {
     invalid_email: "Lütfen geçerli bir e-posta girin.",
+    disposable_email: "Geçici e-posta adresleri kabul edilmiyor.",
+    free_email: "Lütfen kurumsal e-posta adresinizi kullanın.",
     rate_limited: "Kısa süre önce bir istek gönderdiniz — lütfen biraz sonra tekrar deneyin.",
     network: "Bağlantı kurulamadı — internetinizi kontrol edip tekrar deneyin.",
     generic: "Bir şeyler ters gitti, lütfen tekrar deneyin.",
   },
   EN: {
     invalid_email: "Please enter a valid email.",
+    disposable_email: "Temporary email addresses aren't accepted.",
+    free_email: "Please use your work email address.",
     rate_limited: "You just sent a request — please try again in a few minutes.",
     network: "Connection failed — check your internet and try again.",
     generic: "Something went wrong, please try again.",
@@ -169,6 +175,7 @@ export function NewsletterForm({
   successText = "You're in — see you in your inbox.",
   endpoint = "/demos/api/crm/lead",
   formType = "frm-newsletter",
+  freeEmail = "Allow",
   lang = "EN",
 }: NewsletterFormProps) {
   const [email, setEmail] = React.useState("");
@@ -186,7 +193,12 @@ export function NewsletterForm({
     setError(null);
 
     const clean = email.trim().toLowerCase();
-    if (!EMAIL_RE.test(clean)) return setError(msg("invalid_email"));
+    /* Newsletter huninin en ustu: ucretsiz saglayicilar SERBEST (freeEmail
+     * varsayilani "Allow"), yalnizca tek kullanimlik adresler engellenir. */
+    const verdict = classifyEmail(clean, freeEmail === "Allow");
+    if (verdict === "invalid") return setError(msg("invalid_email"));
+    if (verdict === "disposable") return setError(msg("disposable_email"));
+    if (verdict === "free") return setError(msg("free_email"));
 
     /* Demo modu: kayıt yok — e-postayı demo sayfasına taşı; Demo Request
      * Form ?email parametresini Business email alanına önceden doldurur. */

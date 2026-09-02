@@ -1,5 +1,5 @@
 /*!
- * crm-forms.js v1.0.0
+ * crm-forms.js v1.1.0
  * Mirrors Webflow form submissions to the CRM lead endpoint (Microsoft
  * Dynamics, proxied by the Webflow Cloud app — see docs/CRM spec).
  *
@@ -17,8 +17,9 @@
  *   • UTM params are read from sticky-utms.js' sessionStorage key and attached
  *   • A hidden honeypot input is injected into each marked form; its value is
  *     sent as `hp` (server silently drops bot submissions)
- *   • No request is sent at all when the e-mail field is empty/invalid
- *     (the server would reject it anyway — no wasted calls)
+ *   • No request is sent at all when the e-mail is empty/invalid, from a
+ *     disposable domain, or (outside frm-newsletter) from a free consumer
+ *     provider — the Webflow submission itself is untouched
  *   • Identical back-to-back payloads are deduped (double-click / resubmit)
  *
  * Requires: nothing (no GSAP). Integrates with sticky-utms.js if present.
@@ -107,6 +108,72 @@
   ];
 
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  /* ── Kurumsal e-posta politikasi ────────────────────────────────
+   * FREE: ucretsiz tuketici saglayicilari. B2B formlarinda (contact,
+   * demo, opus-report) CRM'e GONDERILMEZ; frm-newsletter'da serbesttir,
+   * cunku orasi huninin en ustu ve gmail ile abone olan cok olur.
+   * DISPOSABLE: tek kullanimlik adresler, HER formda engellenir.
+   *
+   * "Engellemek" burada su demek: Webflow'un kendi gonderimi AYNEN olur
+   * (kayit inbox'ta, bildirim maili gider), yalnizca CRM'e ikinci kopya
+   * atilmaz. Ziyaretcinin akisi degismez.
+   *
+   * Bu bir KALITE filtresidir, guvenlik kontrolu degil; istemci tarafi
+   * curl ile atlanir. Ayni kontrol sunucuda da uygulanmalidir.
+   * webflow-components/src/emailPolicy.ts ile ayni liste. */
+  var FREE_EMAIL = {
+    "gmail.com":1,"googlemail.com":1,
+    "hotmail.com":1,"hotmail.co.uk":1,"hotmail.com.tr":1,"hotmail.fr":1,"hotmail.it":1,
+    "outlook.com":1,"outlook.com.tr":1,"outlook.fr":1,"outlook.de":1,
+    "live.com":1,"live.com.tr":1,"live.co.uk":1,"msn.com":1,
+    "yahoo.com":1,"yahoo.co.uk":1,"yahoo.com.tr":1,"yahoo.fr":1,"ymail.com":1,
+    "rocketmail.com":1,"icloud.com":1,"me.com":1,"mac.com":1,"aol.com":1,
+    "proton.me":1,"protonmail.com":1,"pm.me":1,
+    "gmx.com":1,"gmx.net":1,"gmx.de":1,"mail.com":1,"zoho.com":1,"zoho.eu":1,
+    "yandex.com":1,"yandex.ru":1,"yandex.com.tr":1,
+    "mail.ru":1,"inbox.ru":1,"list.ru":1,"bk.ru":1,
+    "qq.com":1,"163.com":1,"126.com":1,"naver.com":1,"daum.net":1,"hanmail.net":1,
+    "web.de":1,"t-online.de":1,"freenet.de":1,
+    "orange.fr":1,"free.fr":1,"laposte.net":1,"wanadoo.fr":1,
+    "libero.it":1,"virgilio.it":1,"tiscali.it":1,"alice.it":1,
+    "seznam.cz":1,"wp.pl":1,"o2.pl":1,"interia.pl":1,"onet.pl":1,"abv.bg":1,
+    "sapo.pt":1,"terra.com.br":1,"uol.com.br":1,"bol.com.br":1,
+    "rediffmail.com":1,"fastmail.com":1,"hushmail.com":1,
+    "mynet.com":1,"e-kolay.net":1,"yaani.com":1,"ttmail.com":1
+  };
+
+  var DISPOSABLE_EMAIL = [
+    "mailinator.com","yopmail.com","guerrillamail.com","guerrillamail.info",
+    "sharklasers.com","grr.la","spam4.me",
+    "10minutemail.com","10minutemail.net","tempmail.com","temp-mail.org",
+    "temp-mail.io","tempr.email","mytemp.email","emailondeck.com",
+    "throwawaymail.com","trashmail.com","dispostable.com","maildrop.cc",
+    "mailnesia.com","fakeinbox.com","tempinbox.com","spamgourmet.com",
+    "getnada.com","nada.email","moakt.com","mohmal.com","discard.email",
+    "mailcatch.com","inboxkitten.com","harakirimail.com","mailsac.com",
+    "burnermail.io","luxusmail.org","vomoto.com","byom.de"
+  ];
+
+  /* Ucretsiz saglayiciya izin verilen form tipleri. */
+  var FREE_ALLOWED = { "frm-newsletter": 1 };
+
+  /** "ok" | "invalid" | "free" | "disposable" */
+  function classifyEmail(raw, allowFree) {
+    var email = String(raw || "").trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) return "invalid";
+
+    var domain = email.slice(email.lastIndexOf("@") + 1);
+
+    for (var i = 0; i < DISPOSABLE_EMAIL.length; i++) {
+      var d = DISPOSABLE_EMAIL[i];
+      if (domain === d || domain.slice(-(d.length + 1)) === "." + d) {
+        return "disposable";
+      }
+    }
+    if (!allowFree && FREE_EMAIL[domain]) return "free";
+    return "ok";
+  }
 
   /** Resolve which CRM field (if any) an input element feeds. */
   function resolveField(el) {
@@ -227,8 +294,10 @@
       /* Native/Webflow validation already passed when this event fires. */
       var payload = collectFields(form);
 
-      if (!payload.emailaddress1 || !EMAIL_RE.test(payload.emailaddress1)) {
-        return; /* server would 400 — don't bother */
+      /* E-posta gecersizse veya politikaya takiliyorsa CRM'e HIC gonderme.
+       * Webflow'un kendi gonderimi bundan etkilenmez. */
+      if (classifyEmail(payload.emailaddress1, !!FREE_ALLOWED[formType]) !== "ok") {
+        return;
       }
 
       payload.formType = formType;

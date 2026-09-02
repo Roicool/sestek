@@ -27,6 +27,7 @@
  * butonu dahil — bot ayrımı ziyaretçiye belli edilmez).
  */
 import * as React from "react";
+import { classifyEmail } from "./emailPolicy";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -65,6 +66,7 @@ export interface ReportDownloadFormProps {
   fileUrl?: string;
   endpoint?: string;
   formType?: string;
+  freeEmail?: "Block" | "Allow";
   lang?: Lang;
 }
 
@@ -74,6 +76,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_lastname: "Lütfen soyadınızı girin.",
     invalid_company: "Lütfen şirket adınızı girin.",
     invalid_email: "Lütfen geçerli bir kurumsal e-posta girin.",
+    free_email: "Lütfen kurumsal e-posta adresinizi kullanın.",
+    disposable_email: "Geçici e-posta adresleri kabul edilmiyor.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     rate_limited: "Kısa süre önce bir istek gönderdiniz — lütfen biraz sonra tekrar deneyin.",
     network: "Bağlantı kurulamadı — internetinizi kontrol edip tekrar deneyin.",
@@ -84,6 +88,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_lastname: "Please enter your last name.",
     invalid_company: "Please enter your company name.",
     invalid_email: "Please enter a valid business email.",
+    free_email: "Please use your work email address.",
+    disposable_email: "Temporary email addresses aren't accepted.",
     consent_required: "Please tick the consent box to continue.",
     rate_limited: "You just sent a request — please try again in a few minutes.",
     network: "Connection failed — check your internet and try again.",
@@ -332,6 +338,7 @@ export function ReportDownloadForm({
   fileUrl = "",
   endpoint = "/demos/api/crm/lead",
   formType = "frm-opus-report",
+  freeEmail = "Block",
   lang = "EN",
 }: ReportDownloadFormProps) {
   const [firstname, setFirstname] = React.useState("");
@@ -371,7 +378,10 @@ export function ReportDownloadForm({
     if (v.firstname.length < 2) return fail("invalid_firstname", "firstname");
     if (v.lastname.length < 2) return fail("invalid_lastname", "lastname");
     if (v.companyname.length < 2) return fail("invalid_company", "company");
-    if (!EMAIL_RE.test(v.email)) return fail("invalid_email", "email");
+    const verdict = classifyEmail(v.email, freeEmail === "Allow");
+    if (verdict === "invalid") return fail("invalid_email", "email");
+    if (verdict === "disposable") return fail("disposable_email", "email");
+    if (verdict === "free") return fail("free_email", "email");
     if (!consent) return fail("consent_required", "consent");
 
     /* Honeypot doluysa (bot) istek atmadan başarı göster. */

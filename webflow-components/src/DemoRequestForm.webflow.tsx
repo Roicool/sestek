@@ -207,6 +207,16 @@ export default declareComponent(DemoRequestForm, {
         "Dynamics ses_formtype değeri — frm-contact ile İletişim " +
         "sayfasında da kullanılabilir",
     }),
+    freeEmail: props.Variant({
+      name: "Free email",
+      group: "API",
+      options: ["Block", "Allow"],
+      defaultValue: "Block",
+      tooltip:
+        "Block: gmail/hotmail gibi ücretsiz sağlayıcılar reddedilir " +
+        "(kurumsal e-posta zorunlu) · Allow: kabul edilir. Tek kullanımlık " +
+        "adresler her iki durumda da reddedilir.",
+    }),
     lang: props.Variant({
       name: "Language",
       group: "API",
