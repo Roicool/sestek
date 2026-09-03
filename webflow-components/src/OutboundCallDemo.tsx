@@ -51,6 +51,7 @@ export interface OutboundCallDemoProps {
   endpoint?: string;
   lang?: Lang;
   turnstileSiteKey?: string;
+  turnstileWidget?: "Visible" | "Invisible";
   cooldownSeconds?: number;
 }
 
@@ -60,6 +61,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Lütfen geçerli bir cep telefonu girin.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
+    captcha_unavailable: "Güvenlik doğrulaması yüklenemedi. Reklam engelleyiciniz varsa kapatıp sayfayı yenileyin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
     upstream: "Arama başlatılamadı, lütfen daha sonra tekrar deneyin.",
@@ -71,6 +73,7 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Please enter a valid mobile number.",
     consent_required: "Please tick the consent box to continue.",
     captcha_failed: "Security check could not be completed — please try again.",
+    captcha_unavailable: "The security check could not load. If you use an ad blocker, disable it and refresh.",
     rate_limited: "You requested a call just now — please try again in a few minutes.",
     not_configured: "The demo is unavailable right now, please try again later.",
     upstream: "We couldn't start the call, please try again later.",
@@ -435,10 +438,11 @@ export function OutboundCallDemo({
   endpoint = "/demos/api/demos/outbound-call",
   lang = "EN",
   turnstileSiteKey = "",
+  turnstileWidget = "Visible",
   cooldownSeconds = 600,
 }: OutboundCallDemoProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
-  const ts = createTurnstile(React, turnstileSiteKey);
+  const ts = createTurnstile(React, turnstileSiteKey, turnstileWidget !== "Invisible");
 
   const [stage, setStage] = React.useState<Stage>("idle");
   const [name, setName] = React.useState("");
@@ -628,6 +632,7 @@ export function OutboundCallDemo({
             {/* Turnstile — appearance interaction-only, yalnız meydan okuma
                 gerektiğinde görünür; aksi halde yer kaplamaz. */}
             {ts.enabled && <div className="sodc-ts" ref={ts.slotRef} />}
+            {ts.failed && <div className="sodc-err" role="alert">{t.captcha_unavailable}</div>}
             <button className="sodc-cta" type="submit" disabled={sending}>
               {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon size={15} />}
               {sending ? sendingText : buttonText}

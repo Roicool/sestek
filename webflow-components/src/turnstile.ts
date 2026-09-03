@@ -24,9 +24,17 @@
  * Site key GİZLİ DEĞİLDİR (HTML'de görünür). Gizli olan secret key'dir ve
  * yalnız sunucunun ortam değişkeninde durur; bu repoda hiçbir yerde geçmez.
  *
- * Görünüm: appearance "interaction-only" — ziyaretçi şüpheli değilse widget
- * hiç görünmez, yalnız gerçekten meydan okuma gerektiğinde çizilir. Bu yüzden
- * slot div'ine sabit yükseklik verilmemeli.
+ * Görünüm (`visible` parametresi):
+ *   true  → Cloudflare'ın varsayılanı: widget her zaman görünür. Ziyaretçi
+ *           korumanın çalıştığını görür, hata olursa hatayı da görür.
+ *   false → "interaction-only": ziyaretçi şüpheli değilse widget hiç
+ *           görünmez. Daha temiz durur AMA anahtar yanlışsa veya alan adı
+ *           Cloudflare'ın hostname listesinde değilse hata da görünmez;
+ *           ziyaretçi sebepsiz bir "doğrulama başarısız" ile karşılaşır.
+ *           Bu yüzden varsayılan `true`, gizlemek bilinçli bir seçim olsun.
+ *
+ * Hata olursa konsola `[Sestek Turnstile]` önekiyle yazılır — sahada teşhis
+ * için tek ipucu bu olabiliyor.
  */
 
 /**
@@ -115,6 +123,8 @@ export type TurnstileHandle = {
   reset: () => void;
   /** Site key verilmiş mi (slot div'i çizmeye değer mi). */
   enabled: boolean;
+  /** Widget hata verdi mi — forma görünür bir uyarı basmak için. */
+  failed: boolean;
 };
 
 /**
@@ -124,7 +134,8 @@ export type TurnstileHandle = {
  */
 export function createTurnstile(
   React: typeof import("react"),
-  siteKey: string
+  siteKey: string,
+  visible = true
 ): TurnstileHandle {
   const key = resolveSiteKey(siteKey);
   const enabled = key.length > 0;
@@ -134,6 +145,8 @@ export function createTurnstile(
   const api = React.useRef<TurnstileApi | null>(null);
   const token = React.useRef<string>("");
   const waiters = React.useRef<Array<(t: string) => void>>([]);
+
+  const [failed, setFailed] = React.useState(false);
 
   const settle = React.useCallback((t: string) => {
     token.current = t;
@@ -152,9 +165,23 @@ export function createTurnstile(
       try {
         widgetId.current = ts.render(slotEl.current, {
           sitekey: key,
-          appearance: "interaction-only",
-          callback: (t: string) => settle(t || ""),
-          "error-callback": () => settle(""),
+          appearance: visible ? "always" : "interaction-only",
+          callback: (t: string) => {
+            setFailed(false);
+            settle(t || "");
+          },
+          "error-callback": (code?: unknown) => {
+            // 110200 = alan adı Cloudflare'ın hostname listesinde değil.
+            // Sessiz kalırsak ziyaretçi sebepsiz bir hata görür.
+            console.warn(
+              "[Sestek Turnstile] widget hata verdi:", code,
+              "· site key:", key.slice(0, 10) + "…",
+              "· hostname:", location.hostname,
+              "· Cloudflare panelindeki allowed hostnames listesini kontrol edin"
+            );
+            setFailed(true);
+            settle("");
+          },
           "expired-callback": () => {
             token.current = "";
           },
@@ -176,8 +203,8 @@ export function createTurnstile(
       }
       widgetId.current = null;
     };
-    // key değişirse (Designer'da girildiğinde) yeniden kurulur
-  }, [enabled, key, settle]);
+    // key veya görünürlük değişirse yeniden kurulur
+  }, [enabled, key, visible, settle]);
 
   const slotRef = React.useCallback((el: HTMLDivElement | null) => {
     slotEl.current = el;
@@ -213,5 +240,5 @@ export function createTurnstile(
     }
   }, []);
 
-  return { slotRef, getToken, reset, enabled };
+  return { slotRef, getToken, reset, enabled, failed };
 }

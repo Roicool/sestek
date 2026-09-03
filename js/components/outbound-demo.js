@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.3.0
+ * outbound-demo.js v1.4.0
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -104,6 +104,16 @@
    * site geneli custom code'da TEK yerde tanımlanabilir:
    *   <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
    * Site key gizli değildir; gizli olan secret key sunucu env'inde durur. */
+  /* Bir eleman veya üst elemanlarındaki ilk attribute değeri. */
+  function closestAttr(el, name) {
+    while (el && el.getAttribute) {
+      var v = el.getAttribute(name);
+      if (v) return v.trim().toLowerCase();
+      el = el.parentElement;
+    }
+    return "";
+  }
+
   function resolveSiteKey(root) {
     var el = root;
     while (el && el.getAttribute) {
@@ -205,6 +215,7 @@
     /* Turnstile widget'ı — yalnız site key verilmişse. */
     var tsKey = resolveSiteKey(root);
     var tsApi = null, tsWidget = null;
+    var invisible = closestAttr(root, "data-od-turnstile-widget") === "invisible";
     if (tsKey) {
       var slot = root.querySelector("[data-od-turnstile-slot]");
       if (!slot) {
@@ -220,8 +231,14 @@
         try {
           tsWidget = ts.render(slot, {
             sitekey: tsKey,
-            appearance: "interaction-only",
-            "refresh-expired": "auto"
+            appearance: invisible ? "interaction-only" : "always",
+            "refresh-expired": "auto",
+            "error-callback": function (code) {
+              // 110200 = alan adı Cloudflare hostname listesinde değil
+              console.warn("[Sestek Turnstile] widget hata verdi:", code,
+                "· hostname:", location.hostname,
+                "· Cloudflare allowed hostnames listesini kontrol edin");
+            }
           });
         } catch (e) { /* çift render / geçersiz anahtar */ }
       });

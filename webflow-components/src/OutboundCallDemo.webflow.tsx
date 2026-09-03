@@ -158,5 +158,16 @@ export default declareComponent(OutboundCallDemo, {
         "örneğe özel bir anahtar gerekiyorsa doldur. Site key gizli değildir; " +
         "secret key yalnız sunucunun ortam değişkeninde durur.",
     }),
+    turnstileWidget: props.Variant({
+      name: "Turnstile widget",
+      group: "API",
+      options: ["Visible", "Invisible"],
+      defaultValue: "Visible",
+      tooltip:
+        "Visible: widget her zaman görünür (Cloudflare varsayılanı) — " +
+        "ziyaretçi korumanın çalıştığını, hata varsa hatayı görür. " +
+        "Invisible: yalnız gerçekten meydan okuma gerekirse görünür; daha " +
+        "temiz durur ama anahtar veya hostname yanlışsa hata da görünmez.",
+    }),
   },
 });

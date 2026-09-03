@@ -94,6 +94,14 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   gönderim veya thank-you sayfası değil).
 - **Newsletter e-posta politikası:** ücretsiz sağlayıcılar serbest. Huninin
   en üstü, gmail'i engellemek abone kaybettirir.
+- **Widget varsayılan olarak GÖRÜNÜR.** Önce `interaction-only` seçilmişti
+  (temiz durur, sıradan ziyaretçide hiç görünmez) ama bu bir sorunu gizledi:
+  anahtar yanlışsa veya alan adı Cloudflare'ın hostname listesinde değilse
+  widget sessizce hata veriyor, ziyaretçi sebepsiz "doğrulama başarısız"
+  görüyor ve dışarıdan teşhis edilemiyor. Artık varsayılan `always`; hata
+  olursa forma görünür bir uyarı basılıyor ve konsola `[Sestek Turnstile]`
+  önekiyle hata kodu + hostname yazılıyor. Gizlemek isteyen `Turnstile
+  widget` prop'unu Invisible yapar, ama bunu bilerek seçmiş olur.
 - **Site key tek merkezden:** dört component'e ayrı ayrı girilmez. Site geneli
   Custom Code → Head'e `window.SESTEK_TURNSTILE_SITE_KEY` satırı konur, tüm
   formlar oradan okur. Alternatif olarak `<body data-turnstile-sitekey>`.

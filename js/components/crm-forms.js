@@ -1,5 +1,5 @@
 /*!
- * crm-forms.js v1.3.0
+ * crm-forms.js v1.4.0
  * Mirrors Webflow form submissions to the CRM lead endpoint (Microsoft
  * Dynamics, proxied by the Webflow Cloud app — see docs/CRM spec).
  *
@@ -223,6 +223,16 @@
    * The site key is not a secret; it is visible in the HTML either way. The
    * SECRET key lives only in the server's environment.
    */
+  /* Bir eleman veya üst elemanlarındaki ilk attribute değeri. */
+  function closestAttr(el, name) {
+    while (el && el.getAttribute) {
+      var v = el.getAttribute(name);
+      if (v) return v.trim().toLowerCase();
+      el = el.parentElement;
+    }
+    return "";
+  }
+
   function resolveSiteKey(form) {
     var el = form;
     while (el && el.getAttribute) {
@@ -245,6 +255,7 @@
     if (!key) return { token: function (cb) { cb(""); }, reset: function () {} };
 
     var api = null, widget = null;
+    var invisible = closestAttr(form, "data-crm-turnstile-widget") === "invisible";
     var slot = form.querySelector("[data-crm-turnstile-slot]");
     if (!slot) {
       slot = document.createElement("div");
@@ -257,8 +268,14 @@
       try {
         widget = ts.render(slot, {
           sitekey: key,
-          appearance: "interaction-only",
+          appearance: invisible ? "interaction-only" : "always",
           "refresh-expired": "auto",
+          "error-callback": function (code) {
+            // 110200 = hostname not in Cloudflare's allowed list
+            console.warn("[Sestek Turnstile] widget error:", code,
+              "· hostname:", location.hostname,
+              "· check the allowed hostnames list in Cloudflare");
+          },
         });
       } catch (_) { /* double render / bad key */ }
     });
