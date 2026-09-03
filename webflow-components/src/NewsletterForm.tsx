@@ -25,6 +25,7 @@
 import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
+import { errorCode } from "./apiError";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -251,7 +252,7 @@ export function NewsletterForm({
         } else if (res.status === 429) {
           setError(msg("rate_limited"));
         } else {
-          setError(msg(body?.error || "generic"));
+          setError(msg(errorCode(body)));
         }
       })
       .catch(() => setError(msg("network")))

@@ -128,9 +128,18 @@ alanlar Dynamics payload'ına **hiç konmaz** (boş string gönderilmez).
 | `400` | `{"ok":false,"reason":"…"}` | Eksik/geçersiz alan, bilinmeyen formType, JSON parse hatası |
 | `403` | `{"ok":false}` | Origin kontrolü geçemedi (bkz. §6) |
 | `403` | `{"ok":false,"reason":"captcha_failed"}` | Turnstile jetonu yok / doğrulanamadı |
+| `415` | `{"ok":false,"reason":"unsupported content type"}` | `Content-Type` `application/json` değil |
 | `429` | `{"ok":false,"reason":"rate limited"}` | Rate limit |
 | `501` | `{"ok":false,"reason":"CRM is not configured"}` | Env tanımsız |
 | `502` | `{"ok":false,"reason":"upstream <status>"}` | Azure AD veya Dynamics hatası |
+
+> **Alan adı farkı:** bu endpoint hata kodunu `reason` alanında, outbound
+> endpoint'i `error` alanında döndürüyor; ayrıca buradaki bazı kodlar
+> boşluklu ("rate limited", "unsupported content type"), bazıları alt tireli
+> ("free_email"). İstemci her iki alana da bakar ve boşlukları alt tireye
+> çevirir (`webflow-components/src/apiError.ts`,
+> `js/components/outbound-demo.js` içindeki `errorCode`). Yeni bir kod
+> eklerken alt tireli tek biçim tercih edin.
 
 - Honeypot dolu gelirse **`200` dön ama CRM'e yazma** (bota hata gösterilmez).
 - Dynamics'ten dönen hata gövdesini **istemciye sızdırma**; yalnızca status

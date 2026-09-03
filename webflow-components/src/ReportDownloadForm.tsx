@@ -29,6 +29,7 @@
 import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
+import { errorCode } from "./apiError";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -430,7 +431,7 @@ export function ReportDownloadForm({
         } else if (res.status === 429) {
           fail("rate_limited");
         } else {
-          fail(body?.error || "generic");
+          fail(errorCode(body));
         }
       })
       .catch(() => fail("network"))

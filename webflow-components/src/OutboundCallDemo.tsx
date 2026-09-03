@@ -22,6 +22,7 @@
  */
 import * as React from "react";
 import { createTurnstile } from "./turnstile";
+import { errorCode } from "./apiError";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -496,7 +497,7 @@ export function OutboundCallDemo({
           recordSubmit(phone);
           setStage("calling");
         } else {
-          fail(body?.error || "generic");
+          fail(errorCode(body));
         }
       })
       .catch(() => fail("network"))

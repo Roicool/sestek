@@ -70,6 +70,8 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 | 400 | `{"ok":false,"error":"invalid_phone"}` | Telefon geçersiz |
 | 400 | `{"ok":false,"error":"consent_required"}` | Rıza yok |
 | 403 | `{"ok":false,"error":"captcha_failed"}` | Turnstile jetonu yok / doğrulanamadı |
+| 403 | `{"ok":false}` | `Origin` allowlist dışında |
+| 415 | `{"ok":false,"error":"unsupported_content_type"}` | `Content-Type` `application/json` değil |
 | 429 | `{"ok":false,"error":"rate_limited","retryAfter":600}` | Limit aşıldı |
 | 501 | `{"ok":false,"error":"not_configured"}` | Env değişkenleri eksik (mevcut route'lardaki env-gate kalıbı) |
 | 502 | `{"ok":false,"error":"upstream"}` | Knovvu hata döndü |

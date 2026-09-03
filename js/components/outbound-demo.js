@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.2.0
+ * outbound-demo.js v1.2.1
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -55,6 +55,8 @@
  *   501 {ok:false,error:"not_configured"} · 502 {ok:false,error:"upstream"}
  *
  * Changelog
+ * v1.2.1 — sunucu hata kodu `error` veya `reason` alanından okunur ve tek
+ *          biçime indirilir; anlamlı hatalar artık "generic"e düşmüyor
  * v1.2.0 — Cloudflare Turnstile: data-od-turnstile ile site key verildiğinde
  *          widget çizilir, jeton `turnstileToken` olarak gönderilir, her
  *          denemeden sonra reset edilir; captcha_failed mesajı eklendi
@@ -91,6 +93,15 @@
     if (d.slice(0, 2) === "90" && d.length === 12) d = d.slice(2);
     if (d.charAt(0) === "5" && d.length === 10) d = "0" + d;
     return /^05\d{9}$/.test(d) ? d : null;
+  }
+
+  /* Sunucu hata kodunu mesaj anahtarına çevirir. Outbound `error`, CRM
+   * `reason` alanını kullanıyor; bazı kodlar boşluklu geliyor. Tek biçime
+   * indir ki anlamlı hata "generic"e düşmesin. */
+  function errorCode(body) {
+    var raw = body && (body.error || body.reason);
+    if (typeof raw !== "string") return "generic";
+    return raw.trim().toLowerCase().replace(/[\s-]+/g, "_") || "generic";
   }
 
   /* Turnstile script'ini tek sefer yükle; hazır olunca cb(window.turnstile),
@@ -278,7 +289,7 @@
             recordSubmit(phone); // kalıcı cooldown başlat
             form.reset();
           } else {
-            showError((r.body && r.body.error) || "generic");
+            showError(errorCode(r.body));
           }
         })
         .catch(function () { showError("network"); })

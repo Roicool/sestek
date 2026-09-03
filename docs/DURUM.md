@@ -24,22 +24,22 @@ ayakta durur — her görevin gerekçesi ve kabul kriteri var — ve doğrudan b
 agent'a verilebilir. Burada sunucu işleri yalnız **S-xx** kimliği ve tek
 satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
+> **03.09 — ACİL:** Sunucuda `TURNSTILE_SECRET` girildi ve deploy alındı,
+> ama Designer'da site key yok. Bu durumda dört form da **jeton gönderemiyor
+> ve her gönderim 403 `captcha_failed` alıyor** — yani formlar fiilen
+> çalışmıyor. İki çıkıştan biri seçilecek: (a) site key Designer'a girilip
+> publish edilir, (b) sunucudan `TURNSTILE_SECRET` geçici olarak silinip
+> deploy alınır. B-03 bu yüzden en üste alındı.
+
 | # | İş | Kim | Not |
 |---|---|---|---|
-| S-01 | CRM lead endpoint'ine kalıcı rate limit | Sunucu repo | Yüksek. Şu an hiç limit yok, 10/10 istek geçti |
-| S-02 | Outbound + CRM: `Content-Type` zorunluluğu ve Origin allowlist | Sunucu repo | Yüksek. `text/plain` preflight'sız geçiyor, cross-site arama tetiklenebiliyor |
-| S-03 | Outbound numara/IP sayacını kalıcı depoya taşı | Sunucu repo | Yüksek. Limit var ve çalışıyor ama isolate değişince sıfırlanıyor |
-| S-04 | Turnstile doğrulaması (`TURNSTILE_SECRET` + siteverify) | Sunucu repo | Yüksek. İstemci tarafı BİTTİ, jeton zaten gönderiliyor |
-| S-10 | Outbound: dile göre Knovvu proje seçimi (`KNOVVU_PROJECT_NAME_TR` / `_EN`) | Sunucu repo | Yüksek. Knovvu 02.09 cevabı: EN'de proje adı da değişiyor, yalnız `Language` değil |
-| S-05 | E-posta politikasının sunucuda uygulanması | Sunucu repo | Orta |
-| S-06 | Günlük toplam arama tavanı + devre kesici | Sunucu repo | Orta. Dağıtık kötüye kullanımda fatura koruması |
-| S-07 | Saatlik arama sayacı + eşik alarmı | Sunucu repo | Orta |
-| S-08 | `x-opennext` header'ının kaldırılması | Sunucu repo | Bilgi seviyesi |
-| S-09 | CSV export'ta formül enjeksiyonu sanitizasyonu | Sunucu repo | Düşük |
+| B-03 | **[ACİL]** Designer'a Turnstile site key'i (4 component + `data-crm-turnstile`) | Bizde | Sunucu S-04'ü yayınladı ve secret aktif; girilene kadar formlar 403 alıyor |
+| B-06 | Cloudflare Turnstile panelinde allowed domains: `sestek.com`, `www.sestek.com`, `rc-sestek.webflow.io` | Bizde | Eksikse widget hata verir, B-03 çalışmaz |
+| S-08 | `x-opennext` header'ı | Webflow Cloud | Uygulama kodundan çözülemiyor (OpenNext runtime ekliyor, cache HIT Next'e uğramıyor). İstenirse destek talebi |
+| S-09 | CSV formül enjeksiyonu | Sestek / Dynamics | Sunucu reposunda export kodu yok; sanitizasyon export'u üreten araçta yapılacak |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
 | B-02 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu dil cevabında telefon hâlâ TR formatında geldi; yurt dışı numara desteği ayrıca soruldu, cevap beklenirken doğrulama gevşetilmeyecek |
-| B-03 | Designer'da site key'in girilmesi (4 component + `data-crm-turnstile`) | Bizde | S-04 bittikten SONRA; sıra tersine dönerse formlar 403 alır |
-| B-04 | Turnstile'ın gerçek anahtarla uçtan uca teyidi | Bizde | Geliştirme ortamından Cloudflare kapalı, stub ile test edildi; gerçeği yayında |
+| B-04 | Uçtan uca canlı test | Bizde | B-03'ten sonra: EN sayfadan arama İngilizce mi, aynı numara 10 dk içinde 429 mı, **429 penceresinde sunucuya deploy alıp tekrar dene** (KV sayacı deploy'u atlatıyor mu — S-01/S-03 kabul kriterinin ikinci yarısı), jetonsuz curl 403 mü, gmail'li demo `free_email` mi, newsletter+gmail geçiyor mu |
 | B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |
 
 ### Sestek / danışman tarafında bekleyenler
@@ -66,6 +66,8 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | Tarih | İş | Commit |
 |---|---|---|
+| 03.09 | Sunucu tarafı S-01…S-07 ve S-10 bitti (kalıcı KV rate limit, Content-Type + Origin, Turnstile doğrulaması, e-posta politikası, günlük tavan, saatlik alarm, dile göre Knovvu projesi). S-08 ve S-09 bizim kapsamımız dışına çıktı | sunucu repo |
+| 03.09 | Sunucu hata kodu artık `error` **veya** `reason` alanından okunuyor ve tek biçime indiriliyor; CRM `reason` kullandığı için `free_email` gibi anlamlı hatalar ziyaretçiye "bir şeyler ters gitti" olarak görünüyordu | (bu commit) |
 | 02.09 | Turnstile istemci tarafı: 4 React component'te `Turnstile site key` prop'u, `outbound-demo.js` v1.2.0 ve `crm-forms.js` v1.2.0'da `data-*-turnstile`. Jeton `turnstileToken` olarak gider, her denemeden sonra reset edilir. Sunucu doğrulaması iki spec'e yazıldı | `b6432d6` |
 | 02.09 | Public repodaki altyapı kimlikleri temizlendi (tenant id, org URL, Knovvu client id, proje adı); referans koddan gömülü fallback'ler kaldırıldı | `5685ba7` |
 | 02.09 | Kurumsal e-posta politikası: ücretsiz sağlayıcılar B2B formlarında engelli, newsletter'da serbest; tek kullanımlık adresler her yerde engelli. Sunucu spec'ine de yazıldı | `59b5cb7` |
