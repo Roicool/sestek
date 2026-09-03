@@ -1,5 +1,5 @@
 /*!
- * crm-forms.js v1.2.0
+ * crm-forms.js v1.3.0
  * Mirrors Webflow form submissions to the CRM lead endpoint (Microsoft
  * Dynamics, proxied by the Webflow Cloud app — see docs/CRM spec).
  *
@@ -214,15 +214,25 @@
     })();
   }
 
-  /** Nearest data-crm-turnstile on the form or an ancestor, else "". */
+  /**
+   * Turnstile site key, from one place for the whole site. Order: the form's
+   * (or an ancestor's) data-crm-turnstile, then data-turnstile-sitekey
+   * (usually on <body>), then window.SESTEK_TURNSTILE_SITE_KEY — set once in
+   * the site-wide custom code:
+   *   <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
+   * The site key is not a secret; it is visible in the HTML either way. The
+   * SECRET key lives only in the server's environment.
+   */
   function resolveSiteKey(form) {
     var el = form;
     while (el && el.getAttribute) {
-      var v = el.getAttribute("data-crm-turnstile");
+      var v = el.getAttribute("data-crm-turnstile") ||
+              el.getAttribute("data-turnstile-sitekey");
       if (v) return v.trim();
       el = el.parentElement;
     }
-    return "";
+    var g = global.SESTEK_TURNSTILE_SITE_KEY;
+    return typeof g === "string" ? g.trim() : "";
   }
 
   /**

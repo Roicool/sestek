@@ -29,6 +29,38 @@
  * slot div'ine sabit yükseklik verilmemeli.
  */
 
+/**
+ * Site key'i tek merkezden çözer. Sıra:
+ *
+ *   1. Component prop'u (Designer'da o örneğe özel girilmişse)
+ *   2. `window.SESTEK_TURNSTILE_SITE_KEY` — site geneli custom code
+ *   3. `[data-turnstile-sitekey]` attribute'u (genelde <body> üzerinde)
+ *
+ * Amaç: anahtarı dört component'e ayrı ayrı girmek zorunda kalmamak.
+ * Webflow'un istemci tarafında ortam değişkeni yoktur; en yakın karşılığı
+ * Project Settings → Custom Code → Head'e konan tek satırdır:
+ *
+ *   <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
+ *
+ * Bu satır component bundle'ından ÖNCE çalışmalı, o yüzden Head'e konur.
+ * Anahtarı tek bir sayfada değiştirmek gerekirse prop hâlâ üstün gelir.
+ *
+ * Site key gizli değildir, HTML'de zaten görünür. Gizli olan secret key'dir
+ * ve yalnız sunucunun ortam değişkeninde durur.
+ */
+export function resolveSiteKey(explicit?: string): string {
+  const own = (explicit || "").trim();
+  if (own) return own;
+  if (typeof window === "undefined") return "";
+
+  const g = (window as unknown as { SESTEK_TURNSTILE_SITE_KEY?: unknown })
+    .SESTEK_TURNSTILE_SITE_KEY;
+  if (typeof g === "string" && g.trim()) return g.trim();
+
+  const el = document.querySelector("[data-turnstile-sitekey]");
+  return (el?.getAttribute("data-turnstile-sitekey") || "").trim();
+}
+
 type TurnstileApi = {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string;
   getResponse: (id: string) => string | undefined;
@@ -94,7 +126,7 @@ export function createTurnstile(
   React: typeof import("react"),
   siteKey: string
 ): TurnstileHandle {
-  const key = (siteKey || "").trim();
+  const key = resolveSiteKey(siteKey);
   const enabled = key.length > 0;
 
   const slotEl = React.useRef<HTMLDivElement | null>(null);

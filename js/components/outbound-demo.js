@@ -1,5 +1,5 @@
 /*!
- * outbound-demo.js v1.2.1
+ * outbound-demo.js v1.3.0
  * "Sizi arayalım" outbound demo formu — ziyaretçi adını + telefonunu bırakır,
  * Knovvu Outbound Manager onu GERÇEKTEN arar. Bu script yalnız client tarafı:
  * doğrular, sunucu proxy'sine JSON POST eder, durumları yönetir. Knovvu
@@ -55,6 +55,9 @@
  *   501 {ok:false,error:"not_configured"} · 502 {ok:false,error:"upstream"}
  *
  * Changelog
+ * v1.3.0 — site key artık tek merkezden çözülüyor: data-od-turnstile →
+ *          data-turnstile-sitekey (üst elemanlar dahil) →
+ *          window.SESTEK_TURNSTILE_SITE_KEY
  * v1.2.1 — sunucu hata kodu `error` veya `reason` alanından okunur ve tek
  *          biçime indirilir; anlamlı hatalar artık "generic"e düşmüyor
  * v1.2.0 — Cloudflare Turnstile: data-od-turnstile ile site key verildiğinde
@@ -93,6 +96,24 @@
     if (d.slice(0, 2) === "90" && d.length === 12) d = d.slice(2);
     if (d.charAt(0) === "5" && d.length === 10) d = "0" + d;
     return /^05\d{9}$/.test(d) ? d : null;
+  }
+
+  /* Turnstile site key'ini tek merkezden çözer. Sıra: formun (veya bir
+   * üst elemanın) data-od-turnstile attribute'u → data-turnstile-sitekey
+   * (genelde <body>) → window.SESTEK_TURNSTILE_SITE_KEY. Böylece anahtar
+   * site geneli custom code'da TEK yerde tanımlanabilir:
+   *   <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
+   * Site key gizli değildir; gizli olan secret key sunucu env'inde durur. */
+  function resolveSiteKey(root) {
+    var el = root;
+    while (el && el.getAttribute) {
+      var v = el.getAttribute("data-od-turnstile") ||
+              el.getAttribute("data-turnstile-sitekey");
+      if (v) return v.trim();
+      el = el.parentElement;
+    }
+    var g = global.SESTEK_TURNSTILE_SITE_KEY;
+    return typeof g === "string" ? g.trim() : "";
   }
 
   /* Sunucu hata kodunu mesaj anahtarına çevirir. Outbound `error`, CRM
@@ -182,7 +203,7 @@
     var perPhoneMs = (parseFloat(root.getAttribute("data-od-cooldown")) || 600) * 1000;
 
     /* Turnstile widget'ı — yalnız site key verilmişse. */
-    var tsKey = root.getAttribute("data-od-turnstile");
+    var tsKey = resolveSiteKey(root);
     var tsApi = null, tsWidget = null;
     if (tsKey) {
       var slot = root.querySelector("[data-od-turnstile-slot]");

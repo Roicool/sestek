@@ -212,7 +212,19 @@ Kurallar:
 - Turnstile rate limit'in YERİNE GEÇMEZ. Jeton çözen bir bot yine ardışık
   arama tetikleyebilir; numara/IP limitleri kalıcı depoda ayrıca durmalı.
 - Site key gizli değildir (HTML'de görünür), secret key yalnız bu env'de
-  durur. Anahtarlar geçici olarak ajans Cloudflare hesabında; Sestek hesabına
+  durur.
+
+  Site tarafında site key TEK yerden okunur — Webflow Project Settings →
+  Custom Code → **Head**'e konan tek satır:
+
+  ```html
+  <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
+  ```
+
+  Component prop'ları ve `data-crm-turnstile` / `data-od-turnstile`
+  attribute'ları bunu ezebilir ama normalde boş bırakılır. Turnstile'ın
+  **allowed hostnames** listesi env'den beslenmez, Cloudflare panelindeki
+  widget ayarıdır; canlı ve staging alan adlarının hepsi oraya eklenmelidir. Anahtarlar geçici olarak ajans Cloudflare hesabında; Sestek hesabına
   devirde site key ve secret key AYNI ANDA değişmelidir.
 
 ---

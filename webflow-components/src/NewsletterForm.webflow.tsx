@@ -105,14 +105,15 @@ export default declareComponent(NewsletterForm, {
       tooltip: "Doğrulama/hata mesajlarının dili",
     }),
     turnstileSiteKey: props.Text({
-      name: "Turnstile site key",
+      name: "Turnstile site key (ops.)",
       group: "API",
       defaultValue: "",
       tooltip:
-        "Cloudflare Turnstile SITE key (gizli değildir, HTML'de görünür). " +
-        "Boş bırakılırsa bot koruması devre dışı kalır ve hiçbir script " +
-        "yüklenmez. Secret key yalnız sunucunun ortam değişkeninde durur, " +
-        "buraya ASLA yazılmaz.",
+        "Cloudflare Turnstile SITE key. Genelde BOŞ bırakılır: anahtar site " +
+        "geneli custom code'da tek yerde tanımlanır " +
+        "(window.SESTEK_TURNSTILE_SITE_KEY) ve buradan okunur. Yalnız bu " +
+        "örneğe özel bir anahtar gerekiyorsa doldur. Site key gizli değildir; " +
+        "secret key yalnız sunucunun ortam değişkeninde durur.",
     }),
   },
 });

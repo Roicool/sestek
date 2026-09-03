@@ -266,7 +266,19 @@ payload'a konmaz. (Danışman newsletter'ın da lead olarak açılmasını bu ş
   ```
 
   Jetonlar tek kullanımlıktır. Turnstile rate limit'in yerine geçmez: ikisi
-  birlikte durmalı. Site key gizli değildir (HTML'de görünür), secret key
+  birlikte durmalı.
+
+  Site tarafında site key TEK yerden okunur — Webflow Project Settings →
+  Custom Code → **Head**'e konan tek satır:
+
+  ```html
+  <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
+  ```
+
+  Component prop'ları ve `data-crm-turnstile` / `data-od-turnstile`
+  attribute'ları bunu ezebilir ama normalde boş bırakılır. Turnstile'ın
+  **allowed hostnames** listesi env'den beslenmez, Cloudflare panelindeki
+  widget ayarıdır; canlı ve staging alan adlarının hepsi oraya eklenmelidir. Site key gizli değildir (HTML'de görünür), secret key
   yalnız bu env'de durur ve hiçbir repoya yazılmaz.
 - **Boyut sınırı:** description ≤ 4000, diğer string alanlar ≤ 250 karakter;
   fazlası kırpılır. Gövde ≥ 32 KB ise `400`.
