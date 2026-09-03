@@ -1,5 +1,5 @@
 /*!
- * crm-forms.js v1.4.0
+ * crm-forms.js v1.5.0
  * Mirrors Webflow form submissions to the CRM lead endpoint (Microsoft
  * Dynamics, proxied by the Webflow Cloud app — see docs/CRM spec).
  *
@@ -255,7 +255,9 @@
     if (!key) return { token: function (cb) { cb(""); }, reset: function () {} };
 
     var api = null, widget = null;
-    var invisible = closestAttr(form, "data-crm-turnstile-widget") === "invisible";
+    /* Bu köprü CRM formları için; kutu varsayılan olarak çizilmez.
+     * Görünür istenirse data-crm-turnstile-widget="visible". */
+    var invisible = closestAttr(form, "data-crm-turnstile-widget") !== "visible";
     var slot = form.querySelector("[data-crm-turnstile-slot]");
     if (!slot) {
       slot = document.createElement("div");

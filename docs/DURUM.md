@@ -94,7 +94,13 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   gönderim veya thank-you sayfası değil).
 - **Newsletter e-posta politikası:** ücretsiz sağlayıcılar serbest. Huninin
   en üstü, gmail'i engellemek abone kaybettirir.
-- **Widget varsayılan olarak GÖRÜNÜR.** Önce `interaction-only` seçilmişti
+- **Widget yalnız Outbound Call Demo'da görünür.** Orada her gönderim gerçek
+  bir telefon araması başlatıyor, ziyaretçinin korumanın çalıştığını görmesi
+  ve hata olursa sebebini anlaması gerekiyor. CRM formlarında (demo, contact,
+  newsletter, opus-report) kutu çizilmiyor; koruma aynen çalışıyor, jeton
+  yine gidiyor, sadece görünmüyor. Hata durumunda dördünde de forma uyarı
+  basılıyor ve konsola `[Sestek Turnstile]` satırı yazılıyor.
+- **(Önceki karar, artık yalnız outbound için geçerli)** Widget varsayılan olarak GÖRÜNÜR. Önce `interaction-only` seçilmişti
   (temiz durur, sıradan ziyaretçide hiç görünmez) ama bu bir sorunu gizledi:
   anahtar yanlışsa veya alan adı Cloudflare'ın hostname listesinde değilse
   widget sessizce hata veriyor, ziyaretçi sebepsiz "doğrulama başarısız"

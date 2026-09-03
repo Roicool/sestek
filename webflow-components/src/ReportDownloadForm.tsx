@@ -350,7 +350,7 @@ export function ReportDownloadForm({
   formType = "frm-opus-report",
   freeEmail = "Block",
   turnstileSiteKey = "",
-  turnstileWidget = "Visible",
+  turnstileWidget = "Invisible",
   lang = "EN",
 }: ReportDownloadFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */

@@ -239,12 +239,12 @@ export default declareComponent(DemoRequestForm, {
       name: "Turnstile widget",
       group: "API",
       options: ["Visible", "Invisible"],
-      defaultValue: "Visible",
+      defaultValue: "Invisible",
       tooltip:
-        "Visible: widget her zaman görünür (Cloudflare varsayılanı) — " +
-        "ziyaretçi korumanın çalıştığını, hata varsa hatayı görür. " +
-        "Invisible: yalnız gerçekten meydan okuma gerekirse görünür; daha " +
-        "temiz durur ama anahtar veya hostname yanlışsa hata da görünmez.",
+        "Invisible (bu formda varsayılan): yalnız gerçekten meydan okuma " +
+        "gerekirse görünür. Koruma aynen çalışır, sadece kutu çizilmez. " +
+        "Visible: Cloudflare kutusu her zaman görünür — Outbound Call Demo'da " +
+        "böyle, çünkü orada her gönderim gerçek bir telefon araması başlatıyor.",
     }),
   },
 });

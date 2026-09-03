@@ -187,7 +187,7 @@ export function NewsletterForm({
   formType = "frm-newsletter",
   freeEmail = "Allow",
   turnstileSiteKey = "",
-  turnstileWidget = "Visible",
+  turnstileWidget = "Invisible",
   lang = "EN",
 }: NewsletterFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */

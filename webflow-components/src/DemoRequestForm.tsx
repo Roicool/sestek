@@ -361,7 +361,7 @@ export function DemoRequestForm({
   formType = "frm-demo",
   freeEmail = "Block",
   turnstileSiteKey = "",
-  turnstileWidget = "Visible",
+  turnstileWidget = "Invisible",
   lang = "EN",
 }: DemoRequestFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
