@@ -137,8 +137,19 @@ export function createTurnstile(
   siteKey: string,
   visible = true
 ): TurnstileHandle {
-  const key = resolveSiteKey(siteKey);
+  /* Anahtar render SIRASINDA window'dan okunmaz. Okunursa sunucu "anahtar
+   * yok" deyip slot'u çizmez, tarayıcı "anahtar var" deyip çizer; React bu
+   * uyuşmazlığı görünce (hydration hatası #418) DOM'u atıp yeniden kurar ve
+   * altından düğümü çekilen widget bozulur (Cloudflare bunu 600010 olarak
+   * raporlar). Bu yüzden ilk render'da YALNIZ prop kullanılır — sunucu ve
+   * tarayıcı aynı şeyi çizer — global anahtar mount'tan sonra alınır. */
+  const [key, setKey] = React.useState(() => (siteKey || "").trim());
   const enabled = key.length > 0;
+
+  React.useEffect(() => {
+    const resolved = resolveSiteKey(siteKey);
+    if (resolved && resolved !== key) setKey(resolved);
+  }, [siteKey, key]);
 
   const slotEl = React.useRef<HTMLDivElement | null>(null);
   const widgetId = React.useRef<string | null>(null);
