@@ -268,6 +268,24 @@ payload'a konmaz. (Danışman newsletter'ın da lead olarak açılmasını bu ş
   Jetonlar tek kullanımlıktır. Turnstile rate limit'in yerine geçmez: ikisi
   birlikte durmalı.
 
+**Jetonun hostname'ini de doğrula.** `siteverify` yanıtı, jetonun hangi alan
+adı için üretildiğini `hostname` alanında döndürür. Yalnız `success` bakmak
+yetmez: Cloudflare panelindeki allowed hostnames listesi yanlışlıkla geniş
+bırakılırsa (veya ileride biri "hepsine izin ver" derse) başka bir alan
+adında üretilmiş jeton kabul edilir. `hostname` S-02'deki Origin
+allowlist'inin alan adlarından biri değilse `captcha_failed` dön.
+
+```ts
+const v = await r.json() as { success?: boolean; hostname?: string };
+if (v.success !== true) return false;
+if (v.hostname && !ALLOWED_HOSTNAMES.includes(v.hostname)) return false;
+return true;
+```
+
+Site key'in herkese açık olması normaldir ve tek başına bir şey ifade etmez:
+koruma secret key, hostname kısıtı ve jetonun tek kullanımlık olmasından
+gelir. Sızmaması gereken tek değer secret key'dir.
+
   Site tarafında site key TEK yerden okunur — Webflow Project Settings →
   Custom Code → **Head**'e konan tek satır:
 

@@ -301,6 +301,35 @@ doğrulaması **olduğu gibi kalsın**; gevşetme.
 
 ---
 
+## S-11 · Turnstile jetonunun hostname'ini doğrula
+
+**Öncelik:** Orta · **Kaynak:** S-04 sonrası gözden geçirme
+
+S-04'te `siteverify` yanıtının yalnız `success` alanına bakılıyor. Yanıt
+jetonun hangi alan adı için üretildiğini `hostname` alanında da döndürüyor;
+bu kontrol edilmiyor.
+
+Site key herkese açık bir değerdir (HTML'de görünür) ve öyle olması normaldir.
+Kötüye kullanımı Cloudflare panelindeki allowed hostnames listesi engeller.
+Ama o liste tek savunma hattı olarak kalıyor: yanlışlıkla geniş bırakılırsa
+veya ileride biri gevşetirse, başka bir alan adında üretilmiş jeton kabul
+edilir. `hostname` kontrolü bunu sunucu tarafında da yakalar.
+
+**Yapılacak**
+
+- `siteverify` yanıtındaki `hostname`, S-02'deki Origin allowlist'inin alan
+  adlarından biri değilse `captcha_failed` dön.
+- Aynı listeyi kullan, ikinci bir allowlist tanımlama.
+- `hostname` yanıtta yoksa (alan opsiyonel) isteği reddetme, yalnız `success`
+  ile karar ver.
+
+**Kabul kriteri**
+
+- Sitenin kendi formundan gönderim çalışmaya devam eder.
+- Allowlist dışında bir hostname taşıyan jeton reddedilir.
+
+---
+
 ## Sestek / danışman tarafında bekleyenler (sunucu agent'ının işi değil)
 
 Bunlar bilgi olsun diye burada; kod işi değil, teyit veya erişim işi.

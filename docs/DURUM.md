@@ -35,6 +35,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 |---|---|---|---|
 | B-03 | **[ACİL]** Site key: Custom Code → Head'e tek satır `window.SESTEK_TURNSTILE_SITE_KEY` | Bizde | Sunucu S-04'ü yayınladı ve secret aktif; girilene kadar formlar 403 alıyor. Component prop'larına tek tek girmeye gerek yok |
 | B-06 | Cloudflare Turnstile panelinde allowed hostnames: `sestek.com`, `www.sestek.com`, `rc-sestek.webflow.io` | Bizde | Widget ayarı, env'den beslenmez. Eksikse widget hata verir ve B-03 çalışmaz |
+| S-11 | Turnstile jetonunun `hostname`'ini de doğrula | Sunucu repo | Orta. Şu an yalnız `success` bakılıyor; hostname kontrolü Cloudflare listesi gevşerse yakalar |
 | S-08 | `x-opennext` header'ı | Webflow Cloud | Uygulama kodundan çözülemiyor (OpenNext runtime ekliyor, cache HIT Next'e uğramıyor). İstenirse destek talebi |
 | S-09 | CSV formül enjeksiyonu | Sestek / Dynamics | Sunucu reposunda export kodu yok; sanitizasyon export'u üreten araçta yapılacak |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |

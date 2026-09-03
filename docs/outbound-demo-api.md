@@ -211,6 +211,24 @@ Kurallar:
   reddeder; ayrıca kendi tarafında tekrar kullanımı loglamak faydalı.
 - Turnstile rate limit'in YERİNE GEÇMEZ. Jeton çözen bir bot yine ardışık
   arama tetikleyebilir; numara/IP limitleri kalıcı depoda ayrıca durmalı.
+
+**Jetonun hostname'ini de doğrula.** `siteverify` yanıtı, jetonun hangi alan
+adı için üretildiğini `hostname` alanında döndürür. Yalnız `success` bakmak
+yetmez: Cloudflare panelindeki allowed hostnames listesi yanlışlıkla geniş
+bırakılırsa (veya ileride biri "hepsine izin ver" derse) başka bir alan
+adında üretilmiş jeton kabul edilir. `hostname` S-02'deki Origin
+allowlist'inin alan adlarından biri değilse `captcha_failed` dön.
+
+```ts
+const v = await r.json() as { success?: boolean; hostname?: string };
+if (v.success !== true) return false;
+if (v.hostname && !ALLOWED_HOSTNAMES.includes(v.hostname)) return false;
+return true;
+```
+
+Site key'in herkese açık olması normaldir ve tek başına bir şey ifade etmez:
+koruma secret key, hostname kısıtı ve jetonun tek kullanımlık olmasından
+gelir. Sızmaması gereken tek değer secret key'dir.
 - Site key gizli değildir (HTML'de görünür), secret key yalnız bu env'de
   durur.
 
