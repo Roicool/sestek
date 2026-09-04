@@ -155,6 +155,10 @@ export const PHONE_CSS = `
 .spf.is-open .spf-panel{opacity:1;transform:none;pointer-events:auto;
   visibility:visible;transition:opacity .16s ease,transform .16s ease,
     visibility 0s}
+/* Altta yer yoksa yukarı açılır — panel ekranın dışında kalmasın. */
+.spf.is-up .spf-panel{top:auto;bottom:calc(100% + .5rem);
+  transform:translateY(.35rem)}
+.spf.is-up.is-open .spf-panel{transform:none}
 
 .spf-search{flex:0 0 auto;border:0;border-bottom:1px solid
   color-mix(in oklab,currentColor 12%,transparent);
@@ -162,8 +166,13 @@ export const PHONE_CSS = `
   padding:.7em .9em;outline:none}
 .spf-search::placeholder{opacity:.5}
 
-.spf-list{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;
-  margin:0;padding:.3em;list-style:none}
+/* min-height:0 ŞART: flex öğesinin varsayılan min-height'ı "auto" olduğu
+ * için liste kendi içeriği kadar uzuyor, panelin max-height'ı içinde
+ * küçülmüyor ve overflow-y hiç devreye girmiyordu. Sonuç: tekerlek listeye
+ * değil sayfaya gidiyordu. */
+.spf-list{flex:1 1 auto;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;margin:0;padding:.3em;list-style:none;
+  -webkit-overflow-scrolling:touch}
 .spf-opt{display:flex;align-items:center;gap:.55em;width:100%;border:0;
   background:none;color:inherit;font:inherit;font-size:.9em;text-align:left;
   padding:.5em .6em;border-radius:var(--radius--md,8px);cursor:pointer}
@@ -206,6 +215,7 @@ export function CountryPicker({
     [allowed, locale, preferred]
   );
   const [open, setOpen] = React.useState(false);
+  const [up, setUp] = React.useState(false);
   const [q, setQ] = React.useState("");
   const [active, setActive] = React.useState(0);
   const rootEl = React.useRef<HTMLDivElement>(null);
@@ -228,6 +238,15 @@ export function CountryPicker({
 
   React.useEffect(() => {
     if (!open) return;
+
+    /* Panel yüksekliği kadar yer var mı? Yoksa yukarı aç. */
+    const btn = rootEl.current?.getBoundingClientRect();
+    if (btn) {
+      const panelH = 17 * 16 + 8;                 // max-height + boşluk
+      const below = window.innerHeight - btn.bottom;
+      setUp(below < panelH && btn.top > below);
+    }
+
     searchEl.current?.focus();
     setActive(0);
     const onDocDown = (e: MouseEvent) => {
@@ -268,7 +287,10 @@ export function CountryPicker({
   }
 
   return (
-    <div className={"spf" + (open ? " is-open" : "")} ref={rootEl}>
+    <div
+      className={"spf" + (open ? " is-open" : "") + (up ? " is-up" : "")}
+      ref={rootEl}
+    >
       <button
         type="button"
         className="spf-btn"
