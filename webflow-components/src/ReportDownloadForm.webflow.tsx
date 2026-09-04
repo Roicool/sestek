@@ -229,7 +229,7 @@ export default declareComponent(ReportDownloadForm, {
       name: "Turnstile widget",
       group: "API",
       options: ["Visible", "Invisible"],
-      defaultValue: "Invisible",
+      defaultValue: "Visible",
       tooltip:
         "Invisible (bu formda varsayılan): yalnız gerçekten meydan okuma " +
         "gerekirse görünür. Koruma aynen çalışır, sadece kutu çizilmez. " +

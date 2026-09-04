@@ -242,6 +242,7 @@ export function createTurnstile(
 
   const reset = React.useCallback(() => {
     token.current = "";
+    setFailed(false);
     const ts = api.current;
     const id = widgetId.current;
     if (ts && id !== null) {
@@ -251,5 +252,10 @@ export function createTurnstile(
     }
   }, []);
 
-  return { slotRef, getToken, reset, enabled, failed };
+  /* Widget GÖRÜNÜRKEN kendi durumunu zaten yazıyor ("Doğrulanıyor…",
+   * "Doğrulama başarısız"). Üstüne bir de bizim satırımız basılırsa,
+   * Cloudflare yeniden denerken bizim eski hatamız ekranda kalıyor ve
+   * ikisi çelişiyor. Bu yüzden kendi uyarımızı yalnız widget görünmezken
+   * gösteriyoruz — orada ziyaretçinin başka hiçbir ipucu yok. */
+  return { slotRef, getToken, reset, enabled, failed: failed && !visible };
 }
