@@ -33,14 +33,12 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | # | İş | Kim | Not |
 |---|---|---|---|
+| B-07 | Kütüphane güncellemesini Designer'da kabul et ve siteyi publish et | Bizde | 1.7.0 yayınlandı; canlıdaki eski sürüm ülke seçicinin düzeltilmiş halini taşımıyor |
 | B-03 | **[ACİL]** Site key: Custom Code → Head'e tek satır `window.SESTEK_TURNSTILE_SITE_KEY` | Bizde | Sunucu S-04'ü yayınladı ve secret aktif; girilene kadar formlar 403 alıyor. Component prop'larına tek tek girmeye gerek yok |
 | B-06 | Cloudflare Turnstile panelinde allowed hostnames: `sestek.com`, `www.sestek.com`, `rc-sestek.webflow.io` | Bizde | Widget ayarı, env'den beslenmez. Eksikse widget hata verir ve B-03 çalışmaz |
-| S-11 | Turnstile jetonunun `hostname`'ini de doğrula | Sunucu repo | Orta. Şu an yalnız `success` bakılıyor; hostname kontrolü Cloudflare listesi gevşerse yakalar |
 | S-08 | `x-opennext` header'ı | Webflow Cloud | Uygulama kodundan çözülemiyor (OpenNext runtime ekliyor, cache HIT Next'e uğramıyor). İstenirse destek talebi |
 | S-09 | CSV formül enjeksiyonu | Sestek / Dynamics | Sunucu reposunda export kodu yok; sanitizasyon export'u üreten araçta yapılacak |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
-| S-13 | Outbound: `email` alanını kabul et ve politikadan geçir | Sunucu repo | Orta. Form artık kurumsal e-posta topluyor, sunucu alanı okumuyor |
-| S-12 | Outbound: uluslararası numarayı kabul et (E.164) | Sunucu repo | Yüksek. İstemci artık ülke seçicili ve yurt dışı numara gönderebiliyor; sunucu hâlâ yalnız `05XXXXXXXXX` kabul ediyor |
 | B-04 | Uçtan uca canlı test | Bizde | B-03'ten sonra: EN sayfadan arama İngilizce mi, aynı numara 10 dk içinde 429 mı, **429 penceresinde sunucuya deploy alıp tekrar dene** (KV sayacı deploy'u atlatıyor mu — S-01/S-03 kabul kriterinin ikinci yarısı), jetonsuz curl 403 mü, gmail'li demo `free_email` mi, newsletter+gmail geçiyor mu |
 | B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |
 
@@ -68,6 +66,9 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | Tarih | İş | Commit |
 |---|---|---|
+| 04.09 | Sunucu 2. tur bitti: S-11 hostname doğrulaması, S-12 E.164 kabulü, S-13 `email` alanı. Ayrıca Knovvu'nun istediği "00" biçimi sunucuda uygulanıyor ve `/demos`'un Türkçe kopyası yayında | sunucu repo |
+| 04.09 | Outbound formuna kurumsal e-posta alanı (politika, üç hata kodu, Required/Optional/Hidden) | `5f0af4b` |
+| 04.09 | Ülke listesi kaydırma hatası ve yer yoksa yukarı açılma | `ab50b38` |
 | 04.09 | Telefon alanlarına ülke kodu seçici: outbound ve demo formunda arama, bayrak, ülkeye göre canlı biçimleme ve doğrulama (libphonenumber-js) | `388d615` |
 | 03.09 | Sunucu tarafı S-01…S-07 ve S-10 bitti (kalıcı KV rate limit, Content-Type + Origin, Turnstile doğrulaması, e-posta politikası, günlük tavan, saatlik alarm, dile göre Knovvu projesi). S-08 ve S-09 bizim kapsamımız dışına çıktı | sunucu repo |
 | 03.09 | Sunucu hata kodu artık `error` **veya** `reason` alanından okunuyor ve tek biçime indiriliyor; CRM `reason` kullandığı için `free_email` gibi anlamlı hatalar ziyaretçiye "bir şeyler ters gitti" olarak görünüyordu | `2b3f24e` |
@@ -139,7 +140,14 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   bildirim maili gider). Dört ana formda bu sorun yok, çünkü React
   component'ler jetonu bekleyebiliyor. Köprüye düşen formların kritikliği
   artarsa çözüm onları da component'e taşımak.
-- **Outbound EN dili:** sayfa bazlı, dil seçici yok. Knovvu 02.09'da netleştirdi:
+- **Outbound EN dili:** sayfa bazlı, dil seçici yok.
+- **Telefon biçimi:** istemci `+` önekli E.164 veya TR ulusal biçim gönderir.
+  Knovvu'nun istediği `00` öneki (`0090…`) **sunucuda** üretiliyor; istemcide
+  ikinci bir dönüşüm YAPILMAZ. Rate limit anahtarı da sunucuda normalize
+  numaradır, aynı kişi iki biçimde de tek kota harcar.
+- **Türkçe demo sayfaları:** cloud app'te `/demos/tr` ve altındaki sayfalar
+  yayında. Sitenin Türkçe sayfalarından demo linki verilirken `/demos/tr`
+  kullanılır, TR sayfadaki form Knovvu'nun TR projesini arar. Knovvu 02.09'da netleştirdi:
   TR ve EN **ayrı Knovvu projeleri**, proje adı da dile göre değişiyor. İstemci
   `lang` göndermeye devam ediyor, seçimi sunucu yapıyor (S-10).
 
