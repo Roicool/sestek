@@ -14,6 +14,16 @@
  * görsel dosyası yok. Windows'ta bayrak yerine "TR" gibi harfler görünür,
  * bilinçli kabul edildi — yanında zaten arama kodu yazıyor.
  *
+ * Liste SUNUCUDA ÜRETİLMEZ, panel ilk kez açıldığında kurulur. Sebebi:
+ * `Intl.DisplayNames` sunucudaki Node ile tarayıcının ICU verisi aynı
+ * olmadığı için farklı adlar döndürebiliyor (ör. sunucu "Falkland Islands",
+ * Chrome "Falkland Islands (Islas Malvinas)"). 245 satırın tamamı sunucu
+ * HTML'ine basılırsa React hydration'da uyuşmazlık görüp ağacı atıyor ve
+ * yeniden kuruyor; bu sırada seçim state'i sıfırlanıyor ve ziyaretçi
+ * "tıklıyorum ama ülke değişmiyor" yaşıyor. Kapalı panelde hiçbir satır
+ * çizilmediği için sunucu ve tarayıcı aynı şeyi üretiyor. Yan fayda: her
+ * formda 245 satırlık DOM baştan kurulmuyor.
+ *
  * Sayfada Lenis smooth scroll çalışıyor (`js/core/lenis-init.js`). Lenis
  * tekerlek olayını belge seviyesinde yakalayıp `preventDefault` ediyor ve
  * kaydırmayı kendisi canlandırıyor; bu yüzden içerideki kaydırılabilir bir
@@ -218,9 +228,11 @@ export function CountryPicker({
   emptyLabel = "No match",
   ariaLabel = "Country code",
 }: PickerProps) {
+  /* Panel bir kez açılana kadar liste kurulmaz (yukarıdaki hydration notu). */
+  const [built, setBuilt] = React.useState(false);
   const rows = React.useMemo(
-    () => countryList(allowed, locale, preferred),
-    [allowed, locale, preferred]
+    () => (built ? countryList(allowed, locale, preferred) : []),
+    [built, allowed, locale, preferred]
   );
   const [open, setOpen] = React.useState(false);
   const [up, setUp] = React.useState(false);
@@ -240,9 +252,27 @@ export function CountryPicker({
     );
   }, [rows, q]);
 
-  /* Tek ülke varsa seçilecek bir şey yok — düz etiket göster. */
-  const single = rows.length <= 1;
-  const current = rows.find((r) => r.code === country) || rows[0];
+  /* Tetikleyicinin etiketi listeden BAĞIMSIZ hesaplanır: yalnız seçili
+   * ülkenin bayrağı ve arama kodu gerekir, ülke adı gerekmez. Böylece kapalı
+   * panelde de doğru görünür ve sunucu ile tarayıcı aynı şeyi üretir. */
+  const codes = React.useMemo(
+    () => (allowed || "").toUpperCase().split(/[^A-Z]+/)
+      .filter((c) => c.length === 2),
+    [allowed]
+  );
+  const current = React.useMemo(() => {
+    const code = (codes.length > 0 && codes.indexOf(country) === -1
+      ? codes[0]
+      : country) as CountryCode;
+    try {
+      return { code, dial: "+" + getCountryCallingCode(code), flag: flag(code) };
+    } catch {
+      return null;
+    }
+  }, [country, codes]);
+
+  /* Tek ülkeye kısıtlıysa seçilecek bir şey yok — düz etiket göster. */
+  const single = codes.length === 1;
 
   React.useEffect(() => {
     if (!open) return;
@@ -305,7 +335,7 @@ export function CountryPicker({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => { setBuilt(true); setOpen((v) => !v); }}
       >
         {label}
         <svg className="spf-caret" viewBox="0 0 10 6" aria-hidden="true">
