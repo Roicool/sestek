@@ -67,7 +67,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | Tarih | İş | Commit |
 |---|---|---|
-| 04.09 | Telefon alanlarına ülke kodu seçici: outbound ve demo formunda arama, bayrak, ülkeye göre canlı biçimleme ve doğrulama (libphonenumber-js) | (bu commit) |
+| 04.09 | Telefon alanlarına ülke kodu seçici: outbound ve demo formunda arama, bayrak, ülkeye göre canlı biçimleme ve doğrulama (libphonenumber-js) | `388d615` |
 | 03.09 | Sunucu tarafı S-01…S-07 ve S-10 bitti (kalıcı KV rate limit, Content-Type + Origin, Turnstile doğrulaması, e-posta politikası, günlük tavan, saatlik alarm, dile göre Knovvu projesi). S-08 ve S-09 bizim kapsamımız dışına çıktı | sunucu repo |
 | 03.09 | Sunucu hata kodu artık `error` **veya** `reason` alanından okunuyor ve tek biçime indiriliyor; CRM `reason` kullandığı için `free_email` gibi anlamlı hatalar ziyaretçiye "bir şeyler ters gitti" olarak görünüyordu | `2b3f24e` |
 | 02.09 | Turnstile istemci tarafı: 4 React component'te `Turnstile site key` prop'u, `outbound-demo.js` v1.2.0 ve `crm-forms.js` v1.2.0'da `data-*-turnstile`. Jeton `turnstileToken` olarak gider, her denemeden sonra reset edilir. Sunucu doğrulaması iki spec'e yazıldı | `b6432d6` |
