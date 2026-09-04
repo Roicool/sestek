@@ -141,6 +141,15 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   component'ler jetonu bekleyebiliyor. Köprüye düşen formların kritikliği
   artarsa çözüm onları da component'e taşımak.
 - **Outbound EN dili:** sayfa bazlı, dil seçici yok.
+- **Lenis ve içeride kaydırılan paneller:** site genelinde Lenis smooth
+  scroll çalışıyor ve tekerlek olayını belge seviyesinde yakalayıp kendi
+  canlandırmasını yapıyor. Bu yüzden bir panelin `overflow-y:auto` olması
+  KAYDIRILABİLİR olmasına yetmez; Lenis'in o alanı kendi haline bırakması
+  için `data-lenis-prevent` işareti gerekir. Ülke seçicide bu eksikti ve
+  sayfa kayınca panel de kaydığı için "ülke seçilemiyor" gibi görünüyordu.
+  Aynı eksik `search.css`, `locale-switch.css`, `dropdown.css` ve
+  `story.css` içindeki kaydırılabilir alanlarda da olabilir — oralar henüz
+  kontrol edilmedi.
 - **Telefon biçimi:** istemci `+` önekli E.164 veya TR ulusal biçim gönderir.
   Knovvu'nun istediği `00` öneki (`0090…`) **sunucuda** üretiliyor; istemcide
   ikinci bir dönüşüm YAPILMAZ. Rate limit anahtarı da sunucuda normalize

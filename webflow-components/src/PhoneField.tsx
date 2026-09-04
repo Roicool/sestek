@@ -14,6 +14,14 @@
  * görsel dosyası yok. Windows'ta bayrak yerine "TR" gibi harfler görünür,
  * bilinçli kabul edildi — yanında zaten arama kodu yazıyor.
  *
+ * Sayfada Lenis smooth scroll çalışıyor (`js/core/lenis-init.js`). Lenis
+ * tekerlek olayını belge seviyesinde yakalayıp `preventDefault` ediyor ve
+ * kaydırmayı kendisi canlandırıyor; bu yüzden içerideki kaydırılabilir bir
+ * alan `overflow-y:auto` ve `overscroll-behavior` olsa bile kaymıyor, sayfa
+ * kayıyor. Lenis'in bir alanı kendi haline bırakması için `data-lenis-prevent`
+ * işaretini görmesi gerekiyor — panelin tamamına konuyor ki dokunmatikte de
+ * çalışsın. Bu bir CSS meselesi değil, olay yakalama meselesi.
+ *
  * Liste varsayılan olarak TÜM ülkeleri gösterir; `allowed` ile daraltılabilir
  * (örn. tek pazara açılan bir kampanya sayfası). `preferred` ile sık seçilen
  * birkaç ülke başa alınır, çünkü 200 satırlık alfabetik listede Türkiye'ye
@@ -306,7 +314,7 @@ export function CountryPicker({
         </svg>
       </button>
 
-      <div className="spf-panel">
+      <div className="spf-panel" data-lenis-prevent>
         <input
           ref={searchEl}
           className="spf-search"
@@ -328,7 +336,12 @@ export function CountryPicker({
             }
           }}
         />
-        <ul className="spf-list" role="listbox" aria-label={ariaLabel}>
+        <ul
+          className="spf-list"
+          role="listbox"
+          aria-label={ariaLabel}
+          data-lenis-prevent
+        >
           {shown.map((r, i) => (
             <li key={r.code}>
               <button
