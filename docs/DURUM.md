@@ -142,6 +142,14 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   component'ler jetonu bekleyebiliyor. Köprüye düşen formların kritikliği
   artarsa çözüm onları da component'e taşımak.
 - **Outbound EN dili:** sayfa bazlı, dil seçici yok.
+- **Ülke seçici native `<select>`:** özel açılır panel canlı Webflow
+  sayfasında üç ayrı kez kırıldı (Lenis, sunucu/tarayıcı ICU farkından
+  hydration, ve yerinde teşhis edilemeyen bir üçüncü sebep). Artık görünen
+  çip bizim, tıklamayı alan şeffaf bir tarayıcı `<select>`. İşletim sistemi
+  çizdiği için sayfadaki hiçbir kütüphane ona dokunamıyor; klavye, mobil ve
+  yazarak arama bedava. Seçenekler mount'tan sonra kuruluyor, sunucu boş
+  select basıyor. Canlıdaki sürüm konsoldan okunur:
+  `document.querySelector("[data-spf-v]").dataset.spfV`
 - **Lenis ve içeride kaydırılan paneller:** site genelinde Lenis smooth
   scroll çalışıyor ve tekerlek olayını belge seviyesinde yakalayıp kendi
   canlandırmasını yapıyor. Bu yüzden bir panelin `overflow-y:auto` olması

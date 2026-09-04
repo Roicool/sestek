@@ -269,76 +269,75 @@ export function readPhone(raw: string, country: CountryCode): PhoneValue {
 
 /* ── Ülke seçici ─────────────────────────────────────────────────── */
 
+/**
+ * Canlıda konsoldan okunabilen sürüm damgası:
+ *   document.querySelector("[data-spf-v]").dataset.spfV
+ * Paket sürümüyle birlikte artırılır. "Eski sürüm mü test ediliyor"
+ * belirsizliğini bitirmek için var.
+ */
+export const PHONE_FIELD_VERSION = "1.11.0";
+
+/**
+ * NEDEN NATİVE <select>:
+ * Özel açılır panel canlı Webflow sayfasında üç ayrı kez kırıldı (Lenis'in
+ * tekerleği yutması, sunucu/tarayıcı ICU farkından hydration uyuşmazlığı, ve
+ * yerinde teşhis edilemeyen bir üçüncü sebep). Her düzeltme yeni bir yayın
+ * döngüsü ve yeni bir "hâlâ çalışmıyor" üretti.
+ *
+ * Tarayıcının kendi <select>'i bunların hiçbirine maruz kalmaz: açılır liste
+ * işletim sistemi tarafından çizilir, sayfanın kaydırma kütüphanesi, z-index
+ * bağlamı, dış tıklama dinleyicisi veya Webflow etkileşimleri ona dokunamaz.
+ * Klavye, ekran okuyucu ve mobil destek bedavaya gelir. Yazarak arama (type
+ * ahead) tarayıcıda hazırdır.
+ *
+ * Görünüm: ziyaretçi bizim çizdiğimiz bayrak + arama kodu çipini görür;
+ * şeffaf <select> onun ÜSTÜNDE oturur ve tıklamayı alır. Stripe ve benzeri
+ * ödeme formlarının kullandığı kalıp.
+ *
+ * Seçenekler mount'tan SONRA kurulur (aşağıdaki hydration notu): sunucu boş
+ * bir <select> basar, tarayıcı da ilk render'da boş basar, sonra effect
+ * doldurur. Böylece ülke adlarının sunucu/tarayıcı farkı hydration'a hiç
+ * girmez.
+ */
+
 export const PHONE_CSS = `
-.spf{position:relative;display:flex;align-items:center;flex:0 0 auto}
+.spf{position:relative;display:inline-flex;align-items:center;flex:0 0 auto}
 .spf-btn{display:flex;align-items:center;gap:.35em;border:0;background:none;
-  padding:.35em .5em;margin:0;border-radius:999px;cursor:pointer;
+  padding:.35em .5em;margin:0;border-radius:999px;
   font:inherit;font-size:.95em;line-height:1;color:inherit;
-  transition:background-color .16s ease}
-.spf-btn:hover{background:color-mix(in oklab,currentColor 8%,transparent)}
-.spf-btn:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+  transition:background-color .16s ease;pointer-events:none}
+.spf:hover .spf-btn{background:color-mix(in oklab,currentColor 8%,transparent)}
+.spf:focus-within .spf-btn{outline:2px solid currentColor;outline-offset:2px}
 .spf-flag{font-size:1.15em;line-height:1}
 .spf-dial{font-variant-numeric:tabular-nums;opacity:.85}
-.spf-caret{width:.5em;height:.5em;flex:0 0 auto;opacity:.5;
-  transition:transform .16s ease}
-.spf.is-open .spf-caret{transform:rotate(180deg)}
-
-.spf-panel{position:absolute;z-index:40;top:calc(100% + .5rem);left:0;
-  width:min(20rem,78vw);max-height:17rem;display:flex;flex-direction:column;
-  border-radius:var(--radius--xl,14px);overflow:hidden;
-  background:var(--spf-bg,#fff);color:var(--spf-fg,#101014);
-  box-shadow:0 1px 0 0 rgba(0,0,0,.06) inset,0 16px 40px -12px rgba(0,0,0,.28),
-    0 0 0 1px rgba(0,0,0,.08);
-  opacity:0;transform:translateY(-.35rem);pointer-events:none;
-  visibility:hidden;transition:opacity .16s ease,transform .16s ease,
-    visibility 0s linear .16s}
-.spf.is-open .spf-panel{opacity:1;transform:none;pointer-events:auto;
-  visibility:visible;transition:opacity .16s ease,transform .16s ease,
-    visibility 0s}
-/* Altta yer yoksa yukarı açılır — panel ekranın dışında kalmasın. */
-.spf.is-up .spf-panel{top:auto;bottom:calc(100% + .5rem);
-  transform:translateY(.35rem)}
-.spf.is-up.is-open .spf-panel{transform:none}
-
-.spf-search{flex:0 0 auto;border:0;border-bottom:1px solid
-  color-mix(in oklab,currentColor 12%,transparent);
-  background:none;color:inherit;font:inherit;font-size:.9em;
-  padding:.7em .9em;outline:none}
-.spf-search::placeholder{opacity:.5}
-
-/* min-height:0 ŞART: flex öğesinin varsayılan min-height'ı "auto" olduğu
- * için liste kendi içeriği kadar uzuyor, panelin max-height'ı içinde
- * küçülmüyor ve overflow-y hiç devreye girmiyordu. Sonuç: tekerlek listeye
- * değil sayfaya gidiyordu. */
-.spf-list{flex:1 1 auto;min-height:0;overflow-y:auto;
-  overscroll-behavior:contain;margin:0;padding:.3em;list-style:none;
-  -webkit-overflow-scrolling:touch}
-.spf-opt{display:flex;align-items:center;gap:.55em;width:100%;border:0;
-  background:none;color:inherit;font:inherit;font-size:.9em;text-align:left;
-  padding:.5em .6em;border-radius:var(--radius--md,8px);cursor:pointer}
-.spf-opt:hover,.spf-opt.is-active{background:color-mix(in oklab,currentColor 9%,transparent)}
-.spf-opt[aria-selected="true"]{font-weight:600}
-.spf-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap}
-.spf-opt .spf-dial{flex:0 0 auto;font-size:.95em}
-.spf-empty{padding:.9em;font-size:.85em;opacity:.6}
-
-@media (prefers-reduced-motion:reduce){
-  .spf-panel,.spf-caret{transition-duration:.01ms}
-}
+.spf-caret{width:.5em;height:.5em;flex:0 0 auto;opacity:.5}
+/* Şeffaf native select çipin üstünde: tıklamayı o alır, görüntüyü çip verir. */
+.spf-select{position:absolute;inset:0;width:100%;height:100%;margin:0;
+  padding:0;border:0;opacity:0;cursor:pointer;font:inherit;
+  -webkit-appearance:none;appearance:none}
+.spf-select:disabled{cursor:default}
 `;
 
 type PickerProps = {
   country: CountryCode;
   onChange: (c: CountryCode) => void;
-  /** Boş veya "All" → tüm ülkeler; "TR" / "TR,GB,DE" → yalnız bunlar */
+  /** Boş → tüm ülkeler; "TR" / "TR,GB,DE" → yalnız bunlar */
   allowed?: string;
   preferred?: string;
   locale?: string;
+  /** Tercih edilenler grubunun başlığı (optgroup) */
+  preferredLabel?: string;
+  /** Diğer ülkeler grubunun başlığı (optgroup) */
+  allLabel?: string;
+  ariaLabel?: string;
+  /** Geriye uyumluluk — artık kullanılmıyor (native select'te arama tarayıcıda) */
   searchLabel?: string;
   emptyLabel?: string;
-  ariaLabel?: string;
 };
+
+function parseCodes(v: string): string[] {
+  return (v || "").toUpperCase().split(/[^A-Z]+/).filter((c) => c.length === 2);
+}
 
 export function CountryPicker({
   country,
@@ -346,42 +345,29 @@ export function CountryPicker({
   allowed = "",
   preferred = "",
   locale = "en",
-  searchLabel = "Search",
-  emptyLabel = "No match",
+  preferredLabel = "",
+  allLabel = "",
   ariaLabel = "Country code",
 }: PickerProps) {
-  /* Panel bir kez açılana kadar liste kurulmaz (yukarıdaki hydration notu). */
+  /* Seçenekler mount'tan sonra kurulur — sunucu ve ilk tarayıcı render'ı
+   * boş bir <select> üretir, hydration uyuşmazlığı imkânsız hale gelir. */
   const [built, setBuilt] = React.useState(false);
+  React.useEffect(() => {
+    setBuilt(true);
+  }, []);
+
+  const codes = React.useMemo(() => parseCodes(allowed), [allowed]);
+  const single = codes.length === 1;
+
   const rows = React.useMemo(
     () => (built ? countryList(allowed, locale, preferred) : []),
     [built, allowed, locale, preferred]
   );
-  const [open, setOpen] = React.useState(false);
-  const [up, setUp] = React.useState(false);
-  const [q, setQ] = React.useState("");
-  const [active, setActive] = React.useState(0);
-  const rootEl = React.useRef<HTMLDivElement>(null);
-  const searchEl = React.useRef<HTMLInputElement>(null);
+  const prefCodes = React.useMemo(() => parseCodes(preferred), [preferred]);
+  const top = codes.length === 0 ? rows.filter((r) => prefCodes.indexOf(r.code) !== -1) : [];
+  const rest = codes.length === 0 ? rows.filter((r) => prefCodes.indexOf(r.code) === -1) : rows;
 
-  const shown = React.useMemo(() => {
-    const needle = q.trim().toLowerCase().replace(/^\+/, "");
-    if (!needle) return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(needle) ||
-        r.code.toLowerCase().includes(needle) ||
-        r.dial.slice(1).startsWith(needle)
-    );
-  }, [rows, q]);
-
-  /* Tetikleyicinin etiketi listeden BAĞIMSIZ hesaplanır: yalnız seçili
-   * ülkenin bayrağı ve arama kodu gerekir, ülke adı gerekmez. Böylece kapalı
-   * panelde de doğru görünür ve sunucu ile tarayıcı aynı şeyi üretir. */
-  const codes = React.useMemo(
-    () => (allowed || "").toUpperCase().split(/[^A-Z]+/)
-      .filter((c) => c.length === 2),
-    [allowed]
-  );
+  /* Çip, listeden BAĞIMSIZ: yalnız seçili ülkenin bayrağı + kodu. */
   const current = React.useMemo(() => {
     const code = (codes.length > 0 && codes.indexOf(country) === -1
       ? codes[0]
@@ -393,126 +379,50 @@ export function CountryPicker({
     }
   }, [country, codes]);
 
-  /* Tek ülkeye kısıtlıysa seçilecek bir şey yok — düz etiket göster. */
-  const single = codes.length === 1;
-
-  React.useEffect(() => {
-    if (!open) return;
-
-    /* Panel yüksekliği kadar yer var mı? Yoksa yukarı aç. */
-    const btn = rootEl.current?.getBoundingClientRect();
-    if (btn) {
-      const panelH = 17 * 16 + 8;                 // max-height + boşluk
-      const below = window.innerHeight - btn.bottom;
-      setUp(below < panelH && btn.top > below);
-    }
-
-    searchEl.current?.focus();
-    setActive(0);
-    const onDocDown = (e: MouseEvent) => {
-      if (!rootEl.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
   if (!current) return null;
 
-  const pick = (c: CountryCode) => {
-    onChange(c);
-    setOpen(false);
-    setQ("");
-  };
-
-  const label = (
-    <>
-      <span className="spf-flag" aria-hidden="true">{current.flag}</span>
-      <span className="spf-dial">{current.dial}</span>
-    </>
+  const option = (r: { code: CountryCode; name: string; dial: string; flag: string }) => (
+    <option key={r.code} value={r.code}>
+      {r.flag} {r.name} ({r.dial})
+    </option>
   );
 
-  if (single) {
-    return (
-      <div className="spf">
-        <span className="spf-btn" aria-hidden="true">{label}</span>
-      </div>
-    );
-  }
-
   return (
-    <div
-      className={"spf" + (open ? " is-open" : "") + (up ? " is-up" : "")}
-      ref={rootEl}
-    >
-      <button
-        type="button"
-        className="spf-btn"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => { setBuilt(true); setOpen((v) => !v); }}
-      >
-        {label}
-        <svg className="spf-caret" viewBox="0 0 10 6" aria-hidden="true">
-          <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor"
-            strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      <div className="spf-panel" data-lenis-prevent>
-        <input
-          ref={searchEl}
-          className="spf-search"
-          type="text"
-          value={q}
-          placeholder={searchLabel}
-          aria-label={searchLabel}
-          onChange={(e) => { setQ(e.target.value); setActive(0); }}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setActive((i) => Math.min(i + 1, shown.length - 1));
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setActive((i) => Math.max(i - 1, 0));
-            } else if (e.key === "Enter") {
-              e.preventDefault();
-              if (shown[active]) pick(shown[active].code);
-            }
-          }}
-        />
-        <ul
-          className="spf-list"
-          role="listbox"
+    <div className="spf" data-spf-v={PHONE_FIELD_VERSION}>
+      <span className="spf-btn" aria-hidden="true">
+        <span className="spf-flag">{current.flag}</span>
+        <span className="spf-dial">{current.dial}</span>
+        {!single && (
+          <svg className="spf-caret" viewBox="0 0 10 6" aria-hidden="true">
+            <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor"
+              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      {!single && (
+        <select
+          className="spf-select"
           aria-label={ariaLabel}
-          data-lenis-prevent
+          value={built ? current.code : ""}
+          onChange={(e) => {
+            const v = e.target.value as CountryCode;
+            if (v) onChange(v);
+          }}
         >
-          {shown.map((r, i) => (
-            <li key={r.code}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={r.code === country}
-                className={"spf-opt" + (i === active ? " is-active" : "")}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => pick(r.code)}
-              >
-                <span className="spf-flag" aria-hidden="true">{r.flag}</span>
-                <span className="spf-name">{r.name}</span>
-                <span className="spf-dial">{r.dial}</span>
-              </button>
-            </li>
-          ))}
-          {shown.length === 0 && <li className="spf-empty">{emptyLabel}</li>}
-        </ul>
-      </div>
+          {/* Mount öncesi tek boş seçenek: value="" ile eşleşir, uyarı çıkmaz */}
+          {!built && <option value="" />}
+          {built && top.length > 0 && (
+            preferredLabel
+              ? <optgroup label={preferredLabel}>{top.map(option)}</optgroup>
+              : top.map(option)
+          )}
+          {built && (
+            allLabel && top.length > 0
+              ? <optgroup label={allLabel}>{rest.map(option)}</optgroup>
+              : rest.map(option)
+          )}
+        </select>
+      )}
     </div>
   );
 }

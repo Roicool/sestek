@@ -79,6 +79,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     country_label: "Ülke kodu",
     country_search: "Ülke ara",
     country_empty: "Eşleşen ülke yok",
+    country_preferred: "Sık kullanılan",
+    country_all: "Tüm ülkeler",
     captcha_unavailable: "Güvenlik doğrulaması tamamlanamadı. Sayfayı yenileyip tekrar deneyin, sorun sürerse bizimle iletişime geçin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
@@ -97,6 +99,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     country_label: "Country code",
     country_search: "Search country",
     country_empty: "No matching country",
+    country_preferred: "Popular",
+    country_all: "All countries",
     captcha_unavailable: "The security check could not be completed. Please refresh and try again, and contact us if it keeps happening.",
     rate_limited: "You requested a call just now — please try again in a few minutes.",
     not_configured: "The demo is unavailable right now, please try again later.",
@@ -655,8 +659,8 @@ export function OutboundCallDemo({
                   allowed={phoneCountries}
                   preferred={phonePreferred}
                   locale={lang === "TR" ? "tr" : "en"}
-                  searchLabel={t.country_search}
-                  emptyLabel={t.country_empty}
+                  preferredLabel={t.country_preferred}
+                  allLabel={t.country_all}
                   ariaLabel={t.country_label}
                 />
               </span>

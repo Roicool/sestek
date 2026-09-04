@@ -94,6 +94,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     country_label: "Ülke kodu",
     country_search: "Ülke ara",
     country_empty: "Eşleşen ülke yok",
+    country_preferred: "Sık kullanılan",
+    country_all: "Tüm ülkeler",
     invalid_message: "Lütfen kısaca ihtiyacınızı yazın.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
@@ -114,6 +116,8 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     country_label: "Country code",
     country_search: "Search country",
     country_empty: "No matching country",
+    country_preferred: "Popular",
+    country_all: "All countries",
     invalid_message: "Please tell us briefly what you need.",
     consent_required: "Please tick the consent box to continue.",
     captcha_failed: "Security check could not be completed — please try again.",
@@ -659,8 +663,8 @@ export function DemoRequestForm({
                         allowed={phoneCountries}
                         preferred={phonePreferred}
                         locale={lang === "TR" ? "tr" : "en"}
-                        searchLabel={t.country_search}
-                        emptyLabel={t.country_empty}
+                        preferredLabel={t.country_preferred}
+                        allLabel={t.country_all}
                         ariaLabel={t.country_label}
                       />
                     </span>
