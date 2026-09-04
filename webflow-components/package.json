@@ -1,6 +1,6 @@
 {
   "name": "sestek-webflow-components",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "description": "Sestek Webflow Code Components — React components importable into the Webflow Designer via DevLink",
   "scripts": {
@@ -13,6 +13,7 @@
     "@shadergradient/react": "^2.4.20",
     "@webflow/data-types": "^2.0.0",
     "@webflow/react": "^2.0.0",
+    "libphonenumber-js": "^1.13.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.160.1"

@@ -49,8 +49,18 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 }
 ```
 
-- `phone` client'ta normalize edilir ama **sunucu yine doğrulamalı**:
-  `/^05\d{9}$/` (TR mobil). Uymuyorsa 400.
+- `phone` iki biçimde gelebilir ve **sunucu ikisini de kabul etmeli**:
+  - Türkiye: `05XXXXXXXXX` (mevcut sözleşme, değişmedi)
+  - Diğer ülkeler: E.164, `+` ile başlar (`+447911123456`)
+
+  Sitedeki form artık ülke kodu seçici taşıyor ve numarayı libphonenumber
+  ile o ülkeye göre doğruluyor. Arama servisi her ülkeyi arayabildiği için
+  liste kısıtlı değil. Sunucu tarafındaki `/^05\d{9}$/` kontrolü tek başına
+  bırakılırsa yurt dışı numaralar 400 alır — bkz. S-12.
+
+  Geçiş kasıtlı: TR için eski biçim korundu ki mevcut form kırılmasın.
+  Sunucu E.164'ü kabul etmeye başlayınca TR de E.164'e geçirilecek ve bu
+  ayrım kalkacak.
 - `name` trim'lenmiş, 2–100 karakter. Uymuyorsa 400.
 - `consent !== true` → 400 (KVKK: kullanıcıyı arıyoruz, açık rıza şart).
 - `hp` (honeypot) doluysa → bot. **200 `{ok:true}` dön ama Knovvu'ya istek

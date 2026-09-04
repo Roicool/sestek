@@ -22,6 +22,9 @@
  */
 import * as React from "react";
 import { createTurnstile } from "./turnstile";
+import {
+  CountryPicker, PHONE_CSS, readPhone, formatNational, type CountryCode,
+} from "./PhoneField";
 import { errorCode } from "./apiError";
 
 type Lang = "TR" | "EN";
@@ -50,6 +53,9 @@ export interface OutboundCallDemoProps {
   sideCaption?: string;
   endpoint?: string;
   lang?: Lang;
+  phoneCountry?: string;
+  phoneCountries?: string;
+  phonePreferred?: string;
   turnstileSiteKey?: string;
   turnstileWidget?: "Visible" | "Invisible";
   cooldownSeconds?: number;
@@ -61,6 +67,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Lütfen geçerli bir cep telefonu girin.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
+    country_label: "Ülke kodu",
+    country_search: "Ülke ara",
+    country_empty: "Eşleşen ülke yok",
     captcha_unavailable: "Güvenlik doğrulaması tamamlanamadı. Sayfayı yenileyip tekrar deneyin, sorun sürerse bizimle iletişime geçin.",
     rate_limited: "Kısa süre önce bir arama istediniz — lütfen biraz sonra tekrar deneyin.",
     not_configured: "Demo şu an kullanılamıyor, lütfen daha sonra deneyin.",
@@ -73,6 +82,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     invalid_phone: "Please enter a valid mobile number.",
     consent_required: "Please tick the consent box to continue.",
     captcha_failed: "Security check could not be completed — please try again.",
+    country_label: "Country code",
+    country_search: "Search country",
+    country_empty: "No matching country",
     captcha_unavailable: "The security check could not be completed. Please refresh and try again, and contact us if it keeps happening.",
     rate_limited: "You requested a call just now — please try again in a few minutes.",
     not_configured: "The demo is unavailable right now, please try again later.",
@@ -82,17 +94,19 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
   },
 };
 
-/* ── Telefon: serbest girişten 10 haneli "5XXXXXXXXX" çıkar ─────── */
-function phoneDigits(raw: string): string {
-  let d = (raw || "").replace(/\D/g, "");
-  if (d.startsWith("90") && d.length > 10) d = d.slice(2);
-  if (d.startsWith("0")) d = d.slice(1);
-  return d.slice(0, 10);
-}
-/* "5444390406" → "544 439 04 06" (canlı biçimleme) */
-function formatPhone(d: string): string {
-  const g = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)];
-  return g.filter(Boolean).join(" ");
+/* ── Telefon ──────────────────────────────────────────────────────
+ * Numara artık ülke seçicili: doğrulama ve biçimlendirme PhoneField
+ * üzerinden libphonenumber verisiyle yapılıyor.
+ *
+ * Sunucuya GÖNDERİLEN biçim geçiş halinde: TR için sözleşmedeki
+ * "05XXXXXXXXX" korunuyor (mevcut form kırılmasın), diğer ülkeler E.164
+ * ("+44…") gidiyor. Sunucu E.164'ü kabul etmeye başlayınca TR de E.164'e
+ * geçer ve bu ayrım kalkar. Bkz. docs/outbound-demo-api.md.
+ */
+function wireFormat(e164: string, country: CountryCode): string {
+  if (country !== "TR") return e164;
+  const d = e164.replace(/\D/g, "");          // 905314072845
+  return "0" + d.slice(2);                    // 05314072845
 }
 
 /* ── Kalıcı gönderim kaydı — vanilla outbound-demo.js ile AYNI anahtar ── */
@@ -321,11 +335,18 @@ const CSS = `
   box-shadow:0 0 0 3px rgba(20,18,30,.07)}
 .sodc-field.is-invalid .sodc-input{border-color:var(--x-neg);
   box-shadow:0 0 0 3px color-mix(in oklab,var(--x-neg) 14%,transparent)}
-.sodc-field--phone .sodc-input{padding-left:4.4em}
-.sodc-prefix{position:absolute;left:.55em;top:50%;transform:translateY(-50%);
-  font-size:var(--text--sm,.875rem);font-weight:500;color:var(--x-muted);
-  background:color-mix(in oklab,var(--x-text) 6%,transparent);
-  border-radius:var(--radius--full,9999px);padding:.4em .8em;pointer-events:none}
+.sodc-field--phone{display:flex;align-items:center}
+.sodc-field--phone .sodc-input{padding-left:.5em;border-top-left-radius:0;
+  border-bottom-left-radius:0;border-left:0}
+.sodc-prefix{display:flex;align-items:center;align-self:stretch;
+  padding:0 .15em 0 .5em;font-size:var(--text--sm,.875rem);font-weight:500;
+  color:var(--x-text);background:var(--x-field);
+  border:1px solid var(--x-field-line);border-right:0;
+  border-radius:var(--radius--full,9999px) 0 0 var(--radius--full,9999px)}
+.sodc-field--phone:focus-within .sodc-prefix,
+.sodc-field--phone:focus-within .sodc-input{border-color:var(--x-text)}
+.sodc-field--phone.is-invalid .sodc-prefix{border-color:var(--x-neg)}
+.sodc-prefix .spf-panel{--spf-bg:var(--x-card,#fff);--spf-fg:var(--x-text,#101014)}
 .sodc-consent{display:flex;gap:.55em;align-items:flex-start;cursor:pointer;
   padding:.15em .4em;font-size:var(--text--xs,.75rem);line-height:1.45;color:var(--x-muted)}
 .sodc-consent input{flex:none;width:1.05em;height:1.05em;margin-top:.2em;
@@ -389,6 +410,7 @@ const CSS = `
   .sodc-dots i,.st-calling .sodc-ringx,.sodc-spin{animation:none}
   .sodc-orbwrap{transition:none}
 }
+` + PHONE_CSS + `
 .sodc-ts{margin-top:var(--spacing--3,.75rem)}
 .sodc-ts:empty{display:none;margin:0}
 `;
@@ -437,6 +459,9 @@ export function OutboundCallDemo({
   sideCaption = "Your number is used only for this demo call and never stored.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "EN",
+  phoneCountry = "TR",
+  phoneCountries = "",
+  phonePreferred = "TR,GB,US,DE,FR,NL",
   turnstileSiteKey = "",
   turnstileWidget = "Visible",
   cooldownSeconds = 600,
@@ -447,6 +472,10 @@ export function OutboundCallDemo({
   const [stage, setStage] = React.useState<Stage>("idle");
   const [name, setName] = React.useState("");
   const [digits, setDigits] = React.useState("");
+  const [country, setCountry] = React.useState<CountryCode>(
+    (phoneCountry || "TR").toUpperCase() as CountryCode
+  );
+  const phoneInfo = readPhone(digits, country);
   const [consent, setConsent] = React.useState(false);
   const [hp, setHp] = React.useState("");
   const [sending, setSending] = React.useState(false);
@@ -475,9 +504,9 @@ export function OutboundCallDemo({
 
     const cleanName = name.trim();
     if (cleanName.length < 2) return fail("invalid_name", "name");
-    if (!/^5\d{9}$/.test(digits)) return fail("invalid_phone", "phone");
+    if (!phoneInfo.valid) return fail("invalid_phone", "phone");
     if (!consent) return fail("consent_required", "consent");
-    const phone = "0" + digits;
+    const phone = wireFormat(phoneInfo.e164, country);
     if (cooldownLeft(phone, cooldownSeconds * 1000) > 0) {
       return fail("rate_limited"); // kalıcı cooldown — istek hiç çıkmaz
     }
@@ -583,7 +612,18 @@ export function OutboundCallDemo({
               />
             </div>
             <div className={"sodc-field sodc-field--phone" + (invalid === "phone" ? " is-invalid" : "")}>
-              <span className="sodc-prefix" aria-hidden="true">+90</span>
+              <span className="sodc-prefix">
+                <CountryPicker
+                  country={country}
+                  onChange={(c) => { setCountry(c); clearErr(); }}
+                  allowed={phoneCountries}
+                  preferred={phonePreferred}
+                  locale={lang === "TR" ? "tr" : "en"}
+                  searchLabel={t.country_search}
+                  emptyLabel={t.country_empty}
+                  ariaLabel={t.country_label}
+                />
+              </span>
               <input
                 className="sodc-input"
                 type="tel"
@@ -591,8 +631,8 @@ export function OutboundCallDemo({
                 autoComplete="tel-national"
                 placeholder={phoneLabel}
                 aria-label={phoneLabel}
-                value={formatPhone(digits)}
-                onChange={(e) => { setDigits(phoneDigits(e.target.value)); clearErr(); }}
+                value={phoneInfo.national}
+                onChange={(e) => { setDigits(e.target.value); clearErr(); }}
               />
             </div>
             {/* honeypot — görünmez, botlar doldurur */}
@@ -641,7 +681,7 @@ export function OutboundCallDemo({
         ) : (
           <div className="sodc-callmeta" role="status">
             <b>{successTitle} · {agentName}</b>
-            <span>+90 {formatPhone(digits)}</span>
+            <span>{phoneInfo.e164 || formatNational(digits, country)}</span>
             <div className="sodc-dots" aria-hidden="true">
               <i /><i /><i />
             </div>

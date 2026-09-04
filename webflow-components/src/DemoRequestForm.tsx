@@ -29,6 +29,9 @@ import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
 import { errorCode } from "./apiError";
+import {
+  CountryPicker, PHONE_CSS, readPhone, type CountryCode,
+} from "./PhoneField";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -69,6 +72,9 @@ export interface DemoRequestFormProps {
   endpoint?: string;
   formType?: string;
   freeEmail?: "Block" | "Allow";
+  phoneCountry?: string;
+  phoneCountries?: string;
+  phonePreferred?: string;
   turnstileSiteKey?: string;
   turnstileWidget?: "Visible" | "Invisible";
   lang?: Lang;
@@ -83,6 +89,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     free_email: "Lütfen kurumsal e-posta adresinizi kullanın.",
     disposable_email: "Geçici e-posta adresleri kabul edilmiyor.",
     invalid_phone: "Lütfen geçerli bir telefon numarası girin.",
+    country_label: "Ülke kodu",
+    country_search: "Ülke ara",
+    country_empty: "Eşleşen ülke yok",
     invalid_message: "Lütfen kısaca ihtiyacınızı yazın.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
@@ -100,6 +109,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
     free_email: "Please use your work email address.",
     disposable_email: "Temporary email addresses aren't accepted.",
     invalid_phone: "Please enter a valid phone number.",
+    country_label: "Country code",
+    country_search: "Search country",
+    country_empty: "No matching country",
     invalid_message: "Please tell us briefly what you need.",
     consent_required: "Please tick the consent box to continue.",
     captcha_failed: "Security check could not be completed — please try again.",
@@ -124,11 +136,9 @@ function readUtms(): Record<string, string> | null {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-/* Telefon serbest biçim (uluslararası ziyaretçi olabilir) — yalnız
- * "gerçekten numara mı" kontrolü: en az 7 rakam. */
-function phoneOk(raw: string): boolean {
-  return (raw.replace(/\D/g, "") || "").length >= 7;
-}
+/* Telefon doğrulaması artık libphonenumber verisiyle, seçilen ülkeye göre
+ * (bkz. PhoneField). Alan ZORUNLU DEĞİL: boşsa geçerli sayılır, doluysa o
+ * ülke için gerçekten geçerli olmalı. */
 
 const CSS = `
 .sdrf{--x-card:#ffffff;--x-line:rgba(20,18,30,.08);
@@ -307,6 +317,20 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
   .sdrf-done,.sdrf-stepin{animation:none}
   .sdrf-prog-bar b{transition:none}
 }
+` + PHONE_CSS + `
+.sdrf-field--phone{display:flex;align-items:stretch}
+/* Etiket input'a göre konumlansın, yoksa ülke çipinin üstüne biner. */
+.sdrf-phonein{position:relative;flex:1 1 auto;min-width:0;display:flex}
+.sdrf-field--phone .sdrf-input{padding-left:.75em;border-left:0;
+  border-top-left-radius:0;border-bottom-left-radius:0}
+.sdrf-field--phone .sdrf-lab{left:.85em}
+.sdrf-cc{display:flex;align-items:center;padding:0 .15em 0 .5em;
+  background:var(--x-field);border:1px solid var(--x-field-line);border-right:0;
+  border-radius:var(--radius--full,9999px) 0 0 var(--radius--full,9999px);
+  font-size:var(--text--sm,.875rem);color:var(--x-text)}
+.sdrf-field--phone:focus-within .sdrf-cc{border-color:var(--x-acc)}
+.sdrf-field--phone.is-invalid .sdrf-cc{border-color:var(--x-neg)}
+.sdrf-cc .spf-panel{--spf-bg:var(--x-card,#fff);--spf-fg:var(--x-text,#101014)}
 .sdrf-ts{margin-top:var(--spacing--3,.75rem)}
 .sdrf-ts:empty{display:none;margin:0}
 `;
@@ -360,6 +384,9 @@ export function DemoRequestForm({
   endpoint = "/demos/api/crm/lead",
   formType = "frm-demo",
   freeEmail = "Block",
+  phoneCountry = "TR",
+  phoneCountries = "",
+  phonePreferred = "TR,GB,US,DE,FR,NL",
   turnstileSiteKey = "",
   turnstileWidget = "Visible",
   lang = "EN",
@@ -372,6 +399,10 @@ export function DemoRequestForm({
   const [company, setCompany] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  const [country, setCountry] = React.useState<CountryCode>(
+    (phoneCountry || "TR").toUpperCase() as CountryCode
+  );
+  const phoneInfo = readPhone(phone, country);
   const [message, setMessage] = React.useState("");
   const [consent, setConsent] = React.useState(false);
   const [hp, setHp] = React.useState("");
@@ -419,7 +450,7 @@ export function DemoRequestForm({
         if (verdict === "disposable") return fail("disposable_email", "email");
         if (verdict === "free") return fail("free_email", "email");
       }
-      if (f === "phone" && !phoneOk(phone.trim()))
+      if (f === "phone" && phone.trim() && !phoneInfo.valid)
         return fail("invalid_phone", "phone");
       if (f === "message" && message.trim().length < 2)
         return fail("invalid_message", "message");
@@ -462,7 +493,7 @@ export function DemoRequestForm({
       lastname: lastname.trim(),
       companyname: company.trim(),
       emailaddress1: email.trim().toLowerCase(),
-      mobilephone: phone.trim(),
+      mobilephone: phoneInfo.e164 || phone.trim(),
       description: message.trim(),
       pageUrl: location.href,
       hp: "",
@@ -611,7 +642,33 @@ export function DemoRequestForm({
               {(!stepped || step === 1) && (
                 <div className="sdrf-stepin" key="s1">
                   {textInput("email", emailLabel, email, setEmail, "email", "email")}
-                  {textInput("phone", phoneLabel, phone, setPhone, "tel", "tel")}
+                  <div className={field("phone", " sdrf-field--phone")}>
+                    <span className="sdrf-cc">
+                      <CountryPicker
+                        country={country}
+                        onChange={(c) => { setCountry(c); clearErr(); }}
+                        allowed={phoneCountries}
+                        preferred={phonePreferred}
+                        locale={lang === "TR" ? "tr" : "en"}
+                        searchLabel={t.country_search}
+                        emptyLabel={t.country_empty}
+                        ariaLabel={t.country_label}
+                      />
+                    </span>
+                    <span className="sdrf-phonein">
+                      <input
+                        className="sdrf-input"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        placeholder=" "
+                        aria-label={phoneLabel}
+                        value={phoneInfo.national}
+                        onChange={(e) => { setPhone(e.target.value); clearErr(); }}
+                      />
+                      <span className="sdrf-lab">{phoneLabel}</span>
+                    </span>
+                  </div>
                 </div>
               )}
               {(!stepped || step === 2) && (

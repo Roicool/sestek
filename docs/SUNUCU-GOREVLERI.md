@@ -330,6 +330,35 @@ edilir. `hostname` kontrolü bunu sunucu tarafında da yakalar.
 
 ---
 
+## S-12 · Outbound: uluslararası numarayı kabul et (E.164)
+
+**Öncelik:** Yüksek · **Kaynak:** arama servisinin her ülkeyi arayabildiği teyit edildi
+
+Sunucu şu an `/^05\d{9}$/` ile yalnız TR mobil numara kabul ediyor. Sitedeki
+form ise artık ülke kodu seçici taşıyor ve yurt dışı numara girilebiliyor;
+bu numaralar sunucuda 400 `invalid_phone` alıyor.
+
+**Yapılacak**
+
+- `phone` iki biçimde kabul edilsin: `05XXXXXXXXX` (TR, mevcut sözleşme) ve
+  `+` ile başlayan E.164.
+- E.164 doğrulaması kütüphaneyle yapılsın, elle regex yazılmasın
+  (`libphonenumber-js` sunucuda da kullanılabilir).
+- TR numarası hangi biçimde gelirse gelsin arama servisine giden değer tek
+  biçim olsun; hangi biçimin gönderileceğini servis dokümanına göre seç.
+- Numara başına rate limit anahtarı **normalize edilmiş** numara olmalı,
+  yoksa `05314072845` ve `+905314072845` iki ayrı numara sayılır ve limit
+  atlanır.
+
+**Kabul kriteri**
+
+- TR numarası her iki biçimde de kabul ediliyor ve tek bir arama başlatıyor.
+- `+44…` gibi bir numara 400 almıyor, arama başlatılıyor.
+- Aynı numara iki farklı biçimde art arda gönderildiğinde ikincisi 429 alıyor
+  (normalize edilmiş anahtar çalışıyor).
+
+---
+
 ## Sestek / danışman tarafında bekleyenler (sunucu agent'ının işi değil)
 
 Bunlar bilgi olsun diye burada; kod işi değil, teyit veya erişim işi.

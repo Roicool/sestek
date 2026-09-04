@@ -169,5 +169,28 @@ export default declareComponent(OutboundCallDemo, {
         "Invisible: yalnız gerçekten meydan okuma gerekirse görünür; daha " +
         "temiz durur ama anahtar veya hostname yanlışsa hata da görünmez.",
     }),
+    phoneCountry: props.Text({
+      name: "Default country",
+      group: "Form",
+      defaultValue: "TR",
+      tooltip:
+        "Telefon alanında önceden seçili ülkenin ISO kodu (TR, GB, DE…).",
+    }),
+    phoneCountries: props.Text({
+      name: "Country list",
+      group: "Form",
+      defaultValue: "",
+      tooltip:
+        "Boş bırakılırsa tüm ülkeler listelenir. Kısıtlamak için ISO " +
+        "kodlarını virgülle yaz (örn. \"TR,GB,DE\") — yazdığın sıra korunur.",
+    }),
+    phonePreferred: props.Text({
+      name: "Preferred countries",
+      group: "Form",
+      defaultValue: "TR,GB,US,DE,FR,NL",
+      tooltip:
+        "Listenin en üstüne alınacak ülkeler (ISO kodu, virgülle). Alfabetik " +
+        "listede aşağı kaydırmadan seçilsinler diye.",
+    }),
   },
 });

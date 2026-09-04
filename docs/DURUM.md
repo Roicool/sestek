@@ -39,7 +39,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 | S-08 | `x-opennext` header'ı | Webflow Cloud | Uygulama kodundan çözülemiyor (OpenNext runtime ekliyor, cache HIT Next'e uğramıyor). İstenirse destek talebi |
 | S-09 | CSV formül enjeksiyonu | Sestek / Dynamics | Sunucu reposunda export kodu yok; sanitizasyon export'u üreten araçta yapılacak |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
-| B-02 | EN telefon formatı (E.164 / uluslararası) | Bizde | Knovvu dil cevabında telefon hâlâ TR formatında geldi; yurt dışı numara desteği ayrıca soruldu, cevap beklenirken doğrulama gevşetilmeyecek |
+| S-12 | Outbound: uluslararası numarayı kabul et (E.164) | Sunucu repo | Yüksek. İstemci artık ülke seçicili ve yurt dışı numara gönderebiliyor; sunucu hâlâ yalnız `05XXXXXXXXX` kabul ediyor |
 | B-04 | Uçtan uca canlı test | Bizde | B-03'ten sonra: EN sayfadan arama İngilizce mi, aynı numara 10 dk içinde 429 mı, **429 penceresinde sunucuya deploy alıp tekrar dene** (KV sayacı deploy'u atlatıyor mu — S-01/S-03 kabul kriterinin ikinci yarısı), jetonsuz curl 403 mü, gmail'li demo `free_email` mi, newsletter+gmail geçiyor mu |
 | B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |
 
@@ -67,6 +67,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | Tarih | İş | Commit |
 |---|---|---|
+| 04.09 | Telefon alanlarına ülke kodu seçici: outbound ve demo formunda arama, bayrak, ülkeye göre canlı biçimleme ve doğrulama (libphonenumber-js) | (bu commit) |
 | 03.09 | Sunucu tarafı S-01…S-07 ve S-10 bitti (kalıcı KV rate limit, Content-Type + Origin, Turnstile doğrulaması, e-posta politikası, günlük tavan, saatlik alarm, dile göre Knovvu projesi). S-08 ve S-09 bizim kapsamımız dışına çıktı | sunucu repo |
 | 03.09 | Sunucu hata kodu artık `error` **veya** `reason` alanından okunuyor ve tek biçime indiriliyor; CRM `reason` kullandığı için `free_email` gibi anlamlı hatalar ziyaretçiye "bir şeyler ters gitti" olarak görünüyordu | `2b3f24e` |
 | 02.09 | Turnstile istemci tarafı: 4 React component'te `Turnstile site key` prop'u, `outbound-demo.js` v1.2.0 ve `crm-forms.js` v1.2.0'da `data-*-turnstile`. Jeton `turnstileToken` olarak gider, her denemeden sonra reset edilir. Sunucu doğrulaması iki spec'e yazıldı | `b6432d6` |
