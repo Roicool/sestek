@@ -359,6 +359,32 @@ bu numaralar sunucuda 400 `invalid_phone` alıyor.
 
 ---
 
+## S-13 · Outbound: `email` alanını kabul et ve politikadan geçir
+
+**Öncelik:** Orta
+
+Outbound formu artık kurumsal e-posta da topluyor ve gövdede `email`
+alanıyla gönderiyor. Sunucu bu alanı şu an okumuyor; değer kayboluyor.
+
+**Yapılacak**
+
+- `email` gövdeden okunsun ve arama servisine `endUser.email` alanında
+  geçirilsin (şu an sabit boş string gönderiliyor).
+- Alan **boş gelebilir** (istemcide opsiyonel/gizli yapılabiliyor); boşsa
+  isteği reddetme.
+- Doluysa S-05'teki aynı politikayı uygula: `400 invalid_email`,
+  `400 disposable_email`, `400 free_email`. İkinci bir liste tutma, S-05'te
+  kurduğun listeyi kullan.
+
+**Kabul kriteri**
+
+- `email` boş gönderilen istek eskisi gibi çalışıyor.
+- `@gmail.com` ile gönderilen istek `400 free_email` alıyor ve telefon
+  çalmıyor.
+- Kurumsal bir adresle gönderilen istekte adres arama servisine ulaşıyor.
+
+---
+
 ## Sestek / danışman tarafında bekleyenler (sunucu agent'ının işi değil)
 
 Bunlar bilgi olsun diye burada; kod işi değil, teyit veya erişim işi.

@@ -22,6 +22,7 @@
  */
 import * as React from "react";
 import { createTurnstile } from "./turnstile";
+import { classifyEmail } from "./emailPolicy";
 import {
   CountryPicker, PHONE_CSS, readPhone, formatNational, type CountryCode,
 } from "./PhoneField";
@@ -40,6 +41,9 @@ export interface OutboundCallDemoProps {
   chip3?: string;
   agentName?: string;
   nameLabel?: string;
+  emailLabel?: string;
+  emailField?: "Required" | "Optional" | "Hidden";
+  freeEmail?: "Block" | "Allow";
   phoneLabel?: string;
   consentText?: string;
   consentLinkText?: string;
@@ -65,6 +69,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
   TR: {
     invalid_name: "Lütfen adınızı girin.",
     invalid_phone: "Lütfen geçerli bir cep telefonu girin.",
+    invalid_email: "Lütfen geçerli bir kurumsal e-posta girin.",
+    free_email: "Lütfen kurumsal e-posta adresinizi kullanın.",
+    disposable_email: "Geçici e-posta adresleri kabul edilmiyor.",
     consent_required: "Devam etmek için onay kutusunu işaretleyin.",
     captcha_failed: "Güvenlik doğrulaması tamamlanamadı — lütfen tekrar deneyin.",
     country_label: "Ülke kodu",
@@ -80,6 +87,9 @@ const MESSAGES: Record<Lang, Record<string, string>> = {
   EN: {
     invalid_name: "Please enter your name.",
     invalid_phone: "Please enter a valid mobile number.",
+    invalid_email: "Please enter a valid work email.",
+    free_email: "Please use your work email address.",
+    disposable_email: "Temporary email addresses aren't accepted.",
     consent_required: "Please tick the consent box to continue.",
     captcha_failed: "Security check could not be completed — please try again.",
     country_label: "Country code",
@@ -446,6 +456,9 @@ export function OutboundCallDemo({
   chip3 = "Within seconds",
   agentName = "Knovvu Voice Agent",
   nameLabel = "Your name",
+  emailLabel = "Work email",
+  emailField = "Required",
+  freeEmail = "Block",
   phoneLabel = "5XX XXX XX XX",
   consentText = "I consent to my personal data being processed for this demo call.",
   consentLinkText = "Privacy Policy",
@@ -455,7 +468,7 @@ export function OutboundCallDemo({
   successTitle = "Calling",
   successText = "Your phone will ring in a moment — pick up and meet Knovvu's natural voice.",
   sideTitle = "Try it now",
-  sideIntro = "Just your name and number — we don't ask for anything else.",
+  sideIntro = "A few details and we'll call you right away.",
   sideCaption = "Your number is used only for this demo call and never stored.",
   endpoint = "/demos/api/demos/outbound-call",
   lang = "EN",
@@ -472,6 +485,7 @@ export function OutboundCallDemo({
   const [stage, setStage] = React.useState<Stage>("idle");
   const [name, setName] = React.useState("");
   const [digits, setDigits] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [country, setCountry] = React.useState<CountryCode>(
     (phoneCountry || "TR").toUpperCase() as CountryCode
   );
@@ -480,7 +494,8 @@ export function OutboundCallDemo({
   const [hp, setHp] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [invalid, setInvalid] = React.useState<"name" | "phone" | "consent" | null>(null);
+  const [invalid, setInvalid] =
+    React.useState<"name" | "phone" | "email" | "consent" | null>(null);
 
   const orbCanvas = React.useRef<HTMLCanvasElement>(null);
   const gpuOk = useFluidOrb(orbCanvas, stage === "calling");
@@ -505,6 +520,17 @@ export function OutboundCallDemo({
     const cleanName = name.trim();
     if (cleanName.length < 2) return fail("invalid_name", "name");
     if (!phoneInfo.valid) return fail("invalid_phone", "phone");
+
+    /* E-posta: "Hidden" ise hiç sorulmaz, "Optional" ise boş geçilebilir ama
+     * doluysa politikadan geçmeli. Politika sunucuda da uygulanır. */
+    const cleanEmail = email.trim().toLowerCase();
+    if (emailField !== "Hidden" && (emailField === "Required" || cleanEmail)) {
+      const verdict = classifyEmail(cleanEmail, freeEmail === "Allow");
+      if (verdict === "invalid") return fail("invalid_email", "email");
+      if (verdict === "disposable") return fail("disposable_email", "email");
+      if (verdict === "free") return fail("free_email", "email");
+    }
+
     if (!consent) return fail("consent_required", "consent");
     const phone = wireFormat(phoneInfo.e164, country);
     if (cooldownLeft(phone, cooldownSeconds * 1000) > 0) {
@@ -521,6 +547,7 @@ export function OutboundCallDemo({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: cleanName, phone, consent: true, lang, hp, turnstileToken,
+            email: emailField === "Hidden" ? "" : cleanEmail,
           }),
         })
       )
@@ -635,6 +662,20 @@ export function OutboundCallDemo({
                 onChange={(e) => { setDigits(e.target.value); clearErr(); }}
               />
             </div>
+            {emailField !== "Hidden" && (
+              <div className={"sodc-field" + (invalid === "email" ? " is-invalid" : "")}>
+                <input
+                  className="sodc-input"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder={emailLabel}
+                  aria-label={emailLabel}
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); clearErr(); }}
+                />
+              </div>
+            )}
             {/* honeypot — görünmez, botlar doldurur */}
             <input
               type="text"

@@ -39,6 +39,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 | S-08 | `x-opennext` header'ı | Webflow Cloud | Uygulama kodundan çözülemiyor (OpenNext runtime ekliyor, cache HIT Next'e uğramıyor). İstenirse destek talebi |
 | S-09 | CSV formül enjeksiyonu | Sestek / Dynamics | Sunucu reposunda export kodu yok; sanitizasyon export'u üreten araçta yapılacak |
 | B-01 | Designer: 4 formun bağlanması, `data-crm-form` + input `name`'leri | Bizde | React component'ler hazır, sayfalara yerleştirilecek |
+| S-13 | Outbound: `email` alanını kabul et ve politikadan geçir | Sunucu repo | Orta. Form artık kurumsal e-posta topluyor, sunucu alanı okumuyor |
 | S-12 | Outbound: uluslararası numarayı kabul et (E.164) | Sunucu repo | Yüksek. İstemci artık ülke seçicili ve yurt dışı numara gönderebiliyor; sunucu hâlâ yalnız `05XXXXXXXXX` kabul ediyor |
 | B-04 | Uçtan uca canlı test | Bizde | B-03'ten sonra: EN sayfadan arama İngilizce mi, aynı numara 10 dk içinde 429 mı, **429 penceresinde sunucuya deploy alıp tekrar dene** (KV sayacı deploy'u atlatıyor mu — S-01/S-03 kabul kriterinin ikinci yarısı), jetonsuz curl 403 mü, gmail'li demo `free_email` mi, newsletter+gmail geçiyor mu |
 | B-05 | Turnstile anahtarlarının Sestek Cloudflare hesabına devri | Bizde + Sestek | Site key + secret key AYNI ANDA değişir |

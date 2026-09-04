@@ -44,6 +44,7 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
   "phone": "05444390406",
   "consent": true,
   "lang": "TR",
+  "email": "betul@sirket.com",
   "hp": "",
   "turnstileToken": "0.abc…"
 }
@@ -63,6 +64,14 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
   ayrım kalkacak.
 - `name` trim'lenmiş, 2–100 karakter. Uymuyorsa 400.
 - `consent !== true` → 400 (KVKK: kullanıcıyı arıyoruz, açık rıza şart).
+- `email` kurumsal e-posta. İstemcide zorunlu/opsiyonel/gizli olarak
+  ayarlanabiliyor, bu yüzden **boş gelebilir**; boşsa isteği reddetme.
+  Doluysa CRM formlarındaki AYNI politikadan geçir
+  (bkz. `docs/CRM-LEAD-API-SPEC.md` §2.1): geçersizse `400 invalid_email`,
+  tek kullanımlıksa `400 disposable_email`, ücretsiz sağlayıcıysa
+  `400 free_email`. İstemci bu üç kodu kendi mesajına çeviriyor.
+  Değer arama servisine `endUser.email` alanında geçirilir; şu an orada
+  boş string gönderiliyor.
 - `hp` (honeypot) doluysa → bot. **200 `{ok:true}` dön ama Knovvu'ya istek
   ATMA** (bota başarısız olduğunu belli etme).
 - `turnstileToken` Cloudflare Turnstile jetonu. `TURNSTILE_SECRET` env'i
@@ -79,6 +88,9 @@ olacaksa Webflow'daki form elementine `data-od-endpoint` verilerek değiştirili
 | 400 | `{"ok":false,"error":"invalid_name"}` | Ad geçersiz |
 | 400 | `{"ok":false,"error":"invalid_phone"}` | Telefon geçersiz |
 | 400 | `{"ok":false,"error":"consent_required"}` | Rıza yok |
+| 400 | `{"ok":false,"error":"invalid_email"}` | E-posta biçimi geçersiz |
+| 400 | `{"ok":false,"error":"free_email"}` | Ücretsiz sağlayıcı (kurumsal e-posta isteniyor) |
+| 400 | `{"ok":false,"error":"disposable_email"}` | Tek kullanımlık adres |
 | 403 | `{"ok":false,"error":"captcha_failed"}` | Turnstile jetonu yok / doğrulanamadı |
 | 403 | `{"ok":false}` | `Origin` allowlist dışında |
 | 415 | `{"ok":false,"error":"unsupported_content_type"}` | `Content-Type` `application/json` değil |
@@ -301,7 +313,7 @@ export async function POST(req: Request) {
   const { name, phone, consent, lang, hp, turnstileToken } =
     (await req.json().catch(() => ({}))) as {
       name?: string; phone?: string; consent?: boolean; lang?: string;
-      hp?: string; turnstileToken?: string;
+      email?: string; hp?: string; turnstileToken?: string;
     };
 
   if (hp) return Response.json({ ok: true }); // honeypot: sessiz başarı
@@ -347,7 +359,7 @@ export async function POST(req: Request) {
     callRequests: [{
       callRequestId: crypto.randomUUID(),
       channelId: "ivr-external",
-      endUser: { name: cleanName, phone, email: "" },
+      endUser: { name: cleanName, phone, email: (email ?? "").trim() },
       parameters: [
         { Name: "CustomerName", Value: cleanName },
         { Name: "ProjectName", Value: project },

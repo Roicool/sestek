@@ -192,5 +192,29 @@ export default declareComponent(OutboundCallDemo, {
         "Listenin en üstüne alınacak ülkeler (ISO kodu, virgülle). Alfabetik " +
         "listede aşağı kaydırmadan seçilsinler diye.",
     }),
+    emailLabel: props.Text({
+      name: "Email placeholder",
+      group: "Form",
+      defaultValue: "Work email",
+    }),
+    emailField: props.Variant({
+      name: "Email field",
+      group: "Form",
+      options: ["Required", "Optional", "Hidden"],
+      defaultValue: "Required",
+      tooltip:
+        "Required: e-posta zorunlu · Optional: boş geçilebilir ama doluysa " +
+        "doğrulanır · Hidden: alan hiç görünmez, boş gönderilir",
+    }),
+    freeEmail: props.Variant({
+      name: "Free email",
+      group: "Form",
+      options: ["Block", "Allow"],
+      defaultValue: "Block",
+      tooltip:
+        "Block: gmail/hotmail gibi ücretsiz sağlayıcılar reddedilir " +
+        "(kurumsal e-posta zorunlu) · Allow: kabul edilir. Tek kullanımlık " +
+        "adresler her iki durumda da reddedilir.",
+    }),
   },
 });
