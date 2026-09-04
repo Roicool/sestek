@@ -279,10 +279,26 @@ export const PHONE_FIELD_VERSION = "1.11.0";
 
 /**
  * NEDEN NATİVE <select>:
- * Özel açılır panel canlı Webflow sayfasında üç ayrı kez kırıldı (Lenis'in
- * tekerleği yutması, sunucu/tarayıcı ICU farkından hydration uyuşmazlığı, ve
- * yerinde teşhis edilemeyen bir üçüncü sebep). Her düzeltme yeni bir yayın
- * döngüsü ve yeni bir "hâlâ çalışmıyor" üretti.
+ * Özel açılır panel canlı Webflow sayfasında üç ayrı sebeple kırıldı:
+ *   1. Lenis tekerleği yutuyordu (data-lenis-prevent ile çözüldü).
+ *   2. Ülke adları sunucu/tarayıcı ICU farkından hydration'ı bozuyordu
+ *      (liste mount sonrası kurularak çözüldü).
+ *   3. WEBFLOW CODE COMPONENT'LERİ SHADOW DOM İÇİNDE ÇİZİLİYOR
+ *      (@webflow/react'in emotionShadowDomDecorator'ı bunun kanıtı). Panel
+ *      "dışarı tıklandı mı" diye belge seviyesinde mousedown dinliyordu;
+ *      shadow sınırından bakınca olayın hedefi içerideki buton değil host
+ *      eleman görünür, panel onu içermez, her tıklama "dışarı" sayılır ve
+ *      panel kapanır → seçenek tıklaması boşa düşer. Testlerde shadow DOM
+ *      olmadığı için görünmedi.
+ * Her düzeltme yeni bir yayın döngüsü ve yeni bir "hâlâ çalışmıyor" üretti.
+ *
+ * SHADOW DOM İÇİN GENEL KURAL (bu repodaki tüm component'ler):
+ *   - document / window seviyesinde olay dinleyip e.target'ı içerideki bir
+ *     düğümle karşılaştırma. Gerekirse e.composedPath() kullan.
+ *   - document.querySelector ile İÇERİ bakma; dışarı (body attribute, global)
+ *     bakmak sorunsuz.
+ *   - CSS özel özellikleri (var(--token)) shadow sınırını geçer, tasarım
+ *     köprüleri bu yüzden çalışıyor.
  *
  * Tarayıcının kendi <select>'i bunların hiçbirine maruz kalmaz: açılır liste
  * işletim sistemi tarafından çizilir, sayfanın kaydırma kütüphanesi, z-index

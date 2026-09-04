@@ -10,7 +10,7 @@
 >
 > Sunucu işlerinin iş emri: [`docs/SUNUCU-GOREVLERI.md`](./SUNUCU-GOREVLERI.md)
 > Sunucu agent'ına verilecek devir notları:
-> [1. tur](./SUNUCU-AGENT-PROMPTLARI.md) · [2. tur](./SUNUCU-AGENT-TUR2.md)
+> [1. tur](./SUNUCU-AGENT-PROMPTLARI.md) · [2. tur](./SUNUCU-AGENT-TUR2.md) · [3. tur](./SUNUCU-AGENT-TUR3.md)
 
 ---
 
@@ -148,8 +148,16 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
   çip bizim, tıklamayı alan şeffaf bir tarayıcı `<select>`. İşletim sistemi
   çizdiği için sayfadaki hiçbir kütüphane ona dokunamıyor; klavye, mobil ve
   yazarak arama bedava. Seçenekler mount'tan sonra kuruluyor, sunucu boş
-  select basıyor. Canlıdaki sürüm konsoldan okunur:
-  `document.querySelector("[data-spf-v]").dataset.spfV`
+  select basıyor.
+- **Webflow code component'leri Shadow DOM içinde çiziliyor.** Kanıt:
+  `@webflow/react` paketinin `emotionShadowDomDecorator` dekoratörü. Sonuçları:
+  belge seviyesinde olay dinleyip hedefi içerideki bir düğümle karşılaştıran
+  her kod kırılır (özel ülke panelinin üçüncü ve asıl kırılma sebebi buydu);
+  `document.querySelector` component'in içini göremez. Canlıdaki sürümü
+  okumak için shadow'u delen komut:
+  ```js
+  [...document.querySelectorAll("*")].map(e=>e.shadowRoot&&e.shadowRoot.querySelector("[data-spf-v]")).filter(Boolean).map(e=>e.dataset.spfV)
+  ```
 - **Lenis ve içeride kaydırılan paneller:** site genelinde Lenis smooth
   scroll çalışıyor ve tekerlek olayını belge seviyesinde yakalayıp kendi
   canlandırmasını yapıyor. Bu yüzden bir panelin `overflow-y:auto` olması
