@@ -216,5 +216,24 @@ export default declareComponent(OutboundCallDemo, {
         "(kurumsal e-posta zorunlu) · Allow: kabul edilir. Tek kullanımlık " +
         "adresler her iki durumda da reddedilir.",
     }),
+    phoneAutoCountry: props.Variant({
+      name: "Auto country",
+      group: "Form",
+      options: ["On", "Off"],
+      defaultValue: "On",
+      tooltip:
+        "On: ziyaretçinin ülkesi tahmin edilip önceden seçilir. Ziyaretçi " +
+        "seçiciye dokunduysa üzerine yazılmaz. Off: her zaman varsayılan " +
+        "ülke açılır.",
+    }),
+    geoEndpoint: props.Text({
+      name: "Geo endpoint",
+      group: "API",
+      defaultValue: "",
+      tooltip:
+        "Ülkeyi IP'den dönen uç, ör. /demos/api/geo → {\"country\":\"TR\"}. " +
+        "Boşsa ağ isteği atılmaz ve tarayıcı dil ayarından tahmin edilir " +
+        "(daha az isabetli: dil ayarı konum değildir).",
+    }),
   },
 });

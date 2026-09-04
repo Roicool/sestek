@@ -118,6 +118,128 @@ export function countryList(allowed: string, locale: string, preferred = "") {
   return [...hoisted, ...rows.filter((r) => !seen.has(r.code))];
 }
 
+/* ── Ziyaretçinin ülkesini tahmin et ─────────────────────────────── */
+
+const GEO_CACHE_KEY = "sestek_geo_country";
+
+function readCache(): string {
+  try {
+    return sessionStorage.getItem(GEO_CACHE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+function writeCache(code: string) {
+  try {
+    sessionStorage.setItem(GEO_CACHE_KEY, code);
+  } catch {
+    /* private mode — önemli değil, sadece her sayfada tekrar sorulur */
+  }
+}
+
+/** `navigator.language` içindeki bölge eki: "tr-TR" → "TR". */
+function countryFromLanguage(): string {
+  if (typeof navigator === "undefined") return "";
+  const list = (navigator.languages && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language]) as string[];
+  for (const tag of list) {
+    const m = /[-_]([A-Za-z]{2})$/.exec(tag || "");
+    if (m) return m[1].toUpperCase();
+  }
+  return "";
+}
+
+/**
+ * Ziyaretçinin ülkesini bulmaya çalışır. Sırayla:
+ *
+ *   1. `window.SESTEK_GEO_COUNTRY` — sayfa kendi biliyorsa (ör. sunucu
+ *      tarafında basılan tek satır). Ağ isteği yok, en hızlısı.
+ *   2. `endpoint` verilmişse oradan `{ country: "TR" }`. Asıl doğru yöntem
+ *      budur: IP'yi yalnız sunucu görür. Cloudflare Workers'ta ülke bilgisi
+ *      istekle birlikte hazır gelir, ek servis gerekmez.
+ *   3. `navigator.language` bölge eki. Ağ isteği yok ama KONUM DEĞİL dil
+ *      ayarıdır; Almanya'daki bir ziyaretçi tarayıcısını İngilizce
+ *      kullanıyorsa yanlış tahmin eder. Yalnızca son çare.
+ *
+ * Sonuç oturum boyunca saklanır; her form her sayfada tekrar sormaz.
+ * Başarısızlık sessizdir: null döner ve varsayılan ülke kalır.
+ */
+export async function detectCountry(endpoint = ""): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+
+  const cached = readCache();
+  if (cached) return cached;
+
+  const g = (window as unknown as { SESTEK_GEO_COUNTRY?: unknown })
+    .SESTEK_GEO_COUNTRY;
+  if (typeof g === "string" && /^[A-Za-z]{2}$/.test(g)) {
+    const code = g.toUpperCase();
+    writeCache(code);
+    return code;
+  }
+
+  if (endpoint) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 2500);
+      const res = await fetch(endpoint, {
+        signal: ctrl.signal,
+        credentials: "omit",
+      });
+      clearTimeout(timer);
+      const body = (await res.json().catch(() => ({}))) as { country?: unknown };
+      if (typeof body.country === "string" && /^[A-Za-z]{2}$/.test(body.country)) {
+        const code = body.country.toUpperCase();
+        writeCache(code);
+        return code;
+      }
+    } catch {
+      /* ağ yok, zaman aşımı, uç tanımsız — dile düş */
+    }
+  }
+
+  const lang = countryFromLanguage();
+  if (lang) {
+    writeCache(lang);
+    return lang;
+  }
+  return null;
+}
+
+/**
+ * Ülkeyi mount'tan SONRA tespit edip uygular. Render sırasında değil, çünkü
+ * sunucu ile tarayıcının farklı sonuç üretmesi hydration'ı kırar.
+ * Ziyaretçi seçiciye dokunduysa bir daha üzerine yazmaz.
+ */
+export function useAutoCountry(
+  React: typeof import("react"),
+  enabled: boolean,
+  endpoint: string,
+  allowed: string,
+  apply: (c: CountryCode) => void
+) {
+  const touched = React.useRef(false);
+  React.useEffect(() => {
+    if (!enabled) return;
+    let dead = false;
+    detectCountry(endpoint).then((code) => {
+      if (dead || !code || touched.current) return;
+      const list = (allowed || "").toUpperCase().split(/[^A-Z]+/)
+        .filter((c) => c.length === 2);
+      if (list.length > 0 && list.indexOf(code) === -1) return;
+      if (getCountries().indexOf(code as CountryCode) === -1) return;
+      apply(code as CountryCode);
+    });
+    return () => {
+      dead = true;
+    };
+    // apply/allowed değişmiyor; tespit sayfa başına bir kez koşar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, endpoint]);
+  return touched;
+}
+
 /* ── Numara mantığı ──────────────────────────────────────────────── */
 
 /** Ülkeye göre yazarken biçimlendirir ("531 407 28 45"). */

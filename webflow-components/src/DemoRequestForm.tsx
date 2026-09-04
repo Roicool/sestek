@@ -30,7 +30,7 @@ import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
 import { errorCode } from "./apiError";
 import {
-  CountryPicker, PHONE_CSS, readPhone, type CountryCode,
+  CountryPicker, PHONE_CSS, readPhone, useAutoCountry, type CountryCode,
 } from "./PhoneField";
 
 type Lang = "TR" | "EN";
@@ -75,6 +75,8 @@ export interface DemoRequestFormProps {
   phoneCountry?: string;
   phoneCountries?: string;
   phonePreferred?: string;
+  phoneAutoCountry?: "On" | "Off";
+  geoEndpoint?: string;
   turnstileSiteKey?: string;
   turnstileWidget?: "Visible" | "Invisible";
   lang?: Lang;
@@ -387,6 +389,8 @@ export function DemoRequestForm({
   phoneCountry = "TR",
   phoneCountries = "",
   phonePreferred = "TR,GB,US,DE,FR,NL",
+  phoneAutoCountry = "On",
+  geoEndpoint = "",
   turnstileSiteKey = "",
   turnstileWidget = "Visible",
   lang = "EN",
@@ -402,6 +406,11 @@ export function DemoRequestForm({
   const [country, setCountry] = React.useState<CountryCode>(
     (phoneCountry || "TR").toUpperCase() as CountryCode
   );
+  /* Ziyaretçinin ülkesi mount'tan sonra tahmin edilip uygulanır. */
+  const touchedCountry = useAutoCountry(
+    React, phoneAutoCountry !== "Off", geoEndpoint, phoneCountries, setCountry
+  );
+
   const phoneInfo = readPhone(phone, country);
   const [message, setMessage] = React.useState("");
   const [consent, setConsent] = React.useState(false);
@@ -646,7 +655,7 @@ export function DemoRequestForm({
                     <span className="sdrf-cc">
                       <CountryPicker
                         country={country}
-                        onChange={(c) => { setCountry(c); clearErr(); }}
+                        onChange={(c) => { touchedCountry.current = true; setCountry(c); clearErr(); }}
                         allowed={phoneCountries}
                         preferred={phonePreferred}
                         locale={lang === "TR" ? "tr" : "en"}

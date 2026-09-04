@@ -33,6 +33,7 @@ satırlık özetiyle anılır; ayrıntı iki yerde tutulmuyor.
 
 | # | İş | Kim | Not |
 |---|---|---|---|
+| S-14 | Ziyaretçinin ülkesini dönen `GET /demos/api/geo` ucu | Sunucu repo | Düşük. Ülke seçici şimdilik tarayıcı dilinden tahmin ediyor, IP'yi yalnız sunucu görebilir |
 | B-07 | Kütüphane güncellemesini Designer'da kabul et ve siteyi publish et | Bizde | 1.7.0 yayınlandı; canlıdaki eski sürüm ülke seçicinin düzeltilmiş halini taşımıyor |
 | B-03 | **[ACİL]** Site key: Custom Code → Head'e tek satır `window.SESTEK_TURNSTILE_SITE_KEY` | Bizde | Sunucu S-04'ü yayınladı ve secret aktif; girilene kadar formlar 403 alıyor. Component prop'larına tek tek girmeye gerek yok |
 | B-06 | Cloudflare Turnstile panelinde allowed hostnames: `sestek.com`, `www.sestek.com`, `rc-sestek.webflow.io` | Bizde | Widget ayarı, env'den beslenmez. Eksikse widget hata verir ve B-03 çalışmaz |

@@ -135,6 +135,40 @@ genişletilebilir. Sunucu tarafında da bakarsak aynı hata iki kez yakalanır.
 
 ---
 
+## S-14 · Ziyaretçinin ülkesini dönen küçük bir uç
+
+**Öncelik: Düşük. Formlar bu uç olmadan da çalışır.**
+
+Telefon alanındaki ülke seçici, ziyaretçinin ülkesini önceden seçmeye
+çalışıyor. Şu an tarayıcının dil ayarından tahmin ediyor, çünkü istemci IP'yi
+göremiyor. Dil ayarı konum değildir: Almanya'daki bir ziyaretçi tarayıcısını
+İngilizce kullanıyorsa yanlış ülke seçilir.
+
+Doğru bilgi zaten sende: Cloudflare Workers her isteğe ülke bilgisini
+ekliyor, ek bir servise veya ücretli bir GeoIP sağlayıcısına gerek yok.
+
+**Yapılacak**
+
+- `GET /demos/api/geo` → `200 {"country":"TR"}` dönen bir uç ekle.
+- Değer Cloudflare'ın istekle verdiği ülke kodu olsun (iki harfli ISO).
+  Bilinmiyorsa `{"country":""}` dön, hata dönme.
+- **IP'yi yanıta koyma ve loglama.** Yalnız ülke kodu dönsün.
+- Yanıt kısa süre önbelleklenebilir ama **ziyaretçiye özel** olduğu için
+  paylaşımlı önbelleğe alınmamalı: `Cache-Control: private, max-age=600`.
+- Bu uç kişisel veri döndürmediği için rate limit şart değil, ama mevcut IP
+  limitini uygulamak istersen zararsız.
+
+**Kabul kriteri**
+
+- `curl` ile çağrıldığında iki harfli bir ülke kodu dönüyor.
+- Yanıt gövdesinde veya loglarda IP geçmiyor.
+
+Uç yayına girince site tarafına haber ver: Designer'da `Geo endpoint`
+alanına `/demos/api/geo` yazılacak. Alan boş kaldığı sürece istemci hiç ağ
+isteği atmaz, dil tahminiyle devam eder.
+
+---
+
 ## Doğrulanmamış kalan bir kabul kriteri
 
 Birinci turda S-01 ve S-03'ün ikinci yarısı canlıda test edilmedi:

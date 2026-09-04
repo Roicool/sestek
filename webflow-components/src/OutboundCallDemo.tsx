@@ -24,7 +24,7 @@ import * as React from "react";
 import { createTurnstile } from "./turnstile";
 import { classifyEmail } from "./emailPolicy";
 import {
-  CountryPicker, PHONE_CSS, readPhone, formatNational, type CountryCode,
+  CountryPicker, PHONE_CSS, readPhone, useAutoCountry, formatNational, type CountryCode,
 } from "./PhoneField";
 import { errorCode } from "./apiError";
 
@@ -60,6 +60,8 @@ export interface OutboundCallDemoProps {
   phoneCountry?: string;
   phoneCountries?: string;
   phonePreferred?: string;
+  phoneAutoCountry?: "On" | "Off";
+  geoEndpoint?: string;
   turnstileSiteKey?: string;
   turnstileWidget?: "Visible" | "Invisible";
   cooldownSeconds?: number;
@@ -475,6 +477,8 @@ export function OutboundCallDemo({
   phoneCountry = "TR",
   phoneCountries = "",
   phonePreferred = "TR,GB,US,DE,FR,NL",
+  phoneAutoCountry = "On",
+  geoEndpoint = "",
   turnstileSiteKey = "",
   turnstileWidget = "Visible",
   cooldownSeconds = 600,
@@ -489,6 +493,11 @@ export function OutboundCallDemo({
   const [country, setCountry] = React.useState<CountryCode>(
     (phoneCountry || "TR").toUpperCase() as CountryCode
   );
+  /* Ziyaretçinin ülkesi mount'tan sonra tahmin edilip uygulanır. */
+  const touchedCountry = useAutoCountry(
+    React, phoneAutoCountry !== "Off", geoEndpoint, phoneCountries, setCountry
+  );
+
   const phoneInfo = readPhone(digits, country);
   const [consent, setConsent] = React.useState(false);
   const [hp, setHp] = React.useState("");
@@ -642,7 +651,7 @@ export function OutboundCallDemo({
               <span className="sodc-prefix">
                 <CountryPicker
                   country={country}
-                  onChange={(c) => { setCountry(c); clearErr(); }}
+                  onChange={(c) => { touchedCountry.current = true; setCountry(c); clearErr(); }}
                   allowed={phoneCountries}
                   preferred={phonePreferred}
                   locale={lang === "TR" ? "tr" : "en"}
