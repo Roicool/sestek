@@ -1,5 +1,5 @@
 /*!
- * site-utils.js v2.3.2
+ * site-utils.js v2.4.0
  * Small site-wide professionalism helpers — zero dependencies.
  *
  *   1. Footer year   [data-current-year]  — auto-updates the © year
@@ -46,6 +46,15 @@
  * whatever [data-view-card]s exist at that moment, so newly swapped-in
  * cards don't lose is-grid/is-list.
  *
+ * Mobile (≤ 767px — Webflow "mobile landscape" and below): the toggle is
+ * hidden and the layout is forced to list. Every [data-view-target],
+ * [data-view-card] and [data-view-item] gets is-list regardless of the
+ * user's choice; the wrapper gets .is-mobile-hidden + display:none. The
+ * desktop selection (and its localStorage value) is left untouched, so it
+ * comes back as soon as the viewport grows past the breakpoint again.
+ *   Override the breakpoint per toggle:
+ *   <div data-view-toggle data-view-mobile-max="479">…</div>
+ *
  * https://github.com/roicool/sestek
  */
 
@@ -68,6 +77,9 @@
   }
 
   // ── 2. View toggle ──────────────────────────────────────────────
+
+  /* Webflow "mobile landscape" breakpoint — toggle hidden, list forced. */
+  var MOBILE_MAX = 767;
 
   /**
    * Apply a view ("grid" or "list") to a target + its cards.
@@ -126,6 +138,31 @@
     var target  = document.querySelector("[data-view-target]");
     if (!target || !btns.length) return;
 
+    /* Mobile breakpoint — ≤ this width the toggle hides and list is forced */
+    var mobileMax = parseInt(wrapper.getAttribute("data-view-mobile-max"), 10);
+    if (!(mobileMax > 0)) mobileMax = MOBILE_MAX;
+    var mq = (typeof global.matchMedia === "function")
+      ? global.matchMedia("(max-width: " + mobileMax + "px)")
+      : null;
+    function isMobile() { return mq ? mq.matches : false; }
+
+    /* Effective view = forced list on mobile, else the user's choice */
+    function effectiveView() { return isMobile() ? "list" : currentView; }
+
+    function syncToggleVisibility() {
+      var hide = isMobile();
+      wrapper.classList.toggle("is-mobile-hidden", hide);
+      // Inline style too, so this works even when site-utils.css isn't loaded
+      // and regardless of whatever display value Webflow gave the wrapper.
+      if (hide) {
+        wrapper.style.display = "none";
+        wrapper.setAttribute("aria-hidden", "true");
+      } else {
+        wrapper.style.display = "";
+        wrapper.removeAttribute("aria-hidden");
+      }
+    }
+
     // Re-queried on every apply (not cached) so cards swapped in later —
     // e.g. by pagination.js replacing a list's innerHTML via AJAX — are
     // picked up instead of operating on a stale, now-detached NodeList.
@@ -136,7 +173,8 @@
     var defAttr = wrapper.getAttribute("data-view-default") || "grid";
     var currentView = (stored === "grid" || stored === "list") ? stored : defAttr;
 
-    applyView(currentView, target, cards(), btns, false);
+    syncToggleVisibility();
+    applyView(effectiveView(), target, cards(), btns, false);
 
     Array.prototype.forEach.call(btns, function (btn) {
       btn.addEventListener("click", function (e) {
@@ -144,10 +182,11 @@
         if (view !== "grid" && view !== "list") return;
         e.preventDefault();   // buttons are often <a href="#">, don't jump/scroll
         currentView = view;
-        applyView(view, target, cards(), btns, true);
         if (persistKey) {
           try { localStorage.setItem("sv_" + persistKey, view); } catch (_) {}
         }
+        if (isMobile()) return;   // toggle is hidden here; list stays forced
+        applyView(view, target, cards(), btns, true);
       });
     });
 
@@ -155,8 +194,23 @@
     // pagination.js (or anything else that replaces list content) after a
     // content swap, since new markup arrives with no is-grid/is-list class.
     document.addEventListener("sestek:list-updated", function () {
-      applyView(currentView, target, cards(), btns, false);
+      applyView(effectiveView(), target, cards(), btns, false);
     });
+
+    // Crossing the mobile breakpoint (resize / orientation change): hide or
+    // show the toggle and re-apply the effective view. The user's desktop
+    // choice survives — it's only overridden while the viewport is mobile.
+    if (mq) {
+      var onMqChange = function () {
+        syncToggleVisibility();
+        applyView(effectiveView(), target, cards(), btns, false);
+      };
+      if (typeof mq.addEventListener === "function") {
+        mq.addEventListener("change", onMqChange);
+      } else if (typeof mq.addListener === "function") {
+        mq.addListener(onMqChange);   // Safari < 14
+      }
+    }
   }
 
   /**

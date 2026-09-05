@@ -1,10 +1,17 @@
 /*!
- * site-utils.css v1.0.0
- * Behavioural CSS for site-utils.js view toggle — fade transition only.
- * Layout styles (grid columns, card direction etc.) go in Webflow Designer
- * via is-grid / is-list combo classes.
+ * site-utils.css v1.1.0
+ * Behavioural CSS for site-utils.js view toggle — fade transition and the
+ * mobile hide state only. Layout styles (grid columns, card direction etc.)
+ * go in Webflow Designer via is-grid / is-list combo classes.
  * https://github.com/roicool/sestek
  */
+
+/* Toggle hidden on mobile (≤ 767px) — class stamped by site-utils.js, which
+   also sets display:none inline; this keeps it hidden even if a Webflow
+   combo class later overrides the inline style. */
+[data-view-toggle].is-mobile-hidden {
+  display: none !important;
+}
 
 /* Cards fade during layout switch */
 [data-view-target] [data-view-card],

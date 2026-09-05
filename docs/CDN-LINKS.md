@@ -732,6 +732,7 @@ DOM yapısı:
 | `js/components/accordion.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/accordion.js` |
 | `css/components/accordion.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/accordion.css` |
 | `js/components/site-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js` |
+| `css/components/site-utils.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/site-utils.css` |
 | `js/components/sticky-utms.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-utms.js` |
 | `js/components/search.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/search.js` |
 | `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
@@ -1465,11 +1466,12 @@ DOM — **ALAN** taraf (contact sayfası; formu bir kez işaretlemen yeterli):
 
 ### Site Utils
 
-Site geneli küçük profesyonellik yardımcısı — bağımlılık yok. Otomatik footer yılı.
-(CSS dosyası yok — sadece JS.)
+Site geneli küçük profesyonellik yardımcıları — bağımlılık yok. Otomatik footer yılı ve grid ↔ list görünüm toggle'ı.
+CSS dosyası opsiyonel: sadece görünüm geçişindeki fade ve mobil gizleme kuralını içerir.
 
 ```html
-<!-- in <head> — CSS bağımlılığı yok -->
+<!-- in <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/site-utils.css">
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js" defer></script>
 ```
 
@@ -1478,9 +1480,10 @@ Webflow `</body>` öncesi:
 ```html
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    Sestek.initSiteUtils(); // footer yılı
-    // ya da doğrudan:
+    Sestek.initSiteUtils(); // footer yılı + view toggle
+    // ya da ayrı ayrı:
     // Sestek.initFooterYear();
+    // Sestek.initViewToggle();
   });
 </script>
 ```
@@ -1493,10 +1496,29 @@ DOM:
 
 <!-- ya da template: {year} değişkenle değişir -->
 <span data-current-year="© {year} Sestek. Tüm hakları saklıdır."></span>
+
+<!-- View toggle — butonlar sayfada herhangi bir yerde olabilir -->
+<div data-view-toggle data-view-persist="blog">
+  <a href="#" data-view-btn="grid">Grid</a>
+  <a href="#" data-view-btn="list">List</a>
+</div>
+
+<!-- Kart container'ı -->
+<div data-view-target>
+  <div data-view-card>…</div>
+  <div data-view-card>…</div>
+</div>
 ```
 
 **Footer yılı**
 - `new Date().getFullYear()` ile her sayfa yüklemesinde güncellenir.
+
+**View toggle**
+- JS'in bastığı class'lar (Webflow Designer'da combo class olarak stillenir): `[data-view-target].is-grid / .is-list`, `[data-view-card].is-grid / .is-list`, `[data-view-item].is-grid / .is-list`, `[data-view-btn].is-active`.
+- Varsayılan görünüm `grid`; `data-view-default="list"` ile değiştirilir.
+- `data-view-persist="anahtar"` verilirse son seçim `localStorage`'a yazılır ve sayfalar arasında korunur.
+- `sestek:list-updated` event'ini dinler: pagination.js ile AJAX'la gelen yeni kartlara da mevcut görünümü basar.
+- **Mobil (≤ 767px — yatay mobil ve altı):** toggle gizlenir (`.is-mobile-hidden` + inline `display:none`) ve görünüm `is-list`'e zorlanır. Masaüstündeki seçim ve `localStorage` değeri bozulmaz; ekran büyüyünce geri gelir. Kırılım toggle başına `data-view-mobile-max="479"` ile değiştirilebilir.
 
 ### Sticky UTMs
 
