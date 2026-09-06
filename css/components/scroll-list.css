@@ -1,12 +1,9 @@
 /*!
- * scroll-list.css v3.1.0
+ * scroll-list.css v3.0.0
  * Simple sticky-list section — structure/behaviour only. Colours, fonts and the
  * active/inactive look come from the Webflow Designer + RC tokens.
  *
  * Changelog
- * v3.1.0 — iOS-safe heights (100svh with a 100vh fallback) for the sticky
- *          column and the opt-in screen-tall panels; on phones no panel is
- *          screen-tall at all. Pairs with scroll-list.js v2.1.0 mobile mode.
  * v3.0.0 — ATTRIBUTE-DRIVEN. v2 keyed everything off .slist* classes, which the
  *          Webflow DOM never carries (the JS contract is data-attributes), so on
  *          a real page nothing applied: the left column never became sticky and
@@ -51,11 +48,7 @@
   position: -webkit-sticky;
   position: sticky;
   top: var(--slist-top, 0px);
-  /* svh = the SMALL viewport (iOS Safari with its URL bar showing). Plain
-     100vh is the large viewport there, so the sticky column overflowed the
-     visible screen and its centred list sat partly below the fold. */
   height: calc(100vh - var(--slist-top, 0px));
-  height: calc(100svh - var(--slist-top, 0px));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -88,7 +81,6 @@
 [data-slist-fill="true"] [data-slist-panel],
 .slist--fill .slist__panel {
   min-height: 100vh;
-  min-height: 100svh;
 }
 
 [data-slist-panel] video,
@@ -130,11 +122,7 @@
   .slist__body { will-change: auto; }
 }
 
-/* Narrow screens — single column, nothing sticky (it would just cover content).
-   scroll-list.js v2.1.0 switches to its mobile mode at the same width: every
-   accordion body open, no height animation, so the list above the panels can
-   never change height under the user's finger. Keep the two in sync
-   (data-slist-mobile-bp on the root). */
+/* Narrow screens — single column, nothing sticky (it would just cover content). */
 @media (max-width: 767.98px) {
   .slist { grid-template-columns: 1fr; }
   [data-slist-left],
@@ -142,12 +130,6 @@
     position: static;
     height: auto;
   }
-  /* No screen-tall panels on a phone — 100vh there is taller than the
-     visible screen (URL bar), leaving big blank bands between panels. */
   [data-slist-fill="true"] [data-slist-panel],
-  .slist--fill .slist__panel,
-  .slist__panel { min-height: 0; }
-  /* Bodies are held open by the JS; make sure nothing clips them meanwhile. */
-  .is-slist-mobile [data-slist-body],
-  .is-slist-mobile .slist__body { will-change: auto; }
+  .slist--fill .slist__panel { min-height: 0; }
 }
