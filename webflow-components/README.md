@@ -12,6 +12,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Soft Gradient BG** ⭐ | `src/SoftGradientBg.webflow.tsx` | **Önerilen.** Minimal (~11KB, sıfır bağımlılık) saf WebGL soft gradient. 4 karakter: Mist (gezinen lekeler), Flow (yatay dalgalar), Silk (çapraz bantlar), Halo (merkez ışıltı). Yumuşak Sestek renkleri varsayılan; base rengi değiştirerek koyu temaya uyar. Viewport dışında durur, reduced-motion'da statik kare, WebGL yoksa CSS fallback. |
 | **Hero Tablet** | `src/HeroTablet.webflow.tsx` | Ana sayfa hero'sunun **tablet + mobil (≤ 991px)** hali — masaüstü `hero.js` scroll-morph animasyonunun statik, dikey akan karşılığı. Video bloğu (poster, muted, loop, preload=none) + H1 + alt metin + 2 CTA, "Trusted by" + **Logos slot'u** (içine Logo Marquee), vurgulu ifade (`*yıldız*` içi marka rengi) + açıklama, görünüme girince sayan 4 istatistik (count-up.js'e bağımlı değil). İlk sahne her zaman tam ekran (100svh). Pin yok, GSAP yok. ≥ 992px'te kendi kendine gizlenir; masaüstü hero'yu ≤ 991px'te gizle. Bkz. [Hero Tablet](#hero-tablet--designer-propları). |
 | **Logo Marquee** | `src/LogoMarquee.webflow.tsx` | **CMS'e bağlı** sonsuz logo bandı — `js/components/marquee.js`'in React hali. **Logos slot'una bir Collection List** (Clients → Logo image) bırakılır; component slot'taki `<img>`'leri okuyup gereken sayıda kopya üretir ve kesintisiz kaydırır. Hız, yön, logo boyutu, boşluk; hover'da yumuşak duraklama; drag + momentum (mouse/touch); kenar fade; reduced-motion'da statik. Sıfır bağımlılık. Bkz. [Logo Marquee](#logo-marquee--designer-propları). |
+| **Scroll Tabs** | `src/ScrollTabs.webflow.tsx` | "Agentic CX Suite" scroll-tab bölümü — **masaüstü + tablet/mobil tek component'te**, `scroll-list.js`/`.css`'in React hali, sıfır bağımlılık. ≥ 992px: solda sticky başlık + akordeon sekmeler, sağda kare video panelleri; viewport ortasından geçen panel aktif, sekmeye tıklayınca panel ortaya kayar. ≤ 991px: tek sütun, her sekme başlık + açıklama + buton + kendi videosu. Play/pause, restart, mute kontrolleri (hover'da, dokunmatikte hep görünür). 4 sekmeye kadar. Bkz. [Scroll Tabs](#scroll-tabs--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -120,6 +121,25 @@ boş durum). Hero Tablet'in Logos slot'una da aynı şekilde bırakılır.
 | Drag | Boolean | `On` | Off = sadece kayar |
 | Fade edges | Boolean | `On` | mask-image kenar geçişi |
 | Min height (px) | Number | `0` | 0 = içeriğe göre |
+
+## Scroll Tabs — Designer prop'ları
+
+Sayfaya kurulum: mevcut `.section__scroll-tabs` section'ını (ve `scroll-list.js`
++ `scroll-list.css` linklerini) kaldırıp bu component'i koy. Her iki kırılımı
+kendi içinde çözer; Designer'da görünürlük ayarı gerekmez. Tab 4'ün başlığı
+boş bırakılırsa sekme gizlenir (3 sekmeli düzen).
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Heading (H2) | Section | Text | "Agentic CX\|Suite" | `\|` = satır kır |
+| Sticky top (px) | Section | Number | `0` | Sol sütunun yapıştığı üst mesafe; 0 = `--_nav---nav-height × 1.5` |
+| Panel ratio | Section | Variant | `1 / 1` | `1 / 1` / `4 / 3` / `16 / 9` |
+| Autoplay active video | Section | Boolean | `On` | Aktif panel sessiz oynar; reduced-motion'da kapalı |
+| Tab N › Title | Tab 1–4 | Text | Agentic AI / Agent Copilot / Conversational Intelligence / — | Boş = sekme gizli |
+| Tab N › Description | Tab 1–4 | Text | … | |
+| Tab N › Button label / link | Tab 1–4 | Text / Link | "Explore" | Boş label = buton gizli |
+| Tab N › Video URL (mp4) | Tab 1–4 | Text | Stream `downloads/default.mp4` | Boşsa poster tek başına gösterilir |
+| Tab N › Poster URL | Tab 1–4 | Text | Stream thumbnail | |
 
 ## Performans notları
 
