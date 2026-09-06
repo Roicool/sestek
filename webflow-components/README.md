@@ -19,6 +19,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Top Bar** | `src/TopBar.webflow.tsx` | Navbar'ın **üstünde** duyuru çubuğu. Metin + link (+ emoji), × ile kapatma; kapatılınca **cookie** ile hatırlanır (`sestek_topbar=<Campaign id>`, `Remember (days)`, varsayılan 1 gün), hiçbir sayfada bir daha çıkmaz — yeni duyuru için Campaign id'yi değiştirmek yeter. Sabit navbar'ı (`[data-nav]`) bar yüksekliği kadar aşağı iter, `--topbar-h` değişkenini `<html>`'e yazar. **Sticky** (en üstte sabit) ya da **Scrolls away** (sayfayla kayar, nav yerine döner). Mobilde göster/gizle. Brand / Dark / Light / Custom renk. Bkz. [Top Bar](#top-bar--designer-propları). |
 | **Cookie Consent** | `src/CookieConsent.webflow.tsx` | Minimal Sestek çerez banner'ı, **gerçekten çalışan**: seçim `sestek_consent` cookie'sinde (180 gün, Policy version değişince yeniden sorar); **Google Consent Mode v2** (`gtag('consent','update')` + `dataLayer` `cookie_consent_update` event'i, her sayfa yüklemesinde sessizce de); `type="text/plain" data-consent="analytics|marketing"` script'leri ve `data-src`'li iframe'ler yalnız izinle açılır; footer'daki `[data-cookie-settings]` tercihleri yeniden açar; GPC sinyali. Zorunlu / Analitik / Pazarlama (+ Tercihler) kategorileri, EN/TR otomatik, sol altta küçük kart, mobilde alt sheet, opsiyonel engelleyici mod. Bkz. [Cookie Consent](#cookie-consent--designer-propları). |
 | **Horizontal Scroll Cards** | `src/HScroll.webflow.tsx` | "Why SESTEK" yatay kart şeridi — `h-scroll.js` v2.2.4 + `hover-reveal.js` v1.0'ın React hali, **Swiper'sız**. ≥ 992px (gerçek fare, motion açık, sayfada gsap + ScrollTrigger): bölüm bir ekran boyu pinlenir, dikey scroll kartları 1px = 1px sola sürükler (`Speed` çarpanı), kart kenarlarına snap, altta **ilerleme çizgisi + sayaç**. Tablet/mobil, dokunmatik cihaz, reduced-motion ya da gsap yoksa aynı DOM **native scroll-snap karusel**: ok + kart başına nokta, tablet 1.4 / mobil 1.1 kart (peek). Kart genişlikleri saf CSS — eski `zoom` + Swiper ölçümü çakışmasından gelen **mobil hizalama kayması yok**. Başlık normal akışta, kartların üstüne binmez. Opsiyonel **hover reveal**: imlecin girdiği noktadan renk dalgası (CSS clip-path), çıkış noktasına doğru kapanır; dokunmatikte tap, klavye odağında da. Item 1–6 (**Rich Text içerik**: H3 başlık + paragraf tek alanda, ikon görseli; ikon yoksa 01, 02… numarası). Dark / Light tema + token override. Bkz. [Horizontal Scroll Cards](#horizontal-scroll-cards--designer-propları). |
+| **Stack Panels** | `src/StackPanels.webflow.tsx` | "Built to resolve, not just respond" **üst üste binen panel scrollytelling'i** — `stack-panels.js` v1.4.0 + `stack-panels.css` + `scroll-fx.js` text-fill başlığının React hali. Her panel (sonuncu hariç) pinlenir; sonraki üstüne kayarken alttaki bekler (Hold), küçülür, solar, bulanır ve yukarı süzülür; viewport'tan uzun paneller önce içerik kaydırır (fake-scroll). GSAP ScrollTrigger sitenin global'inden; yoksa, reduced-motion'da, ata elemanda transform varsa ya da **telefonda (≤ 767px, v1.4.0 gibi)** paneller düz akışta okunur. **Mobil kayma düzeltmesi:** medya kutusu sabit en-boy oranlı — video/görsel geç gelince panel boyu değişmez, pin ölçümleri bayatlamaz; videolar sessiz + playsinline + döngü, viewport'a yaklaşınca yüklenir, yalnız görünürken oynar, panel görseli poster. Panel 1–6: Rich Text içerik (H3 + paragraf), görsel, video URL, medya tarafı (Auto = sırayla sağ/sol). Arka plan görseli + alt zemin maskesi. Bkz. [Stack Panels](#stack-panels--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -306,6 +307,50 @@ yüksek ver.
 | Controls colour | Look | Variant | `Auto` | Nokta, ok, ilerleme çizgisi + sayaç rengi. `Auto` = yazı rengi · `Light` = beyaz · `Dark` = koyu |
 | Controls custom colour | Look | Text | boş | Token ya da renk; doluysa Controls colour'ı ezer |
 | Section background / Card background / Card border | Look | Text | boş | Token ya da renk; boş = tema |
+
+## Stack Panels — Designer prop'ları
+
+Kurulum: Webflow'daki `.section__sticky-slides` bloğunu (`[data-stack-panels]`,
+`stack-panels.js` / `.css` linklerini, `Sestek.initStackPanels()` ve
+başlıktaki `data-text-fill` için `initScrollFx()` çağrısını) kaldır;
+component'i aynı yere bırak. Bölüm kendi arka planını, başlığını ve
+panellerini çizer. Renkler `--surface--base`, `--color-text--base/--muted`,
+`--radius--lg`, `--gap--2xl`, `--section--py-2`, `--view--px`,
+`--container--2xl` token'larından, font `--font--primary`.
+
+**Videolar:** her panelde Image + Video URL. Video verildiğinde görsel poster
+olur; video `muted playsinline loop`, `preload="metadata"`, `src` yalnız
+viewport'a yaklaşınca yazılır ve yalnız görünürken oynar. Medya kutusu her
+zaman `Media ratio` oranında sabit yükseklikte — telefonlardaki kaymanın
+sebebi videonun geç gelip paneli büyütmesiydi (pin ölçümleri bayat kalıyordu);
+artık panel boyu medyadan bağımsız. Uzun video mp4 (H.264) + webm olarak
+CDN'de dursun; Webflow asset olarak yüklenen mp4 linki de olur.
+
+**Pin kuralı:** component'in üstündeki hiçbir Webflow elemanında
+`transform`, `filter`, `perspective`, `will-change: transform` olmamalı;
+varsa ~12 sn izlenir (giriş animasyonu bitince pinler kurulur), kalıcıysa
+düz akış fallback'inde kalınır. Üstte pinli hero varsa `Refresh priority`
+onun altında kalmalı (varsayılan 0 yeterli).
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Eyebrow / Title / Subtitle | Header | Text | boş / `Built to resolve, not just respond` / `Every capability…` | Boş satır çizilmez |
+| Title word fill | Header | Boolean | `On` | Başlık kelime kelime dolar (scroll'a bağlı, geri sarılır) |
+| Panel N › Content / Image / Video URL / Media side | Panel 1–6 | RichText · Image · Text · Variant | 5 panel dolu | Content: H3 + paragraf tek Rich Text, boş = panel gizli. Image: görsel ya da video poster'ı. Media side: `Auto` (1. sağ, 2. sol…) · `Right` · `Left` |
+| Media ratio | Media | Variant | `4:3` | `16:10` · `16:9` · `3:2` · `1:1` — tüm paneller |
+| Media fit | Media | Variant | `Cover` | `Contain` = letterbox |
+| Hold | Motion | Number | `0.5` | Pinli scroll'un bu kadarında panel tam okunur kalır |
+| End scale | Motion | Number | `0.7` | Giden panelin son ölçeği |
+| Blur (px) | Motion | Number | `4` | `0` = kapalı |
+| Lift (px) | Motion | Number | `24` | Yukarı süzülme, `0` = kapalı |
+| Mid fade | Motion | Number | `0.5` | Küçülme sonundaki opaklık |
+| Fade portion | Motion | Number | `0.1` | Son hızlı solmanın payı (gelen panel kısaysa otomatik genişler) |
+| Scrub (s) | Motion | Number | `0` | `0` = doğrudan, `0.3–1` = yumuşatma |
+| Refresh priority | Motion | Number | `0` | İlk panelin `refreshPriority`'si, sonrakiler birer eksik |
+| Effect on phones | Motion | Boolean | `Off` | On = ≤ 767px'te de pin/dissolve (önerilmez) |
+| Background image | Look | Image | boş | Section arka planı (cover) |
+| Bottom fade | Look | Boolean | `On` | Alt kenarda zemine karışma maskesi |
+| Section background / Panel background | Look | Text | boş | Token ya da renk; boş = `--surface--base`. Panel zemini opak olmalı |
 
 ## Cookie Consent — Designer prop'ları
 
