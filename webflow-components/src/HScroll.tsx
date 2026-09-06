@@ -28,6 +28,8 @@ import * as React from "react";
 export interface HScrollItem {
   /** rich text HTML — heading + paragraph(s) in one field (h3 + p, like a Webflow Rich Text) */
   html: string;
+  /** rich text already rendered as a React node (the Designer canvas may hand the prop over this way) */
+  node?: React.ReactNode;
   icon?: string;
   iconAlt?: string;
 }
@@ -35,7 +37,7 @@ export interface HScrollItem {
 type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}Content`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
-export interface HScrollProps extends Partial<Record<ItemKey, string>> {
+export interface HScrollProps extends Partial<Record<ItemKey, unknown>> {
   items?: HScrollItem[];
   i1Icon?: ImgProp; i2Icon?: ImgProp; i3Icon?: ImgProp; i4Icon?: ImgProp;
   i5Icon?: ImgProp; i6Icon?: ImgProp; i7Icon?: ImgProp; i8Icon?: ImgProp;
@@ -89,6 +91,25 @@ export const DEFAULT_ITEMS: HScrollItem[] = [
 
 /** rich text with no visible text (Webflow sends "<p></p>" for an emptied field) = hidden card */
 const hasText = (html: string) => /[^\s]/.test(html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " "));
+
+/**
+ * Normalise a RichText prop value. Published sites hand over an HTML string;
+ * be tolerant of anything else (null, a React element, an object carrying
+ * html/value/children) so an unexpected shape never crashes the component.
+ */
+function richText(v: unknown): { html: string; node?: React.ReactNode } | null {
+  if (v == null || v === false) return null;
+  if (typeof v === "string") return { html: v };
+  if (typeof v === "number") return { html: String(v) };
+  if (React.isValidElement(v)) return { html: "node", node: v };
+  if (Array.isArray(v)) return { html: "node", node: v as React.ReactNode };
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    for (const k of ["html", "value", "text", "content"]) if (typeof o[k] === "string") return { html: o[k] as string };
+    if (o.children != null) return { html: "node", node: o.children as React.ReactNode };
+  }
+  return null;
+}
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 type ST = {
@@ -313,24 +334,42 @@ function Card({ item, index, reveal, duration, hoverable, active, onFocusCard }:
       <div className="hs_top">
         {src ? <img className="hs_icon" src={src} alt={item.iconAlt || ""} loading="lazy" /> : <span className="hs_num">{pad2(index + 1)}</span>}
       </div>
-      <div className="hs_content" dangerouslySetInnerHTML={{ __html: item.html }} />
+      {item.node ? <div className="hs_content">{item.node}</div> : <div className="hs_content" dangerouslySetInnerHTML={{ __html: item.html }} />}
     </div>
   );
 }
 
-/* ── Component ───────────────────────────────────────────────────────── */
+/* ── Error boundary: a runtime error shows its message instead of a blank crash ── */
+class Boundary extends React.Component<{ children?: React.ReactNode }, { err: string }> {
+  state = { err: "" };
+  static getDerivedStateFromError(e: unknown) { return { err: e instanceof Error ? e.message : String(e) }; }
+  componentDidCatch(e: unknown) { console.error("[Sestek HScroll]", e); }
+  render() {
+    if (this.state.err) return <div style={{ padding: "1rem", font: "13px/1.4 monospace", color: "#b00020" }}>Horizontal Scroll Cards error: {this.state.err}</div>;
+    return this.props.children;
+  }
+}
+
 export function HScroll(p: HScrollProps) {
+  return <Boundary><HScrollInner {...p} /></Boundary>;
+}
+
+/* ── Component ───────────────────────────────────────────────────────── */
+function HScrollInner(p: HScrollProps) {
   const items = React.useMemo<HScrollItem[]>(() => {
     if (p.items && p.items.length) return p.items;
     const out: HScrollItem[] = [];
     const px = p as unknown as Record<string, unknown>;
     let any = false;
     for (let n = 1; n <= 8; n++) {
-      const html = ((px["i" + n + "Content"] as string) || "").trim();
-      if (px["i" + n + "Content"] !== undefined) any = true;
-      if (!html || !hasText(html)) continue;
+      const raw = px["i" + n + "Content"];
+      if (raw !== undefined) any = true;
+      const rt = richText(raw);
+      if (!rt) continue;
+      const html = rt.html.trim();
+      if (!rt.node && (!html || !hasText(html))) continue;
       const ic = px["i" + n + "Icon"] as ImgProp;
-      out.push({ html, icon: imgSrc(ic), iconAlt: imgAlt(ic) });
+      out.push({ html, node: rt.node, icon: imgSrc(ic), iconAlt: imgAlt(ic) });
     }
     return out.length || any ? out : DEFAULT_ITEMS;
   }, [p]);
