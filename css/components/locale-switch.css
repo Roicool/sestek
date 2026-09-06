@@ -1,7 +1,8 @@
 /*!
- * locale-switch.css v1.3.0
+ * locale-switch.css v1.4.0
  * Language switcher dropdown for the navbar — an icon trigger div with
- * Webflow's own Locales list floating underneath it.
+ * Webflow's own Locales list floating underneath it (or above it, when
+ * there is no room below).
  *
  * Drives: js/components/locale-switch.js  (ship both together — this file
  * keeps the panel hidden until the script opens it).
@@ -36,6 +37,8 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.4.0 — .is-flip-up: the panel opens above the trigger (set by
+ *          locale-switch.js v1.3.0 when there is no room below)
  * v1.3.0 — the panel's z-index is now the --ls-z prop, so it can be raised
  *          when something in the bar paints over the open panel (locales
  *          visible but unclickable)
@@ -223,6 +226,19 @@ svg.locale-switch__chevron,
 [data-locale-switch].is-align-right .locale-switch__panel {
   left: auto;
   right: 0;
+}
+
+/* Opens upward when there is no room below the trigger (JS toggles the
+   class from the measured space, or [data-locale-drop="up"] pins it). The
+   slide-in reverses so it still moves toward the trigger. */
+[data-locale-switch].is-flip-up .locale-switch__panel {
+  top: auto;
+  bottom: calc(100% + 0.375rem);
+  transform: translateY(0.25rem);
+}
+
+[data-locale-switch].is-flip-up.is-open .locale-switch__panel {
+  transform: translateY(0);
 }
 
 /* ── List + rows (Webflow's own containers, tagged by the script) ───── */
