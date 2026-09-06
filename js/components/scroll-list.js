@@ -1,5 +1,17 @@
 /*!
- * scroll-list.js v2.0.0
+ * scroll-list.js v2.1.0
+ *
+ * Changelog
+ * v2.1.0 — MOBILE MODE. Below the breakpoint where the CSS stops the left
+ *          column being sticky (≤767.98px, override with data-slist-mobile-bp)
+ *          the list sits ABOVE the panels, so opening/closing an accordion body
+ *          up there changed the height of everything above the panel the user
+ *          was actually looking at — the page jumped under the finger while
+ *          scrolling (worse on iOS, where the URL-bar resize piles on). In
+ *          mobile mode every body stays open, nothing animates height, and
+ *          only .is-active + video play/pause follow the scroll. Switching
+ *          across the breakpoint re-applies the right state both ways.
+ *
  * Simple "sticky list" section — left column stays put while the right scrolls:
  *   • LEFT  — a short list of items. It is held in place with CSS position:sticky
  *     (see scroll-list.css) — NOT a GSAP pin. Pinning a grid child is fragile;
@@ -38,7 +50,10 @@
  *       [data-slist-panel="1"]          …
  *
  * Root attributes (all optional):
- *   data-slist-open      accordion open/close duration in seconds (default 0.45)
+ *   data-slist-open       accordion open/close duration in seconds (default 0.45)
+ *   data-slist-mobile-bp  px; at/below this width the list is stacked above the
+ *                         panels → no accordion, all bodies open (default 767.98,
+ *                         keep in sync with the media query in scroll-list.css)
  *
  * https://github.com/roicool/sestek
  */
@@ -74,16 +89,27 @@
       return;
     }
 
-    var openDur = attrNum(root, "data-slist-open", 0.45);
-    var reduce  = reducedMotion();
-    var hasGsap = typeof gsap !== "undefined";
+    var openDur  = attrNum(root, "data-slist-open", 0.45);
+    var mobileBp = attrNum(root, "data-slist-mobile-bp", 767.98);
+    var reduce   = reducedMotion();
+    var hasGsap  = typeof gsap !== "undefined";
 
     var bodies = items.map(function (it) { return it.querySelector("[data-slist-body]"); });
     var videos = panels.map(function (p) { return p.querySelector("[data-slist-video]"); });
 
+    // Mobile = the list is stacked above the panels (CSS drops the sticky).
+    // Accordion height changes up there would shift the panels under the
+    // user's finger, so in this mode every body stays open and nothing
+    // animates height.
+    var mobileMq = typeof window.matchMedia === "function"
+      ? window.matchMedia("(max-width: " + mobileBp + "px)") : null;
+    var isMobile = !!(mobileMq && mobileMq.matches);
+    root.classList.toggle("is-slist-mobile", isMobile);
+
     /** Open/close one accordion body. Animated with GSAP when present, else instant. */
     function setBody(el, open, instant) {
       if (!el) return;
+      if (isMobile) open = true;                          // no accordion on mobile
       if (hasGsap && !reduce && !instant) {
         gsap.to(el, { height: open ? "auto" : 0, autoAlpha: open ? 1 : 0, duration: openDur, ease: "power2.inOut" });
       } else if (hasGsap) {
@@ -116,13 +142,31 @@
     // Initial state — item 0 active/open, rest collapsed, set instantly.
     setActive(0, true);
 
+    // Crossing the mobile breakpoint (rotation, resize): re-apply the bodies
+    // for the new mode without animating — all open on mobile, accordion
+    // (only the active one open) on desktop/tablet.
+    if (mobileMq) {
+      var onMq = function (e) {
+        isMobile = e.matches;
+        root.classList.toggle("is-slist-mobile", isMobile);
+        for (var j = 0; j < items.length; j++) setBody(bodies[j], j === cur, true);
+      };
+      if (mobileMq.addEventListener) mobileMq.addEventListener("change", onMq);
+      else if (mobileMq.addListener) mobileMq.addListener(onMq); // Safari < 14
+    }
+
     // Click an item → activate + open it, and smooth-scroll its panel to centre.
     items.forEach(function (item, i) {
       item.style.cursor = "pointer";
       item.addEventListener("click", function () {
         clickLockUntil = Date.now() + 700;
         setActive(i);
-        panels[i].scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+        // Mobile: the panel is below the list — bring its TOP into view, not
+        // its centre (a centred tall panel would start above the fold).
+        panels[i].scrollIntoView({
+          behavior: reduce ? "auto" : "smooth",
+          block: isMobile ? "start" : "center",
+        });
       });
     });
 
