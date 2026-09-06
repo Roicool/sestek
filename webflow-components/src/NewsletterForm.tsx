@@ -95,7 +95,8 @@ const CSS = `
   --n-pill:color-mix(in oklab,var(--n-text) 4%,#fff);
   --n-line:rgba(20,18,30,.08);--n-neg:#c9463a;
   --n-btn:#EC008C;--n-btn-h:#d3007d;--n-btn-fg:#fff;--n-ok:#EC008C;
-  color:var(--n-text);font:inherit;max-width:30rem}
+  color:var(--n-text);font:inherit;max-width:30rem;
+  container-type:inline-size}
 .snlf.is-deep{--n-text:#f4f2fb;--n-muted:#a09aba;
   --n-pill:#211d33;--n-line:rgba(255,255,255,.11);--n-neg:#ff8274}
 /* SESTEK paleti */
@@ -150,12 +151,42 @@ const CSS = `
 .snlf.is-center .snlf-cap,.snlf.is-center .snlf-err{text-align:center}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
-@media (max-width:479px){
-  .snlf-pill{flex-direction:column;align-items:stretch;gap:.35rem;
-    border-radius:var(--radius--2xl,20px)}
-  .snlf-input{padding:.6em 1em;text-align:inherit}
-  .snlf-btn{width:100%}
+/* ── Dar alan: hap iki parçaya ayrılır ─────────────────────────
+ * Kapsül, input ile buton yan yana sığdığında anlamlı. Alt alta geçince
+ * uzun bir kutunun etrafındaki tam yuvarlak çerçeve tuhaf duruyordu.
+ * Dar alanda dış kabuk kaldırılır: input kendi hapı, buton kendi hapı.
+ * Karar viewport'a değil HAP'IN KENDİ GENİŞLİĞİNE göre verilir
+ * (container query) — component dar bir grid kolonuna konsa da doğru
+ * kırılır. @media bloğu container query desteklemeyen tarayıcılar için. */
+@container (max-width:24rem){
+  .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
+    padding:0;background:transparent;box-shadow:none;border-radius:0}
+  .snlf-pill:focus-within,.snlf.is-invalid .snlf-pill{box-shadow:none}
+  .snlf-input{padding:.7em 1.1em;text-align:inherit;
+    background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
+    border-radius:var(--radius--full,9999px);transition:box-shadow .2s}
+  .snlf-input:focus{box-shadow:inset 0 0 0 1px var(--n-text)}
+  .snlf.is-invalid .snlf-input{box-shadow:inset 0 0 0 1px var(--n-neg)}
   .snlf.is-center .snlf-input{text-align:center}
+  .snlf-btn{width:100%;padding:.7em 1.25em}
+  .snlf-ok{padding:.7em 1.1em;background:var(--n-pill);
+    box-shadow:inset 0 0 0 1px var(--n-line);
+    border-radius:var(--radius--full,9999px)}
+}
+@media (max-width:479px){
+  .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
+    padding:0;background:transparent;box-shadow:none;border-radius:0}
+  .snlf-pill:focus-within,.snlf.is-invalid .snlf-pill{box-shadow:none}
+  .snlf-input{padding:.7em 1.1em;text-align:inherit;
+    background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
+    border-radius:var(--radius--full,9999px);transition:box-shadow .2s}
+  .snlf-input:focus{box-shadow:inset 0 0 0 1px var(--n-text)}
+  .snlf.is-invalid .snlf-input{box-shadow:inset 0 0 0 1px var(--n-neg)}
+  .snlf.is-center .snlf-input{text-align:center}
+  .snlf-btn{width:100%;padding:.7em 1.25em}
+  .snlf-ok{padding:.7em 1.1em;background:var(--n-pill);
+    box-shadow:inset 0 0 0 1px var(--n-line);
+    border-radius:var(--radius--full,9999px)}
 }
 @media (prefers-reduced-motion:reduce){
   .snlf-spin{animation:none}
