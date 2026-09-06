@@ -13,17 +13,18 @@ site-search/
                        SiteSearch.tsx (tam sayfa palet), useSearch.ts, styles.ts, embed.tsx (IIFE giriş)
   scripts/             bundle-search.mjs (esbuild, Preact alias → dist/site-search.v1.js)
                        build-search-index.ts (sitemap crawler — cloud app repo'sundaki CI'da çalışır)
-  fixtures-search-index.json   sitemap'ten üretilmiş GEÇİCİ index (başlıklar slug'dan) — sadece test için
+  sitemap.staging.paths.txt    rc-sestek.webflow.io/sitemap.xml'in yol listesi (2026-09-06) — offline fixture kaynağı
+  fixtures-search-index.json   o listeden üretilmiş GEÇİCİ index (başlıklar slug'dan, 487 sayfa) — sadece test için
 ```
 
 ## Komutlar
 
 ```bash
 cd site-search && npm install
-npm test               # 10 node:test — TR normalizasyon, sıralama, tür kuralları, 500 doküman < 16ms
+npm test               # 11 node:test — TR normalizasyon, sıralama, tür kuralları, 500 doküman < 16ms
 npm run typecheck
 npm run bundle         # dist/site-search.v1.js (~35 KB min, Preact)
-npm run index:sitemap  # ../sitemap.xml'den geçici index (sayfa çekmeden)
+npm run index:sitemap  # sitemap.staging.paths.txt'den geçici index (sayfa çekmeden)
 npm run index          # gerçek tarama — varsayılan staging https://rc-sestek.webflow.io (ağ erişimi olan yerde)
 npm run index -- --site https://www.sestek.com   # yayına alındığında (ya da SEARCH_SITE env)
 ```

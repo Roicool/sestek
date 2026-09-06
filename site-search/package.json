@@ -9,7 +9,7 @@
     "test": "tsx --test src/lib/search/rank.test.ts",
     "typecheck": "tsc --noEmit",
     "bundle": "node scripts/bundle-search.mjs",
-    "index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only --sitemap ../sitemap.xml --out fixtures-search-index.json",
+    "index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only --sitemap sitemap.staging.paths.txt --out fixtures-search-index.json",
     "index": "tsx scripts/build-search-index.ts --out fixtures-search-index.json"
   },
   "devDependencies": {

@@ -2,7 +2,8 @@
  * Quick links — what the palette shows BEFORE the visitor types anything.
  * Curated, grouped hub pages (products, solutions, resources, company), so
  * the search never opens empty — even while the index is still loading or
- * the index endpoint is not deployed yet. Paths match the sitemap.
+ * the index endpoint is not deployed yet. Paths match the NEW site's sitemap
+ * (rc-sestek.webflow.io → www.sestek.com), see ../../sitemap.staging.paths.txt.
  *
  * Override from the Designer with one entry per link, entries separated by a
  * newline or ";" (Designer Text props are single-line):
@@ -27,23 +28,26 @@ const CONTACT_TOKEN = "{contact}";
 export const QUICK_LINKS_TEXT: Record<SearchLocale, string> = {
   en: `
 Products | Agentic AI | /agentic-ai | Voice-first AI agents that understand, act and resolve requests in real time.
-Products | Agent Copilot | /knovvu-agent-copilot | Real-time guidance, summaries and translation for human agents.
-Products | Virtual Agent | /virtual-agent | Conversational virtual assistant for voice and chat self-service.
-Products | Speech Analytics | /speech-analytics | Analyze 100% of interactions for quality, compliance and insight.
-Products | Voice Biometrics | /voice-biometrics | Passive caller authentication and fraud detection by voiceprint.
-Products | Conversational IVR | /conversational-ivr | Natural-language IVR that routes and resolves without menus.
-Products | Text to Speech | /text-to-speech | Natural, expressive synthetic voices in many languages.
-Solutions | Banking | /solutions-for-banking | Conversational AI for retail and digital banking.
-Solutions | Insurance | /solutions-for-insurance | Claims, policies and service automation for insurers.
-Solutions | Contact centers | /conversational-ai-for-contact-centers | End-to-end conversational AI for contact center performance.
+Products | Agent Copilot | /agent-copilot | Real-time guidance, summaries and translation for human agents.
+Products | Conversational Intelligence | /conversational-intelligence | Analytics, quality and coaching from 100% of interactions.
+Products | AI Agents | /products/ai-agents | Voice and chat agents for self-service across every channel.
+Products | Analytics | /products/analytics | Speech and conversation analytics for quality, compliance and insight.
+Products | Speech Recognition | /products/speech-recognition | Accurate, multilingual speech-to-text for calls and apps.
+Products | Text to Speech | /products/text-to-speech | Natural, expressive synthetic voices in many languages.
+Solutions | Customer care | /solutions/customer-care | Resolve routine requests automatically, escalate the rest.
+Solutions | Collection | /solutions/collection | Proactive, compliant payment reminders and collection calls.
+Solutions | Technical support | /solutions/technical-support | Guided troubleshooting without the queue.
+Solutions | Financial services | /industries/financial-services | Conversational AI for banks and fintechs.
+Solutions | Insurance | /industries/insurance | Claims, policies and service automation for insurers.
+Solutions | Telecommunications | /industries/telecommunications | Scale support for operators and subscribers.
 Resources | Success stories | /success-stories | How customers deploy Sestek and what they gained.
-Resources | Webinars | /webinars-resources | On-demand webinars, e-books and reports.
-Resources | Blog | /all-blog-posts-resources | Articles on conversational AI, CX and speech technology.
-Resources | Podcasts | /podcasts-resources | Conversations with industry leaders.
+Resources | CX Insights | /cx-insights | Short reads on AI, customer experience and what's next.
+Resources | Blog | /blog | Articles on conversational AI, CX and speech technology.
+Resources | Webinars | /webinars | On-demand webinars, e-books and reports.
+Resources | Podcasts | /podcasts | Conversations with industry leaders.
 Resources | Glossary | /glossary | Key terms in conversational AI, explained.
-Resources | Demos | /demos | Try speech recognition, text-to-speech and more in the browser.
 Company | About us | /about-us | Who we are, our story and our team.
-Company | Why Sestek | /whysestek | 25 years of speech and conversational AI expertise.
+Company | Why Sestek | /why-sestek | 25 years of speech and conversational AI expertise.
 Company | Careers | /careers | Open positions and life at Sestek.
 Company | Partners | /partners | Partner program and ecosystem.
 Company | Request a demo | /request-a-demo | See the platform live with our team.
@@ -51,21 +55,24 @@ Company | Contact | {contact} | Talk to us about your project.
 `,
   tr: `
 Ürünler | Agentic AI | /tr/agentic-ai | Talepleri gerçek zamanlı anlayan, harekete geçen ve çözen sesli yapay zeka ajanları.
-Ürünler | Agent Copilot | /tr/knovvu-agent-copilot | Temsilciler için gerçek zamanlı yönlendirme, özet ve çeviri.
-Ürünler | Virtual Agent | /tr/virtual-agent | Ses ve yazılı kanallarda self-servis için sanal asistan.
-Ürünler | Speech Analytics | /tr/speech-analytics | Kalite, uyum ve içgörü için tüm görüşmelerin analizi.
-Ürünler | Voice Biometrics | /tr/voice-biometrics | Ses izinden pasif kimlik doğrulama ve dolandırıcılık tespiti.
-Ürünler | Text to Speech | /tr/text-to-speech | Doğal ve akıcı sentetik sesler.
-Çözümler | Bankacılık | /tr/bankalar-icin-cozumler | Bireysel ve dijital bankacılık için konuşma tabanlı yapay zeka.
-Çözümler | Sigortacılık | /tr/sigortacilik-icin-cozumler | Sigorta şirketleri için hasar, poliçe ve hizmet otomasyonu.
-Çözümler | Çağrı merkezleri | /tr/cagri-merkezleri-icin-cozumler | Çağrı merkezi performansı için uçtan uca çözümler.
-Çözümler | Telekom | /tr/telekom-icin-cozumler | Telekom operatörleri için yapay zeka çözümleri.
+Ürünler | Agent Copilot | /tr/agent-copilot | Temsilciler için gerçek zamanlı yönlendirme, özet ve çeviri.
+Ürünler | Conversational Intelligence | /tr/conversational-intelligence | Tüm görüşmelerden analiz, kalite ve koçluk.
+Ürünler | AI Agents | /tr/urunler/ai-agents | Her kanalda self-servis için sesli ve yazılı yapay zeka ajanları.
+Ürünler | Analytics | /tr/urunler/analytics | Kalite, uyum ve içgörü için konuşma analizi.
+Ürünler | Speech Recognition | /tr/urunler/speech-recognition | Çağrı ve uygulamalar için çok dilli konuşma tanıma.
+Ürünler | Text to Speech | /tr/urunler/tts | Doğal ve akıcı sentetik sesler.
+Çözümler | Müşteri hizmetleri | /tr/cozumler/musteri-hizmetleri | Rutin talepleri otomatik çözün, gerekeni temsilciye aktarın.
+Çözümler | Tahsilat | /tr/cozumler/tahsilat-hatirlatma | Proaktif ve uyumlu ödeme hatırlatma aramaları.
+Çözümler | Teknik destek | /tr/cozumler/teknik-destek | Kuyruksuz, yönlendirmeli arıza çözümü.
+Çözümler | Finansal servisler | /tr/sektorler/finansal-servisler | Bankalar ve fintech'ler için konuşma tabanlı yapay zeka.
+Çözümler | Sigorta | /tr/sektorler/sigorta | Sigorta şirketleri için hasar, poliçe ve hizmet otomasyonu.
+Çözümler | Telekomünikasyon | /tr/sektorler/telekomunikasyon | Operatörler için ölçeklenebilir müşteri desteği.
 Kaynaklar | Başarı öyküleri | /tr/basari-oykuleri | Müşterilerimiz Sestek'i nasıl kullanıyor, ne kazandı.
-Kaynaklar | Webinarlar | /tr/webinarlar-kaynaklar | Webinar kayıtları, e-kitaplar ve raporlar.
-Kaynaklar | Blog | /tr/tum-blog-yazilari-kaynaklar | Konuşma tabanlı yapay zeka ve müşteri deneyimi yazıları.
-Kaynaklar | Podcastler | /tr/podcastler-kaynaklar | Sektör liderleriyle sohbetler.
+Kaynaklar | CX İçgörüleri | /tr/cx-icgoruleri | Yapay zeka ve müşteri deneyimi üzerine kısa okumalar.
+Kaynaklar | Blog | /tr/blog | Konuşma tabanlı yapay zeka ve müşteri deneyimi yazıları.
+Kaynaklar | Webinarlar | /tr/webinarlar | Webinar kayıtları, e-kitaplar ve raporlar.
+Kaynaklar | Podcastler | /tr/podcastler | Sektör liderleriyle sohbetler.
 Kaynaklar | Sözlük | /tr/sozluk | Konuşma tabanlı yapay zeka terimleri.
-Kaynaklar | Tanıtım dosyaları | /tr/tanitim-dosyalari | Ürün broşürleri ve tanıtım dokümanları.
 Kurumsal | Hakkımızda | /tr/hakkimizda | Biz kimiz, hikâyemiz ve ekibimiz.
 Kurumsal | Neden Sestek | /tr/neden-sestek | 25 yıllık konuşma teknolojisi ve yapay zeka deneyimi.
 Kurumsal | Kariyer | /tr/kariyer | Açık pozisyonlar ve Sestek'te çalışmak.

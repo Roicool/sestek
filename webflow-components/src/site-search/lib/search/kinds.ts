@@ -1,22 +1,40 @@
 /*
- * Path → kind classification for the Sestek site. Ordered: first match wins.
- * Used by the index builder (and as a fallback when a page carries no hints).
- * Extend the lists when new page types appear.
+ * Path → kind classification for the NEW sestek site (rc-sestek.webflow.io,
+ * www.sestek.com after launch). The site is folder-based, so kinds follow the
+ * first path segment; TR pages sit under /tr/<turkish-folder>/. Ordered:
+ * first match wins. Extend the lists when new folders appear.
+ *
+ *   /products/*        /tr/urunler/*           product
+ *   /agentic-ai, /agent-copilot, /conversational-intelligence (+ /tr/…)  product hubs
+ *   /solutions/*       /tr/cozumler/*          solution
+ *   /industries/*      /tr/sektorler/*         solution
+ *   /success-stories/* /tr/basari-oykuleri/*   case-study   (the hub itself: resource)
+ *   /blog/*            /tr/blog/*              blog
+ *   /cx-insights/*     /tr/cx-insights/*       blog
+ *   /blog-categories/* /tr/blog-kategorileri/* blog         (category hubs)
+ *   /webinars/* /podcasts/* /calculators/* /tr/webinarlar/* /tr/podcastler/* /tr/hesaplayicilar/*  resource
+ *   /glossary /marketing-collateral /saving-calculators /opus-research-* (+ TR)  resource
+ *   /careers/*         /tr/kariyer/*           career
+ *   /compares/* /legal/* /authors/* /tr/karsilastirmalar/* /tr/yasal/* /tr/yazarlar/*  page
+ *   everything else (about, partners, r-d, home, search …)                        page
  */
 
 import type { SearchKind } from "./types";
 
 const RULES: Array<[RegExp, SearchKind]> = [
+  [/^\/(tr\/)?(products|urunler)\//i, "product"],
+  [/^\/(tr\/)?(agentic-ai|agent-copilot|conversational-intelligence)$/i, "product"],
+  [/^\/(tr\/)?(solutions|cozumler|industries|sektorler)\//i, "solution"],
+  [/^\/(tr\/)?(success-stories|basari-oykuleri)\//i, "case-study"],
+  [/^\/(tr\/)?(blog|cx-insights|blog-categories|blog-kategorileri)\//i, "blog"],
+  [/^\/(tr\/)?(webinars|webinarlar|podcasts|podcastler|calculators|hesaplayicilar)\//i, "resource"],
+  [/^\/(tr\/)?(success-stories|basari-oykuleri|blog|cx-insights|cx-icgoruleri|webinars|webinarlar|podcasts|podcastler|glossary|sozluk|marketing-collateral|tanitim-dosyalari|saving-calculators|maliyet-tasarrufu-hesaplama|opus-research-2025-report|opus-research-2025-raporu)$/i, "resource"],
+  [/^\/(tr\/)?(careers|kariyer)\//i, "career"],
+  [/^\/(tr\/)?(careers|kariyer)$/i, "page"],
+  /* legacy flat slugs (old site) — harmless to keep while both structures exist */
   [/-blog$/i, "blog"],
   [/^\/(tr\/)?(solutions-for-|.*-icin-cozumler$)/i, "solution"],
-  [/^\/(tr\/)?(success-stories|basari-oykuleri)$/i, "resource"],
-  [/^\/(tr\/)?(all-blog-posts-resources|tum-blog-yazilari-kaynaklar|webinars-resources|glossary|savings-calculators?|.*-hesaplama$|.*-raporu$|.*-report$|.*-webinar$|.*-ebook$|.*-whitepaper$)/i, "resource"],
-  [/^\/(tr\/)?(careers|kariyer|.*-engineer(-.*)?$|.*-manager$|product-owner|.*internship.*|.*-specialist$|.*-developer$)/i, "career"],
-  [/^\/(tr\/)?(sestek-vs-|about-us|hakkimizda|whysestek|contact|iletisim|demos|request-a-demo|demo-isteyin|is-ortaklari|partners|ar-ge|.*-policy$|.*-politikasi$|cookie-policy|kullanim-kosullari|terms|compliance-security|uyumluluk-ve-guvenlik|security|data-subject-application-form)/i, "page"],
-  // customer stories: "<brand> ... with/ile ..." style slugs
-  [/^\/(tr\/)?[a-z0-9-]*(-with-|-ile-|increased|automated|automates|elevated|strengthened|slices|boosted|nasil-|-artirdi|-dusurdu|-hizlandirdi|-tasidi|-guclendiriyor)[a-z0-9-]*$/i, "case-study"],
-  // products: Knovvu family + core capabilities
-  [/^\/(tr\/)?(knovvu|.*-knovvu$|agentic-ai|agent-copilot|agent-assist|virtual-agent|virtual-translator|banking-bot|bankacilik-botu|collection-ai-agent|scheduling-ai-agent|conversational-ivr|conversational-analytics|conversation-analytics|interaction-analytics|speech-analytics|speech-recognition|text-to-speech|voice-biometrics|musteri-dogrulama|temsilci-kimlik-dogrulama|real-time-guidance|whatsapp-customer-service|aqm|wfm|.*-analytics$)/i, "product"],
+  [/^\/(tr\/)?(knovvu|.*-knovvu$|virtual-agent|virtual-translator|speech-analytics|speech-recognition|text-to-speech|voice-biometrics|aqm|wfm)$/i, "product"],
 ];
 
 export function kindForPath(path: string): SearchKind {
@@ -28,12 +46,13 @@ export function localeForPath(path: string): "en" | "tr" {
   return /^\/tr(\/|$)/i.test(path) ? "tr" : "en";
 }
 
-/** "/tr/knovvu-agent-copilot" → "Knovvu Agent Copilot" (provisional titles) */
+/** "/tr/urunler/agent-assist" → "Agent Assist" (provisional titles, last segment) */
 export function titleFromSlug(path: string): string {
-  const slug = path.replace(/^\/tr\//, "/").replace(/^\//, "").replace(/-blog$/, "");
+  const clean = path.replace(/^\/tr(\/|$)/, "/").replace(/\/+$/, "");
+  const slug = (clean.split("/").pop() || "").replace(/-blog$/, "");
   if (!slug) return "Home";
   return slug
     .split("-")
-    .map((w) => (/^(ai|ivr|aqm|wfm|tts|sr|crm|api|kvkk|gdpr|qnb|ing|tr|msa)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+    .map((w) => (/^(ai|ivr|aqm|wfm|tts|sr|crm|api|kvkk|gdpr|qnb|ing|tr|msa|bpo|cx|r|d|llm|llms)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
     .join(" ");
 }

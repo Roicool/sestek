@@ -23,7 +23,7 @@
 | OpenNext-Cloudflare runs the **Node** runtime (`nodejs_compat`) | Do **not** add `export const runtime = "edge"`. Plain route handlers. |
 | Bindings come from the app's `wrangler.json`; the Webflow CLI may regenerate that file (it is git-ignored in the app) | Declare the KV binding there and verify it survives `webflow cloud deploy` — **ASK** the maintainer how they want it tracked/committed. |
 | **Domains.** The new site lives on **staging `https://rc-sestek.webflow.io`** until launch; production will be **`https://www.sestek.com`** (today that host still serves the old site). | Crawl **staging now**: `SEARCH_SITE=https://rc-sestek.webflow.io` (repo variable). At launch flip the variable to `https://www.sestek.com` — nothing else changes, the index stores site-relative paths only. |
-| Sitemap: `<site>/sitemap.xml`, ~549 URLs (213 under `/tr`) | Crawl takes ~1–2 min at concurrency 6. Runs in GitHub Actions, **not** in the Worker (subrequest/CPU limits). |
+| Sitemap: `<site>/sitemap.xml`, ~487 URLs (240 under `/tr`) — folder-based (`/products/`, `/solutions/`, `/industries/`, `/success-stories/`, `/blog/`, `/cx-insights/`, `/webinars/`, `/podcasts/`, `/careers/`, `/compares/`, `/legal/`, `/authors/`, `/calculators/`; TR under `/tr/<turkish-folder>/`). Kinds come from the folder (`src/lib/search/kinds.ts`); nothing is excluded. | Crawl takes ~1–2 min at concurrency 6. Runs in GitHub Actions, **not** in the Worker (subrequest/CPU limits). |
 | The Code Component fetches `GET /demos/api/search/index` (`credentials: "omit"`, honours `ETag`/`If-None-Match` via the browser cache, caches the JSON in `sessionStorage` for 1 h) and expects a `SearchIndex` JSON | Only this endpoint is served by this app. Response shape is fixed by `src/lib/search/types.ts` — do not rename fields. |
 
 ---
@@ -61,7 +61,7 @@ Do **not** copy `components/SiteSearch/*`, `rank.ts`, `messages.ts` or
 fallback import in the route.
 
 Sanity: `npm run search:index:sitemap` → `public/search-index.json` with
-~549 docs in a few seconds (no page fetches).
+~487 docs in a few seconds (no page fetches; copy `site-search/sitemap.staging.paths.txt` if you want the offline list).
 
 ---
 

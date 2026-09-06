@@ -63,18 +63,31 @@ test("no result for garbage", () => {
   assert.equal(rankDocs(docs, "a").length, 0);
 });
 
-test("kind classification from path", () => {
-  assert.equal(kindForPath("/why-ai-projects-fail-and-how-to-fix-them-blog"), "blog");
-  assert.equal(kindForPath("/solutions-for-banking"), "solution");
-  assert.equal(kindForPath("/tr/bankalar-icin-cozumler"), "solution");
-  assert.equal(kindForPath("/knovvu-agent-copilot"), "product");
-  assert.equal(kindForPath("/speech-analytics-knovvu"), "product");
-  assert.equal(kindForPath("/fibabanka-automated-collection-operations-with-sestek-virtual-agent"), "case-study");
-  assert.equal(kindForPath("/tr/hepsiburada-kalite-yonetiminde-verimliligini-nasil-artirdi"), "case-study");
-  assert.equal(kindForPath("/site-reliability-engineer"), "career");
-  assert.equal(kindForPath("/sestek-vs-nice"), "page");
-  assert.equal(titleFromSlug("/tr/knovvu-agent-copilot"), "Knovvu Agent Copilot");
-  assert.equal(titleFromSlug("/conversational-ivr"), "Conversational IVR");
+test("kind classification from path (new folder-based site)", () => {
+  assert.equal(kindForPath("/products/agent-assist"), "product");
+  assert.equal(kindForPath("/tr/urunler/tts"), "product");
+  assert.equal(kindForPath("/agentic-ai"), "product");
+  assert.equal(kindForPath("/tr/conversational-intelligence"), "product");
+  assert.equal(kindForPath("/solutions/collection"), "solution");
+  assert.equal(kindForPath("/tr/sektorler/sigorta"), "solution");
+  assert.equal(kindForPath("/success-stories/halkbank"), "case-study");
+  assert.equal(kindForPath("/tr/basari-oykuleri/yapi-kredi"), "case-study");
+  assert.equal(kindForPath("/success-stories"), "resource");
+  assert.equal(kindForPath("/blog/why-ai-projects-fail-and-how-to-fix-them-blog"), "blog");
+  assert.equal(kindForPath("/tr/cx-insights/cx-ekiplerinde-agentic-donusum"), "blog");
+  assert.equal(kindForPath("/blog-categories/sestek-news"), "blog");
+  assert.equal(kindForPath("/webinars/demos-on-demand"), "resource");
+  assert.equal(kindForPath("/tr/hesaplayicilar/aqm"), "resource");
+  assert.equal(kindForPath("/glossary"), "resource");
+  assert.equal(kindForPath("/careers/devops-engineer"), "career");
+  assert.equal(kindForPath("/careers"), "page");
+  assert.equal(kindForPath("/compares/nice"), "page");
+  assert.equal(kindForPath("/authors/sestek-team"), "page");
+  assert.equal(kindForPath("/legal/cookie-policy"), "page");
+  assert.equal(kindForPath("/"), "page");
+  assert.equal(titleFromSlug("/tr/urunler/agent-assist"), "Agent Assist");
+  assert.equal(titleFromSlug("/products/aqm"), "AQM");
+  assert.equal(titleFromSlug("/tr"), "Home");
 });
 
 test("ranking 500 docs stays well under 16ms", () => {

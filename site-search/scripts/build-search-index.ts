@@ -4,7 +4,7 @@
  *   npx tsx scripts/build-search-index.ts                    # crawl live site
  *   npx tsx scripts/build-search-index.ts --sitemap-only     # no page fetches (provisional)
  *   npx tsx scripts/build-search-index.ts --site https://rc-sestek.webflow.io
- *   npx tsx scripts/build-search-index.ts --sitemap ../sitemap.xml   # local sitemap file
+ *   npx tsx scripts/build-search-index.ts --sitemap sitemap.staging.paths.txt   # local sitemap (xml or path list)
  *
  * Source of truth is the sitemap (every published page, both locales). For
  * each URL the page is fetched and the H1 (or <title>), meta description (or
@@ -44,8 +44,11 @@ const clip = (s: string, n = 200) => (s.length <= n ? s : s.slice(0, n - 1).repl
 
 async function loadSitemap(): Promise<string[]> {
   let xml: string;
-  if (SITEMAP) xml = readFileSync(resolve(SITEMAP), "utf8");
-  else {
+  if (SITEMAP) {
+    xml = readFileSync(resolve(SITEMAP), "utf8");
+    /* plain path list (one per line, # comments) — e.g. sitemap.staging.paths.txt */
+    if (/\.txt$/i.test(SITEMAP)) xml = xml.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((l) => `<loc>${SITE}${l === "/" ? "" : l}</loc>`).join("");
+  } else {
     const r = await fetch(SITE + "/sitemap.xml");
     if (!r.ok) throw new Error("sitemap " + r.status);
     xml = await r.text();

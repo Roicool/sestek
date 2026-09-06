@@ -33,7 +33,7 @@ take it and note it in the PR. Items marked **ASK** need the maintainer
     may regenerate this file — keep the binding in a place the deploy keeps,
     **ASK** how the maintainer wants it tracked).
 - Marketing site: **English primary**, Turkish under **`/tr/...`**. The
-  sitemap (`https://www.sestek.com/sitemap.xml`) lists **549 URLs, 213 TR**.
+  sitemap (staging `https://rc-sestek.webflow.io/sitemap.xml`, `www.sestek.com` after launch) lists **487 URLs, 240 TR**, folder-based (`/products/`, `/solutions/`, `/industries/`, `/success-stories/`, `/blog/` …, TR under `/tr/<turkish-folder>/`).
   URL patterns: blog posts end in `-blog`; solutions `solutions-for-*` /
   `*-icin-cozumler`; products are Knovvu family + capability slugs; customer
   stories are `<brand>-…-with-…` / `…-ile-…` slugs; careers are role slugs.
