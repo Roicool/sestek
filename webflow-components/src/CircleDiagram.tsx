@@ -147,12 +147,14 @@ const CSS = `
    labels are allowed to wrap inside that width. */
 @media (max-width:991px){
   .cd_layout{grid-template-columns:1fr;gap:2.5rem}
+  .cd{padding-left:.5rem;padding-right:.5rem}
   .cd_panel{padding:1.25rem 0}
   .cd_item{font-size:.75rem;letter-spacing:.06em;padding:.5rem .85rem;gap:.45rem}
 }
 @media (max-width:479px){
-  .cd{--cd-icon-size:1rem;padding-left:var(--spacing--4,1rem);padding-right:var(--spacing--4,1rem)}
-  .cd_item{font-size:.6875rem;padding:.45rem .7rem}
+  .cd{--cd-icon-size:.9rem;padding-left:.25rem;padding-right:.25rem}
+  .cd_item{font-size:.625rem;letter-spacing:.04em;padding:.4rem .6rem;gap:.35rem;line-height:1.15}
+  .cd_item.is-active{transform:translate(-50%,-50%) scale(1.04)}
   .cd_pcard{padding:1.1rem 1.25rem}
   .cd_card-title{font-size:1rem}
 }
@@ -244,14 +246,22 @@ export function CircleDiagram(props: CircleDiagramProps) {
        ones half their height. Size the ring from the panel's real width minus
        the widest chip (measured, after capping chip width to 40% of the panel
        so long labels wrap) — works at every breakpoint, no CSS guesswork. */
+    let lastWidest = -1, lastAvail = -1;
     const fit = () => {
-      const panelW = panelEl.clientWidth;
-      if (!panelW) return;
-      const chipMax = Math.min(240, Math.floor(panelW * 0.4));
+      /* available width: single column → the component's own box (padding
+         included — chips may overlap it, never leave it); two columns → the
+         diagram column only, so chips never bleed into the card list */
+      const rr = rootEl.getBoundingClientRect(), pr = panelEl.getBoundingClientRect();
+      const twoCol = Math.abs((pr.left + pr.width / 2) - (rr.left + rr.width / 2)) > 2;
+      const avail = (twoCol ? panelEl.clientWidth : rootEl.clientWidth) - 8;
+      if (avail <= 0) return;
+      const chipMax = Math.min(240, Math.floor(avail * (avail < 480 ? 0.34 : 0.4)));
       rootEl.style.setProperty("--cd-chip-max", chipMax + "px");
       let widest = 0;
       nodes.forEach((n) => { widest = Math.max(widest, n.offsetWidth); });
-      const stageW = Math.max(150, Math.min(448, panelW - widest - 8));
+      if (widest === lastWidest && avail === lastAvail) return;
+      lastWidest = widest; lastAvail = avail;
+      const stageW = Math.max(150, Math.min(448, avail - widest));
       rootEl.style.setProperty("--cd-stage", stageW + "px");
     };
     fit();
@@ -358,9 +368,11 @@ export function CircleDiagram(props: CircleDiagramProps) {
     if (fonts && fonts.ready) fonts.ready.then(remeasure).catch(() => {});
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
-      let lastW = panelEl.clientWidth;
-      ro = new ResizeObserver(() => { const w = panelEl.clientWidth; if (w !== lastW) { lastW = w; remeasure(); } });
+      let pending = false;
+      ro = new ResizeObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; remeasure(); }); });
       ro.observe(panelEl);
+      nodes.forEach((n) => ro!.observe(n));   // chips grow when the web font lands
+      cards.forEach((c) => ro!.observe(c));
     }
 
     /* viewport gate */
