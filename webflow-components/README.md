@@ -344,9 +344,9 @@ kalmalı (varsayılan 0 yeterli). Font geç gelirse ve panel boyu değişirse
 | Title reveal | Header | Boolean | `On` | Görünüme girince yumuşak belirme (1.2 s, scale 1.03 → 1) |
 | Brand shine | Header | Boolean | `On` | |
 | Button label / URL / Open in new tab | Button | Text · Text · Boolean | `Request a demo` / `/request-a-demo` / `Off` | Tüm paneller; boş label = buton yok. Harf harf stagger hover |
-| Panel N › Heading / Heading accent | Panel 1–3 | Text · Text | 3 panel dolu, 4. boş (doldurulunca görünür) | Başlık + renkli devamı (örn. "Market-leading performance," + "engineered in-house."). Üçü de boşsa panel gizli |
+| Panel N › Heading / Heading accent | Panel 1–4 | Text · Text | 3 panel dolu, 4. boş (doldurulunca görünür) | Başlık + renkli devamı (örn. "Market-leading performance," + "engineered in-house."). Üçü de boşsa panel gizli |
 | Panel N › Accent colour | Panel 1–4 | Text | tertiary-700 / secondary-500 / primary-500 | Renkli kısmın rengi; token ya da renk |
-| Panel N › Body | Panel 1–3 | Text | dolu | Açıklama; kalın için `**iki yıldız**` |
+| Panel N › Body | Panel 1–4 | Text | dolu | Açıklama; kalın için `**iki yıldız**` |
 | Panel N › Video URL / Poster URL / Image | Panel 1–4 | Text · Text · Image | Cloudflare linkleri | Poster URL boşsa Image poster olur; video yoksa Image/Poster medya |
 | Panel N › Button style | Panel 1–4 | Variant | `Auto` | `Auto` = sırayla White / Brand secondary / Dark · `Brand primary` · `None` |
 | Panel N › Media side | Panel 1–4 | Variant | `Right` | `Left` = video solda (tablet/mobilde hep altta) |
