@@ -114,6 +114,7 @@ export function SiteSearch({
   React.useEffect(() => {
     const host = document.createElement("div");
     host.setAttribute("data-site-search-host", "code-component");
+    host.setAttribute("data-lenis-prevent", "");   // Lenis ignores wheel/touch retargeted to this host
     document.body.appendChild(host);
     const shadow = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");

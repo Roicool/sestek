@@ -181,8 +181,13 @@ AnalyserNode ve WebGL dokusu buna bağlı.
 Kurulum: component'i **Navbar**'a (ikonun yerine) bırak; palet body'ye kendi
 shadow root'uyla açıldığı için nav'ın transform/autohide'ından etkilenmez.
 Eski `[data-search-trigger]` ikonu kalırsa o da paleti açar (Bind page
-triggers). Palet açılışta boş değildir: solda gruplu hızlı erişim listesi
-(component'in içinde, index'e bağlı değil), sağda görsel + önizleme kartı.
+triggers). Palet açılışta boş değildir: arama çubuğunun altında "Deneyin" sorgu
+chip'leri, solda gruplu hızlı erişim **kutucukları** (2 sütun, tür rengi +
+başlık + kısa özet; component'in içinde, index'e bağlı değil), sağda görsel
+(türü gösteren chip görselin üstünde) + önizleme kartı. Sonuç satırlarında tür
+rozeti türe göre renklenir (ürün magenta, çözüm mor, öykü yeşil-mavi, kaynak
+amber). Açıkken sayfa scroll'u kilitlenir: html/body overflow + sitenin
+Lenis'i (`Sestek.stopScroll` / `startScroll`), host'ta `data-lenis-prevent`.
 Index'i Cloud app servis eder; endpoint hazır değilken hızlı erişim çalışır,
 yazınca "yükleniyor"/boş durumu görünür, sayfa etkilenmez. Palet yazı tipini
 sitenin `--font--primary` değişkeninden (yoksa body fontundan) alır; arkadaki

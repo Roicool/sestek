@@ -78,22 +78,36 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
   const current = showing[Math.min(active, Math.max(0, showing.length - 1))];
   const media = current ? current.image || previewImage : previewImage;
 
-  /* open: load index, remember opener, focus input, lock scroll; close: restore */
+  /* open: load index, remember opener, focus input, lock scroll; close: restore.
+     Scroll lock covers native scrolling (html + body overflow) AND the site's
+     Lenis smooth scroll (Sestek.stopScroll / lenisInstance.stop), which
+     ignores overflow:hidden and would keep moving the page under the palette. */
+  const loadRef = React.useRef(load);
+  loadRef.current = load;
   React.useEffect(() => {
     if (!open) return;
     openerRef.current = document.activeElement;
-    void load();
+    void loadRef.current();   // via ref: `load` changes identity once the index lands and must not re-run this effect
     const id = requestAnimationFrame(() => inputRef.current?.focus());
-    const prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
+    const html = document.documentElement, body = document.body;
+    const prev = { html: html.style.overflow, body: body.style.overflow };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    const w = window as unknown as { Sestek?: { stopScroll?: () => void; startScroll?: () => void }; lenisInstance?: { stop?: () => void; start?: () => void } };
+    if (w.Sestek?.stopScroll) w.Sestek.stopScroll(); else w.lenisInstance?.stop?.();
     return () => {
       cancelAnimationFrame(id);
-      document.documentElement.style.overflow = prevOverflow;
+      html.style.overflow = prev.html;
+      body.style.overflow = prev.body;
+      if (w.Sestek?.startScroll) w.Sestek.startScroll(); else w.lenisInstance?.start?.();
       setQuery("");
       const o = openerRef.current as HTMLElement | null;
       if (o && typeof o.focus === "function") o.focus();
     };
-  }, [open, load, setQuery]);
+  }, [open, setQuery]);
+
+  /* wheel/touch inside the palette must not reach the page (Lenis listens on window) */
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   React.useEffect(() => { setActive(0); }, [debounced, open]);
 
@@ -136,7 +150,7 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
   });
 
   return (
-    <div className="sst-search" role="presentation" onKeyDown={onKey}>
+    <div className="sst-search" role="presentation" onKeyDown={onKey} onWheel={stop} onTouchMove={stop} data-lenis-prevent="">
       {inlineCss && <style dangerouslySetInnerHTML={{ __html: inlineCss }} />}
       <div className="sst-search__backdrop" onMouseDown={onClose} />
       <div ref={panelRef} className="sst-search__panel" role="dialog" aria-modal="true" aria-label={t.open} id="site-search-dialog">
@@ -165,6 +179,14 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
             />
             <button type="button" className="sst-search__esc" onClick={onClose} aria-label={t.close}>Esc</button>
           </div>
+          {!searching && t.suggested.length > 0 && (
+            <div className="sst-search__try">
+              <span className="sst-search__try-label">{t.tryLabel}</span>
+              {t.suggested.map((q) => (
+                <button type="button" key={q} className="sst-search__try-chip" onClick={() => { setQuery(q); inputRef.current?.focus(); }}>{q}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="sst-search__body">
@@ -187,14 +209,25 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
                           const i = offset + k;
                           return (
                             <li key={d.path} role="presentation">
-                              <a id={listId + "-" + i} role="option" aria-selected={i === active} className="sst-search__opt" tabIndex={-1} onMouseEnter={() => setActive(i)} {...link(d)}>
-                                <span className="sst-search__chip" aria-hidden="true">{KIND_ABBR[d.kind] || "PG"}</span>
-                                <span className="sst-search__text">
-                                  {searching && <span className="sst-search__eyeline"><b>{t.kinds[d.kind] || d.kind}</b><span>{d.path}</span></span>}
-                                  <span className="sst-search__title"><Highlight doc={d} /></span>
-                                  {searching && d.summary && <span className="sst-search__sum">{d.summary}</span>}
-                                </span>
-                                <span className="sst-search__arrow" aria-hidden="true">{ARROW}</span>
+                              <a id={listId + "-" + i} role="option" aria-selected={i === active} className={"sst-search__opt" + (searching ? "" : " sst-search__tile")} tabIndex={-1} onMouseEnter={() => setActive(i)} {...link(d)}>
+                                {searching ? (
+                                  <>
+                                    <span className="sst-search__chip" data-kind={d.kind} aria-hidden="true">{KIND_ABBR[d.kind] || "PG"}</span>
+                                    <span className="sst-search__text">
+                                      <span className="sst-search__eyeline"><b>{t.kinds[d.kind] || d.kind}</b><span>{d.path}</span></span>
+                                      <span className="sst-search__title"><Highlight doc={d} /></span>
+                                      {d.summary && <span className="sst-search__sum">{d.summary}</span>}
+                                    </span>
+                                    <span className="sst-search__arrow" aria-hidden="true">{ARROW}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="sst-search__tile-kind"><i className="sst-search__dot" data-kind={d.kind} aria-hidden="true" />{t.kinds[d.kind] || d.kind}</span>
+                                    <span className="sst-search__title">{d.title}</span>
+                                    {d.summary && <span className="sst-search__sum">{d.summary}</span>}
+                                    <span className="sst-search__arrow" aria-hidden="true">{ARROW}</span>
+                                  </>
+                                )}
                               </a>
                             </li>
                           );
@@ -221,11 +254,12 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
             {media && (
               <div className="sst-search__pv-media" aria-hidden="true">
                 <img key={media} src={media} alt="" loading="lazy" decoding="async" />
+                {current && <span className="sst-search__pv-chip sst-search__pv-chip--on-media">{t.kinds[current.kind] || current.kind}</span>}
               </div>
             )}
             {current ? (
               <>
-                <span className="sst-search__pv-chip">{t.kinds[current.kind] || current.kind}</span>
+                {!media && <span className="sst-search__pv-chip">{t.kinds[current.kind] || current.kind}</span>}
                 <h2 className="sst-search__pv-title">{current.title}</h2>
                 {current.summary && <p className="sst-search__pv-sum">{current.summary}</p>}
                 <p className="sst-search__pv-url">{siteHost}<b>{current.path}</b></p>

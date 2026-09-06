@@ -18,6 +18,8 @@ export type Messages = {
   enter: string;
   esc: string;
   loading: string;
+  tryLabel: string;
+  suggested: string[];
   kinds: Record<string, string>;
 };
 
@@ -40,6 +42,8 @@ export const MESSAGES: Record<"en" | "tr", Messages> = {
     enter: "open",
     esc: "close",
     loading: "Loading…",
+    tryLabel: "Try",
+    suggested: ["agentic ai", "agent copilot", "voice biometrics", "banking", "speech analytics"],
     kinds: { product: "Product", solution: "Solution", "case-study": "Customer story", blog: "Blog", resource: "Resource", career: "Careers", page: "Page" },
   },
   tr: {
@@ -60,6 +64,8 @@ export const MESSAGES: Record<"en" | "tr", Messages> = {
     enter: "aç",
     esc: "kapat",
     loading: "Yükleniyor…",
+    tryLabel: "Deneyin",
+    suggested: ["agentic ai", "agent copilot", "ses biyometrisi", "bankacılık", "konuşma analizi"],
     kinds: { product: "Ürün", solution: "Çözüm", "case-study": "Başarı öyküsü", blog: "Blog", resource: "Kaynak", career: "Kariyer", page: "Sayfa" },
   },
 };

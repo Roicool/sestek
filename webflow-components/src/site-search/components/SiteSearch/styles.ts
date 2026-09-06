@@ -45,6 +45,11 @@ export const SEARCH_CSS = `
 .sst-search__input::-webkit-search-cancel-button{display:none}
 .sst-search__esc{flex:none;font:inherit;font-size:12px;font-weight:600;line-height:1;padding:12px 16px;border-radius:var(--radius--full,999px);border:1px solid var(--sst-line);color:var(--sst-text-muted);background:var(--sst-muted);cursor:pointer}
 .sst-search__esc:hover{color:var(--sst-text)}
+/* suggested queries under the bar (idle only) */
+.sst-search__try{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding-left:4px}
+.sst-search__try-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:var(--font-weight--semibold,600);color:var(--sst-text-muted);margin-right:4px}
+.sst-search__try-chip{font:inherit;font-size:13px;font-weight:var(--font-weight--medium,500);line-height:1;padding:8px 12px;border-radius:var(--radius--full,999px);border:1px solid var(--sst-line);background:var(--sst-bg);color:var(--sst-text);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.sst-search__try-chip:hover{border-color:var(--sst-accent);color:var(--sst-accent);background:color-mix(in srgb,var(--sst-accent) 6%,var(--sst-bg))}
 
 /* ── Body: results · preview ───────────────────────────────── */
 .sst-search__body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-height:0}
@@ -53,11 +58,27 @@ export const SEARCH_CSS = `
 .sst-search__hint{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--sst-text-muted)}
 .sst-search__list{display:flex;flex-direction:column;gap:6px}
 .sst-search__group{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.sst-search__group--quick{gap:2px;margin-bottom:14px}
-.sst-search__group-label{margin:0 0 4px;padding:0 14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:var(--font-weight--semibold,600);color:var(--sst-text-muted)}
-.sst-search__group--quick .sst-search__opt{padding:8px 12px;grid-template-columns:34px minmax(0,1fr) auto;gap:12px}
-.sst-search__group--quick .sst-search__chip{width:34px;height:34px;border-radius:9px;font-size:10px}
-.sst-search__group--quick .sst-search__title{margin-top:0;font-size:15.5px}
+/* quick access = tile grid per group (not a list): 2 columns, title + one-line summary */
+.sst-search__group--quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:22px}
+.sst-search__group-label{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:0 0 2px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:var(--font-weight--semibold,600);color:var(--sst-text-muted)}
+.sst-search__group-label::after{content:"";flex:1;height:1px;background:var(--sst-line)}
+.sst-search__opt.sst-search__tile{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;padding:14px 16px;min-height:96px;border:1px solid var(--sst-line);background:var(--sst-bg);transition:border-color .15s,background .15s,transform .15s}
+.sst-search__opt.sst-search__tile:hover{transform:translateY(-1px)}
+.sst-search__opt.sst-search__tile::before{left:0;top:16px;bottom:16px}
+.sst-search__tile .sst-search__title{font-size:15.5px;margin:0;white-space:normal}
+.sst-search__tile .sst-search__sum{margin:0;font-size:12.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sst-search__tile .sst-search__arrow{position:absolute;right:12px;top:12px}
+.sst-search__tile-kind{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--sst-text-muted)}
+.sst-search__dot{width:7px;height:7px;border-radius:50%;background:var(--sst-k,var(--sst-accent))}
+/* kind colours — chips + dots */
+[data-kind="product"]{--sst-k:var(--sst-accent)}
+[data-kind="solution"]{--sst-k:#6b4fd8}
+[data-kind="case-study"]{--sst-k:#0f9d8a}
+[data-kind="resource"]{--sst-k:#d98a12}
+[data-kind="career"]{--sst-k:#2f9e44}
+[data-kind="blog"]{--sst-k:#6f6f7c}
+[data-kind="page"]{--sst-k:#6f6f7c}
+.sst-search__chip[data-kind]{color:var(--sst-k);background:color-mix(in srgb,var(--sst-k) 10%,var(--sst-bg))}
 .sst-search__opt{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--sst-rm);border:1px solid transparent;text-decoration:none;color:inherit;cursor:pointer}
 .sst-search__opt::before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--sst-accent);opacity:0;transition:opacity .15s}
 .sst-search__opt[aria-selected="true"]{background:var(--sst-soft);border-color:color-mix(in srgb,var(--sst-accent) 18%,var(--sst-line))}
@@ -77,6 +98,7 @@ export const SEARCH_CSS = `
 .sst-search__pv-media{position:relative;z-index:1;flex:0 1 auto;width:100%;min-height:0;max-height:48%;aspect-ratio:16/10;margin:0 0 auto;border-radius:var(--sst-rm);overflow:hidden;background:var(--sst-soft);box-shadow:0 24px 50px -30px rgba(20,10,50,.45),0 0 0 1px rgba(255,255,255,.5) inset}
 .sst-search__pv-media img{display:block;width:100%;height:100%;object-fit:cover;animation:sst-fade .3s ease both}
 .sst-search__pv-media + *{margin-top:22px}
+.sst-search__pv-chip.sst-search__pv-chip--on-media{position:absolute;left:14px;top:14px;margin:0;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .sst-search__preview::before{content:"";position:absolute;right:-12%;top:-18%;width:60%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--sst-accent) 22%,transparent) 0%,transparent 70%);pointer-events:none}
 .sst-search__preview::after{content:"";position:absolute;right:-6%;bottom:-24%;width:52%;aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--sst-accent) 22%,transparent);pointer-events:none}
 .sst-search__pv-chip{position:relative;display:inline-flex;align-items:center;padding:7px 12px;border-radius:var(--radius--full,999px);background:var(--sst-bg);border:1px solid var(--sst-line);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--sst-accent);margin-bottom:18px}
@@ -122,5 +144,8 @@ export const SEARCH_CSS = `
   .sst-search__opt{grid-template-columns:38px minmax(0,1fr)}
   .sst-search__arrow{display:none}
   .sst-search__chip{width:38px;height:38px}
+  .sst-search__group--quick{grid-template-columns:minmax(0,1fr)}
+  .sst-search__opt.sst-search__tile{min-height:0;padding:12px 14px}
+  .sst-search__try{display:none}
 }
 `;
