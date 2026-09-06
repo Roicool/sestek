@@ -1,0 +1,33 @@
+name: Refresh site search index
+on:
+  schedule: [{ cron: "17 2 * * *" }]     # 02:17 UTC daily
+  workflow_dispatch:
+  repository_dispatch: { types: [site-published] }
+concurrency: { group: search-index, cancel-in-progress: true }
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: site-search } }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site-search/package-lock.json
+      - run: npm ci
+      - name: Crawl site -> fixtures-search-index.json
+        # staging until launch, then set the repo variable to https://www.sestek.com
+        env:
+          SITE: ${{ vars.SEARCH_SITE || 'https://rc-sestek.webflow.io' }}
+        run: npx tsx scripts/build-search-index.ts --site "$SITE" --out fixtures-search-index.json
+      - name: Push index to the cloud app (KV)
+        env:
+          URL: ${{ vars.SEARCH_INDEX_URL || 'https://www.sestek.com/demos/api/search/index' }}
+          SECRET: ${{ secrets.SEARCH_INDEX_SECRET }}
+        run: |
+          [ -n "$SECRET" ] || { echo "::warning::SEARCH_INDEX_SECRET missing - KV push skipped"; exit 0; }
+          code=$(curl -sS -o /tmp/r.json -w "%{http_code}" -X POST "$URL" \
+            -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+            --data-binary @fixtures-search-index.json)
+          cat /tmp/r.json; echo; [ "$code" = "200" ] || { echo "::error::POST -> $code"; exit 1; }
