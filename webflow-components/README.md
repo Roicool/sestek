@@ -92,7 +92,7 @@ içinden miras alır; font sayfadan gelir.
 | Button 1 label / link | Buttons | Text / Link | "Read success stories" | Boş label = buton gizli |
 | Button 2 label / link | Buttons | Text / Link | "Request a demo" | Ok ikonlu birincil buton |
 | Trusted by text | Trusted by | Text | "Trusted by\|700+ companies" | Boş = etiket gizli |
-| Logos | Trusted by | Slot | — | **Logo Marquee** component'ini bırak |
+| Logos | Trusted by | Slot | — | **Logo Marquee** component'ini bırak. Satır video bloğunun içinde, alt kenarda; video logoların arkasında akar |
 | Phrase | Statement | Text | "Every interaction, better \*than the last\*" | `*…*` marka renginde |
 | Description | Statement | Text | … | |
 | Background image | Statement | Image | — | Opsiyonel; masaüstündeki bg-3 gibi |

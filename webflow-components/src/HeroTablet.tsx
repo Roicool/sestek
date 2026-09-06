@@ -10,7 +10,9 @@
  *   1. Video block — background video (poster, muted, loop, preload=none)
  *      with the scene-1 copy on top: title, subtitle, two CTAs.
  *   2. Trusted-by row — label + a Slot for the Logo Marquee code component
- *      (which itself holds the Clients Collection List).
+ *      (which itself holds the Clients Collection List). Sits INSIDE the
+ *      video block, at its bottom edge, so the video runs behind the logos
+ *      just like the desktop scene 1.
  *   3. Phrase + description — the scene-2 statement, accent words in brand
  *      colour (wrap them in *asterisks* in the prop).
  *   4. Stats — up to four counters that count up once they scroll into view
@@ -155,10 +157,10 @@ const CSS = `
 .sht *,.sht *::before,.sht *::after{box-sizing:border-box}
 
 /* ── 1. Video block ────────────────────────────────────────── */
-.sht-video{position:relative;width:100%;min-height:420px;overflow:hidden;background:#0b0b0d;display:flex;align-items:flex-end}
+.sht-video{position:relative;width:100%;min-height:480px;overflow:hidden;background:#0b0b0d;display:flex;flex-direction:column;justify-content:flex-end}
 .sht-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.sht-ovl{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.05) 20%,rgba(0,0,0,.55) 100%);pointer-events:none}
-.sht-s1{position:relative;z-index:2;width:100%;padding:clamp(1.5rem,5vw,3rem) var(--view--px,1.5rem) clamp(2rem,6vw,3.5rem);display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--spacing--4,1rem);color:var(--color-text--inverted,#fff)}
+.sht-ovl{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.05) 15%,rgba(0,0,0,.45) 60%,rgba(0,0,0,.7) 100%);pointer-events:none}
+.sht-s1{position:relative;z-index:2;width:100%;flex:1 1 auto;justify-content:center;padding:clamp(1.5rem,5vw,3rem) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem);display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--spacing--4,1rem);color:var(--color-text--inverted,#fff)}
 .sht-h1{margin:0;font-size:clamp(2rem,5.6vw,3.25rem);line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500);letter-spacing:-.01em;text-wrap:balance}
 .sht-sub{margin:0;max-width:var(--container--sm,36rem);font-size:var(--text--base,1rem);line-height:var(--leading--relaxed,1.6);opacity:.85;text-wrap:balance}
 .sht-ctas{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--spacing--4,1rem);margin-top:var(--spacing--2,.5rem)}
@@ -169,12 +171,13 @@ const CSS = `
 .sht-btn svg{width:1.1em;height:1.1em;flex:none}
 
 /* ── 2. Trusted by ─────────────────────────────────────────── */
-.sht-trust{display:flex;flex-direction:column;gap:var(--spacing--4,1rem);padding:var(--spacing--8,2rem) 0 var(--spacing--6,1.5rem)}
-.sht-trust-t{padding:0 var(--view--px,1.5rem);font-size:var(--text--base,1rem);line-height:var(--leading--normal,1.4);color:var(--color-text--muted,#666);text-align:center}
+/* Over the video, pinned to its bottom edge (desktop: .absolute.bottom row) */
+.sht-trust{position:relative;z-index:2;flex:none;display:flex;flex-direction:column;gap:var(--spacing--3,.75rem);padding:0 0 var(--spacing--5,1.25rem);color:var(--color-text--inverted,#fff)}
+.sht-trust-t{padding:0 var(--view--px,1.5rem);font-size:var(--text--base,1rem);line-height:var(--leading--normal,1.4);color:var(--color-text--inverted,#fff);opacity:.75;text-align:center}
 .sht-trust-b{width:100%}
 @media (min-width:768px){
-  .sht-trust{flex-direction:row;align-items:center;gap:var(--spacing--8,2rem);padding-left:var(--view--px,1.5rem);padding-right:var(--view--px,1.5rem)}
-  .sht-trust-t{flex:none;padding:0 var(--spacing--8,2rem) 0 0;text-align:left;border-right:1px solid var(--color-text--muted,#999)}
+  .sht-trust{flex-direction:row;align-items:center;gap:var(--spacing--8,2rem);padding-left:var(--view--px,1.5rem);padding-right:var(--view--px,1.5rem);padding-bottom:var(--spacing--6,1.5rem)}
+  .sht-trust-t{flex:none;padding:0 var(--spacing--8,2rem) 0 0;text-align:left;border-right:1px solid rgba(255,255,255,.35)}
   .sht-trust-b{flex:1 1 auto;min-width:0}
 }
 
@@ -316,15 +319,16 @@ export function HeroTablet({
             </div>
           )}
         </div>
-      </div>
 
-      {/* 2 ── Trusted by + logo marquee (slot) */}
-      {(trustedText || logos) && (
-        <div className="sht-trust">
-          {trustedText && <div className="sht-trust-t">{renderLines(trustedText)}</div>}
-          <div className="sht-trust-b">{logos}</div>
-        </div>
-      )}
+        {/* 2 ── Trusted by + logo marquee (slot) — sits over the video, at
+            its bottom edge, exactly like the desktop scene 1 */}
+        {(trustedText || logos) && (
+          <div className="sht-trust">
+            {trustedText && <div className="sht-trust-t">{renderLines(trustedText)}</div>}
+            <div className="sht-trust-b">{logos}</div>
+          </div>
+        )}
+      </div>
 
       {/* 3+4 ── Phrase, description, stats */}
       {(phrase || description || stats.length > 0) && (

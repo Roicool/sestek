@@ -33,7 +33,7 @@ export default declareComponent(HeroTablet, {
       defaultValue: 72,
       min: 30,
       max: 100,
-      tooltip: "Video bloğunun yüksekliği, viewport yüzdesi (100 = tam ekran)",
+      tooltip: "Video bloğunun yüksekliği, viewport yüzdesi (100 = tam ekran). Trusted by + logo bandı da bu bloğun içinde, altta",
     }),
     overlay: props.Boolean({
       name: "Dark overlay",
