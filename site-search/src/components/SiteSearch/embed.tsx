@@ -6,7 +6,7 @@
  * Mounts the palette into a shadow root on a <div> appended to <body>
  * (style isolation from Webflow CSS; never inside the nav, whose autohide
  * transform would break position:fixed), binds ⌘K / Ctrl+K / "/" and every
- * [data-search-trigger] / [data-search-open] element, and exposes
+ * [data-site-search-trigger] / [data-site-search-open] element, and exposes
  * window.__sestekSiteSearch = { open, close, toggle, version }.
  *
  * Optional config via data attributes on the script tag:
@@ -39,13 +39,13 @@ function App({ cfg }: { cfg: Cfg }) {
   useSearchHotkey(toggle);
   React.useEffect(() => {
     (window as unknown as { __sestekSiteSearch: unknown }).__sestekSiteSearch = { open: () => setOpen(true), close: () => setOpen(false), toggle, version: VERSION };
-    const triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-search-open],[data-search-trigger]"));
+    const triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-site-search-open],[data-site-search-trigger]"));
     const onClick = (e: Event) => { e.preventDefault(); setOpen(true); };
     triggers.forEach((el) => { el.addEventListener("click", onClick); el.setAttribute("aria-haspopup", "dialog"); el.setAttribute("aria-controls", "site-search-dialog"); });
     return () => triggers.forEach((el) => el.removeEventListener("click", onClick));
   }, [toggle]);
   React.useEffect(() => {
-    document.querySelectorAll<HTMLElement>("[data-search-open],[data-search-trigger]").forEach((el) => el.setAttribute("aria-expanded", open ? "true" : "false"));
+    document.querySelectorAll<HTMLElement>("[data-site-search-open],[data-site-search-trigger]").forEach((el) => el.setAttribute("aria-expanded", open ? "true" : "false"));
   }, [open]);
   return <SiteSearch open={open} onClose={() => setOpen(false)} indexUrl={cfg.indexUrl} locale={cfg.locale} demoHref={cfg.demo} contactHref={cfg.contact} siteHost={cfg.host} />;
 }

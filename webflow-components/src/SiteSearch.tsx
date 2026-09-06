@@ -9,8 +9,10 @@
  * fully style-isolated from Webflow.
  *
  * Opens on: the trigger click, ⌘K / Ctrl+K, "/" outside inputs, and any
- * existing [data-search-trigger] / [data-search-open] element on the page
- * (so the old nav icon keeps working). Locale from /tr or <html lang>.
+ * [data-site-search-trigger] / [data-site-search-open] element on the page
+ * (its OWN attributes — search.js's [data-search-trigger] belongs to the
+ * blog/CMS search and must not open this palette)
+ * Locale from /tr or <html lang>.
  * Results come from the index served by the Webflow Cloud app
  * (GET /demos/api/search/index, see docs/sestek-site-search-server-spec.md);
  * ranking runs client-side. No assistant; empty state = demo + contact CTAs.
@@ -129,14 +131,14 @@ export function SiteSearch({
   /* existing page triggers (old nav icon etc.) */
   React.useEffect(() => {
     if (!bindPageTriggers) return;
-    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-search-trigger],[data-search-open]"));
+    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-site-search-trigger],[data-site-search-open]"));
     const onClick = (e: Event) => { e.preventDefault(); setOpen(true); };
     els.forEach((el) => { el.addEventListener("click", onClick); el.setAttribute("aria-haspopup", "dialog"); el.setAttribute("aria-controls", "site-search-dialog"); });
     return () => els.forEach((el) => el.removeEventListener("click", onClick));
   }, [bindPageTriggers]);
 
   React.useEffect(() => {
-    document.querySelectorAll<HTMLElement>("[data-search-trigger],[data-search-open]").forEach((el) => el.setAttribute("aria-expanded", open ? "true" : "false"));
+    document.querySelectorAll<HTMLElement>("[data-site-search-trigger],[data-site-search-open]").forEach((el) => el.setAttribute("aria-expanded", open ? "true" : "false"));
     (window as unknown as { __sestekSiteSearch?: unknown }).__sestekSiteSearch = { open: openIt, close, toggle, version: "code-component" };
   }, [open, openIt, close, toggle]);
 

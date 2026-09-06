@@ -38,7 +38,7 @@ take it and note it in the PR. Items marked **ASK** need the maintainer
   `*-icin-cozumler`; products are Knovvu family + capability slugs; customer
   stories are `<brand>-…-with-…` / `…-ile-…` slugs; careers are role slugs.
 - Site nav already has a search icon wired for the old `search.js`
-  (`[data-search-trigger]`). Reuse that attribute as the trigger.
+  (`[data-search-trigger]`, owned by search.js). Do NOT reuse it — the palette listens to its own `[data-site-search-trigger]`.
 - Site CSS custom properties (available to the embed even inside a shadow
   root — custom properties inherit across the boundary):
   `--brand-primary--500` (magenta accent), `--surface--base` (page bg),
@@ -57,7 +57,7 @@ take it and note it in the PR. Items marked **ASK** need the maintainer
 
 ```
 ┌── Webflow site (published) ────────────────────────────────────────────┐
-│  nav [data-search-trigger]  ──►  <SiteSearch/> full-page palette         │
+│  nav [data-site-search-trigger] ►  <SiteSearch/> full-page palette         │
 │  ⌘K / Ctrl+K / "/"                 │  ranks locally (no per-keystroke net) │
 │                                    ▼                                     │
 │                    in-memory index, fetched once (sessionStorage 1h)     │
@@ -286,7 +286,7 @@ Behaviour
   viewport with `max-width: var(--container--2xl)` and margin, rounded
   `var(--radius--lg)`. Mobile (< 768px): single column, preview hidden,
   results full width, panel edge-to-edge with 12px margin, `100dvh`.
-- Trigger: `[data-search-trigger]` / `[data-search-open]` click; **⌘K /
+- Trigger: `[data-site-search-trigger]` / `[data-site-search-open]` click; **⌘K /
   Ctrl+K** anywhere; **`/`** when focus is not in an editable field.
 - Dialog a11y: `role="dialog" aria-modal="true" aria-label`, focus trap
   (Tab cycles input → Esc button → CTA links), **Esc closes**, focus
@@ -355,7 +355,7 @@ Careers/Kariyer, Page/Sayfa.
   pulls Webflow components INTO the app, it does not push React to Designer.
 - **Webflow wiring** (site Custom Code → footer):
   `<script defer src="https://www.sestek.com/demos/site-search.v1.js"></script>`
-  and `data-search-trigger` on the nav search icon; remove the old
+  and `data-site-search-trigger` on the nav search icon; remove the old
   `search.js` overlay block. Staging loads the script from the production
   origin (the index fetch is CORS-enabled for webflow.io).
 
