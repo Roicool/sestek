@@ -18,6 +18,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Circle Diagram** | `src/CircleDiagram.webflow.tsx` | Dönen halka diyagramı — `circle-diagram.js` v2.2 + `circle-diagram.css` v1.5.1'in React hali ("The conversational lifecycle"). Solda halkaya eşit dağılmış ikonlu chip'ler, sağda üst üste tıklanabilir kartlar; conic-gradient uç sabit hızla döner, geçtiği item aktifleşir ve kart listesi ona kayar. Hover/tık/klavye ucu o node'a süpürür, liste üstünde mouse ve klavye odağı dönüşü durdurur, yalnız viewport'tayken döner. Item'lar **Item 1–8** prop gruplarından (label, 15 ikonluk set, kart başlığı/metni). **Mobilde chip'ler viewport'u taşırmaz** (etiketler sarar, halka chip payı bırakır). GSAP sitenin global'inden, yoksa CSS transition. Bkz. [Circle Diagram](#circle-diagram--designer-propları). |
 | **Top Bar** | `src/TopBar.webflow.tsx` | Navbar'ın **üstünde** duyuru çubuğu. Metin + link (+ emoji), × ile kapatma; kapatılınca **cookie** ile hatırlanır (`sestek_topbar=<Campaign id>`, `Remember (days)`, varsayılan 1 gün), hiçbir sayfada bir daha çıkmaz — yeni duyuru için Campaign id'yi değiştirmek yeter. Sabit navbar'ı (`[data-nav]`) bar yüksekliği kadar aşağı iter, `--topbar-h` değişkenini `<html>`'e yazar. **Sticky** (en üstte sabit) ya da **Scrolls away** (sayfayla kayar, nav yerine döner). Mobilde göster/gizle. Brand / Dark / Light / Custom renk. Bkz. [Top Bar](#top-bar--designer-propları). |
 | **Cookie Consent** | `src/CookieConsent.webflow.tsx` | Minimal Sestek çerez banner'ı, **gerçekten çalışan**: seçim `sestek_consent` cookie'sinde (180 gün, Policy version değişince yeniden sorar); **Google Consent Mode v2** (`gtag('consent','update')` + `dataLayer` `cookie_consent_update` event'i, her sayfa yüklemesinde sessizce de); `type="text/plain" data-consent="analytics|marketing"` script'leri ve `data-src`'li iframe'ler yalnız izinle açılır; footer'daki `[data-cookie-settings]` tercihleri yeniden açar; GPC sinyali. Zorunlu / Analitik / Pazarlama (+ Tercihler) kategorileri, EN/TR otomatik, sol altta küçük kart, mobilde alt sheet, opsiyonel engelleyici mod. Bkz. [Cookie Consent](#cookie-consent--designer-propları). |
+| **Horizontal Scroll Cards** | `src/HScroll.webflow.tsx` | "Why SESTEK" yatay kart şeridi — `h-scroll.js` v2.2.4 + `hover-reveal.js` v1.0'ın React hali, **Swiper'sız**. ≥ 992px (gerçek fare, motion açık, sayfada gsap + ScrollTrigger): bölüm bir ekran boyu pinlenir, dikey scroll kartları 1px = 1px sola sürükler (`Speed` çarpanı), kart kenarlarına snap, altta **ilerleme çizgisi + sayaç**. Tablet/mobil, dokunmatik cihaz, reduced-motion ya da gsap yoksa aynı DOM **native scroll-snap karusel**: ok + kart başına nokta, tablet 1.4 / mobil 1.1 kart (peek). Kart genişlikleri saf CSS — eski `zoom` + Swiper ölçümü çakışmasından gelen **mobil hizalama kayması yok**. Başlık normal akışta, kartların üstüne binmez. Opsiyonel **hover reveal**: imlecin girdiği noktadan renk dalgası (CSS clip-path), çıkış noktasına doğru kapanır; dokunmatikte tap, klavye odağında da. Item 1–8 (**Rich Text içerik**: H3 başlık + paragraf tek alanda, ikon görseli; ikon yoksa 01, 02… numarası). Dark / Light tema + token override. Bkz. [Horizontal Scroll Cards](#horizontal-scroll-cards--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -263,6 +264,46 @@ cookie'si tüm site için geçerlidir (`path=/`); test için konsolda
 | Navbar selector | Layout | Text | `[data-nav]` | |
 | Theme | Look | Variant | `Brand` | `Dark` · `Light` · `Custom` |
 | Custom background / text color | Look | Text | boş | Theme = Custom |
+
+## Horizontal Scroll Cards — Designer prop'ları
+
+Kurulum: Webflow'daki `.section__hscroll` bloğunu (`[data-hscroll]`,
+`h-scroll.js` / `.css`, `hover-reveal.js` / `.css` linklerini, Swiper script'ini
+ve `Sestek.initHScroll()` / `initHoverReveal()` çağrılarını) kaldır; component'i
+aynı yere bırak. Bölüm kendi arka planını, başlığını ve kartlarını çizer.
+Gutter sitenin `--view--px` / `--container--2xl` değişkenlerinden, renkler
+`--brand-secondary--900/700/800/600` (Dark) ya da `--surface--base` /
+`--neutral--*` / `--brand-primary--500` (Light) token'larından, font
+`--font--primary`.
+
+**Pin kuralı:** component'in üstündeki hiçbir Webflow elemanında
+`transform`, `filter`, `perspective`, `will-change: transform` olmamalı —
+ScrollTrigger'ın pin'i `position: fixed` kullanır, aksi hâlde viewport yerine
+o elemana yapışır. Sayfada gsap + ScrollTrigger yoksa (ya da reduced-motion,
+dokunmatik cihaz) masaüstünde de karusel modu çalışır; hiçbir şey kırılmaz.
+Aynı sayfada birden fazla pin varsa üstteki için `Refresh priority`'yi daha
+yüksek ver.
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Eyebrow / Title / Subtitle | Header | Text | boş / `Why SESTEK` / `Support built to hold up…` | Boş bırakılan satır çizilmez |
+| Align | Header | Variant | `Center` | `Left` = başlık gutter'a dayalı |
+| Item N › Content / Icon | Item 1–8 | RichText · Image | 5 item dolu (Technology we own, Hybrid by design, Proven before production, Enterprise-grade, Connected intelligence) | **Başlık + gövde tek Rich Text:** H3 başlık, altında paragraf(lar); liste, link, kalın da olur. Boş = kart gizli. Icon boşsa kartta `01`, `02`… numarası |
+| Card width (px) | Layout | Number | `420` | Masaüstü kart genişliği |
+| Gap (px) | Layout | Number | `32` | Kartlar arası boşluk |
+| Cards per view (tablet / mobile) | Layout | Number | `1.4` / `1.1` | ≤ 991px / < 768px; küsurat = sıradaki kart kenardan görünür. Tam sayı (2) = peek yok |
+| Arrows + dots | Layout | Boolean | `On` | Karusel modunda; tek kartta gizlenir |
+| Progress line | Layout | Boolean | `On` | Pin modunda kartların altında `01 / 05` + çizgi |
+| Scrub (s) | Motion | Number | `0.5` | Scroll'u takip gecikmesi |
+| Speed | Motion | Number | `1` | Scroll mesafesi çarpanı: >1 yavaş / uzun, <1 hızlı |
+| Snap to cards | Motion | Boolean | `On` | |
+| Refresh priority | Motion | Number | `1` | ScrollTrigger `refreshPriority` |
+| Hover reveal | Hover reveal | Boolean | `On` | Off = kartlar statik, odaklanamaz |
+| Reveal colour | Hover reveal | Text | boş | Token (`--brand-secondary--600`), `var()` ya da renk; boş = temanın rengi |
+| Text colour on reveal | Hover reveal | Text | boş | Boş = Dark'ta yazı rengi değişmez, Light'ta beyaz |
+| Duration (s) | Hover reveal | Number | `0.7` | |
+| Theme | Look | Variant | `Dark` | `Light` = beyaz zemin, açık kart, brand-primary reveal |
+| Section background / Card background / Card border | Look | Text | boş | Token ya da renk; boş = tema |
 
 ## Cookie Consent — Designer prop'ları
 
