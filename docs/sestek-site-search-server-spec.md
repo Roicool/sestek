@@ -22,7 +22,8 @@
 | Marketing site and app share the `www.sestek.com` origin | Index fetch from the Code Component is same-origin. CORS only for `https://*.webflow.io` (staging). |
 | OpenNext-Cloudflare runs the **Node** runtime (`nodejs_compat`) | Do **not** add `export const runtime = "edge"`. Plain route handlers. |
 | Bindings come from the app's `wrangler.json`; the Webflow CLI may regenerate that file (it is git-ignored in the app) | Declare the KV binding there and verify it survives `webflow cloud deploy` — **ASK** the maintainer how they want it tracked/committed. |
-| Sitemap: `https://www.sestek.com/sitemap.xml`, 549 URLs (213 under `/tr`) | Crawl takes ~1–2 min at concurrency 6. Runs in GitHub Actions, **not** in the Worker (subrequest/CPU limits). |
+| **Domains.** The new site lives on **staging `https://rc-sestek.webflow.io`** until launch; production will be **`https://www.sestek.com`** (today that host still serves the old site). | Crawl **staging now**: `SEARCH_SITE=https://rc-sestek.webflow.io` (repo variable). At launch flip the variable to `https://www.sestek.com` — nothing else changes, the index stores site-relative paths only. |
+| Sitemap: `<site>/sitemap.xml`, ~549 URLs (213 under `/tr`) | Crawl takes ~1–2 min at concurrency 6. Runs in GitHub Actions, **not** in the Worker (subrequest/CPU limits). |
 | The Code Component fetches `GET /demos/api/search/index` (`credentials: "omit"`, honours `ETag`/`If-None-Match` via the browser cache, caches the JSON in `sessionStorage` for 1 h) and expects a `SearchIndex` JSON | Only this endpoint is served by this app. Response shape is fixed by `src/lib/search/types.ts` — do not rename fields. |
 
 ---
@@ -206,7 +207,8 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - name: Crawl site → public/search-index.json
-        env: { SITE: ${{ vars.SEARCH_SITE || 'https://www.sestek.com' }} }
+        # staging until launch, then set the repo variable to https://www.sestek.com
+        env: { SITE: ${{ vars.SEARCH_SITE || 'https://rc-sestek.webflow.io' }} }
         run: npx tsx scripts/build-search-index.ts --site "$SITE"
       - name: Push index to KV
         env:
@@ -239,9 +241,11 @@ Notes
 ## 5. How the Code Component consumes the API (nothing to do here, for context)
 
 - The "Site Search" component sits in the Webflow nav; its **Index URL** prop
-  defaults to `/demos/api/search/index` (same-origin on `www.sestek.com`).
-  On staging (`rc-sestek.webflow.io`) the maintainer sets the prop to the
-  full production URL — hence the webflow.io CORS rule in §2.1.
+  defaults to `/demos/api/search/index` (same-origin). That works on staging
+  too **if the Cloud app's staging environment is mounted on
+  `rc-sestek.webflow.io/demos`**; if the app only exists in production, the
+  maintainer sets the prop to the full URL — hence the webflow.io CORS rule
+  in §2.1. Tell the maintainer which of the two applies once deployed.
 - The index is fetched once per session when the palette first opens
   (`credentials: "omit"`), then cached in `sessionStorage` for 1 h; the
   browser's HTTP cache + `ETag` handle the rest. Ranking, locale, preview
@@ -269,6 +273,9 @@ Notes
    reports `X-Search-Index-Source: kv` and real H1 titles.
 5. Tell the maintainer; they open ⌘K on the published site and validate EN +
    `/tr` queries (the component is already in place).
+6. **At launch** (www.sestek.com goes live with the new site): set repo
+   variable `SEARCH_SITE=https://www.sestek.com` (and `SEARCH_INDEX_URL` if
+   it was pointing at staging), run the workflow once. No code change.
 
 ## 7. Acceptance
 

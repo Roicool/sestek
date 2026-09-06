@@ -24,22 +24,24 @@ npm test               # 10 node:test — TR normalizasyon, sıralama, tür kura
 npm run typecheck
 npm run bundle         # dist/site-search.v1.js (~35 KB min, Preact)
 npm run index:sitemap  # ../sitemap.xml'den geçici index (sayfa çekmeden)
-npm run index -- --site https://www.sestek.com   # gerçek tarama (ağ erişimi olan yerde)
+npm run index          # gerçek tarama — varsayılan staging https://rc-sestek.webflow.io (ağ erişimi olan yerde)
+npm run index -- --site https://www.sestek.com   # yayına alındığında (ya da SEARCH_SITE env)
 ```
 
-## Cloud app repo'suna taşıma (diğer agent için)
+Index yalnız site-göreli yollar tutar (`/agentic-ai`, `/tr/...`); staging'den
+production'a geçişte veri değişmez, sadece taranan domain değişir.
 
-1. `src/lib/search`, `src/data`, `src/components/SiteSearch` klasörlerini aynı
-   yollara kopyala; `scripts/` ikisini `scripts/` altına koy.
-2. `package.json`'a: `"searchVersion": "1.0.0"`, devDeps `esbuild`, `tsx`,
-   `preact`; script'ler `search:test`, `search:bundle`, `search:index`,
-   `prebuild: node scripts/bundle-search.mjs`. `bundle-search.mjs` içindeki
-   çıktı yolunu `public/site-search.v${major}.js` yap.
-3. `GET/POST /demos/api/search/index` route'unu, KV binding'ini ve gece
-   çalışan crawl workflow'unu spec'e göre yaz (bu paketin dışında).
-4. Webflow → Site Settings → Custom Code → Footer:
-   `<script defer src="https://www.sestek.com/demos/site-search.v1.js"></script>`;
-   nav'daki arama ikonuna `data-search-trigger`.
+## Nerede kullanılıyor
+
+- **Designer:** `webflow-components/src/SiteSearch.tsx` — "Site Search" Code
+  Component; `src/lib`, `src/data`, `src/components` bu paketten
+  `webflow-components/src/site-search/` altına kopyalanır (motoru burada
+  değiştir, testi burada koştur, sonra kopyayı eşitle).
+- **Cloud app repo'su (diğer agent):** yalnız crawler + tipler
+  (`scripts/build-search-index.ts`, `lib/search/{types,kinds,normalize}.ts`,
+  `data/search-seeds.ts`), index API ve KV — bkz.
+  `docs/sestek-site-search-server-spec.md`. Embed bundle artık kullanılmıyor
+  (`embed.tsx` / `bundle-search.mjs` yalnız bağımsız test için duruyor).
 
 ## Tasarım
 

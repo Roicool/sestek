@@ -27,7 +27,10 @@ import type { SearchDoc, SearchIndex } from "../src/lib/search/types";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const SITE = (opt("--site") || "https://www.sestek.com").replace(/\/$/, "");
+/* Which site to crawl. Staging (rc-sestek.webflow.io) until launch, then
+   www.sestek.com — the index only stores site-relative paths, so switching
+   the domain changes nothing in the data. --site > SEARCH_SITE env > default. */
+const SITE = (opt("--site") || process.env.SEARCH_SITE || "https://rc-sestek.webflow.io").replace(/\/$/, "");
 const SITEMAP = opt("--sitemap");
 const SITEMAP_ONLY = args.includes("--sitemap-only");
 const OUT = resolve(__dirname, "..", opt("--out") || "fixtures-search-index.json");
