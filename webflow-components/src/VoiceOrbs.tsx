@@ -19,8 +19,9 @@
  *      the live site) uses the Sagitone gradient images: neighbours show the
  *      image, the active orb warps it live as a WebGL texture.
  *
- * Behaviour (unchanged from v3.4): 5-orb ladder (centre + 2 + 2), infinite
- * loop via three DOM copies and an invisible ±N jump, transform-only
+ * Behaviour (as v3.4): 5-orb ladder (centre + 2 + 2), infinite loop via
+ * FIVE DOM copies and an invisible ±N re-centre (three copies let rapid
+ * presses hit the end of the track before the jump), transform-only
  * transitions, click/‹ ›/←→ only navigate, playback only via the play
  * button, double-buffered <audio> + AnalyserNode energy, progress ring,
  * captions only on the active orb, arrows aligned to the active title.
@@ -284,8 +285,12 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     if (!root || !track || !viewport || !N) return;
     const ladder = sizes.split(",").map((n) => parseFloat(n) || 0).filter((n) => n > 0);
     if (!ladder.length) ladder.push(220, 150, 104);
-    const els = Array.from(track.children) as HTMLElement[];   // 3N items
-    let pos = N + Math.min(Math.max(0, initial | 0), N - 1);
+    // FIVE copies of the set (voice-orbs.js used three): with two full sets
+    // on either side of the middle copy, rapid ‹ › presses can never reach
+    // the end of the track before the invisible ±N re-centre catches up.
+    const els = Array.from(track.children) as HTMLElement[];   // 5N items
+    const MID = 2 * N;
+    let pos = MID + Math.min(Math.max(0, initial | 0), N - 1);
     const voiceOf = (i: number) => ((i % N) + N) % N;
 
     // audio: double-buffer + blob cache + analyser
@@ -446,15 +451,51 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       });
     };
     const toggle = () => { if (playing) stop(); else play(); };
-    let normalizeTimer = 0;
-    const scheduleNormalize = () => {
-      if (pos >= N && pos < 2 * N) return;
-      clearTimeout(normalizeTimer);
-      normalizeTimer = window.setTimeout(() => { pos += pos < N ? N : -N; activate(); layout(true); }, 620);
+    /* Re-centre by whole sets WITHOUT disturbing an in-flight slide.
+       Every item takes over the CURRENT (mid-transition) transform of the item
+       one set away, and the track compensates by one set width, so the frame
+       is pixel-identical; then the slide continues from there. This replaces
+       the old 620ms timer, which rapid presses kept resetting until the track
+       ran out of copies. */
+    const mtx = (el: Element) => {
+      const m = getComputedStyle(el).transform;
+      if (!m || m === "none") return { x: 0, s: 1 };
+      const v = m.match(/matrix\(([^)]+)\)/);
+      if (!v) return { x: 0, s: 1 };
+      const a = v[1].split(",").map(parseFloat);
+      return { x: a[4] || 0, s: a[0] || 1 };
+    };
+    const recenter = (shift: number) => {
+      const cur = els.map(mtx);                  // current visuals, mid-flight
+      const curTrack = mtx(track).x;
+      const oldInline = els.map((el) => el.style.transform);
+      const oldTrack = track.style.transform;
+      pos += shift;
+      activate();
+      layout(true);                              // new targets, no transition
+      // one-set delta between the new and old item targets (constant)
+      const j = Math.max(shift, 0) + MID;         // an index that has a counterpart
+      const num = (t: string) => { const m = t.match(/translate3d\((-?[\d.]+)px/); return m ? parseFloat(m[1]) : 0; };
+      const D = num(els[j].style.transform) - num(oldInline[j - shift]);
+      const newTrack = track.style.transform;
+      const T = num(newTrack) - num(oldTrack);
+      root.classList.add("vo-no-anim");
+      els.forEach((el, i) => {
+        const src = cur[i - shift];              // the item whose role we take
+        if (src) el.style.transform = "translate3d(" + (src.x + D).toFixed(1) + "px,0,0) scale(" + src.s.toFixed(4) + ")";
+      });
+      track.style.transform = "translate3d(" + (curTrack + T).toFixed(1) + "px,0,0)";
+      void track.offsetWidth;
+      root.classList.remove("vo-no-anim");
+      layout(false);                             // resume the slide to the new targets
     };
     const goTo = (index: number) => {
       if (index === pos || index < 0 || index >= els.length) return;
-      stop(); pos = index; activate(); layout(false); scheduleNormalize();
+      stop();
+      // keep pos inside the middle copy: shift by whole sets first
+      while (index < MID) { recenter(N); index += N; }
+      while (index >= MID + N) { recenter(-N); index -= N; }
+      pos = index; activate(); layout(false);
     };
 
     // wire clicks (delegated, so React re-renders don't matter)
@@ -488,7 +529,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
-      clearTimeout(normalizeTimer); clearTimeout(rT);
+      clearTimeout(rT);
       stop();
       if (currentlyPlaying === ctl) currentlyPlaying = null;
       track.removeEventListener("click", onClick);
@@ -514,7 +555,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
         {procedural
           ? (thumbs[vi] ? <img src={thumbs[vi]} alt="" draggable={false} /> : <div className="vo-ph" style={{ position: "absolute", inset: "0 0 0 0", borderRadius: "9999px", background: "radial-gradient(circle at 35% 30%, #fff 0%, #dcd6f7 45%, #9f95e0 100%)" }} />)
           : (v.img ? <img src={v.img} alt="" draggable={false} crossOrigin="anonymous" /> : null)}
-        <button type="button" className="vo-play" aria-label={"Play " + (v.name || "voice") + " preview"} tabIndex={copy === 1 ? 0 : -1}>{PLAY}{PAUSE}</button>
+        <button type="button" className="vo-play" aria-label={"Play " + (v.name || "voice") + " preview"} tabIndex={copy === 2 ? 0 : -1}>{PLAY}{PAUSE}</button>
       </div>
       <div className="vo-caption">
         <div className="vo-title">{v.name}</div>
@@ -530,7 +571,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
         <>
           <div ref={viewportRef} className="vo-viewport">
             <div ref={trackRef} className="vo-track">
-              {[0, 1, 2].map((copy) => voices.map((v, vi) => renderItem(v, vi, copy)))}
+              {[0, 1, 2, 3, 4].map((copy) => voices.map((v, vi) => renderItem(v, vi, copy)))}
             </div>
           </div>
           <button type="button" className="vo-nav vo-nav--prev" aria-label="Previous voice">{CHEV_L}</button>
