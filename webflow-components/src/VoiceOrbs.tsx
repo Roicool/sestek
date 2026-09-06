@@ -2,8 +2,8 @@
  * VoiceOrbs — voice-sample orb carousel (React port of voice-orbs.js v3.4 +
  * voice-orbs.css v2.7), with two upgrades:
  *
- *   1. VOICES FROM PROPS. Up to six voices are entered by hand in the
- *      Designer (Voice 1–6 groups: name, description, audio URL, optional
+ *   1. VOICES FROM PROPS. Up to ten voices are entered by hand in the
+ *      Designer (Voice 1–10 groups: name, description, audio URL, optional
  *      orb image, optional "#hex,#hex,#hex" colours). An empty name hides
  *      the voice. More voices can be added later by extending the props.
  *
@@ -48,6 +48,10 @@ export interface VoiceOrbsProps {
   v4Name?: string; v4Desc?: string; v4Audio?: string; v4Image?: string; v4Colors?: string;
   v5Name?: string; v5Desc?: string; v5Audio?: string; v5Image?: string; v5Colors?: string;
   v6Name?: string; v6Desc?: string; v6Audio?: string; v6Image?: string; v6Colors?: string;
+  v7Name?: string; v7Desc?: string; v7Audio?: string; v7Image?: string; v7Colors?: string;
+  v8Name?: string; v8Desc?: string; v8Audio?: string; v8Image?: string; v8Colors?: string;
+  v9Name?: string; v9Desc?: string; v9Audio?: string; v9Image?: string; v9Colors?: string;
+  v10Name?: string; v10Desc?: string; v10Audio?: string; v10Image?: string; v10Colors?: string;
 }
 
 type RGB = [number, number, number];
@@ -245,15 +249,18 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   const trackRef = React.useRef<HTMLDivElement>(null);
   const [thumbs, setThumbs] = React.useState<Record<number, string>>({});
 
-  /* Voices from the Voice 1–6 props */
+  /* Voices from the Voice 1–10 props */
+  const P = p as Record<string, unknown>;
+  const propKey = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => [P["v" + n + "Name"], P["v" + n + "Desc"], P["v" + n + "Audio"], P["v" + n + "Image"], P["v" + n + "Colors"]].join("\u0001")).join("\u0002");
   const propVoices = React.useMemo<Voice[]>(() => {
-    const g = (n: number) => ({
-      name: (p as any)["v" + n + "Name"] || "", desc: (p as any)["v" + n + "Desc"] || "",
-      src: (p as any)["v" + n + "Audio"] || "", img: (p as any)["v" + n + "Image"] || "",
-      colors: parseColors((p as any)["v" + n + "Colors"]),
+    const g = (n: number): Voice => ({
+      name: String(P["v" + n + "Name"] || ""), desc: String(P["v" + n + "Desc"] || ""),
+      src: String(P["v" + n + "Audio"] || ""), img: String(P["v" + n + "Image"] || ""),
+      colors: parseColors(P["v" + n + "Colors"] as string | undefined),
     });
-    return [1, 2, 3, 4, 5, 6].map(g).filter((v) => v.name || v.src);
-  }, [p.v1Name, p.v1Desc, p.v1Audio, p.v1Image, p.v1Colors, p.v2Name, p.v2Desc, p.v2Audio, p.v2Image, p.v2Colors, p.v3Name, p.v3Desc, p.v3Audio, p.v3Image, p.v3Colors, p.v4Name, p.v4Desc, p.v4Audio, p.v4Image, p.v4Colors, p.v5Name, p.v5Desc, p.v5Audio, p.v5Image, p.v5Colors, p.v6Name, p.v6Desc, p.v6Audio, p.v6Image, p.v6Colors]);
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g).filter((v) => v.name || v.src);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propKey]);
 
   const voices = propVoices;
   const N = voices.length;

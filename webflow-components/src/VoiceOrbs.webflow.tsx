@@ -2,7 +2,7 @@ import { declareComponent } from "@webflow/react";
 import { props } from "@webflow/data-types";
 import { VoiceOrbs } from "./VoiceOrbs";
 
-const AUDIO = "https://sestek.roicool.com/EN/";
+const AUDIO = "https://sestek.roicool.com/Voices/";
 const IMG = "https://cdn.prod.website-files.com/6a15f6e39b139e2c81103be6/";
 function voice(n: number, d: { name: string; desc: string; file: string; img: string; colors: string }) {
   const g = "Voice " + n;
@@ -19,7 +19,7 @@ export default declareComponent(VoiceOrbs, {
   name: "Voice Orbs",
   description:
     "Ses örneği orb carousel'i — voice-orbs.js v3.4'ün React hali. Sesler " +
-    "Voice 1–6 gruplarından manuel girilir (ad, açıklama, ses URL, renkler; " +
+    "Voice 1–10 gruplarından manuel girilir (ad, açıklama, ses URL, renkler; " +
     "boş ad = gizli). Kart zemini + Sagitone gradient orb görselleri sitedeki " +
     "gibi; aktif orb WebGL ile canlı + ses-reaktif akar. İstersen Procedural " +
     "modda görselsiz, paletten üretilen shader orb'lar. Sonsuz döngü, " +
@@ -54,12 +54,16 @@ export default declareComponent(VoiceOrbs, {
     navOffset: props.Number({ name: "Arrow offset (px)", group: "Look", defaultValue: 230, min: 60, max: 600, tooltip: "‹ › oklarının merkezden uzaklığı" }),
     initial: props.Number({ name: "Start index", group: "Look", defaultValue: 0, min: 0, max: 50 }),
 
-    ...voice(1, { name: "Alloy", desc: "English (American)", file: "af_alloy__en-US.wav", img: "6a9089e4cfa09edf607d5721_02.%20Sagitone%20Gradient-01.jpg", colors: "#fccc40,#29387a,#faf5eb" }),
-    ...voice(2, { name: "Echo", desc: "English (American)", file: "am_echo__en-US.wav", img: "6a9089e49a80bcb5f3fec3ce_05.%20Sagitone%20Gradient-01.jpg", colors: "#fa8c5c,#fdf2eb,#f06b4d" }),
-    ...voice(3, { name: "Liam", desc: "English (American)", file: "am_liam__en-US.wav", img: "6a9089e41644751f6f293fd2_06.%20Sagitone%20Gradient-01.jpg", colors: "#5cb8f2,#fa9e4d,#fcd14d" }),
-    ...voice(4, { name: "River", desc: "English (American)", file: "af_river__en-US.wav", img: "6a9089e31644751f6f293fa7_10.%20Sagitone%20Gradient-01.jpg", colors: "#6b66c7,#fcc74d,#80c7f5" }),
-    ...voice(5, { name: "", desc: "", file: "", img: "", colors: "" }),
-    ...voice(6, { name: "", desc: "", file: "", img: "", colors: "" }),
+    ...voice(1, { name: "Chloe", desc: "English", file: "Chloe_Premium__en-US.wav", img: "6a9089e4cfa09edf607d5721_02.%20Sagitone%20Gradient-01.jpg", colors: "#fccc40,#29387a,#faf5eb" }),
+    ...voice(2, { name: "Debbie", desc: "English", file: "Debbie_Premium__en-US.wav", img: "6a9089e49a80bcb5f3fec3ce_05.%20Sagitone%20Gradient-01.jpg", colors: "#fa8c5c,#fdf2eb,#f06b4d" }),
+    ...voice(3, { name: "James", desc: "English", file: "James_Premium__en-US.wav", img: "6a9089e41644751f6f293fd2_06.%20Sagitone%20Gradient-01.jpg", colors: "#5cb8f2,#fa9e4d,#fcd14d" }),
+    ...voice(4, { name: "Derya", desc: "Turkish", file: "Derya_Premium__tr-TR.wav", img: "6a9089e31644751f6f293fa7_10.%20Sagitone%20Gradient-01.jpg", colors: "#6b66c7,#fcc74d,#80c7f5" }),
+    ...voice(5, { name: "Aysu", desc: "Turkish", file: "Aysu_Premium__tr-TR.wav", img: "6a9089e4cfa09edf607d5721_02.%20Sagitone%20Gradient-01.jpg", colors: "#fccc40,#29387a,#faf5eb" }),
+    ...voice(6, { name: "Emre", desc: "Turkish", file: "Emre_Premium__tr-TR.wav", img: "6a9089e49a80bcb5f3fec3ce_05.%20Sagitone%20Gradient-01.jpg", colors: "#fa8c5c,#fdf2eb,#f06b4d" }),
+    ...voice(7, { name: "Charlotte", desc: "French", file: "Charlotte_Premium__fr-FR.wav", img: "6a9089e41644751f6f293fd2_06.%20Sagitone%20Gradient-01.jpg", colors: "#5cb8f2,#fa9e4d,#fcd14d" }),
+    ...voice(8, { name: "Rima", desc: "Arabic (MSA)", file: "Rima_Premium__ar-SA.wav", img: "6a9089e31644751f6f293fa7_10.%20Sagitone%20Gradient-01.jpg", colors: "#6b66c7,#fcc74d,#80c7f5" }),
+    ...voice(9, { name: "Lujain", desc: "Arabic (Najdi)", file: "Lujain_Premium__ar-NJ.wav", img: "6a9089e4cfa09edf607d5721_02.%20Sagitone%20Gradient-01.jpg", colors: "#fccc40,#29387a,#faf5eb" }),
+    ...voice(10, { name: "", desc: "", file: "", img: "", colors: "" }),
   },
   options: {
     /* WebGL + Web Audio — client-only */
