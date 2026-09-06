@@ -1,7 +1,10 @@
 /*!
- * h-scroll.js v2.1.0
+ * h-scroll.js v2.1.1
  *
  * Changelog
+ * v2.1.1 — slide width is computed against the viewport's CONTENT box (minus
+ *          its own padding), the same box Swiper sizes against, so a Designer
+ *          padding on .hscroll__viewport no longer makes the cards too wide.
  * v2.1.0 — Swiper now OWNS the card width on tablet/mobile: the slide width is
  *          computed from the real viewport, gutter and gap ((content − gutter
  *          − visible gaps) / slidesPerView) and handed to Swiper as
@@ -184,7 +187,14 @@
       function slideWidth(m) {
         var spv  = window.innerWidth < bpM ? spvM : spvT;
         var gaps = Math.max(0, Math.ceil(spv) - 1);
-        var w    = (viewport.clientWidth - m.gutter - gaps * m.gap) / spv;
+        // Swiper's own size is the container's CONTENT box (clientWidth minus
+        // its inline padding) — measure the same box, or a Designer padding
+        // on the viewport makes the slides wider than the room they have.
+        var vs = getComputedStyle(viewport);
+        var content = viewport.clientWidth
+          - (parseFloat(vs.paddingLeft)  || 0)
+          - (parseFloat(vs.paddingRight) || 0);
+        var w    = (content - m.gutter - gaps * m.gap) / spv;
         w = Math.max(0, Math.floor(w * 100) / 100);
         root.style.setProperty("--hscroll-slide-w", w + "px");
         return w;

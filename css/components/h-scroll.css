@@ -1,5 +1,8 @@
 /*!
- * h-scroll.css v2.3.0
+ * h-scroll.css v2.3.1
+ * v2.3.1 — Swiper-mode viewport is content-height (height:auto): a Designer
+ *          h-screen on it made the carousel a screen-tall box with the cards
+ *          centred inside and every vertical padding/margin invisible.
  * v2.3.0 — Swiper mode owns the card completely: width from --hscroll-slide-w
  *          (computed by h-scroll.js v2.1.0), Designer min/max-width, flex-basis
  *          and margins neutralised, desktop min-height dropped, so a touch
@@ -154,7 +157,17 @@
   align-items: center;
   overflow: hidden;
   z-index: 1;
-  min-height: 0;                  /* no pin → drop the ≥992px 100svh (touch iPad) */
+  /*
+   * CONTENT-HEIGHT, not screen-height. The pin needs a viewport-tall box
+   * (100svh at ≥992px, or a Designer h-screen utility) so there is a screen
+   * to hold while the track scrolls; the carousel does not. Keeping 100vh
+   * here left the cards floating in the middle of a screen-tall box and
+   * swallowed every vertical padding/margin the Designer gave the section,
+   * the track or the cards ("my paddings do nothing on tablet"). Height
+   * comes from the content now; spacing is the section's padding.
+   */
+  height: auto;
+  min-height: 0;
   touch-action: pan-y;            /* vertical page scroll stays native */
 }
 
