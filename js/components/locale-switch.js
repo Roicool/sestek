@@ -1,5 +1,5 @@
 /*!
- * locale-switch.js v1.2.0
+ * locale-switch.js v1.3.0
  * Language switcher dropdown for the navbar — wraps Webflow's OWN Locales
  * list without touching its DOM.
  *
@@ -62,6 +62,8 @@
  *
  * Root attributes (all optional):
  *   data-locale-align   "auto" (default) | "left" | "right"
+ *   data-locale-drop    "auto" (default) | "down" | "up" — auto opens UP when
+ *                       there is no room below the trigger and more above
  *   data-locale-hover   "true" → opens on hover (desktop only)  (default false)
  *   data-locale-label-mode  "code" (default, e.g. EN) | "name" (e.g. English)
  *
@@ -72,6 +74,9 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.3.0 — opens UPWARD when there is no room below the trigger and more
+ *          room above (a switcher at the bottom of the mobile menu ran off
+ *          the screen); .is-flip-up on the root, data-locale-drop forces it
  * v1.2.0 — fixes "the locales are visible but unclickable": the first
  *          stacking-context ancestor is temporarily lifted to the panel's
  *          z-index while open (no --ls-z value can escape it from inside),
@@ -184,6 +189,7 @@
     var label     = trigger.querySelector("[data-locale-label]");
     var labelMode = root.getAttribute("data-locale-label-mode") || "code";
     var align     = root.getAttribute("data-locale-align") || "auto";
+    var drop      = root.getAttribute("data-locale-drop") || "auto";
     var hoverOpen = root.getAttribute("data-locale-hover") === "true";
 
     root.__localeSwitchBound = true;
@@ -306,16 +312,34 @@
     }
 
     /* Flip to the trigger's right edge when the panel would run off-screen —
-     * a nav switcher usually sits at the right end of the bar. */
+     * a nav switcher usually sits at the right end of the bar. Likewise flip
+     * UP when there is no room below (a switcher at the bottom of the mobile
+     * menu) and more room above; data-locale-drop forces a direction. */
     function reposition() {
+      var vw = global.innerWidth || document.documentElement.clientWidth;
+      var vh = global.innerHeight || document.documentElement.clientHeight;
+
       if (align === "left" || align === "right") {
         root.classList.toggle("is-align-right", align === "right");
+      } else {
+        root.classList.remove("is-align-right");
+        if (panel.getBoundingClientRect().right > vw - 8) {
+          root.classList.add("is-align-right");
+        }
+      }
+
+      if (drop === "up" || drop === "down") {
+        root.classList.toggle("is-flip-up", drop === "up");
         return;
       }
-      root.classList.remove("is-align-right");
+      root.classList.remove("is-flip-up");          // measure in the default spot
       var rect = panel.getBoundingClientRect();
-      var vw = global.innerWidth || document.documentElement.clientWidth;
-      if (rect.right > vw - 8) root.classList.add("is-align-right");
+      var trig = trigger.getBoundingClientRect();
+      if (rect.bottom > vh - 8) {
+        var below = vh - trig.bottom;
+        var above = trig.top;
+        if (above > below) root.classList.add("is-flip-up");
+      }
     }
 
     function open() {
