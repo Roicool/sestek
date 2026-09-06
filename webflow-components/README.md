@@ -14,6 +14,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Logo Marquee** | `src/LogoMarquee.webflow.tsx` | **CMS'e bağlı** sonsuz logo bandı — `js/components/marquee.js`'in React hali. **Logos slot'una bir Collection List** (Clients → Logo image) bırakılır; component slot'taki `<img>`'leri okuyup gereken sayıda kopya üretir ve kesintisiz kaydırır. Hız, yön, logo boyutu, boşluk; hover'da yumuşak duraklama; drag + momentum (mouse/touch); kenar fade; reduced-motion'da statik. Sıfır bağımlılık. Bkz. [Logo Marquee](#logo-marquee--designer-propları). |
 | **Scroll Tabs** | `src/ScrollTabs.webflow.tsx` | "Agentic CX Suite" scroll-tab bölümü — **masaüstü + tablet/mobil tek component'te**, `scroll-list.js`/`.css`'in React hali, sıfır bağımlılık. ≥ 992px: solda sticky başlık + akordeon sekmeler, sağda kare video panelleri; viewport ortasından geçen panel aktif, sekmeye tıklayınca panel ortaya kayar. ≤ 991px: tek sütun, her sekme başlık + açıklama + buton + kendi videosu. Play/pause, restart, mute kontrolleri (hover'da, dokunmatikte hep görünür). 4 sekmeye kadar. Bkz. [Scroll Tabs](#scroll-tabs--designer-propları). |
 | **Voice Orbs** | `src/VoiceOrbs.webflow.tsx` | Ses örneği orb carousel'i — `voice-orbs.js` v3.4 + `voice-orbs.css` v2.7'nin React hali, iki artıyla: **(1) sesler Designer'dan manuel** — Voice 1–10 prop grupları (ad, açıklama, ses URL, opsiyonel görsel ve renkler; boş ad = gizli; gerekirse grup sayısı artırılır); **(2) kart görünümü ve Sagitone orb görselleri component'in içinde** (sitedeki tasarımla birebir; aktif orb WebGL ile canlı ve ses-reaktif), ayrıca opsiyonel **Procedural** mod: görselsiz, 3 renkli paletten shader ile üretilen orb'lar (küresel gölgeleme, highlight, film greni; tek WebGL context). Sonsuz döngü, transform-only geçişler, double-buffer audio + AnalyserNode, ilerleme halkası, play/pause, ‹ › ve ←/→. Sıfır bağımlılık. Bkz. [Voice Orbs](#voice-orbs--designer-propları). |
+| **Site Search** | `src/SiteSearch.webflow.tsx` | ⌘K **tam sayfa site araması**. Nav'a bırakılan tetikleyici buton (ikon + etiket + ⌘K rozeti; Pill / Icon only) ve body'ye açılan iki sütunlu palet: solda hızlı erişim/sonuçlar, sağda önizleme kartı (Sestek stili, shadow root ile izole). Index'i **Webflow Cloud app**'ten alır (`GET /demos/api/search/index`, bkz. `docs/sestek-site-search-server-spec.md`); sıralama, TR/EN, önizleme tarayıcıda — tuş başına ağ isteği yok. ⌘K / Ctrl+K, `/`, sayfadaki `[data-search-trigger]` elemanları; ↑↓ Enter Esc, focus trap. Asistan yok; boş durumda Demo + İletişim. Motor `/site-search` paketinin kopyası (`src/site-search/`). Bkz. [Site Search](#site-search--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -174,6 +175,35 @@ AnalyserNode ve WebGL dokusu buna bağlı.
 | Arrow offset (px) | Look | Number | `230` | `--vo-nav-offset` |
 | Start index | Look | Number | `0` | Açılışta ortadaki ses |
 | Voice N › Name / Description / Audio URL / Orb image URL / Colors | Voice 1–10 | Text ×5 | Chloe, Debbie, James (English) · Derya, Aysu, Emre (Turkish) · Charlotte (French) · Rima (Arabic MSA) · Lujain (Arabic Najdi) — `sestek.roicool.com/Voices/*.wav`, Sagitone görselleri sırayla | Name boş = ses gizli; Colors yalnız Procedural modda |
+
+## Site Search — Designer prop'ları
+
+Kurulum: component'i **Navbar**'a (ikonun yerine) bırak; palet body'ye kendi
+shadow root'uyla açıldığı için nav'ın transform/autohide'ından etkilenmez.
+Eski `[data-search-trigger]` ikonu kalırsa o da paleti açar (Bind page
+triggers). Index'i Cloud app servis eder; endpoint hazır değilken palet
+"yükleniyor" durumunda kalır, sayfa etkilenmez. Sunucu tarafı bu repoda
+**değil**: sözleşme `docs/sestek-site-search-server-spec.md`.
+
+`src/site-search/` klasörü `/site-search` paketindeki motor + paletin
+kopyasıdır (DevLink bundler yalnız bu paketi görür); motoru değiştirirken
+ikisini birlikte güncelle (`/site-search` testli kaynak).
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Index URL | Data | Text | `/demos/api/search/index` | Cloud app index endpoint'i (same-origin); staging'de tam URL |
+| Locale | Data | Variant | `Auto` | `Auto`: `/tr` yolu ya da `<html lang>` · `en` · `tr` |
+| Site host | Data | Text | `www.sestek.com` | Önizlemede URL'nin başı |
+| Demo link | Empty state | Text | boş | Boş = `/request-a-demo` (TR: `/tr/demo-isteyin`) |
+| Contact link | Empty state | Text | boş | Boş = ikinci CTA yok |
+| Show trigger button | Trigger | Boolean | `On` | Off = yalnız kısayol + sayfa tetikleyicileri |
+| Button style | Trigger | Variant | `Icon + label` | `Pill` · `Icon only` |
+| Button label | Trigger | Text | `Search` | Boş = locale'e göre Search / Ara |
+| Show ⌘K badge | Trigger | Boolean | `On` | Mac'te ⌘ K, diğerlerinde Ctrl K |
+| Bind page triggers | Trigger | Boolean | `On` | `[data-search-trigger]` / `[data-search-open]` tıklamaları |
+| Keyboard shortcuts | Trigger | Boolean | `On` | ⌘K / Ctrl+K, `/` (bir alanda yazmıyorken) |
+
+JS API: `window.__sestekSiteSearch.open() / close() / toggle()`.
 
 ## Performans notları
 
