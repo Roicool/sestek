@@ -1,7 +1,10 @@
 /*!
- * h-scroll.js v2.2.3
+ * h-scroll.js v2.2.4
  *
  * Changelog
+ * v2.2.4 — whole-card slidesPerView keeps the right gutter inside the visible
+ *          band (cards ran flush right on every slide but the last); mobile
+ *          default 1 → 1.1 (a peek of the next card).
  * v2.2.3 — one dot per CARD (Swiper's pagination module renders one per snap
  *          point, so 3 cards got 4 dots); left/right gutter measured
  *          separately so an asymmetric viewport padding no longer leaves the
@@ -44,7 +47,7 @@
  *   always ends with the last card fully inside the gutter.
  *
  *   Tablet & mobile (≤991px) or ANY touch device — the SAME DOM becomes a
- *   Swiper carousel: ~1.4 cards per view on tablet, 1 on mobile.
+ *   Swiper carousel: ~1.4 cards per view on tablet, ~1.1 on mobile (peek).
  *   Gutter + gap are read from the computed CSS (RC tokens), so spacing stays
  *   token-driven. Swiper's own stylesheet is NOT needed — the required core
  *   styles ship inside h-scroll.css under .is-swiper.
@@ -89,7 +92,7 @@
    *   data-hscroll-bp-m      mobile breakpoint in px — below this width the
    *                          mobile slidesPerView applies   (default 768)
    *   data-hscroll-spv-t     slides per view on tablet      (default 1.4)
-   *   data-hscroll-spv-m     slides per view on mobile      (default 1)
+   *   data-hscroll-spv-m     slides per view on mobile      (default 1.1)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
    *   data-hscroll-nav       "false" → no auto arrows/dots in Swiper mode
@@ -131,7 +134,7 @@
     var bp       = num(root, "data-hscroll-bp", 991);
     var bpM      = num(root, "data-hscroll-bp-m", 768);
     var spvT     = num(root, "data-hscroll-spv-t", 1.4);
-    var spvM     = num(root, "data-hscroll-spv-m", 1);
+    var spvM     = num(root, "data-hscroll-spv-m", 1.1);
     var priority = num(root, "data-hscroll-priority", 1);
 
     /**
@@ -228,7 +231,13 @@
         var content = viewport.clientWidth
           - (parseFloat(vs.paddingLeft)  || 0)
           - (parseFloat(vs.paddingRight) || 0);
-        var w    = (content - m.gutter - gaps * m.gap) / spv;
+        // Whole cards (spv 1, 2…) show no peek, so the RIGHT gutter must be
+        // part of the visible band too — otherwise the active card ran flush
+        // to the right edge on every slide but the last. With a fractional
+        // spv the next card's peek reaches the edge by design.
+        var whole = Math.abs(spv - Math.round(spv)) < 0.001;
+        var right = whole ? m.gutterR : 0;
+        var w    = (content - m.gutter - right - gaps * m.gap) / spv;
         w = Math.max(0, Math.floor(w * 100) / 100);
         root.style.setProperty("--hscroll-slide-w", w + "px");
         // Written INLINE on every card, not only as a custom property: an
