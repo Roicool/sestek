@@ -115,10 +115,11 @@ export default declareComponent(HeroTablet, {
     phrase: props.Text({
       name: "Phrase",
       group: "Statement",
-      defaultValue: "Every interaction, [video] better *than the last*",
+      defaultValue: "Every interaction, [video]|better *than the last*",
       tooltip:
-        "Marka renginde vurgulanacak kelimeleri *yıldız* içine al. [video] = " +
-        "masaüstünde videonun morph olup yerleştiği slot'un yeri (mobilde yok sayılır)",
+        "| = satır kır (masaüstünde her satır tek parça kalır, kelime asla " +
+        "satır değiştirmez). *yıldız* = marka rengi. [video] = videonun morph " +
+        "olup yerleştiği slot (mobilde yok sayılır).",
     }),
     description: props.Text({
       name: "Description",
