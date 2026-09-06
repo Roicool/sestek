@@ -1,0 +1,26 @@
+{
+  "name": "sestek-site-search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sestek site search — ranking engine + full-page ⌘K palette + self-mounting embed. Drop-in for the Webflow Cloud app (see README).",
+  "type": "module",
+  "searchVersion": "1.0.0",
+  "scripts": {
+    "test": "tsx --test src/lib/search/rank.test.ts",
+    "typecheck": "tsc --noEmit",
+    "bundle": "node scripts/bundle-search.mjs",
+    "index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only --sitemap ../sitemap.xml --out fixtures-search-index.json",
+    "index": "tsx scripts/build-search-index.ts --out fixtures-search-index.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.24.0",
+    "preact": "^10.24.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}

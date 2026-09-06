@@ -331,6 +331,12 @@ Careers/Kariyer, Page/Sayfa.
 
 ## 7. Frontend delivery
 
+> **The frontend is already written and tested** in the sestek repo:
+> `roicool/sestek → site-search/` (engine + tests, full-page palette, embed,
+> esbuild bundle script, sitemap crawler, fixture index). Copy it as-is per
+> `site-search/README.md`; this section describes what it does and how it
+> is wired. Only the API/KV/workflow (§4) remain to be built here.
+
 - Write once: `src/components/SiteSearch/{SiteSearch.tsx, useSearch.ts,
   styles.ts, embed.tsx}`; engine in `src/lib/search/` shared with the API.
 - **Embed (primary):** `embed.tsx` → esbuild IIFE →
