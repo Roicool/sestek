@@ -10,7 +10,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "deploy": "webflow cloud deploy"
+    "deploy": "webflow cloud deploy",
+    "search:index": "tsx scripts/build-search-index.ts",
+    "search:index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only --sitemap ../sitemap.xml",
+    "search:bundle": "node scripts/bundle-search.mjs",
+    "search:test": "tsx --test src/lib/search/rank.test.ts",
+    "prebuild": "node scripts/bundle-search.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.10",
@@ -23,7 +28,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@webflow/webflow-cli": "^2.2.0",
+    "esbuild": "^0.24.2",
+    "preact": "^10.29.8",
+    "tsx": "^4.23.13",
     "typescript": "^5",
     "wrangler": "^4.86.0"
-  }
+  },
+  "searchVersion": "1.0.0"
 }
