@@ -105,7 +105,7 @@ export function TopBar({
   emoji = "",
   campaignId = "default",
   dismissible = true,
-  rememberDays = 30,
+  rememberDays = 1,
   showOnMobile = true,
   behavior = "Sticky",
   theme = "Brand",

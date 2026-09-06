@@ -19,7 +19,7 @@ export default declareComponent(TopBar, {
 
     campaignId: props.Text({ name: "Campaign id", group: "Dismiss", defaultValue: "default", tooltip: "Cookie'de bu id saklanır. Yeni bir duyuru için id'yi değiştir: önceki barı kapatanlar yenisini görür" }),
     dismissible: props.Boolean({ name: "Dismissible", group: "Dismiss", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Off = × yok, hep görünür" }),
-    rememberDays: props.Number({ name: "Remember (days)", group: "Dismiss", defaultValue: 30, tooltip: "Kapatma ne kadar hatırlansın. 0 = yalnız bu oturum" }),
+    rememberDays: props.Number({ name: "Remember (days)", group: "Dismiss", defaultValue: 1, tooltip: "Kapatma ne kadar hatırlansın. 0 = yalnız bu oturum" }),
 
     showOnMobile: props.Boolean({ name: "Show on mobile", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Off = 768px altında gizli (nav itilmez)" }),
     behavior: props.Variant({ name: "Behavior", group: "Layout", options: ["Sticky", "Scrolls away"], defaultValue: "Sticky", tooltip: "Sticky: en üstte sabit, nav altında kalır · Scrolls away: sayfayla kayar, nav yerine döner" }),
