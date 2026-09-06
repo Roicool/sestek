@@ -10,7 +10,7 @@
  */
 
 export const SEARCH_CSS = `
-:host{all:initial}
+:host{all:initial;font-family:inherit;color:inherit}
 *,*::before,*::after{box-sizing:border-box}
 .sst-search{
   --sst-accent:var(--brand-primary--500,#e5007d);
@@ -22,15 +22,17 @@ export const SEARCH_CSS = `
   --sst-line:var(--border--color-border-page,#e6e5ef);
   --sst-r:var(--radius--lg,20px);
   --sst-rm:var(--radius--md,10px);
-  position:fixed;inset:0;z-index:2147483000;display:flex;align-items:stretch;justify-content:center;
-  padding:clamp(12px,3vh,32px) clamp(12px,3vw,40px);
-  font-family:var(--font--body,inherit);color:var(--sst-text);-webkit-font-smoothing:antialiased;
+  position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;
+  padding:clamp(16px,4vh,48px) clamp(16px,4vw,64px);
+  /* site font: Webflow's --font--primary (fallback --font--body), else the body font through the shadow host */
+  font-family:var(--font--primary,var(--font--body,inherit));color:var(--sst-text);-webkit-font-smoothing:antialiased;
 }
 .sst-search[hidden]{display:none}
-.sst-search__backdrop{position:absolute;inset:0;background:rgba(14,10,30,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);animation:sst-fade .2s ease both}
+/* frosted site behind the panel — the panel leaves a margin so the blur is visible */
+.sst-search__backdrop{position:absolute;inset:0;background:rgba(18,12,40,.42);-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2);animation:sst-fade .22s ease both}
 
 /* ── Panel ─────────────────────────────────────────────────── */
-.sst-search__panel{position:relative;width:min(var(--container--2xl,1280px),100%);height:100%;display:grid;grid-template-rows:auto 1fr auto;background:var(--sst-bg);border-radius:var(--sst-r);box-shadow:0 40px 100px -30px rgba(20,10,50,.5),0 0 0 1px rgba(255,255,255,.4) inset;overflow:hidden;animation:sst-pop .26s cubic-bezier(.22,1,.36,1) both}
+.sst-search__panel{position:relative;width:min(var(--container--2xl,1240px),100%);height:min(100%,880px);display:grid;grid-template-rows:auto 1fr auto;background:var(--sst-bg);border-radius:var(--sst-r);box-shadow:0 40px 100px -30px rgba(20,10,50,.55),0 0 0 1px rgba(255,255,255,.35) inset;overflow:hidden;animation:sst-pop .26s cubic-bezier(.22,1,.36,1) both}
 
 /* ── Header: eyebrow + search bar ──────────────────────────── */
 .sst-search__head{padding:clamp(16px,2.4vw,28px) clamp(16px,2.4vw,32px) clamp(12px,1.6vw,20px);border-bottom:1px solid var(--sst-line)}
@@ -49,7 +51,13 @@ export const SEARCH_CSS = `
 .sst-search__list-col{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:clamp(14px,2vw,26px) clamp(12px,1.8vw,24px) clamp(14px,2vw,26px) clamp(16px,2.4vw,32px)}
 .sst-search__label{margin:0 0 4px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:var(--font-weight--semibold,600);color:var(--sst-text)}
 .sst-search__hint{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--sst-text-muted)}
-.sst-search__list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sst-search__list{display:flex;flex-direction:column;gap:6px}
+.sst-search__group{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sst-search__group--quick{gap:2px;margin-bottom:14px}
+.sst-search__group-label{margin:0 0 4px;padding:0 14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:var(--font-weight--semibold,600);color:var(--sst-text-muted)}
+.sst-search__group--quick .sst-search__opt{padding:8px 12px;grid-template-columns:34px minmax(0,1fr) auto;gap:12px}
+.sst-search__group--quick .sst-search__chip{width:34px;height:34px;border-radius:9px;font-size:10px}
+.sst-search__group--quick .sst-search__title{margin-top:0;font-size:15.5px}
 .sst-search__opt{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--sst-rm);border:1px solid transparent;text-decoration:none;color:inherit;cursor:pointer}
 .sst-search__opt::before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--sst-accent);opacity:0;transition:opacity .15s}
 .sst-search__opt[aria-selected="true"]{background:var(--sst-soft);border-color:color-mix(in srgb,var(--sst-accent) 18%,var(--sst-line))}
@@ -65,6 +73,10 @@ export const SEARCH_CSS = `
 .sst-search__opt[aria-selected="true"] .sst-search__arrow{opacity:1}
 
 .sst-search__preview{position:relative;min-height:0;overflow:hidden;border-left:1px solid var(--sst-line);background:linear-gradient(160deg,var(--sst-soft) 0%,var(--sst-bg) 55%,color-mix(in srgb,var(--sst-accent) 8%,var(--sst-bg)) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(20px,3vw,40px)}
+/* image area: page's own og:image, else the component's preview image */
+.sst-search__pv-media{position:relative;z-index:1;flex:0 1 auto;width:100%;min-height:0;max-height:48%;aspect-ratio:16/10;margin:0 0 auto;border-radius:var(--sst-rm);overflow:hidden;background:var(--sst-soft);box-shadow:0 24px 50px -30px rgba(20,10,50,.45),0 0 0 1px rgba(255,255,255,.5) inset}
+.sst-search__pv-media img{display:block;width:100%;height:100%;object-fit:cover;animation:sst-fade .3s ease both}
+.sst-search__pv-media + *{margin-top:22px}
 .sst-search__preview::before{content:"";position:absolute;right:-12%;top:-18%;width:60%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--sst-accent) 22%,transparent) 0%,transparent 70%);pointer-events:none}
 .sst-search__preview::after{content:"";position:absolute;right:-6%;bottom:-24%;width:52%;aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--sst-accent) 22%,transparent);pointer-events:none}
 .sst-search__pv-chip{position:relative;display:inline-flex;align-items:center;padding:7px 12px;border-radius:var(--radius--full,999px);background:var(--sst-bg);border:1px solid var(--sst-line);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--sst-accent);margin-bottom:18px}

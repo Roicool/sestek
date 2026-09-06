@@ -85,3 +85,15 @@ test("ranking 500 docs stays well under 16ms", () => {
   const per = (performance.now() - t0) / 20;
   assert.ok(per < 16, `rank took ${per.toFixed(2)}ms`);
 });
+
+test("quick links parse into groups; {contact} drops without a href", async () => {
+  const { parseQuickLinks, defaultQuickLinks } = await import("../../data/quick-links");
+  const g = parseQuickLinks("A | One | /one | sum\nA | Two | /two\nB | Contact | {contact}\n# skip", "en");
+  assert.deepEqual(g.map((x) => x.label), ["A"]);
+  assert.equal(g[0].items.length, 2);
+  assert.equal(g[0].items[0].summary, "sum");
+  const withContact = parseQuickLinks("B | Contact | {contact}", "en", "/contact");
+  assert.equal(withContact[0].items[0].path, "/contact");
+  assert.ok(defaultQuickLinks("tr").length >= 4);
+  assert.ok(defaultQuickLinks("en").flatMap((x) => x.items).every((d) => d.path.startsWith("/")));
+});

@@ -41,7 +41,25 @@ export default declareComponent(SiteSearch, {
       name: "Contact link",
       group: "Empty state",
       defaultValue: "",
-      tooltip: "Boş = ikinci CTA gösterilmez",
+      tooltip: "Boş = ikinci CTA ve hızlı erişimdeki İletişim satırı gösterilmez",
+    }),
+    quickLinksEn: props.Text({
+      name: "Quick links (EN)",
+      group: "Quick access",
+      defaultValue: "",
+      tooltip:
+        "Yazmadan önce solda listelenen sayfalar. Kayıtları ; ile ayır: Grup | Başlık | /yol | özet | görsel URL (son ikisi opsiyonel). Boş = Products / Solutions / Resources / Company hazır listesi. {contact} = Contact link",
+    }),
+    quickLinksTr: props.Text({
+      name: "Quick links (TR)",
+      group: "Quick access",
+      defaultValue: "",
+      tooltip: "TR sayfalar için aynı format. Boş = Ürünler / Çözümler / Kaynaklar / Kurumsal hazır listesi",
+    }),
+    previewImage: props.Image({
+      name: "Preview image",
+      group: "Quick access",
+      tooltip: "Sağ sütundaki görsel alanı; sayfanın kendi og:image'ı yoksa bu gösterilir. Boş = sitedeki Sagitone gradient",
     }),
     showButton: props.Boolean({
       name: "Show trigger button",
@@ -54,8 +72,9 @@ export default declareComponent(SiteSearch, {
     buttonStyle: props.Variant({
       name: "Button style",
       group: "Trigger",
-      options: ["Icon + label", "Pill", "Icon only"],
-      defaultValue: "Icon + label",
+      options: ["Chip", "Pill", "Icon only"],
+      defaultValue: "Chip",
+      tooltip: "Chip = nav'daki locale dropdown chip'iyle birebir (2rem, #e1e1e1, hover #d7d7d7)",
     }),
     buttonLabel: props.Text({
       name: "Button label",
@@ -66,7 +85,7 @@ export default declareComponent(SiteSearch, {
     showKbd: props.Boolean({
       name: "Show ⌘K badge",
       group: "Trigger",
-      defaultValue: true,
+      defaultValue: false,
       trueLabel: "On",
       falseLabel: "Off",
     }),

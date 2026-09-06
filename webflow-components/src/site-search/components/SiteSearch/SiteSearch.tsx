@@ -16,6 +16,7 @@
 import * as React from "react";
 import { MESSAGES } from "../../lib/search/messages";
 import type { RankedDoc, SearchDoc, SearchLocale } from "../../lib/search/types";
+import { DEFAULT_PREVIEW_IMAGE, defaultQuickLinks, type QuickGroup } from "../../data/quick-links";
 import { useSearch } from "./useSearch";
 
 export interface SiteSearchProps {
@@ -28,6 +29,10 @@ export interface SiteSearchProps {
   contactHref?: string;
   /** Shown in the preview column under the title, e.g. "www.sestek.com" */
   siteHost?: string;
+  /** Idle-state groups (before typing). Default: curated hub pages per locale. */
+  quickLinks?: QuickGroup[];
+  /** Preview visual when the active page has no image of its own. "" = none. */
+  previewImage?: string;
   /** Called instead of location.assign when set (e.g. SPA router) */
   onNavigate?: (doc: SearchDoc) => void;
   /** Render <style>{css}</style> inside the component (app surface). */
@@ -51,19 +56,27 @@ function Highlight({ doc }: { doc: RankedDoc | SearchDoc }) {
   return <>{out}</>;
 }
 
-export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", onNavigate, inlineCss }: SiteSearchProps) {
+export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", quickLinks, previewImage = DEFAULT_PREVIEW_IMAGE, onNavigate, inlineCss }: SiteSearchProps) {
   const t = MESSAGES[locale] || MESSAGES.en;
-  const { query, setQuery, debounced, results, popular, status, load } = useSearch({ indexUrl, locale });
+  const { query, setQuery, debounced, results, status, load } = useSearch({ indexUrl, locale });
   const [active, setActive] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
-  const listRef = React.useRef<HTMLUListElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
   const openerRef = React.useRef<Element | null>(null);
 
+  const groups = React.useMemo<QuickGroup[]>(
+    () => (quickLinks && quickLinks.length ? quickLinks : defaultQuickLinks(locale, contactHref)),
+    [quickLinks, locale, contactHref],
+  );
+  const quick = React.useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
   const searching = debounced.trim().length > 0;
-  const showing: SearchDoc[] = searching ? results : popular;
+  /* idle: curated groups (index not needed); typing: ranked index results */
+  const showing: SearchDoc[] = searching ? results : quick;
   const isEmpty = status === "ready" && searching && results.length === 0;
   const current = showing[Math.min(active, Math.max(0, showing.length - 1))];
+  const media = current ? current.image || previewImage : previewImage;
 
   /* open: load index, remember opener, focus input, lock scroll; close: restore */
   React.useEffect(() => {
@@ -156,29 +169,40 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
 
         <div className="sst-search__body">
           <div className="sst-search__list-col">
-            {status === "loading" && !showing.length && (
+            {searching && status === "loading" && (
               <div aria-live="polite" aria-label={t.loading}>{[0, 1, 2, 3, 4].map((i) => <div key={i} className="sst-search__skel" />)}</div>
             )}
-            {status === "error" && <div className="sst-search__status">{t.empty}</div>}
+            {searching && status === "error" && <div className="sst-search__status">{t.empty}</div>}
             {showing.length > 0 && (
               <>
                 <p className="sst-search__label">{searching ? t.results : t.quick}</p>
                 <p className="sst-search__hint">{searching ? t.resultsHint : t.quickHint}</p>
-                <ul ref={listRef} id={listId} className="sst-search__list" role="listbox" aria-label={t.results}>
-                  {showing.map((d, i) => (
-                    <li key={d.path} role="presentation">
-                      <a id={listId + "-" + i} role="option" aria-selected={i === active} className="sst-search__opt" tabIndex={-1} onMouseEnter={() => setActive(i)} {...link(d)}>
-                        <span className="sst-search__chip" aria-hidden="true">{KIND_ABBR[d.kind] || "PG"}</span>
-                        <span className="sst-search__text">
-                          <span className="sst-search__eyeline"><b>{t.kinds[d.kind] || d.kind}</b><span>{d.path}</span></span>
-                          <span className="sst-search__title"><Highlight doc={d} /></span>
-                          {d.summary && <span className="sst-search__sum">{d.summary}</span>}
-                        </span>
-                        <span className="sst-search__arrow" aria-hidden="true">{ARROW}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <div ref={listRef} id={listId} className="sst-search__list" role="listbox" aria-label={searching ? t.results : t.quick}>
+                  {(searching ? [{ label: "", items: showing }] : groups).map((g, gi) => {
+                    const offset = searching ? 0 : groups.slice(0, gi).reduce((n, x) => n + x.items.length, 0);
+                    return (
+                      <ul key={g.label || "results"} className={"sst-search__group" + (searching ? "" : " sst-search__group--quick")} role="group" aria-label={g.label || undefined}>
+                        {g.label && <li className="sst-search__group-label" role="presentation">{g.label}</li>}
+                        {g.items.map((d, k) => {
+                          const i = offset + k;
+                          return (
+                            <li key={d.path} role="presentation">
+                              <a id={listId + "-" + i} role="option" aria-selected={i === active} className="sst-search__opt" tabIndex={-1} onMouseEnter={() => setActive(i)} {...link(d)}>
+                                <span className="sst-search__chip" aria-hidden="true">{KIND_ABBR[d.kind] || "PG"}</span>
+                                <span className="sst-search__text">
+                                  {searching && <span className="sst-search__eyeline"><b>{t.kinds[d.kind] || d.kind}</b><span>{d.path}</span></span>}
+                                  <span className="sst-search__title"><Highlight doc={d} /></span>
+                                  {searching && d.summary && <span className="sst-search__sum">{d.summary}</span>}
+                                </span>
+                                <span className="sst-search__arrow" aria-hidden="true">{ARROW}</span>
+                              </a>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })}
+                </div>
               </>
             )}
             {isEmpty && (
@@ -194,6 +218,11 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
           </div>
 
           <aside className="sst-search__preview" aria-live="polite">
+            {media && (
+              <div className="sst-search__pv-media" aria-hidden="true">
+                <img key={media} src={media} alt="" loading="lazy" decoding="async" />
+              </div>
+            )}
             {current ? (
               <>
                 <span className="sst-search__pv-chip">{t.kinds[current.kind] || current.kind}</span>

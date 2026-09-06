@@ -251,6 +251,11 @@ Notes
   body shows the empty state.
 - Changing field names or the `docs[]` shape breaks the published component;
   additive fields are fine.
+- `doc.image` (optional, absolute URL) feeds the preview column's image
+  area; the crawler fills it from `og:image`. Without it the component shows
+  its own default visual, so the field is nice-to-have, not required.
+- Before the visitor types, the palette lists curated quick links that ship
+  inside the component — the index is only used once a query is entered.
 
 ---
 

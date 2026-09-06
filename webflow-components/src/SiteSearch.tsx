@@ -24,7 +24,10 @@ import { createPortal } from "react-dom";
 import { SiteSearch as Palette, useSearchHotkey } from "./site-search/components/SiteSearch/SiteSearch";
 import { SEARCH_CSS } from "./site-search/components/SiteSearch/styles";
 import { MESSAGES } from "./site-search/lib/search/messages";
+import { DEFAULT_PREVIEW_IMAGE, parseQuickLinks } from "./site-search/data/quick-links";
 import type { SearchLocale } from "./site-search/lib/search/types";
+
+type ImageValue = { src: string; alt?: string };
 
 export interface SiteSearchProps {
   indexUrl?: string;
@@ -32,6 +35,9 @@ export interface SiteSearchProps {
   demoHref?: string;
   contactHref?: string;
   siteHost?: string;
+  quickLinksEn?: string;
+  quickLinksTr?: string;
+  previewImage?: ImageValue;
   showButton?: boolean;
   buttonLabel?: string;
   showKbd?: boolean;
@@ -46,14 +52,30 @@ function detectLocale(): SearchLocale {
   return (document.documentElement.lang || "").toLowerCase().startsWith("tr") ? "tr" : "en";
 }
 
+/*
+ * Trigger = the same chip as the nav's locale switch (css/components/
+ * locale-switch.css v1.3: 2rem tall, #e1e1e1 → #d7d7d7 on hover, 13px/500,
+ * .02em, 15px icon, .375rem gap, no border). Same --ls-* custom properties,
+ * so whatever the site overrides on [data-locale-switch] applies here too
+ * when set on :root / the navbar.
+ */
 const BTN_CSS = `
-.ssb{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:var(--radius--full,999px);background:transparent;color:inherit;font:inherit;font-size:var(--text--sm,.875rem);font-weight:var(--font-weight--medium,500);cursor:pointer;line-height:1;transition:background .2s ease,color .2s ease}
-.ssb:hover{background:var(--surface--light,rgba(120,100,220,.10))}
-.ssb--pill{background:var(--surface--light,#eeebf8);color:var(--color-text--base,#111);padding:9px 14px}
-.ssb--pill:hover{background:var(--surface--muted,#e6e3f3)}
-.ssb--icon{padding:8px}
-.ssb svg{width:20px;height:20px;flex:none}
-.ssb kbd{font:inherit;font-size:11px;font-weight:600;padding:3px 6px;border-radius:6px;border:1px solid var(--border--color-border-page,rgba(0,0,0,.12));background:var(--surface--base,rgba(255,255,255,.6));color:var(--color-text--muted,#777)}
+:host{all:initial;display:inline-block;font-family:inherit;color:inherit;line-height:0}
+*,*::before,*::after{box-sizing:border-box}
+.ssb{
+  --ls-fg:rgba(23,21,31,.78);--ls-fg-strong:var(--color-text--base,#17151f);
+  --ls-bg:#e1e1e1;--ls-bg-hover:#d7d7d7;--ls-border:transparent;--ls-size:2rem;
+  display:inline-flex;align-items:center;justify-content:center;gap:.375rem;height:var(--ls-size);padding:0 .5625rem;
+  border:1px solid var(--ls-border);border-radius:var(--radius--full,9999px);background:var(--ls-bg);color:var(--ls-fg);
+  font-family:var(--font--primary,inherit);font-size:.8125rem;font-weight:var(--font-weight--medium,500);line-height:0;letter-spacing:.02em;
+  cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:color .18s ease,background .18s ease,border-color .18s ease}
+.ssb:hover{color:var(--ls-fg-strong);background:var(--ls-bg-hover)}
+.ssb:focus-visible{outline:2px solid var(--ls-fg-strong);outline-offset:2px}
+.ssb>*{flex:0 0 auto;display:flex;align-items:center;justify-content:center;line-height:1}
+.ssb svg{width:.9375rem;height:.9375rem;display:block}
+.ssb--pill{--ls-bg:var(--surface--light,#eeebf8);--ls-bg-hover:var(--surface--muted,#e6e3f3);--ls-size:2.25rem;padding:0 .875rem;font-size:.875rem}
+.ssb--icon{width:var(--ls-size);padding:0}
+.ssb kbd{font:inherit;font-size:.625rem;font-weight:600;letter-spacing:.04em;padding:0 .3125rem;height:1.125rem;border-radius:.375rem;background:rgba(255,255,255,.7);color:var(--ls-fg);opacity:.85}
 `;
 
 export function SiteSearch({
@@ -62,10 +84,13 @@ export function SiteSearch({
   demoHref = "",
   contactHref = "",
   siteHost = "www.sestek.com",
+  quickLinksEn = "",
+  quickLinksTr = "",
+  previewImage,
   showButton = true,
   buttonLabel = "Search",
-  showKbd = true,
-  buttonStyle = "Icon + label",
+  showKbd = false,
+  buttonStyle = "Chip",
   bindPageTriggers = true,
   hotkeys = true,
 }: SiteSearchProps) {
@@ -117,6 +142,12 @@ export function SiteSearch({
   const demo = demoHref || (loc === "tr" ? "/tr/demo-isteyin" : "/request-a-demo");
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const cls = "ssb" + (buttonStyle === "Pill" ? " ssb--pill" : buttonStyle === "Icon only" ? " ssb--icon" : "");
+  const quickText = (loc === "tr" ? quickLinksTr : quickLinksEn).trim();
+  const quickLinks = React.useMemo(
+    () => (quickText ? parseQuickLinks(quickText, loc, contactHref || undefined) : undefined),
+    [quickText, loc, contactHref],
+  );
+  const pvImage = previewImage && previewImage.src ? previewImage.src : DEFAULT_PREVIEW_IMAGE;
 
   return (
     <>
@@ -129,7 +160,7 @@ export function SiteSearch({
         </button>
       )}
       {portal && createPortal(
-        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} />,
+        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} quickLinks={quickLinks} previewImage={pvImage} />,
         portal,
       )}
     </>

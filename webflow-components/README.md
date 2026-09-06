@@ -181,8 +181,12 @@ AnalyserNode ve WebGL dokusu buna bağlı.
 Kurulum: component'i **Navbar**'a (ikonun yerine) bırak; palet body'ye kendi
 shadow root'uyla açıldığı için nav'ın transform/autohide'ından etkilenmez.
 Eski `[data-search-trigger]` ikonu kalırsa o da paleti açar (Bind page
-triggers). Index'i Cloud app servis eder; endpoint hazır değilken palet
-"yükleniyor" durumunda kalır, sayfa etkilenmez. Sunucu tarafı bu repoda
+triggers). Palet açılışta boş değildir: solda gruplu hızlı erişim listesi
+(component'in içinde, index'e bağlı değil), sağda görsel + önizleme kartı.
+Index'i Cloud app servis eder; endpoint hazır değilken hızlı erişim çalışır,
+yazınca "yükleniyor"/boş durumu görünür, sayfa etkilenmez. Palet yazı tipini
+sitenin `--font--primary` değişkeninden (yoksa body fontundan) alır; arkadaki
+sayfa blur'lanır. Sunucu tarafı bu repoda
 **değil**: sözleşme `docs/sestek-site-search-server-spec.md`.
 
 `src/site-search/` klasörü `/site-search` paketindeki motor + paletin
@@ -195,11 +199,13 @@ ikisini birlikte güncelle (`/site-search` testli kaynak).
 | Locale | Data | Variant | `Auto` | `Auto`: `/tr` yolu ya da `<html lang>` · `en` · `tr` |
 | Site host | Data | Text | `www.sestek.com` | Önizlemede URL'nin başı |
 | Demo link | Empty state | Text | boş | Boş = `/request-a-demo` (TR: `/tr/demo-isteyin`) |
-| Contact link | Empty state | Text | boş | Boş = ikinci CTA yok |
+| Contact link | Empty state | Text | boş | Boş = ikinci CTA ve hızlı erişimdeki İletişim satırı yok |
+| Quick links (EN) / (TR) | Quick access | Text | boş | Yazmadan önce solda listelenen gruplu sayfalar. Boş = hazır liste (Products · Solutions · Resources · Company / Ürünler · Çözümler · Kaynaklar · Kurumsal, 22 sayfa). Format, `;` ile ayrılmış kayıtlar: `Grup \| Başlık \| /yol \| özet \| görsel URL` (son ikisi opsiyonel), `{contact}` = Contact link |
+| Preview image | Quick access | Image | Sagitone gradient | Sağ sütunun üstündeki görsel; sayfanın kendi `og:image`'ı (index'ten) varsa o gösterilir |
 | Show trigger button | Trigger | Boolean | `On` | Off = yalnız kısayol + sayfa tetikleyicileri |
-| Button style | Trigger | Variant | `Icon + label` | `Pill` · `Icon only` |
+| Button style | Trigger | Variant | `Chip` | `Chip` = nav'daki locale switch chip'iyle birebir (2rem, #e1e1e1 → #d7d7d7, 13px/500) · `Pill` · `Icon only` |
 | Button label | Trigger | Text | `Search` | Boş = locale'e göre Search / Ara |
-| Show ⌘K badge | Trigger | Boolean | `On` | Mac'te ⌘ K, diğerlerinde Ctrl K |
+| Show ⌘K badge | Trigger | Boolean | `Off` | Mac'te ⌘ K, diğerlerinde Ctrl K |
 | Bind page triggers | Trigger | Boolean | `On` | `[data-search-trigger]` / `[data-search-open]` tıklamaları |
 | Keyboard shortcuts | Trigger | Boolean | `On` | ⌘K / Ctrl+K, `/` (bir alanda yazmıyorken) |
 

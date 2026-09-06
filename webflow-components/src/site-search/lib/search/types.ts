@@ -24,6 +24,8 @@ export interface SearchDoc {
   keywords?: string[];
   /** 0–100 curated boost, default 0 */
   priority?: number;
+  /** Absolute image URL for the preview column (og:image from the crawl, or curated) */
+  image?: string;
 }
 
 export interface SearchIndex {

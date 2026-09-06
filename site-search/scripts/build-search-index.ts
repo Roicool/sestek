@@ -75,6 +75,8 @@ async function fetchDoc(path: string): Promise<SearchDoc> {
     const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']*)["'][^>]*name=["']description["']/i);
     const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]*content=["']([^"']*)["']/i);
+    const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]*content=["']([^"']*)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']*)["'][^>]*property=["']og:image["']/i);
     const lang = html.match(/<html[^>]+lang=["']([a-z]{2})/i);
     const firstP = html.replace(/<(nav|header|footer|script|style)[\s\S]*?<\/\1>/gi, "").match(/<p[^>]*>([\s\S]*?)<\/p>/i);
     const t = strip((h1 && h1[1]) || (title && title[1]) || "").replace(/\s*[|–-]\s*Sestek\s*$/i, "");
@@ -84,6 +86,7 @@ async function fetchDoc(path: string): Promise<SearchDoc> {
       title: t || base.title,
       summary,
       locale: lang && lang[1].toLowerCase() === "tr" ? "tr" : base.locale,
+      ...(ogImage && /^https?:\/\//.test(ogImage[1]) ? { image: ogImage[1] } : {}),
     };
   } catch {
     return base;
