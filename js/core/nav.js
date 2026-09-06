@@ -1,11 +1,22 @@
 /*!
- * nav.js v2.7.4
+ * nav.js v2.7.5
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.7.5 — fix mobile menu not scrollable on Lenis pages: opening the menu
+ *           stops Lenis so the page behind stays put, but a STOPPED Lenis
+ *           calls preventDefault() on every wheel/touchmove it sees at the
+ *           document — including the ones inside the fixed full-screen menu —
+ *           so a long level-0 list or an injected sub-panel could not be
+ *           scrolled by finger or wheel at all (overflow-y:auto was there,
+ *           the gesture never reached it). The only exit Lenis honours is a
+ *           `data-lenis-prevent` element on the event path, so the mobile
+ *           menu now carries that attribute (set at init, no Webflow change
+ *           needed) and its screens get overscroll-behavior:contain so a
+ *           scroll that hits the end doesn't chain into the page.
  * v2.7.4 — fix mega-menus clipped by a few pixels at the bottom: the panel was
  *           flipped to position:relative to be measured, which drops its block
  *           formatting context, so a vertical margin on any descendant at the
@@ -722,6 +733,20 @@
     if (mobileMenu) {
       mobileMenu.setAttribute("aria-hidden", "true");
       mobileMenu.inert = true; // belt-and-suspenders: aria-hidden alone doesn't block Tab focus
+      // Lenis must leave gestures inside the menu alone. While the menu is
+      // open Lenis is STOPPED (see openMobileMenu), and a stopped Lenis
+      // preventDefault()s every wheel/touchmove reaching the document unless
+      // a `data-lenis-prevent` element sits on the event path — without this
+      // the menu's own overflow-y:auto screens simply could not be scrolled.
+      // Scroll chaining is contained so reaching the end of a long list
+      // doesn't hand the gesture to the (locked) page behind.
+      mobileMenu.setAttribute("data-lenis-prevent", "");
+      Array.prototype.forEach.call(
+        mobileMenu.querySelectorAll(".nav__mobile-screen, [data-nav-mobile-sub]"),
+        function (screen) {
+          if (!screen.style.overscrollBehavior) screen.style.overscrollBehavior = "contain";
+        }
+      );
       gsap.set(mobileMenu, { opacity: 0, y: 12 });
     }
 

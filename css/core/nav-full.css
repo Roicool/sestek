@@ -726,6 +726,7 @@
   overflow-y : auto;
   flex-shrink: 0;
   -webkit-overflow-scrolling : touch;
+  overscroll-behavior : contain; /* end of list must not scroll the locked page behind */
   padding    : 0.75rem 0;
 }
 
