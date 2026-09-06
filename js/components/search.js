@@ -1,5 +1,5 @@
 /*!
- * search.js v1.4.0
+ * search.js v1.5.0
  * Full-site search overlay — click a trigger to blur the whole page behind
  * a frosted panel, type to filter blog posts client-side (no API call).
  *
@@ -78,6 +78,11 @@
  *
  * Scroll is locked while open — uses Sestek.stopScroll/startScroll (Lenis)
  * if present, plus a `.search-lock` class on <html> as a CSS fallback.
+ * A STOPPED Lenis preventDefault()s every wheel/touchmove reaching the
+ * document unless a `data-lenis-prevent` element sits on the event path,
+ * which would make the results list impossible to scroll (especially on
+ * touch). search.js therefore stamps `data-lenis-prevent` on the overlay
+ * itself at init — you don't need to add it in Webflow.
  *
  * CSS: css/components/search.css
  * https://github.com/roicool/sestek
@@ -415,6 +420,15 @@
     });
 
     overlay.setAttribute("aria-hidden", "true");
+
+    // Lenis must leave gestures inside the overlay alone. While the overlay
+    // is open Lenis is STOPPED (see open()), and a stopped Lenis swallows
+    // every wheel/touchmove on the document unless a `data-lenis-prevent`
+    // element is on the event path — without this the results grid's own
+    // overflow-y:auto could not be scrolled (mobile especially). The CSS
+    // pairs this with overscroll-behavior:contain so hitting the end of the
+    // list doesn't hand the gesture to the locked page behind.
+    overlay.setAttribute("data-lenis-prevent", "");
   }
 
   global.Sestek = global.Sestek || {};
