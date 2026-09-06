@@ -1,8 +1,10 @@
 /*!
- * h-scroll.css v2.4.0
- * v2.4.0 — Swiper-mode card is forced to a single vertical column (a 12-col
- *          Designer grid overflowed a ~300px slide and hid the next card's
- *          peek). Styles for the arrows + dots h-scroll.js v2.2.0 injects.
+ * h-scroll.css v2.4.3
+ * v2.4.3 — fallback mobile default 1.1 (peek), matching h-scroll.js v2.2.4.
+ * v2.4.2 — fallback mobile default 1 card, matching h-scroll.js v2.2.2.
+ * v2.4.1 — card inner layout is the Designer's again (no forced flex column);
+ *          the slide width is written inline by h-scroll.js v2.2.1.
+ * v2.4.0 — styles for the arrows + dots h-scroll.js v2.2.0 injects.
  * v2.3.1 — Swiper-mode viewport is content-height (height:auto): a Designer
  *          h-screen on it made the carousel a screen-tall box with the cards
  *          centred inside and every vertical padding/margin invisible.
@@ -16,7 +18,7 @@
  *
  * Desktop (≥992px) : JS pins the section and translates .hscroll__track on x.
  * Tablet & mobile  : h-scroll.js turns the SAME DOM into a Swiper carousel
- * (≤991px)           (~1.4 cards on tablet, ~1.2 on mobile). The required
+ * (≤991px)           (~1.4 cards on tablet, ~1.1 on mobile). The required
  *                    Swiper core styles ship below under .is-swiper — the
  *                    Swiper stylesheet is NOT loaded separately.
  * Fallback         : before JS runs, or if Swiper fails to load, or under
@@ -133,9 +135,9 @@
 
 @media (max-width: 767px) {
   [data-hscroll]:not(.is-swiper) .hscroll__card {
-    /* mobil: 1 tam kart + 1 gap + 0.2 bleed */
+    /* mobil: 1 kart + 0.1 peek (default) — data-hscroll-spv-m */
     width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
-                / var(--hscroll-spv-m, 1.2));
+                / var(--hscroll-spv-m, 1.1));
   }
 }
 
@@ -204,17 +206,10 @@
   position: relative;
   height: auto;                   /* equal-height cards via flex stretch */
   transition-property: transform;
-  /*
-   * ONE COLUMN. The Designer card is typically a multi-column grid
-   * (grid-12col + w-node areas): in a ~300px slide the columns collapse to
-   * zero, the content overflows the box sideways and covers the next card —
-   * "no peek, widths not applied". While Swiper drives, the card becomes a
-   * vertical flex stack (grid-area placements are ignored by flex) and
-   * clips what still won't fit.
-   */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  /* Inner layout (flex/grid, direction) stays the Designer's. h-scroll.js
+     writes the slide width inline on the card, so it always wins; the
+     children only get a min-width:0 so long words/images can't push the
+     card wider than that slide. */
 }
 
 [data-hscroll].is-swiper .hscroll__card > * {

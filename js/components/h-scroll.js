@@ -1,7 +1,22 @@
 /*!
- * h-scroll.js v2.2.0
+ * h-scroll.js v2.2.4
  *
  * Changelog
+ * v2.2.4 — whole-card slidesPerView keeps the right gutter inside the visible
+ *          band (cards ran flush right on every slide but the last); mobile
+ *          default 1 → 1.1 (a peek of the next card).
+ * v2.2.3 — one dot per CARD (Swiper's pagination module renders one per snap
+ *          point, so 3 cards got 4 dots); left/right gutter measured
+ *          separately so an asymmetric viewport padding no longer leaves the
+ *          last card flush against the right edge.
+ * v2.2.2 — no more double gutter: a Designer padding on .hscroll__viewport is
+ *          already the gutter (Swiper sizes inside it), so slidesOffset only
+ *          tops it up to the track gutter instead of adding on top. Mobile
+ *          default 1.2 → 1 card (the arrows/dots say there is more).
+ * v2.2.1 — the computed slide width is written INLINE on every card (width,
+ *          min/max-width, flex-basis) — an inline value outranks any Designer
+ *          class or combo, so Swiper's width always wins. The CSS no longer
+ *          forces the card's inner layout (grid/flex stays the Designer's).
  * v2.2.0 — carousel controls: arrows + pagination dots are built and wired by
  *          the JS in Swiper mode (data-hscroll-nav="false" to opt out, or
  *          supply [data-hscroll-prev] / [data-hscroll-next] /
@@ -32,7 +47,7 @@
  *   always ends with the last card fully inside the gutter.
  *
  *   Tablet & mobile (≤991px) or ANY touch device — the SAME DOM becomes a
- *   Swiper carousel: ~1.4 cards per view on tablet, ~1.2 on mobile (bleed).
+ *   Swiper carousel: ~1.4 cards per view on tablet, ~1.1 on mobile (peek).
  *   Gutter + gap are read from the computed CSS (RC tokens), so spacing stays
  *   token-driven. Swiper's own stylesheet is NOT needed — the required core
  *   styles ship inside h-scroll.css under .is-swiper.
@@ -77,7 +92,7 @@
    *   data-hscroll-bp-m      mobile breakpoint in px — below this width the
    *                          mobile slidesPerView applies   (default 768)
    *   data-hscroll-spv-t     slides per view on tablet      (default 1.4)
-   *   data-hscroll-spv-m     slides per view on mobile      (default 1.2)
+   *   data-hscroll-spv-m     slides per view on mobile      (default 1.1)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
    *   data-hscroll-nav       "false" → no auto arrows/dots in Swiper mode
@@ -119,7 +134,7 @@
     var bp       = num(root, "data-hscroll-bp", 991);
     var bpM      = num(root, "data-hscroll-bp-m", 768);
     var spvT     = num(root, "data-hscroll-spv-t", 1.4);
-    var spvM     = num(root, "data-hscroll-spv-m", 1.2);
+    var spvM     = num(root, "data-hscroll-spv-m", 1.1);
     var priority = num(root, "data-hscroll-priority", 1);
 
     /**
@@ -174,9 +189,22 @@
       function measure() {
         root.classList.remove("is-swiper");
         var cs = getComputedStyle(track);
+        var vs = getComputedStyle(viewport);
+        // The viewport's own inline padding already acts as a gutter (Swiper
+        // sizes inside it and the peek shows through it), so the track
+        // gutter only tops it up — otherwise the first card sat behind a
+        // DOUBLE gutter (viewport padding + slidesOffsetBefore).
+        // Left and right measured SEPARATELY: a Designer padding that only
+        // exists on one side (or differs) must not leave the other edge with
+        // no gutter — the last card used to run flush to the right edge.
+        var padL    = parseFloat(vs.paddingLeft)  || 0;
+        var padR    = parseFloat(vs.paddingRight) || 0;
+        var gutterL = parseFloat(cs.paddingLeft)  || 0;
+        var gutterR = parseFloat(cs.paddingRight) || gutterL;
         var m = {
-          gap:    parseFloat(cs.columnGap)   || 0,
-          gutter: parseFloat(cs.paddingLeft) || 0,
+          gap:     parseFloat(cs.columnGap) || 0,
+          gutter:  Math.max(0, gutterL - padL),
+          gutterR: Math.max(0, gutterR - padR),
         };
         root.classList.add("is-swiper");
         return m;
@@ -203,9 +231,23 @@
         var content = viewport.clientWidth
           - (parseFloat(vs.paddingLeft)  || 0)
           - (parseFloat(vs.paddingRight) || 0);
-        var w    = (content - m.gutter - gaps * m.gap) / spv;
+        // Whole cards (spv 1, 2…) show no peek, so the RIGHT gutter must be
+        // part of the visible band too — otherwise the active card ran flush
+        // to the right edge on every slide but the last. With a fractional
+        // spv the next card's peek reaches the edge by design.
+        var whole = Math.abs(spv - Math.round(spv)) < 0.001;
+        var right = whole ? m.gutterR : 0;
+        var w    = (content - m.gutter - right - gaps * m.gap) / spv;
         w = Math.max(0, Math.floor(w * 100) / 100);
         root.style.setProperty("--hscroll-slide-w", w + "px");
+        // Written INLINE on every card, not only as a custom property: an
+        // inline width outranks any Designer class/combo on the card, so the
+        // slide is exactly this wide no matter what the card's own CSS says.
+        var px = w + "px";
+        cards.forEach(function (c) {
+          c.style.width = px; c.style.minWidth = px; c.style.maxWidth = px;
+          c.style.flex = "0 0 " + px;
+        });
         return w;
       }
 
@@ -259,7 +301,7 @@
         slidesPerView: "auto",                            // width from --hscroll-slide-w
         spaceBetween: m.gap,
         slidesOffsetBefore: m.gutter,
-        slidesOffsetAfter: m.gutter,
+        slidesOffsetAfter: m.gutterR,
         speed: reduced ? 0 : 400,
         grabCursor: true,
         watchOverflow: true,
@@ -268,17 +310,11 @@
           prevEl: prevEl, nextEl: nextEl,
           disabledClass: "is-disabled", lockClass: "is-locked",
         } : false,
-        pagination: dotsEl ? {
-          el: dotsEl, clickable: true,
-          bulletClass: "hscroll__dot", bulletActiveClass: "is-active",
-          lockClass: "is-locked",
-          renderBullet: function (i, cls) {
-            return '<button type="button" class="' + cls + '" aria-label="' +
-              (i + 1) + ' / ' + cards.length + '"></button>';
-          },
-        } : false,
+        // Dots are OURS, not Swiper's pagination module: that one renders a
+        // bullet per SNAP POINT, and the trailing snap (last card + right
+        // gutter) gave 4 dots for 3 cards. One dot per card, always.
         on: {
-          activeIndexChange: function (s) { setActive(s.activeIndex); },
+          activeIndexChange: function (s) { setActive(cardIndex(s)); },
           resize: function (s) {
             // iOS fires resize on every URL-bar show/hide while the page
             // scrolls — a height-only change. Re-measuring + update() there
@@ -290,11 +326,39 @@
             slideWidth(r);
             s.params.spaceBetween = s.originalParams.spaceBetween = r.gap;
             s.params.slidesOffsetBefore = s.originalParams.slidesOffsetBefore = r.gutter;
-            s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutter;
+            s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutterR;
             s.update();
           },
         },
       });
+
+      /** Card index for the current position, clamped to the real cards. */
+      function cardIndex(s) {
+        var i = s.activeIndex;
+        if (s.isEnd) i = cards.length - 1;                 // trailing snap → last card
+        return Math.max(0, Math.min(cards.length - 1, i));
+      }
+
+      // One dot per card, kept in sync with setActive.
+      var dots = [];
+      if (dotsEl) {
+        dotsEl.innerHTML = "";
+        dots = cards.map(function (_, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "hscroll__dot";
+          b.setAttribute("aria-label", (i + 1) + " / " + cards.length);
+          b.addEventListener("click", function () { sw.slideTo(i); });
+          dotsEl.appendChild(b);
+          return b;
+        });
+        if (cards.length < 2) dotsEl.classList.add("is-locked");
+      }
+      var _setActive = setActive;
+      setActive = function (idx) {
+        _setActive(idx);
+        for (var i = 0; i < dots.length; i++) dots[i].classList.toggle("is-active", i === idx);
+      };
 
       setActive(0);
 
@@ -302,12 +366,17 @@
       // and hand the untouched DOM back to the pin setup below.
       return function () {
         sw.destroy(true, true);                           // true,true → inline styles cleaned
+        setActive = _setActive;
+        if (dotsEl) dotsEl.innerHTML = "";
         if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
         root.classList.remove("is-swiper");
         root.style.removeProperty("--hscroll-slide-w");
         viewport.classList.remove("swiper");
         track.classList.remove("swiper-wrapper");
-        cards.forEach(function (c) { c.classList.remove("swiper-slide", "is-active"); });
+        cards.forEach(function (c) {
+          c.classList.remove("swiper-slide", "is-active");
+          c.style.width = c.style.minWidth = c.style.maxWidth = c.style.flex = "";
+        });
         curActive = -1;
       };
     });
