@@ -1,7 +1,11 @@
 /*!
- * h-scroll.js v2.2.0
+ * h-scroll.js v2.2.1
  *
  * Changelog
+ * v2.2.1 — the computed slide width is written INLINE on every card (width,
+ *          min/max-width, flex-basis) — an inline value outranks any Designer
+ *          class or combo, so Swiper's width always wins. The CSS no longer
+ *          forces the card's inner layout (grid/flex stays the Designer's).
  * v2.2.0 — carousel controls: arrows + pagination dots are built and wired by
  *          the JS in Swiper mode (data-hscroll-nav="false" to opt out, or
  *          supply [data-hscroll-prev] / [data-hscroll-next] /
@@ -206,6 +210,14 @@
         var w    = (content - m.gutter - gaps * m.gap) / spv;
         w = Math.max(0, Math.floor(w * 100) / 100);
         root.style.setProperty("--hscroll-slide-w", w + "px");
+        // Written INLINE on every card, not only as a custom property: an
+        // inline width outranks any Designer class/combo on the card, so the
+        // slide is exactly this wide no matter what the card's own CSS says.
+        var px = w + "px";
+        cards.forEach(function (c) {
+          c.style.width = px; c.style.minWidth = px; c.style.maxWidth = px;
+          c.style.flex = "0 0 " + px;
+        });
         return w;
       }
 
@@ -307,7 +319,10 @@
         root.style.removeProperty("--hscroll-slide-w");
         viewport.classList.remove("swiper");
         track.classList.remove("swiper-wrapper");
-        cards.forEach(function (c) { c.classList.remove("swiper-slide", "is-active"); });
+        cards.forEach(function (c) {
+          c.classList.remove("swiper-slide", "is-active");
+          c.style.width = c.style.minWidth = c.style.maxWidth = c.style.flex = "";
+        });
         curActive = -1;
       };
     });
