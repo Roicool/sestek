@@ -1,5 +1,11 @@
 /*!
- * hero.js v1.8.3
+ * hero.js v1.9.0
+ * v1.9.0 — Desktop-only (≥ 992px). Tüm kurulum gsap.matchMedia() içinde:
+ * 991px ve altında JS hiçbir şey yapmaz — ölçüm, pin, timeline, inline stil,
+ * nav class'ı yok; tablet/mobil düzeni tamamen Webflow Designer'da kurulur.
+ * Kırılım geçişinde matchMedia pin + timeline'ı öldürür ve gsap.set ile
+ * yazılmış inline stilleri geri alır; masaüstüne dönünce yeniden kurulur.
+ * hero.css v1.9.0 da aynı kırılımla sınırlandı (layout kuralları ≥ 992px).
  * v1.8.2 — rebuild refresh'i Sestek.refreshScroll() üzerinden (jank guard:
  * scroll dururken ölçer); çıplak ScrollTrigger.refresh() scroll ortasında
  * pin'leri revert/re-apply edip zıplatabiliyordu.
@@ -14,6 +20,12 @@
  * revert'siz kill ise inline pin stillerini yetim bırakıyordu.
  * Hero — fullscreen video morphs into an inline slot as user scrolls
  * Requires: gsap + ScrollTrigger registered, Sestek.initLenis() already called
+ *
+ * Breakpoint: the animation runs at ≥ 992px only (Webflow desktop). Below
+ * that nothing is initialised — no pin, no scroll timeline, no inline
+ * styles, no nav--on-light toggling — so the tablet/mobile hero is whatever
+ * the Webflow Designer says it is. Override per hero if ever needed:
+ *   <section data-hero data-hero-min="768">…</section>
  *
  * Optional stats block (inside [data-hero-s2], below [data-hero-desc]):
  *   <div class="hero__stats" data-hero-stats>
@@ -31,6 +43,9 @@
 (function (global) {
   "use strict";
 
+  /* Webflow desktop breakpoint — the animation exists only from here up. */
+  var DESKTOP_MIN = 992;
+
   /**
    * Initializes the hero scroll animation.
    * @param {string} [selector="[data-hero]"]
@@ -46,6 +61,24 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
+    var minWidth = parseInt(hero.getAttribute("data-hero-min"), 10);
+    if (!(minWidth > 0)) minWidth = DESKTOP_MIN;
+
+    // Everything below lives inside the desktop media query. When the
+    // viewport drops under minWidth, matchMedia runs the cleanup returned
+    // from setupDesktop() and reverts every gsap.set / tween made in it, so
+    // the tablet/mobile hero is left exactly as Webflow rendered it.
+    var mm = gsap.matchMedia();
+    mm.add("(min-width: " + minWidth + "px)", function () {
+      return setupDesktop(hero);
+    });
+    hero._heroMM = mm;
+  }
+
+  /**
+   * Desktop build. Returns a cleanup function for gsap.matchMedia.
+   */
+  function setupDesktop(hero) {
     var el = {
       videoWrap : hero.querySelector("[data-hero-video-wrap]"),
       overlay   : hero.querySelector(".hero__video-overlay"),
@@ -79,10 +112,14 @@
       if (hasStats) gsap.set(el.stats, { opacity: 1, y: 0 });
       el.s1Content.style.pointerEvents = "none";
       el.scene2.style.pointerEvents = "auto";
-      return;
+      return function () {
+        el.s1Content.style.pointerEvents = "";
+        el.scene2.style.pointerEvents = "";
+      };
     }
 
     var activeST = null, activeTl = null;
+    var navEl = document.querySelector("[data-nav]");
 
     function build() {
       // Rebuild scroll'u OYNATMAMALI: revert'li kill spacer telafisi yapar
@@ -146,8 +183,6 @@
         gsap.set(el.stats, { opacity: 0, y: 24 });
       }
       gsap.set(el.slot, { width: "7rem", opacity: 1 });
-
-      var navEl = document.querySelector("[data-nav]");
 
       var tl = gsap.timeline({
         defaults: { ease: "none" }, // scrub handles timing; per-tween eases override this
@@ -305,12 +340,28 @@
 
     build();
 
-    // Recalculate slot position on resize (slot may reflow on mobile breakpoints)
+    // Recalculate slot position on resize (slot may reflow between desktop
+    // widths). Listener lives only while the desktop query matches.
     var resizeTimer;
-    window.addEventListener("resize", function () {
+    function onResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(build, 180);
-    });
+    }
+    window.addEventListener("resize", onResize);
+
+    // matchMedia cleanup — fires when the viewport drops below the desktop
+    // breakpoint. Kill the pin + timeline explicitly (gsap reverts the
+    // inline styles it set), drop the resize listener, and clear what we
+    // wrote by hand so Webflow's own tablet/mobile styles take over.
+    return function () {
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
+      if (activeST) { activeST.kill(); activeST = null; }
+      if (activeTl) { activeTl.kill(); activeTl = null; }
+      el.s1Content.style.pointerEvents = "";
+      el.scene2.style.pointerEvents = "";
+      if (navEl) navEl.classList.remove("nav--on-light");
+    };
   }
 
   global.Sestek = global.Sestek || {};

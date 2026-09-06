@@ -205,7 +205,7 @@ dikey konumuna göre bu tablodan seç (üstteki büyük, alttaki küçük):
 
 | Component | Sayfadaki konum | `refreshPriority` |
 |---|---|---|
-| `hero.js` (pin) | En üst | `2` |
+| `hero.js` (pin, ≥992px) | En üst | `2` |
 | `scroll-tabs.js` (pin) | Orta | `1` |
 | `h-scroll.js` (pin, sadece desktop) | Sayfaya göre değişir | `data-hscroll-priority` ile ver (default `1`) |
 | `benefits.js` (pin, ≥1200px) | Sayfaya göre değişir | `data-benefits-priority` ile ver (default `1`) |

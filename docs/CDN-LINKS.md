@@ -1676,6 +1676,14 @@ Tıklamada Lenis (varsa) veya native smooth scroll ile hedef başlığa gider.
 <script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/hero.js" defer></script>
 ```
 
+**Sadece desktop (≥ 992px).** hero.js v1.9.0 ve hero.css v1.9.0 itibarıyla:
+
+- Pin, video morph, scroll timeline ve `nav--on-light` yalnızca 992px ve üstünde kurulur (`gsap.matchMedia`).
+- 991px ve altında JS hiçbir şey yapmaz, hero.css hiçbir kural uygulamaz. Tablet/mobil hero tamamen Webflow Designer'daki stillerle görünür — `.hero__scene--2` mobilde gizli kalmaz, `100vh` / `position:absolute` uygulanmaz.
+- Kırılım geçişinde (resize / cihaz döndürme) matchMedia pin + timeline'ı söker ve inline stilleri geri alır; masaüstüne dönünce yeniden kurar.
+- Webflow'da tablet/mobil için: `hero__video-slot` boş bir kutu olarak kaldığından bu kırılımlarda gizle; sayaçlar count-up.js ile görünüme girince kendiliğinden çalışır.
+- Kırılımı hero başına değiştirmek için: `<section data-hero data-hero-min="768">`.
+
 ### Marquee
 
 ```html
