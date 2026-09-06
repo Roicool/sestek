@@ -2318,14 +2318,6 @@ Webflow `</body>` öncesi:
 
 ### Search
 
-> **Yeni: site geneli ⌘K araması** — `search.js` yalnız sayfadaki Collection
-> List'i tarar. Tüm siteyi (EN + TR, 549 sayfa) kapsayan komut paleti artık
-> Webflow Cloud app'te: `webflow-cloud-app/README.md → Site Search`. Webflow'a
-> tek satır: `<script defer src="https://www.sestek.com/demos/site-search.v1.js"></script>`,
-> nav'daki ikona `data-search-trigger`. Aşağıdaki `search.js` blog sayfası için
-> kalabilir; site geneli için yenisini kullan.
-
-
 Tüm site arkası bulanıklaşan (frosted) tam ekran arama overlay'i. Bir veya
 birden fazla `[data-search-trigger]`'a tıklanınca açılır; yazarken blog
 postlarını **client-side** (API çağrısı yok) filtreler — görsel + başlık

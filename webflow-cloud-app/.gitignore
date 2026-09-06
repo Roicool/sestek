@@ -13,6 +13,3 @@ next.config.webflow.ts
 clouduser.next.config.ts
 webflow-loader.ts
 open-next.config.ts
-
-# site search embed source map (rebuilt by `npm run search:bundle` / prebuild)
-public/site-search.*.js.map
