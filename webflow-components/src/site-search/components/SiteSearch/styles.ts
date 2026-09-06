@@ -94,11 +94,6 @@ export const SEARCH_CSS = `
 .sst-search__opt[aria-selected="true"] .sst-search__arrow{opacity:1}
 
 .sst-search__preview{position:relative;min-height:0;overflow:hidden;border-left:1px solid var(--sst-line);background:linear-gradient(160deg,var(--sst-soft) 0%,var(--sst-bg) 55%,color-mix(in srgb,var(--sst-accent) 8%,var(--sst-bg)) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(20px,3vw,40px)}
-/* image area: page's own og:image, else the component's preview image */
-.sst-search__pv-media{position:relative;z-index:1;flex:0 1 auto;width:100%;min-height:0;max-height:48%;aspect-ratio:16/10;margin:0 0 auto;border-radius:var(--sst-rm);overflow:hidden;background:var(--sst-soft);box-shadow:0 24px 50px -30px rgba(20,10,50,.45),0 0 0 1px rgba(255,255,255,.5) inset}
-.sst-search__pv-media img{display:block;width:100%;height:100%;object-fit:cover;animation:sst-fade .3s ease both}
-.sst-search__pv-media + *{margin-top:22px}
-.sst-search__pv-chip.sst-search__pv-chip--on-media{position:absolute;left:14px;top:14px;margin:0;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .sst-search__preview::before{content:"";position:absolute;right:-12%;top:-18%;width:60%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--sst-accent) 22%,transparent) 0%,transparent 70%);pointer-events:none}
 .sst-search__preview::after{content:"";position:absolute;right:-6%;bottom:-24%;width:52%;aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--sst-accent) 22%,transparent);pointer-events:none}
 .sst-search__pv-chip{position:relative;display:inline-flex;align-items:center;padding:7px 12px;border-radius:var(--radius--full,999px);background:var(--sst-bg);border:1px solid var(--sst-line);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--sst-accent);margin-bottom:18px}

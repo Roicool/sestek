@@ -26,10 +26,8 @@ import { createPortal } from "react-dom";
 import { SiteSearch as Palette, useSearchHotkey } from "./site-search/components/SiteSearch/SiteSearch";
 import { SEARCH_CSS } from "./site-search/components/SiteSearch/styles";
 import { MESSAGES } from "./site-search/lib/search/messages";
-import { DEFAULT_PREVIEW_IMAGE, parseQuickLinks } from "./site-search/data/quick-links";
+import { parseQuickLinks } from "./site-search/data/quick-links";
 import type { SearchLocale } from "./site-search/lib/search/types";
-
-type ImageValue = { src: string; alt?: string };
 
 export interface SiteSearchProps {
   indexUrl?: string;
@@ -39,7 +37,6 @@ export interface SiteSearchProps {
   siteHost?: string;
   quickLinksEn?: string;
   quickLinksTr?: string;
-  previewImage?: ImageValue;
   showButton?: boolean;
   buttonLabel?: string;
   showKbd?: boolean;
@@ -62,19 +59,20 @@ function detectLocale(): SearchLocale {
  * when set on :root / the navbar.
  */
 const BTN_CSS = `
-:host{all:initial;display:inline-block;font-family:inherit;color:inherit;line-height:0}
+:host{all:initial;display:inline-block;font-family:inherit;color:inherit;line-height:0;vertical-align:middle}
 *,*::before,*::after{box-sizing:border-box}
 .ssb{
   --ls-fg:rgba(23,21,31,.78);--ls-fg-strong:var(--color-text--base,#17151f);
   --ls-bg:#e1e1e1;--ls-bg-hover:#d7d7d7;--ls-border:transparent;--ls-size:2rem;
-  display:inline-flex;align-items:center;justify-content:center;gap:.375rem;height:var(--ls-size);padding:0 .5625rem;
-  border:1px solid var(--ls-border);border-radius:var(--radius--full,9999px);background:var(--ls-bg);color:var(--ls-fg);
-  font-family:var(--font--primary,inherit);font-size:.8125rem;font-weight:var(--font-weight--medium,500);line-height:0;letter-spacing:.02em;
+  --ssb-pad:.5625rem;--ssb-gap:.375rem;--ssb-fs:.8125rem;--ssb-fw:var(--font-weight--medium,500);--ssb-ls:.02em;--ssb-icon:.9375rem;--ssb-radius:var(--radius--full,9999px);
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--ssb-gap);height:var(--ls-size);padding:0 var(--ssb-pad);margin:0;
+  border:1px solid var(--ls-border);border-radius:var(--ssb-radius);background:var(--ls-bg);color:var(--ls-fg);
+  font-family:var(--ssb-font,var(--font--primary,inherit));font-size:var(--ssb-fs);font-weight:var(--ssb-fw);line-height:0;letter-spacing:var(--ssb-ls);
   cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:color .18s ease,background .18s ease,border-color .18s ease}
 .ssb:hover{color:var(--ls-fg-strong);background:var(--ls-bg-hover)}
 .ssb:focus-visible{outline:2px solid var(--ls-fg-strong);outline-offset:2px}
 .ssb>*{flex:0 0 auto;display:flex;align-items:center;justify-content:center;line-height:1}
-.ssb svg{width:.9375rem;height:.9375rem;display:block}
+.ssb svg{width:var(--ssb-icon);height:var(--ssb-icon);display:block}
 .ssb--pill{--ls-bg:var(--surface--light,#eeebf8);--ls-bg-hover:var(--surface--muted,#e6e3f3);--ls-size:2.25rem;padding:0 .875rem;font-size:.875rem}
 .ssb--icon{width:var(--ls-size);padding:0}
 .ssb kbd{font:inherit;font-size:.625rem;font-weight:600;letter-spacing:.04em;padding:0 .3125rem;height:1.125rem;border-radius:.375rem;background:rgba(255,255,255,.7);color:var(--ls-fg);opacity:.85}
@@ -88,7 +86,6 @@ export function SiteSearch({
   siteHost = "www.sestek.com",
   quickLinksEn = "",
   quickLinksTr = "",
-  previewImage,
   showButton = true,
   buttonLabel = "Search",
   showKbd = false,
@@ -111,6 +108,41 @@ export function SiteSearch({
   }, []);
 
   useSearchHotkey(hotkeys ? toggle : () => {});
+
+  /* Chip = EXACTLY the nav's locale switch. The defaults above mirror
+     locale-switch.css, but the site may override --ls-* / the trigger in
+     Webflow — so measure the real .locale-switch__trigger on the page and copy
+     its computed box, type and colours onto the button (re-measured once the
+     fonts land). Pill / Icon only keep their own sizes. */
+  const [sync, setSync] = React.useState<React.CSSProperties | null>(null);
+  React.useEffect(() => {
+    if (buttonStyle === "Pill" || buttonStyle === "Icon only") { setSync(null); return; }
+    const measure = () => {
+      const root = document.querySelector<HTMLElement>("[data-locale-switch]");
+      const el = document.querySelector<HTMLElement>(".locale-switch__trigger");
+      if (!el) return;
+      const cs = getComputedStyle(el);
+      const svg = el.querySelector("svg, img");
+      const icon = svg ? getComputedStyle(svg).width : "";
+      const hover = root ? getComputedStyle(root).getPropertyValue("--ls-bg-hover").trim() : "";
+      const strong = root ? getComputedStyle(root).getPropertyValue("--ls-fg-strong").trim() : "";
+      const v: Record<string, string> = {
+        "--ls-size": cs.height, "--ssb-pad": cs.paddingLeft, "--ssb-gap": cs.columnGap !== "normal" ? cs.columnGap : cs.gap,
+        "--ssb-fs": cs.fontSize, "--ssb-fw": cs.fontWeight, "--ssb-ls": cs.letterSpacing === "normal" ? "0" : cs.letterSpacing,
+        "--ssb-font": cs.fontFamily, "--ssb-radius": cs.borderTopLeftRadius,
+        "--ls-bg": cs.backgroundColor, "--ls-fg": cs.color, "--ls-border": cs.borderTopColor,
+      };
+      if (icon) v["--ssb-icon"] = icon;
+      if (hover) v["--ls-bg-hover"] = hover;
+      if (strong) v["--ls-fg-strong"] = strong;
+      setSync(v as React.CSSProperties);
+    };
+    measure();
+    const t1 = window.setTimeout(measure, 600);
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    if (fonts && fonts.ready) fonts.ready.then(measure);
+    return () => clearTimeout(t1);
+  }, [buttonStyle]);
 
   /* palette host on <body>: own shadow root + palette CSS */
   React.useEffect(() => {
@@ -150,20 +182,19 @@ export function SiteSearch({
     () => (quickText ? parseQuickLinks(quickText, loc, contactHref || undefined) : undefined),
     [quickText, loc, contactHref],
   );
-  const pvImage = previewImage && previewImage.src ? previewImage.src : DEFAULT_PREVIEW_IMAGE;
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: BTN_CSS }} />
       {showButton && (
-        <button ref={btnRef} type="button" className={cls} onClick={openIt} aria-haspopup="dialog" aria-expanded={open} aria-controls="site-search-dialog" aria-label={t.open}>
+        <button ref={btnRef} type="button" className={cls} style={sync || undefined} onClick={openIt} aria-haspopup="dialog" aria-expanded={open} aria-controls="site-search-dialog" aria-label={t.open}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
           {buttonStyle !== "Icon only" && <span>{buttonLabel || t.open}</span>}
           {buttonStyle !== "Icon only" && showKbd && <kbd>{isMac ? "⌘" : "Ctrl"} K</kbd>}
         </button>
       )}
       {portal && createPortal(
-        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} quickLinks={quickLinks} previewImage={pvImage} />,
+        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} quickLinks={quickLinks} />,
         portal,
       )}
     </>

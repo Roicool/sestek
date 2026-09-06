@@ -56,11 +56,6 @@ export default declareComponent(SiteSearch, {
       defaultValue: "",
       tooltip: "TR sayfalar için aynı format. Boş = Ürünler / Çözümler / Kaynaklar / Kurumsal hazır listesi",
     }),
-    previewImage: props.Image({
-      name: "Preview image",
-      group: "Quick access",
-      tooltip: "Sağ sütundaki görsel alanı; sayfanın kendi og:image'ı yoksa bu gösterilir. Boş = sitedeki Sagitone gradient",
-    }),
     showButton: props.Boolean({
       name: "Show trigger button",
       group: "Trigger",

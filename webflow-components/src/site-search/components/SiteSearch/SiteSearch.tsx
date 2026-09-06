@@ -1,8 +1,8 @@
 /*
  * <SiteSearch/> — full-page ⌘K search for sestek.com.
  *
- * Header (eyebrow + big search bar), two-column body (results list · live
- * preview of the active result with an "Open page" button), footer with
+ * Header (eyebrow + big search bar), two-column body (results list · text
+ * preview of the active result with an "Open page" button, no image), footer with
  * keyboard hints. Accessible dialog + combobox/listbox: focus trap, Esc
  * closes, focus restored to the opener, ↑/↓/Home/End move, Enter navigates,
  * ⌘K / Ctrl+K toggle globally (see useSearchHotkey). Results are ranked
@@ -16,7 +16,7 @@
 import * as React from "react";
 import { MESSAGES } from "../../lib/search/messages";
 import type { RankedDoc, SearchDoc, SearchLocale } from "../../lib/search/types";
-import { DEFAULT_PREVIEW_IMAGE, defaultQuickLinks, type QuickGroup } from "../../data/quick-links";
+import { defaultQuickLinks, type QuickGroup } from "../../data/quick-links";
 import { useSearch } from "./useSearch";
 
 export interface SiteSearchProps {
@@ -31,8 +31,6 @@ export interface SiteSearchProps {
   siteHost?: string;
   /** Idle-state groups (before typing). Default: curated hub pages per locale. */
   quickLinks?: QuickGroup[];
-  /** Preview visual when the active page has no image of its own. "" = none. */
-  previewImage?: string;
   /** Called instead of location.assign when set (e.g. SPA router) */
   onNavigate?: (doc: SearchDoc) => void;
   /** Render <style>{css}</style> inside the component (app surface). */
@@ -56,7 +54,7 @@ function Highlight({ doc }: { doc: RankedDoc | SearchDoc }) {
   return <>{out}</>;
 }
 
-export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", quickLinks, previewImage = DEFAULT_PREVIEW_IMAGE, onNavigate, inlineCss }: SiteSearchProps) {
+export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", quickLinks, onNavigate, inlineCss }: SiteSearchProps) {
   const t = MESSAGES[locale] || MESSAGES.en;
   const { query, setQuery, debounced, results, status, load } = useSearch({ indexUrl, locale });
   const [active, setActive] = React.useState(0);
@@ -76,7 +74,6 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
   const showing: SearchDoc[] = searching ? results : quick;
   const isEmpty = status === "ready" && searching && results.length === 0;
   const current = showing[Math.min(active, Math.max(0, showing.length - 1))];
-  const media = current ? current.image || previewImage : previewImage;
 
   /* open: load index, remember opener, focus input, lock scroll; close: restore.
      Scroll lock covers native scrolling (html + body overflow) AND the site's
@@ -251,15 +248,9 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
           </div>
 
           <aside className="sst-search__preview" aria-live="polite">
-            {media && (
-              <div className="sst-search__pv-media" aria-hidden="true">
-                <img key={media} src={media} alt="" loading="lazy" decoding="async" />
-                {current && <span className="sst-search__pv-chip sst-search__pv-chip--on-media">{t.kinds[current.kind] || current.kind}</span>}
-              </div>
-            )}
             {current ? (
               <>
-                {!media && <span className="sst-search__pv-chip">{t.kinds[current.kind] || current.kind}</span>}
+                <span className="sst-search__pv-chip">{t.kinds[current.kind] || current.kind}</span>
                 <h2 className="sst-search__pv-title">{current.title}</h2>
                 {current.summary && <p className="sst-search__pv-sum">{current.summary}</p>}
                 <p className="sst-search__pv-url">{siteHost}<b>{current.path}</b></p>
