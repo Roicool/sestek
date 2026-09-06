@@ -15,8 +15,9 @@
  *      other orbs show a still frame of the same shader, rendered once per
  *      voice into a data-URL and cached, so only ONE WebGL context is ever
  *      alive. Palettes: per-voice data-vo-colors, else a rotating set of
- *      Sestek pastels. Orb style = Image keeps the old behaviour (PNG as
- *      texture, live warp on the active orb).
+ *      Sagitone-like bold palettes. Orb style = Image (the default, matching
+ *      the live site) uses the Sagitone gradient images: neighbours show the
+ *      image, the active orb warps it live as a WebGL texture.
  *
  * Behaviour (unchanged from v3.4): 5-orb ladder (centre + 2 + 2), infinite
  * loop via three DOM copies and an invisible ±N jump, transform-only
@@ -28,9 +29,6 @@
 
 import * as React from "react";
 
-type LinkValue = { href: string; target?: string; preload?: string };
-type ImageValue = { src: string; alt?: string };
-
 export interface VoiceOrbsProps {
   orbStyle?: string;
   sizes?: string;
@@ -41,12 +39,14 @@ export interface VoiceOrbsProps {
   navOffset?: number;
   initial?: number;
 
-  v1Name?: string; v1Desc?: string; v1Audio?: string; v1Image?: ImageValue; v1Colors?: string;
-  v2Name?: string; v2Desc?: string; v2Audio?: string; v2Image?: ImageValue; v2Colors?: string;
-  v3Name?: string; v3Desc?: string; v3Audio?: string; v3Image?: ImageValue; v3Colors?: string;
-  v4Name?: string; v4Desc?: string; v4Audio?: string; v4Image?: ImageValue; v4Colors?: string;
-  v5Name?: string; v5Desc?: string; v5Audio?: string; v5Image?: ImageValue; v5Colors?: string;
-  v6Name?: string; v6Desc?: string; v6Audio?: string; v6Image?: ImageValue; v6Colors?: string;
+  card?: boolean;
+
+  v1Name?: string; v1Desc?: string; v1Audio?: string; v1Image?: string; v1Colors?: string;
+  v2Name?: string; v2Desc?: string; v2Audio?: string; v2Image?: string; v2Colors?: string;
+  v3Name?: string; v3Desc?: string; v3Audio?: string; v3Image?: string; v3Colors?: string;
+  v4Name?: string; v4Desc?: string; v4Audio?: string; v4Image?: string; v4Colors?: string;
+  v5Name?: string; v5Desc?: string; v5Audio?: string; v5Image?: string; v5Colors?: string;
+  v6Name?: string; v6Desc?: string; v6Audio?: string; v6Image?: string; v6Colors?: string;
 }
 
 type RGB = [number, number, number];
@@ -54,12 +54,12 @@ type Voice = { name: string; desc: string; src: string; img: string; colors: RGB
 
 /* ── Palettes ───────────────────────────────────────────────── */
 const PALETTES: RGB[][] = [
-  [[0.98, 0.84, 0.93], [0.55, 0.47, 0.92], [0.79, 0.86, 0.98]], // pink · violet · ice
-  [[0.62, 0.90, 0.88], [0.30, 0.55, 0.95], [0.86, 0.94, 0.98]], // aqua · blue · mist
-  [[0.99, 0.80, 0.70], [0.93, 0.45, 0.62], [0.99, 0.92, 0.82]], // peach · magenta · cream
-  [[0.80, 0.88, 0.70], [0.36, 0.70, 0.60], [0.93, 0.97, 0.88]], // sage · teal · pale
-  [[0.87, 0.78, 0.98], [0.47, 0.35, 0.85], [0.96, 0.90, 1.00]], // lilac · indigo · lavender
-  [[0.99, 0.90, 0.60], [0.95, 0.60, 0.35], [1.00, 0.96, 0.85]], // gold · amber · sand
+  [[0.99, 0.80, 0.25], [0.16, 0.22, 0.48], [0.98, 0.96, 0.92]], // saffron · navy · cream   (Sagitone 02)
+  [[0.98, 0.55, 0.36], [0.99, 0.95, 0.92], [0.94, 0.42, 0.30]], // coral · white · rust     (Sagitone 05)
+  [[0.36, 0.72, 0.95], [0.98, 0.62, 0.30], [0.99, 0.82, 0.30]], // sky · orange · gold      (Sagitone 06)
+  [[0.42, 0.40, 0.78], [0.99, 0.78, 0.30], [0.50, 0.78, 0.96]], // violet · gold · blue     (Sagitone 10)
+  [[0.93, 0.45, 0.62], [0.99, 0.90, 0.60], [0.55, 0.47, 0.92]], // magenta · lemon · violet
+  [[0.30, 0.70, 0.62], [0.99, 0.95, 0.85], [0.16, 0.30, 0.55]], // teal · cream · navy
 ];
 
 function parseColors(v: string | undefined | null): RGB[] | null {
@@ -95,9 +95,9 @@ void main(){
     // procedural: three-colour fluid + a slow second layer for depth
     vec2 s1=vec2(soft(uv*2.0+vec2(t*0.20,t*0.12)),soft(uv*2.0+vec2(3.1,5.7)-vec2(t*0.15,t*0.23)));
     vec2 suv=uv+(s1-0.5)*(0.35+u_energy*0.35);
-    float k1=smoothstep(0.30,0.70,soft(suv*1.6+vec2(t*0.05,0.0)));
-    float k2=smoothstep(0.35,0.75,soft(suv*1.3+vec2(9.2,2.4)-vec2(0.0,t*0.06)));
-    col=mix(u_c1,u_c2,k1);col=mix(col,u_c3,k2*0.85);
+    float k1=smoothstep(0.38,0.62,soft(suv*1.6+vec2(t*0.05,0.0)));
+    float k2=smoothstep(0.42,0.66,soft(suv*1.3+vec2(9.2,2.4)-vec2(0.0,t*0.06)));
+    col=mix(u_c1,u_c2,k1);col=mix(col,u_c3,k2*0.9);
     float d=soft(wuv*2.2+vec2(-t*0.08,t*0.06));
     col=mix(col,u_c2*0.9+u_c1*0.1,smoothstep(0.55,0.80,d)*0.5);
     // spherical shading: light from top-left, soft terminator, rim
@@ -200,7 +200,8 @@ const CHEV_R = <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fi
 const CSS = `
 .vo{position:relative;width:100%;box-sizing:border-box;--vo-gap:64px;--vo-caption-w:280px;--vo-nav-offset:230px;--vo-nav-bottom:2.25rem}
 .vo *,.vo *::before,.vo *::after{box-sizing:border-box}
-.vo-viewport{width:100%;overflow:hidden;padding:var(--spacing--12,3rem) 0;outline:none}
+.vo.is-card{background:var(--surface--light,#eeebf8);border-radius:var(--radius--lg,1rem)}
+.vo-viewport{width:100%;overflow:hidden;padding:var(--spacing--12,3rem) 0;outline:none;border-radius:inherit}
 .vo-track{display:flex;align-items:flex-start;gap:var(--vo-gap);width:max-content;will-change:transform;transition:transform .55s cubic-bezier(.22,1,.36,1)}
 .vo.vo-no-anim .vo-track,.vo.vo-no-anim .vo-item{transition:none!important}
 .vo-item{flex:0 0 auto;transform-origin:50% calc(var(--vo-zone,256px)/2);will-change:transform;opacity:.75;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .55s cubic-bezier(.22,1,.36,1)}
@@ -234,8 +235,8 @@ let currentlyPlaying: { stop: () => void } | null = null;
 
 export function VoiceOrbs(p: VoiceOrbsProps) {
   const {
-    orbStyle = "Procedural", sizes = "220,150,104", fit = 760, minScale = 0.42,
-    gap = 64, captionWidth = 280, navOffset = 230, initial = 0,
+    orbStyle = "Image", sizes = "220,150,104", fit = 760, minScale = 0.42,
+    gap = 64, captionWidth = 280, navOffset = 230, initial = 0, card = true,
   } = p;
 
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -247,7 +248,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   const propVoices = React.useMemo<Voice[]>(() => {
     const g = (n: number) => ({
       name: (p as any)["v" + n + "Name"] || "", desc: (p as any)["v" + n + "Desc"] || "",
-      src: (p as any)["v" + n + "Audio"] || "", img: ((p as any)["v" + n + "Image"] && (p as any)["v" + n + "Image"].src) || "",
+      src: (p as any)["v" + n + "Audio"] || "", img: (p as any)["v" + n + "Image"] || "",
       colors: parseColors((p as any)["v" + n + "Colors"]),
     });
     return [1, 2, 3, 4, 5, 6].map(g).filter((v) => v.name || v.src);
@@ -523,7 +524,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   );
 
   return (
-    <div ref={rootRef} className="vo" data-voice-orbs style={style} tabIndex={hasVoices ? 0 : undefined}>
+    <div ref={rootRef} className={"vo" + (card ? " is-card" : "")} data-voice-orbs style={style} tabIndex={hasVoices ? 0 : undefined}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       {hasVoices && (
         <>
