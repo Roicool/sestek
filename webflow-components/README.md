@@ -16,6 +16,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Voice Orbs** | `src/VoiceOrbs.webflow.tsx` | Ses örneği orb carousel'i — `voice-orbs.js` v3.4 + `voice-orbs.css` v2.7'nin React hali, iki artıyla: **(1) sesler Designer'dan manuel** — Voice 1–10 prop grupları (ad, açıklama, ses URL, opsiyonel görsel ve renkler; boş ad = gizli; gerekirse grup sayısı artırılır); **(2) kart görünümü ve Sagitone orb görselleri component'in içinde** (sitedeki tasarımla birebir; aktif orb WebGL ile canlı ve ses-reaktif), ayrıca opsiyonel **Procedural** mod: görselsiz, 3 renkli paletten shader ile üretilen orb'lar (küresel gölgeleme, highlight, film greni; tek WebGL context). Sonsuz döngü, transform-only geçişler, double-buffer audio + AnalyserNode, ilerleme halkası, play/pause, ‹ › ve ←/→. Sıfır bağımlılık. Bkz. [Voice Orbs](#voice-orbs--designer-propları). |
 | **Site Search** | `src/SiteSearch.webflow.tsx` | ⌘K **tam sayfa site araması**. Nav'a bırakılan tetikleyici buton (ikon + etiket + ⌘K rozeti; Pill / Icon only) ve body'ye açılan iki sütunlu palet: solda hızlı erişim/sonuçlar, sağda önizleme kartı (Sestek stili, shadow root ile izole). Index'i **Webflow Cloud app**'ten alır (`GET /demos/api/search/index`, bkz. `docs/sestek-site-search-server-spec.md`); sıralama, TR/EN, önizleme tarayıcıda — tuş başına ağ isteği yok. ⌘K / Ctrl+K, `/`, sayfadaki `[data-site-search-trigger]` elemanları; ↑↓ Enter Esc, focus trap. Asistan yok; boş durumda Demo + İletişim. Motor `/site-search` paketinin kopyası (`src/site-search/`). Bkz. [Site Search](#site-search--designer-propları). |
 | **Circle Diagram** | `src/CircleDiagram.webflow.tsx` | Dönen halka diyagramı — `circle-diagram.js` v2.2 + `circle-diagram.css` v1.5.1'in React hali ("The conversational lifecycle"). Solda halkaya eşit dağılmış ikonlu chip'ler, sağda üst üste tıklanabilir kartlar; conic-gradient uç sabit hızla döner, geçtiği item aktifleşir ve kart listesi ona kayar. Hover/tık/klavye ucu o node'a süpürür, liste üstünde mouse ve klavye odağı dönüşü durdurur, yalnız viewport'tayken döner. Item'lar **Item 1–8** prop gruplarından (label, 15 ikonluk set, kart başlığı/metni). **Mobilde chip'ler viewport'u taşırmaz** (etiketler sarar, halka chip payı bırakır). GSAP sitenin global'inden, yoksa CSS transition. Bkz. [Circle Diagram](#circle-diagram--designer-propları). |
+| **Top Bar** | `src/TopBar.webflow.tsx` | Navbar'ın **üstünde** duyuru çubuğu. Metin + link (+ emoji), × ile kapatma; kapatılınca **cookie** ile hatırlanır (`sestek_topbar=<Campaign id>`, `Remember (days)`), hiçbir sayfada bir daha çıkmaz — yeni duyuru için Campaign id'yi değiştirmek yeter. Sabit navbar'ı (`[data-nav]`) bar yüksekliği kadar aşağı iter, `--topbar-h` değişkenini `<html>`'e yazar. **Sticky** (en üstte sabit) ya da **Scrolls away** (sayfayla kayar, nav yerine döner). Mobilde göster/gizle. Brand / Dark / Light / Custom renk. Bkz. [Top Bar](#top-bar--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -236,6 +237,31 @@ Renkler sitenin değişkenlerinden (`--brand-primary--500`, `--surface--base`,
 | Visible cards | Cards | Number | `3` | Listede görünen kart sayısı; aktif kart ortaya kayar |
 | Card text align | Cards | Variant | `Center` | `Left` = eski sola dayalı hâl |
 | Item N › Label / Icon / Card title / Card text | Item 1–8 | Text · Variant · Text · Text | 6 item dolu (Agentic AI, Human Agent, Agent Copilot, Conversational Intelligence, Insights, Customer) | Icon: None · mic · chat · headset · sparkle · chart · target · check · zap · search · user · clock · shield · bulb · cycle · arrow. Card title boş = Label |
+
+## Top Bar — Designer prop'ları
+
+Kurulum: component'i sayfanın (ya da Navbar component'inin) **en üstüne,
+Navbar'dan önce** yerleştir. Navbar `position:fixed` olduğu için bar
+görünürken nav'a inline `top: <bar yüksekliği>` basılır, kapanınca sıfırlanır;
+başka bir eleman da `top: var(--topbar-h, 0)` ile hizalanabilir. Kapatma
+cookie'si tüm site için geçerlidir (`path=/`); test için konsolda
+`__sestekTopBar.reset()` cookie'yi siler.
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Text | Content | Text | `Sestek is now part of Unifonic.` | Duyuru metni |
+| Emoji / prefix | Content | Text | boş | Metnin başına işaret, örn. 🎉 |
+| Link label / Link URL | Content | Text | `Read more` / `/blog` | Boş label = link yok; site içi yol ya da tam URL |
+| Open in new tab | Content | Boolean | `Off` | |
+| Campaign id | Dismiss | Text | `default` | Cookie'de saklanan kimlik; değiştirince önceki barı kapatanlar yenisini görür |
+| Dismissible | Dismiss | Boolean | `On` | Off = × yok |
+| Remember (days) | Dismiss | Number | `30` | `0` = yalnız bu oturum |
+| Show on mobile | Layout | Boolean | `On` | Off = 768px altında gizli, nav itilmez |
+| Behavior | Layout | Variant | `Sticky` | `Scrolls away` = sayfayla kayar |
+| Push fixed navbar | Layout | Boolean | `On` | `[data-nav]`'a inline top |
+| Navbar selector | Layout | Text | `[data-nav]` | |
+| Theme | Look | Variant | `Brand` | `Dark` · `Light` · `Custom` |
+| Custom background / text color | Look | Text | boş | Theme = Custom |
 
 ## Performans notları
 
