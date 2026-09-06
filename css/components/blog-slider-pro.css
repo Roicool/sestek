@@ -9,12 +9,32 @@
  * https://github.com/roicool/sestek
  */
 
+/* Root. This is the same base as Swiper's own `.swiper` rule MINUS its
+   `padding: 0` reset — the JS deliberately does NOT add the `swiper` class to
+   the root, because swiper-bundle.min.css loads after the Webflow site CSS and
+   its `.swiper { padding: 0 }` silently wiped every padding you set on the root
+   in the Designer (most visibly the tablet / mobile breakpoint values).
+   Swiper itself measures the root's padding and lays the slides out inside the
+   content box, so Designer padding now works on every breakpoint. */
 [data-blog-slider-pro] {
   position: relative;
   overflow: hidden;
+  display: block;
+  list-style: none;
+  z-index: 1;
   cursor: grab;
 }
 [data-blog-slider-pro].swiper-grabbing { cursor: grabbing; }
+
+/* Swiper's a11y live region normally relies on `.swiper .swiper-notification`. */
+[data-blog-slider-pro] .swiper-notification {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: -1000;
+}
 
 [data-blog-slider-pro] .swiper-slide {
   height: auto;
@@ -23,20 +43,39 @@
 /* Edge mask/fade — JS adds .bs-faded and sets --bs-fade when data-bs-fade > 0.
    Fades the TRAILING (right) edge so the bleeding next card dissolves softly,
    like marquee.css. The leading edge stays crisp so the first/active card and
-   the prev arrow read clearly. */
+   the prev arrow read clearly.
+
+   The fade collapses to 0 (class .bs-at-end, toggled by JS) once the slider
+   reaches its last snap: Swiper aligns the last slide flush with the right edge
+   there, so a permanent fade would keep dissolving the last card and it never
+   looked fully "arrived". Registered property → the collapse animates in
+   Chrome/Safari/Firefox 128+, and simply snaps elsewhere. */
+@property --bs-fade-w {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
 [data-blog-slider-pro].bs-faded {
+  --bs-fade-w: var(--bs-fade, 48px);
   -webkit-mask-image: linear-gradient(
     to right,
     black 0%,
-    black calc(100% - var(--bs-fade, 48px)),
+    black calc(100% - var(--bs-fade-w)),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     black 0%,
-    black calc(100% - var(--bs-fade, 48px)),
+    black calc(100% - var(--bs-fade-w)),
     transparent 100%
   );
+  transition: --bs-fade-w 0.35s ease;
+}
+[data-blog-slider-pro].bs-faded.bs-at-end {
+  --bs-fade-w: 0px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-blog-slider-pro].bs-faded { transition: none; }
 }
 
 /* Pre-init guard: keep the wrapper a simple clipped row so there's no vertical
