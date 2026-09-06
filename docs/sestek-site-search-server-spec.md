@@ -1,10 +1,13 @@
 # Sestek Site Search — Server-side Spec (Webflow Cloud app repo)
 
 > **Scope of this document: only what is built in the cloud-app repository.**
-> The frontend (ranking engine, full-page palette, embed bundle, crawler
-> script) is finished and tested in `roicool/sestek → site-search/`; you copy
-> it in. Your job is the index API, KV storage, the refresh pipeline and
-> hosting the embed. No assistant, no chatbot fallback, no analytics.
+> The frontend is a **Webflow Code Component** ("Site Search" in the
+> `sestek-code-components` library, source `roicool/sestek →
+> webflow-components/src/SiteSearch.tsx`) — already published and placed in
+> the Designer. It does exactly one network call:
+> `GET /demos/api/search/index`. Your job is that endpoint, KV storage and the
+> nightly refresh pipeline. **Nothing to host for the UI** (no embed script,
+> no bundle). No assistant, no chatbot fallback, no analytics.
 >
 > Full context (architecture, ranking, UX): `docs/sestek-site-search-spec.md`.
 > Maintainer for the **ASK** items: mahmud.filoglu@roicool.com.
@@ -16,48 +19,48 @@
 | Fact | Consequence |
 |---|---|
 | App = Next.js 16 App Router + `@opennextjs/cloudflare`, deployed with `webflow cloud deploy`, **mounted at `/demos`** | Route file `src/app/api/search/index/route.ts` is live at **`https://www.sestek.com/demos/api/search/index`**. Never hard-code `basePath` in `next.config`. |
-| Marketing site and app share the `www.sestek.com` origin | Index fetch from the embed is same-origin. CORS only for `https://*.webflow.io` (staging). |
+| Marketing site and app share the `www.sestek.com` origin | Index fetch from the Code Component is same-origin. CORS only for `https://*.webflow.io` (staging). |
 | OpenNext-Cloudflare runs the **Node** runtime (`nodejs_compat`) | Do **not** add `export const runtime = "edge"`. Plain route handlers. |
 | Bindings come from the app's `wrangler.json`; the Webflow CLI may regenerate that file (it is git-ignored in the app) | Declare the KV binding there and verify it survives `webflow cloud deploy` — **ASK** the maintainer how they want it tracked/committed. |
 | Sitemap: `https://www.sestek.com/sitemap.xml`, 549 URLs (213 under `/tr`) | Crawl takes ~1–2 min at concurrency 6. Runs in GitHub Actions, **not** in the Worker (subrequest/CPU limits). |
-| The embed expects `GET /demos/api/search/index` to return a `SearchIndex` JSON and the script at `/demos/site-search.v1.js` | Both are served by this app. |
+| The Code Component fetches `GET /demos/api/search/index` (`credentials: "omit"`, honours `ETag`/`If-None-Match` via the browser cache, caches the JSON in `sessionStorage` for 1 h) and expects a `SearchIndex` JSON | Only this endpoint is served by this app. Response shape is fixed by `src/lib/search/types.ts` — do not rename fields. |
 
 ---
 
-## 1. Copy the frontend package in
+## 1. Copy the crawler + shared types in
 
-From `roicool/sestek` → `site-search/` (see its `README.md`):
+Only the index-building side is needed here (the palette/ranking UI lives in
+the Code Component). From `roicool/sestek` → `site-search/`:
 
 ```
-site-search/src/lib/search/*            →  src/lib/search/*
-site-search/src/data/search-seeds.ts    →  src/data/search-seeds.ts
-site-search/src/components/SiteSearch/* →  src/components/SiteSearch/*
-site-search/scripts/bundle-search.mjs   →  scripts/bundle-search.mjs   (change outfile to public/site-search.v${major}.js)
-site-search/scripts/build-search-index.ts → scripts/build-search-index.ts (default --out public/search-index.json)
-site-search/fixtures-search-index.json  →  public/search-index.json    (provisional; replaced by the first crawl)
+site-search/src/lib/search/types.ts       →  src/lib/search/types.ts      (SearchDoc / SearchIndex — the API contract)
+site-search/src/lib/search/kinds.ts       →  src/lib/search/kinds.ts      (kind + locale from URL, title from slug)
+site-search/src/lib/search/normalize.ts   →  src/lib/search/normalize.ts  (imported by kinds.ts)
+site-search/src/data/search-seeds.ts      →  src/data/search-seeds.ts     (curated summaries, merged by the crawler)
+site-search/scripts/build-search-index.ts →  scripts/build-search-index.ts (default --out public/search-index.json)
+site-search/fixtures-search-index.json    →  public/search-index.json     (provisional; replaced by the first crawl)
 ```
+
+Do **not** copy `components/SiteSearch/*`, `rank.ts`, `messages.ts` or
+`bundle-search.mjs` — nothing in this repo renders the search.
 
 `package.json` additions:
 
 ```json
 {
-  "searchVersion": "1.0.0",
   "scripts": {
     "search:index": "tsx scripts/build-search-index.ts",
-    "search:index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only",
-    "search:bundle": "node scripts/bundle-search.mjs",
-    "search:test": "tsx --test src/lib/search/rank.test.ts",
-    "prebuild": "node scripts/bundle-search.mjs"
+    "search:index:sitemap": "tsx scripts/build-search-index.ts --sitemap-only"
   },
-  "devDependencies": { "esbuild": "^0.24.0", "tsx": "^4.19.0", "preact": "^10.24.0" }
+  "devDependencies": { "tsx": "^4.19.0" }
 }
 ```
 
-`prebuild` guarantees `public/site-search.v1.js` exists on every deploy (Next
-serves `public/` as static assets). Do not commit `*.js.map`. `tsconfig`
-needs `resolveJsonModule: true` (Next default).
+`tsconfig` needs `resolveJsonModule: true` (Next default) for the bundled
+fallback import in the route.
 
-Sanity: `npm run search:test` → 10 passing; `npm run search:bundle` → ~43 KB.
+Sanity: `npm run search:index:sitemap` → `public/search-index.json` with
+~549 docs in a few seconds (no page fetches).
 
 ---
 
@@ -233,35 +236,34 @@ Notes
 
 ---
 
-## 5. Hosting the embed + wiring Webflow
+## 5. How the Code Component consumes the API (nothing to do here, for context)
 
-- `public/site-search.v1.js` is built by `prebuild`; served at
-  `https://www.sestek.com/demos/site-search.v1.js`. Long cache is fine — the
-  filename carries the major version (`searchVersion` in package.json);
-  rollback = point the script tag at the previous file.
-- Webflow → Site Settings → Custom Code → **Footer**:
-  ```html
-  <script defer src="https://www.sestek.com/demos/site-search.v1.js"></script>
-  ```
-  Optional attributes: `data-index`, `data-demo`, `data-contact`,
-  `data-locale`, `data-host`.
-- Nav search icon: add attribute `data-search-trigger` (the old `search.js`
-  overlay block is removed).
-- Staging (`rc-sestek.webflow.io`) loads the same production script; the
-  index request works thanks to the webflow.io CORS rule.
+- The "Site Search" component sits in the Webflow nav; its **Index URL** prop
+  defaults to `/demos/api/search/index` (same-origin on `www.sestek.com`).
+  On staging (`rc-sestek.webflow.io`) the maintainer sets the prop to the
+  full production URL — hence the webflow.io CORS rule in §2.1.
+- The index is fetched once per session when the palette first opens
+  (`credentials: "omit"`), then cached in `sessionStorage` for 1 h; the
+  browser's HTTP cache + `ETag` handle the rest. Ranking, locale, preview
+  are all client-side — **no per-keystroke requests**, no other endpoints.
+- Until the endpoint responds, the palette opens but shows its loading
+  state; the site is otherwise unaffected. A non-2xx or a non-`SearchIndex`
+  body shows the empty state.
+- Changing field names or the `docs[]` shape breaks the published component;
+  additive fields are fine.
 
 ---
 
 ## 6. Rollout order
 
-1. Copy the package (§1), `npm run search:test`, `npm run search:bundle`.
+1. Copy the crawler + types (§1), `npm run search:index:sitemap`.
 2. Add the route (§2), `wrangler.json` binding + secret (§3). Deploy.
 3. Verify: `curl -I https://www.sestek.com/demos/api/search/index` → 200,
-   `X-Search-Index-Source: bundled`, ETag present; `curl -I …/site-search.v1.js` → 200.
+   `X-Search-Index-Source: bundled`, ETag present.
 4. Add the workflow (§4) + GitHub secret; run it manually once → GET now
    reports `X-Search-Index-Source: kv` and real H1 titles.
-5. Add the script tag on staging, validate EN + `/tr` queries with the
-   maintainer, then publish to production.
+5. Tell the maintainer; they open ⌘K on the published site and validate EN +
+   `/tr` queries (the component is already in place).
 
 ## 7. Acceptance
 
@@ -269,4 +271,4 @@ Notes
 - [ ] `POST` rejects missing/wrong bearer (401), bad shape (422); accepted body is what GET returns next (`kv`).
 - [ ] Workflow: nightly crawl completes for all sitemap URLs, POST 200, fallback JSON committed when changed.
 - [ ] A page added to the sitemap is searchable by the next morning with no deploy.
-- [ ] `site-search.v1.js` served from `/demos/`, embed opens on the published site with ⌘K and the nav icon.
+- [ ] Published site: ⌘K palette lists real results from the endpoint (checked by the maintainer).
