@@ -306,7 +306,7 @@ cookie'yi siler. `window` üzerinde `sestek:consent` event'i de fırlatılır.
 | Reject button | Consent | Boolean | `On` | Kabul ile eşit ağırlıkta tek tıkla Reddet |
 | Preferences category | Consent | Boolean | `Off` | On = 4. kategori (functionality/personalization_storage ayrı) |
 | Respect GPC | Consent | Boolean | `On` | Global Privacy Control varsa kategoriler kapalı başlar |
-| Position | Look | Variant | `Bottom left` | `Bottom right` · `Bottom center`; mobilde hep tam genişlik alt |
+| Position | Look | Variant | `Bottom left` | `Bottom right` · `Bottom center` · `Bottom bar` (masaüstünde tam genişlik tek satır); mobilde hepsi alt sheet |
 | Theme | Look | Variant | `Light` | `Dark` |
 | Blocking | Look | Boolean | `Off` | On = karartma, seçim yapılana dek sayfa kullanılamaz |
 | Show after (ms) | Look | Number | `600` | |

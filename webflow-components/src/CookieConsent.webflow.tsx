@@ -27,7 +27,7 @@ export default declareComponent(CookieConsent, {
     preferencesCategory: props.Boolean({ name: "Preferences category", group: "Consent", defaultValue: false, trueLabel: "On", falseLabel: "Off", tooltip: "Off = 3 kategori (Zorunlu, Analitik, Pazarlama); functionality/personalization_storage analitikle birlikte gider" }),
     respectGpc: props.Boolean({ name: "Respect GPC", group: "Consent", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Global Privacy Control sinyali varsa kategoriler kapalı başlar" }),
 
-    position: props.Variant({ name: "Position", group: "Look", options: ["Bottom left", "Bottom right", "Bottom center"], defaultValue: "Bottom left" }),
+    position: props.Variant({ name: "Position", group: "Look", options: ["Bottom left", "Bottom right", "Bottom center", "Bottom bar"], defaultValue: "Bottom left", tooltip: "Bottom bar = masaüstünde tam genişlik tek satır; mobilde hepsi alt sheet" }),
     theme: props.Variant({ name: "Theme", group: "Look", options: ["Light", "Dark"], defaultValue: "Light" }),
     blocking: props.Boolean({ name: "Blocking", group: "Look", defaultValue: false, trueLabel: "On", falseLabel: "Off", tooltip: "On = arkaplan karartılır, seçim yapılana dek sayfa kullanılamaz" }),
     delay: props.Number({ name: "Show after (ms)", group: "Look", defaultValue: 600 }),

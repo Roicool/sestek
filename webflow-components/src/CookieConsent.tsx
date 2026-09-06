@@ -35,7 +35,7 @@ export interface CookieConsentProps {
   policyVersion?: string;
   rememberDays?: number;
   delay?: number;                  // ms before the banner shows
-  position?: string;               // "Bottom left" | "Bottom right" | "Bottom center"
+  position?: string;               // "Bottom left" | "Bottom right" | "Bottom center" | "Bottom bar"
   theme?: string;                  // "Light" | "Dark"
   blocking?: boolean;              // backdrop + page not usable until a choice
   showReject?: boolean;
@@ -153,59 +153,90 @@ const CSS = `
   --cc-bg:var(--surface--base,#fff);
   --cc-fg:var(--color-text--base,#17151f);
   --cc-muted:var(--color-text--muted,#6f6f7c);
-  --cc-line:var(--border--color-border-page,#e6e5ef);
+  --cc-line:var(--border--color-border-page,#e9e7f1);
   --cc-soft:var(--surface--light,#eeebf8);
   --cc-accent:var(--brand-primary--500,#e5007d);
-  --cc-r:var(--radius--lg,20px);
+  --cc-glow:color-mix(in srgb,var(--cc-accent) 16%,transparent);
+  --cc-glow2:color-mix(in srgb,#7b61ff 14%,transparent);
+  --cc-r:24px;
   --cc-font:var(--font--primary,var(--font--body,inherit));
-  position:fixed;z-index:2147482000;left:clamp(12px,2vw,28px);bottom:clamp(12px,2vw,28px);width:min(400px,calc(100vw - 2*clamp(12px,2vw,28px)));
-  font-family:var(--cc-font);color:var(--cc-fg);
-  animation:cc-in .36s cubic-bezier(.22,1,.36,1) both;
+  position:fixed;z-index:2147482000;left:clamp(12px,2vw,28px);bottom:clamp(12px,2vw,28px);width:min(420px,calc(100vw - 2*clamp(12px,2vw,28px)));
+  font-family:var(--cc-font);color:var(--cc-fg);-webkit-font-smoothing:antialiased;
+  animation:cc-in .5s cubic-bezier(.22,1,.36,1) both;
 }
 .cc[data-pos="right"]{left:auto;right:clamp(12px,2vw,28px)}
-.cc[data-pos="center"]{left:50%;transform:translateX(-50%)}
-.cc[data-theme="dark"]{--cc-bg:var(--neutral--950,#17151f);--cc-fg:#fff;--cc-muted:rgba(255,255,255,.6);--cc-line:rgba(255,255,255,.12);--cc-soft:rgba(255,255,255,.08)}
-.cc_card{background:var(--cc-bg);border:1px solid var(--cc-line);border-radius:var(--cc-r);box-shadow:0 30px 70px -30px rgba(20,10,50,.35),0 2px 10px -6px rgba(20,10,50,.12);padding:20px 20px 18px;overflow:hidden}
-.cc_head{display:flex;align-items:center;gap:10px;margin:0 0 8px}
-.cc_dot{width:10px;height:10px;border-radius:2px;background:var(--cc-accent);transform:rotate(45deg) scale(.8);flex:none}
-.cc_title{margin:0;font-size:15px;font-weight:var(--font-weight--semibold,600);letter-spacing:-.005em}
-.cc_text{margin:0;font-size:13.5px;line-height:1.5;color:var(--cc-muted)}
-.cc_text a{color:var(--cc-fg);text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:1px}
-.cc_actions{display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap}
-.cc_btn{font:inherit;font-family:var(--cc-font);font-size:13.5px;font-weight:600;line-height:1;padding:11px 16px;border-radius:var(--radius--full,999px);border:1px solid transparent;cursor:pointer;transition:transform .15s,filter .2s,background .2s,border-color .2s;-webkit-tap-highlight-color:transparent}
+.cc[data-pos="center"]{left:50%;transform:translateX(-50%);animation-name:cc-in-c}
+.cc[data-pos="bar"]{left:clamp(12px,2vw,28px);right:clamp(12px,2vw,28px);width:auto}
+.cc.is-leaving{animation:cc-out .22s ease both}
+.cc[data-pos="center"].is-leaving{animation-name:cc-out-c}
+.cc[data-theme="dark"]{--cc-bg:rgba(23,21,31,.92);--cc-fg:#fff;--cc-muted:rgba(255,255,255,.62);--cc-line:rgba(255,255,255,.12);--cc-soft:rgba(255,255,255,.07);--cc-glow:color-mix(in srgb,var(--cc-accent) 28%,transparent)}
+.cc_card{position:relative;overflow:hidden;background:var(--cc-bg);border:1px solid var(--cc-line);border-radius:var(--cc-r);padding:24px 24px 22px;
+  box-shadow:0 40px 90px -36px rgba(20,10,50,.42),0 8px 24px -16px rgba(20,10,50,.18),0 0 0 1px rgba(255,255,255,.5) inset}
+.cc[data-theme="dark"] .cc_card{-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 40px 90px -36px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06) inset}
+/* soft brand glow in the corner */
+.cc_card::before{content:"";position:absolute;right:-22%;top:-40%;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--cc-glow) 0%,var(--cc-glow2) 40%,transparent 70%);pointer-events:none;filter:blur(2px)}
+.cc_card::after{content:"";position:absolute;right:-10%;bottom:-38%;width:48%;aspect-ratio:1;border-radius:50%;border:1px solid var(--cc-glow);pointer-events:none}
+.cc_card>*{position:relative}
+.cc_head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.cc_dot{width:10px;height:10px;border-radius:2px;background:var(--cc-accent);transform:rotate(45deg) scale(.8);flex:none;box-shadow:0 0 0 4px var(--cc-glow)}
+.cc_title{margin:0;font-size:17px;font-weight:var(--font-weight--semibold,600);letter-spacing:-.01em;line-height:1.2}
+.cc_text{margin:0;font-size:14px;line-height:1.55;color:var(--cc-muted);text-wrap:pretty}
+.cc_text a{color:var(--cc-fg);font-weight:500;text-decoration:underline;text-underline-offset:.2em;text-decoration-thickness:1px;text-decoration-color:var(--cc-accent)}
+.cc_actions{display:flex;align-items:center;gap:8px;margin-top:18px;flex-wrap:wrap}
+.cc_btn{font:inherit;font-family:var(--cc-font);font-size:14px;font-weight:600;line-height:1;padding:12px 18px;border-radius:999px;border:1px solid transparent;cursor:pointer;transition:transform .18s cubic-bezier(.22,1,.36,1),filter .2s,background .2s,border-color .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
+.cc_btn:hover{transform:translateY(-1px)}
 .cc_btn:active{transform:scale(.98)}
 .cc_btn:focus-visible{outline:2px solid var(--cc-accent);outline-offset:2px}
-.cc_btn--primary{background:var(--cc-accent);color:#fff}
-.cc_btn--primary:hover{filter:brightness(1.06)}
-.cc_btn--ghost{background:transparent;color:var(--cc-fg);border-color:var(--cc-line)}
-.cc_btn--ghost:hover{background:var(--cc-soft)}
-.cc_link{margin-left:auto;font:inherit;font-family:var(--cc-font);font-size:13px;font-weight:600;color:var(--cc-muted);background:none;border:0;padding:8px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:1px}
+.cc_btn--primary{background:var(--cc-accent);color:#fff;box-shadow:0 10px 22px -12px color-mix(in srgb,var(--cc-accent) 70%,transparent)}
+.cc_btn--primary:hover{filter:brightness(1.06);box-shadow:0 14px 28px -12px color-mix(in srgb,var(--cc-accent) 75%,transparent)}
+.cc_btn--ghost{background:var(--cc-soft);color:var(--cc-fg)}
+.cc_btn--ghost:hover{background:color-mix(in srgb,var(--cc-soft) 70%,var(--cc-line))}
+.cc_link{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font:inherit;font-family:var(--cc-font);font-size:13px;font-weight:600;color:var(--cc-muted);background:none;border:0;padding:8px 2px;cursor:pointer;transition:color .2s}
+.cc_link svg{width:12px;height:12px;transition:transform .25s}
 .cc_link:hover{color:var(--cc-fg)}
+.cc_link[aria-expanded="true"] svg{transform:rotate(180deg)}
 .cc_link:focus-visible{outline:2px solid var(--cc-accent);outline-offset:2px;border-radius:4px}
-/* preferences */
-.cc_cats{display:flex;flex-direction:column;margin:14px 0 4px;border-top:1px solid var(--cc-line)}
-.cc_cat{display:grid;grid-template-columns:1fr auto;gap:2px 14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--cc-line)}
-.cc_cat-name{grid-column:1;grid-row:1;font-size:13.5px;font-weight:600}
+/* preferences — slides open */
+.cc_prefs{display:grid;grid-template-rows:0fr;transition:grid-template-rows .36s cubic-bezier(.22,1,.36,1)}
+.cc_prefs.is-open{grid-template-rows:1fr}
+.cc_prefs>div{overflow:hidden;min-height:0}
+.cc_cats{display:flex;flex-direction:column;gap:6px;margin:16px 0 2px}
+.cc_cat{display:grid;grid-template-columns:1fr auto;gap:2px 14px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--cc-soft);transition:background .2s}
+.cc[data-theme="dark"] .cc_cat{background:rgba(255,255,255,.05)}
+.cc_cat-name{grid-column:1;grid-row:1;font-size:14px;font-weight:600}
 .cc_cat-desc{grid-column:1;grid-row:2;font-size:12.5px;line-height:1.45;color:var(--cc-muted)}
-.cc_cat-always{grid-column:2;grid-row:1/3;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--cc-muted);font-weight:600}
-.cc_sw{grid-column:2;grid-row:1/3;position:relative;width:38px;height:22px;border-radius:999px;background:var(--cc-line);border:0;cursor:pointer;transition:background .2s;flex:none;padding:0}
-.cc_sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.cc_cat-always{grid-column:2;grid-row:1/3;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--cc-accent);font-weight:700;padding:5px 9px;border-radius:999px;background:var(--cc-bg);border:1px solid var(--cc-line)}
+.cc_sw{grid-column:2;grid-row:1/3;position:relative;width:42px;height:24px;border-radius:999px;background:var(--cc-line);border:0;cursor:pointer;transition:background .25s;flex:none;padding:0}
+.cc[data-theme="dark"] .cc_sw{background:rgba(255,255,255,.18)}
+.cc_sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.22,1,.36,1)}
 .cc_sw[aria-checked="true"]{background:var(--cc-accent)}
-.cc_sw[aria-checked="true"]::after{transform:translateX(16px)}
+.cc_sw[aria-checked="true"]::after{transform:translateX(18px)}
 .cc_sw:focus-visible{outline:2px solid var(--cc-accent);outline-offset:2px}
+/* bottom bar layout (desktop) */
+.cc[data-pos="bar"] .cc_card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 32px;align-items:center;padding:18px 24px}
+.cc[data-pos="bar"] .cc_head{grid-column:1;grid-row:1;margin-bottom:2px}
+.cc[data-pos="bar"] .cc_text{grid-column:1;grid-row:2;max-width:72ch}
+.cc[data-pos="bar"] .cc_actions{grid-column:2;grid-row:1/3;margin:0;flex-wrap:nowrap}
+.cc[data-pos="bar"] .cc_btn{white-space:nowrap}
+.cc[data-pos="bar"] .cc_link{margin-left:4px}
+.cc[data-pos="bar"] .cc_prefs{grid-column:1/-1;grid-row:3}
+.cc[data-pos="bar"] .cc_cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:12px 0 2px}
 .cc_backdrop{position:fixed;inset:0;z-index:2147481999;background:rgba(14,10,30,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:cc-fade .3s ease both}
-@keyframes cc-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-.cc[data-pos="center"]{animation-name:cc-in-c}
-@keyframes cc-in-c{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes cc-in{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes cc-in-c{from{opacity:0;transform:translate(-50%,16px) scale(.98)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes cc-out{to{opacity:0;transform:translateY(10px) scale(.98)}}
+@keyframes cc-out-c{to{opacity:0;transform:translate(-50%,10px) scale(.98)}}
 @keyframes cc-fade{from{opacity:0}to{opacity:1}}
 @media (max-width:767px){
-  .cc,.cc[data-pos="right"],.cc[data-pos="center"]{left:8px;right:8px;bottom:8px;width:auto;transform:none;animation-name:cc-in}
-  .cc_card{padding:18px 16px 16px;border-radius:var(--radius--md,14px)}
-  .cc_actions{gap:8px}
-  .cc_btn{flex:1 1 auto;text-align:center}
-  .cc_link{margin-left:0;flex-basis:100%;text-align:center;padding-top:4px}
+  .cc,.cc[data-pos="right"],.cc[data-pos="center"],.cc[data-pos="bar"]{left:8px;right:8px;bottom:8px;width:auto;transform:none;animation-name:cc-in}
+  .cc.is-leaving{animation-name:cc-out}
+  .cc_card,.cc[data-pos="bar"] .cc_card{display:block;padding:20px 18px 16px;border-radius:20px}
+  .cc_actions,.cc[data-pos="bar"] .cc_actions{margin-top:16px;gap:8px;flex-wrap:wrap}
+  .cc_btn{flex:1 1 auto;text-align:center;padding:13px 16px}
+  .cc_link,.cc[data-pos="bar"] .cc_link{margin-left:0;flex-basis:100%;justify-content:center;padding-top:6px}
+  .cc_cats{margin-top:14px}
 }
-@media (prefers-reduced-motion:reduce){.cc,.cc_backdrop{animation:none}}
+@media (prefers-reduced-motion:reduce){.cc,.cc_backdrop{animation:none}.cc_prefs{transition:none}}
 `;
 
 export function CookieConsent({
@@ -231,6 +262,7 @@ export function CookieConsent({
 
   const [open, setOpen] = React.useState(false);
   const [manage, setManage] = React.useState(false);
+  const [leaving, setLeaving] = React.useState(false);
   const [cats, setCats] = React.useState<Cats>(DEFAULT_CATS);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const version = String(policyVersion || "1");
@@ -240,7 +272,8 @@ export function CookieConsent({
     writeStored(stored, Number(rememberDays) || 180);
     applyConsent(stored);
     setCats(stored);
-    setOpen(false); setManage(false);
+    setLeaving(true);
+    window.setTimeout(() => { setOpen(false); setManage(false); setLeaving(false); }, 230);
   }, [version, rememberDays, preferencesCategory]);
 
   const acceptAll = React.useCallback(() => decide({ analytics: true, marketing: true, preferences: true }), [decide]);
@@ -281,7 +314,7 @@ export function CookieConsent({
 
   if (!open) return <style dangerouslySetInnerHTML={{ __html: CSS }} />;
 
-  const pos = position === "Bottom right" ? "right" : position === "Bottom center" ? "center" : "left";
+  const pos = position === "Bottom right" ? "right" : position === "Bottom center" ? "center" : position === "Bottom bar" ? "bar" : "left";
   const catKeys: Array<keyof typeof t.cats> = ["necessary", "analytics", "marketing", ...(preferencesCategory ? (["preferences"] as const) : [])];
   const toggle = (k: keyof Cats) => setCats((c) => ({ ...c, [k]: !c[k] }));
 
@@ -289,37 +322,39 @@ export function CookieConsent({
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       {blocking && <div className="cc_backdrop" aria-hidden="true" />}
-      <div className="cc" data-pos={pos} data-theme={theme === "Dark" ? "dark" : "light"} role={blocking ? "dialog" : "region"} aria-modal={blocking || undefined} aria-label={title}>
+      <div className={"cc" + (leaving ? " is-leaving" : "")} data-pos={pos} data-theme={theme === "Dark" ? "dark" : "light"} role={blocking ? "dialog" : "region"} aria-modal={blocking || undefined} aria-label={title}>
         <div ref={cardRef} className="cc_card">
           <div className="cc_head"><span className="cc_dot" aria-hidden="true" /><h2 className="cc_title">{title}</h2></div>
           <p className="cc_text">{text} {policyUrl && <a href={policyUrl}>{t.policy}</a>}</p>
 
-          {manage && (
-            <div className="cc_cats">
-              {catKeys.map((k) => (
-                <div key={k} className="cc_cat">
-                  <span className="cc_cat-name" id={"cc-" + k}>{t.cats[k][0]}</span>
-                  {k === "necessary"
-                    ? <span className="cc_cat-always">{t.always}</span>
-                    : <button type="button" role="switch" aria-checked={cats[k as keyof Cats]} aria-labelledby={"cc-" + k} className="cc_sw" onClick={() => toggle(k as keyof Cats)} />}
-                  <span className="cc_cat-desc">{t.cats[k][1]}</span>
-                </div>
-              ))}
+          <div className={"cc_prefs" + (manage ? " is-open" : "")} aria-hidden={!manage}>
+            <div>
+              <div className="cc_cats">
+                {catKeys.map((k) => (
+                  <div key={k} className="cc_cat">
+                    <span className="cc_cat-name" id={"cc-" + k}>{t.cats[k][0]}</span>
+                    {k === "necessary"
+                      ? <span className="cc_cat-always">{t.always}</span>
+                      : <button type="button" role="switch" aria-checked={cats[k as keyof Cats]} aria-labelledby={"cc-" + k} className="cc_sw" tabIndex={manage ? 0 : -1} onClick={() => toggle(k as keyof Cats)} />}
+                    <span className="cc_cat-desc">{t.cats[k][1]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
 
           <div className="cc_actions">
             {manage ? (
               <>
                 <button type="button" className="cc_btn cc_btn--primary" onClick={() => decide(cats)}>{t.save}</button>
                 <button type="button" className="cc_btn cc_btn--ghost" onClick={acceptAll}>{t.accept}</button>
-                <button type="button" className="cc_link" onClick={() => setManage(false)}>{t.back}</button>
+                <button type="button" className="cc_link" aria-expanded="true" onClick={() => setManage(false)}>{t.back}<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5" /></svg></button>
               </>
             ) : (
               <>
                 <button type="button" className="cc_btn cc_btn--primary" onClick={acceptAll}>{t.accept}</button>
                 {showReject && <button type="button" className="cc_btn cc_btn--ghost" onClick={rejectAll}>{t.reject}</button>}
-                <button type="button" className="cc_link" onClick={() => setManage(true)}>{t.manage}</button>
+                <button type="button" className="cc_link" aria-expanded="false" onClick={() => setManage(true)}>{t.manage}<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5" /></svg></button>
               </>
             )}
           </div>
