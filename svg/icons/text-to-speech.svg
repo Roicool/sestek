@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--text-to-speech" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-text-to-speech" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__solid" fill="currentColor" stroke="currentColor">
+    <path d="M3.4 17 7.3 6.9 11.2 17" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 13.4h4.6" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-text-to-speech)" stroke="url(#sstg-text-to-speech)">
+    <rect x="15.2" y="9.2" width="3" height="5.6" rx="1.5" stroke="none"/>
+    <rect x="19" y="6.8" width="3" height="10.4" rx="1.5" stroke="none"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" class="sst-icon sst-icon--analytics" aria-hidden="true">
+  <defs>
+    <linearGradient id="sstg-analytics" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="var(--sst-c1, #EC008C)"/>
+      <stop offset=".5" stop-color="var(--sst-c2, #7F81AE)"/>
+      <stop offset="1" stop-color="var(--sst-c3, #00FFEB)"/>
+    </linearGradient>
+  </defs>
+  <g class="sst-icon__soft" fill="currentColor" stroke="currentColor" opacity=".22">
+    <rect x="3.4" y="14" width="3.6" height="6.4" rx="1.8" stroke="none"/>
+    <rect x="8.2" y="11" width="3.6" height="9.4" rx="1.8" stroke="none"/>
+  </g>
+  <g class="sst-icon__accent" fill="url(#sstg-analytics)" stroke="url(#sstg-analytics)">
+    <rect x="13" y="8" width="3.6" height="12.4" rx="1.8" stroke="none"/>
+    <rect x="17.8" y="4.6" width="3.6" height="15.8" rx="1.8" stroke="none"/>
+  </g>
+</svg>

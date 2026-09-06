@@ -19,12 +19,18 @@
  * CSS      : css/components/blog-slider-pro.css
  *
  * DOM (identical to blog-slider, only the root attribute differs):
- *   [data-blog-slider-pro]             root                → .swiper
+ *   [data-blog-slider-pro]             root                (no `swiper` class — see wire())
  *     [data-bs-wrapper]                Collection List      → .swiper-wrapper
  *       [data-bs-slide]                Collection Item      → .swiper-slide
  *     [data-bs-pagination]  (optional) pagination target
  *     [data-bs-prev]        (optional) previous button
  *     [data-bs-next]        (optional) next button
+ *
+ * Padding: set it on the ROOT ([data-blog-slider-pro]) in the Designer, per
+ * breakpoint as you like — Swiper measures it and lays the slides out inside
+ * the content box, so the last slide still lands fully in view. Do NOT pad the
+ * Collection List (wrapper): Swiper cannot see wrapper padding, so the track
+ * ends up offset by it and the last slide gets clipped.
  *
  * Root attributes (all optional):
  *   data-bs-per-view     slides per view (fractional → bleed)     (default 1.4)
@@ -78,7 +84,13 @@
     var slides = Array.prototype.slice.call(wrapper.querySelectorAll("[data-bs-slide]"));
     if (!slides.length) { warn("No [data-bs-slide] children.", root); return; }
 
-    root.classList.add("swiper");
+    // NOTE: the root intentionally does NOT get Swiper's `swiper` class.
+    // swiper-bundle.min.css ships `.swiper { padding: 0 }`, and because that
+    // stylesheet loads after the Webflow site CSS it overrode every padding you
+    // set on the root in the Designer (the tablet / mobile values first of
+    // all). blog-slider-pro.css carries the rest of that base rule instead, so
+    // Designer padding is honoured and Swiper (which measures the root's
+    // padding) lays the slides out inside it.
     wrapper.classList.add("swiper-wrapper");
     slides.forEach(function (s) { s.classList.add("swiper-slide"); });
 
@@ -125,6 +137,24 @@
         delay: delay,
         disableOnInteraction: false,   // keep autoplaying after arrows/drag
         pauseOnMouseEnter: true,       // pause on hover, resume on leave
+      };
+    }
+
+    // ── Lift the fade on the last snap ────────────────────────────────────
+    // Swiper's final snap aligns the last slide flush with the trailing edge,
+    // exactly where the mask fades to transparent — so the last card always
+    // looked cut off / never fully arrived. Toggle .bs-at-end whenever the
+    // slider sits at (or is dragged to) its end so the CSS collapses the fade
+    // there. Skipped in loop mode, where there is no "end".
+    if (fade > 0 && !config.loop) {
+      var syncFade = function (sw) {
+        root.classList.toggle("bs-at-end", !!sw.isEnd);
+      };
+      config.on = {
+        init: syncFade,
+        progress: syncFade,   // fires on every translate, drag included
+        resize: syncFade,
+        update: syncFade,
       };
     }
 

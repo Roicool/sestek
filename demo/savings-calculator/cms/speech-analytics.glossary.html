@@ -1,0 +1,70 @@
+<div data-rt-embed-type='true'><div class="glo">
+
+  <div class="glo__grid">
+    <div class="glo__item">
+      <div class="glo__term">Number of Agents</div>
+      <div class="glo__def">Number of agents responsible for inbound calls.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Cost per Agent</div>
+      <div class="glo__def">Average monthly salary of agent.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Total Calls Handled</div>
+      <div class="glo__def">Total monthly inbound calls received.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Total Cost of Agents</div>
+      <div class="glo__def">Total monthly salary paid to agents.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Cost per Call</div>
+      <div class="glo__def">Total agent salary divided by total calls.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Decrease in Average Handling Time by Speech Analytics</div>
+      <div class="glo__def">Based on actual customer testimonials, speech analytics decrease average handling time by 10% by improving silence rates, agent interruptions and responsiveness.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Cost per Call After Speech Analytics</div>
+      <div class="glo__def">Cost per call decreased by 10%.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Monthly Saving with Speech Analytics</div>
+      <div class="glo__def">New cost of calls multiplied by total number of calls.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Annual Saving with Speech Analytics</div>
+      <div class="glo__def">Monthly savings multiplied by 12 months.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Saving in FTE</div>
+      <div class="glo__def">Monthly savings divided by monthly agent salary.</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .glo{
+    --magenta:#EC009C; --ink:#1a1a2e; --muted:#5f6070; --line:#ececf2;
+    width:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--ink);
+  }
+  .glo *{ box-sizing:border-box; }
+  .glo__title{ margin:0 0 20px; font-size:clamp(20px,2.4vw,26px); font-weight:600; letter-spacing:-.01em; }
+
+  /* desktop 2 columns, mobile 1 */
+  .glo__grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:640px){ .glo__grid{ grid-template-columns:1fr; } }
+
+  .glo__item{
+    border:1px solid var(--line); border-left:3px solid var(--magenta);
+    border-radius:12px; padding:18px 20px; background:#fff;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .glo__item:hover{ box-shadow:0 6px 20px rgba(236,0,156,.08); }
+
+  .glo__term{ font-size:15px; font-weight:600; color:var(--ink); margin-bottom:6px; line-height:1.35; }
+  .glo__def{ font-size:14px; line-height:1.55; color:var(--muted); }
+</style></div>

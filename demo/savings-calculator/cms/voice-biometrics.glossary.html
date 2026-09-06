@@ -1,0 +1,66 @@
+<div data-rt-embed-type='true'><div class="glo">
+
+  <div class="glo__grid">
+    <div class="glo__item">
+      <div class="glo__term">Number of Agents</div>
+      <div class="glo__def">Number of agents responsible for calls.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Cost per Agent</div>
+      <div class="glo__def">Average monthly salary of agent.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Calls Requiring Authentication</div>
+      <div class="glo__def">Calls requiring customer identity verification.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Total Cost of Agents</div>
+      <div class="glo__def">Total monthly salary paid to agents.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Cost of Authentication Call</div>
+      <div class="glo__def">Total agent cost divided by number of calls requiring authentication.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Decrease in Call Duration with Voice Biometrics</div>
+      <div class="glo__def">Based on actual customer testimonials, the average decrease in call duration with Voice Biometrics used in the authentication process.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Monthly Saving with Voice Biometrics</div>
+      <div class="glo__def">Number of authentication calls multiplied by cost per call multiplied by decrease in call durations.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Annual Saving with Voice Biometrics</div>
+      <div class="glo__def">Monthly savings multiplied by 12 months.</div>
+    </div>
+    <div class="glo__item">
+      <div class="glo__term">Saving in FTE</div>
+      <div class="glo__def">Monthly savings are divided by monthly agent salary.</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .glo{
+    --magenta:#EC009C; --ink:#1a1a2e; --muted:#5f6070; --line:#ececf2;
+    width:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--ink);
+  }
+  .glo *{ box-sizing:border-box; }
+  .glo__title{ margin:0 0 20px; font-size:clamp(20px,2.4vw,26px); font-weight:600; letter-spacing:-.01em; }
+
+  /* desktop 2 columns, mobile 1 */
+  .glo__grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:640px){ .glo__grid{ grid-template-columns:1fr; } }
+
+  .glo__item{
+    border:1px solid var(--line); border-left:3px solid var(--magenta);
+    border-radius:12px; padding:18px 20px; background:#fff;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .glo__item:hover{ box-shadow:0 6px 20px rgba(236,0,156,.08); }
+
+  .glo__term{ font-size:15px; font-weight:600; color:var(--ink); margin-bottom:6px; line-height:1.35; }
+  .glo__def{ font-size:14px; line-height:1.55; color:var(--muted); }
+</style></div>

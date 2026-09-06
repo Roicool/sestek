@@ -354,7 +354,22 @@ Proje konvansiyonunda (IIFE, `Sestek` namespace, attribute ile konfigürasyon):
 
 ---
 
-## 6. Yapılacaklar özeti
+## 6. E-posta bildirimi (newsletter — opsiyonel)
+
+Newsletter gönderimi **Dynamics'e başarıyla düştüğünde** belirlenen adrese
+bildirim e-postası atılacak. Tamamen server-side bir özellik — site JS'inde
+hiçbir değişiklik gerektirmez. Detaylı tasarım `CRM-LEAD-API-SPEC.md` §8'de:
+
+- Alıcı adres env'den (`NOTIFY_EMAIL_TO`) — kod değişmeden panelden
+  güncellenir; hangi form tiplerinde açık olduğu da env'den
+  (`NOTIFY_FORM_TYPES=frm-newsletter`).
+- Mail ancak lead oluştuktan sonra denenir; mail hatası lead akışını bozmaz.
+- **Gönderen için karar gerekiyor:** (A) Microsoft Graph `sendMail` —
+  mevcut Azure app'ine `Mail.Send` izni + bir kurumsal kutu (danışman/BT
+  onayı gerekir, ek servis yok, önerilen) veya (B) Resend/SendGrid gibi
+  bir servis — API key + domain doğrulaması (DNS kayıtları) gerekir.
+
+## 7. Yapılacaklar özeti
 
 - [x] Server-side endpoint (`/demos/api/crm/lead`) — **ayrı repoda yazıldı**
 - [ ] Secret'ların Webflow Cloud env'ine girilmesi (danışmandan gelince)
@@ -362,3 +377,5 @@ Proje konvansiyonunda (IIFE, `Sestek` namespace, attribute ile konfigürasyon):
 - [ ] Designer: 4 forma `data-crm-form` + input `name`'leri + honeypot
 - [ ] `ses_formtype` değerlerinin ve açık noktaların (§5) danışmanla teyidi
 - [ ] Uçtan uca test: her form tipi → Dynamics'te lead doğrulama
+- [ ] Newsletter mail bildirimi: gönderen yöntemi kararı (Graph vs. servis),
+      alıcı adresin `NOTIFY_EMAIL_TO`'ya girilmesi, app repoda implementasyon

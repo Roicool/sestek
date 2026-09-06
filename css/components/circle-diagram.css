@@ -1,5 +1,5 @@
 /*!
- * circle-diagram.css v1.5.0
+ * circle-diagram.css v1.5.1
  * Behavioural + skin CSS for circle-diagram.js v2.1.0.
  *
  * Düzen: full width + max-width container-2xl, iki kolon — SOLDA halka
@@ -7,6 +7,12 @@
  * oradan gelir), SAĞDA üst üste dizilmiş tıklanabilir kartlar (data-cd-visible
  * kadarı görünür, aktif karta liste otomatik kayar). ≤991px: tek kolon.
  *
+ * v1.5.1 — sağ kolondaki kart BAŞLIĞINDAKİ nokta artık varsayılan olarak KAPALI.
+ *          Ortalı başlık iki satıra sardığında metin düğümü anonim flex item
+ *          olarak kalan genişliği kaplıyor, nokta da kartın soluna itilip
+ *          başlıktan kopuk duruyordu. Geri açmak için köke
+ *          --cd-card-bullet: block. İkon modu ETKİLENMEZ: aynı ::before
+ *          kutusunu kullandığı için data-cd-icon varken tekrar gösterilir.
  * v1.5.0 — (1) SAĞ kolondaki kart metinleri artık ORTALI (başlık + gövde);
  *          eski sola dayalı hâl için köke data-cd-align="left".
  *          (2) IKON MODU: halkadaki [data-cd-dot] noktası, item'a
@@ -32,6 +38,8 @@
   --cd-ring-w: 2px;                                                     /* halka kalınlığı */
   --cd-bg:     var(--surface--base, var(--neutral--0, #fff));           /* panel/kart zemini */
   --cd-card-align: center;                                              /* sağ kolon metin hizası */
+  --cd-card-bullet: none;                                               /* kart başlığı noktası;
+                                                                           geri açmak için: block */
   --cd-icon-size: 1.125rem;                                             /* ikon modunda dot boyu */
   position: relative;
   width: 100%;                             /* flex/grid parent içinde büzülme */
@@ -211,6 +219,7 @@
 
 /* Aynı attribute kart üzerinde de çalışır: başlıktaki 6px nokta ikona döner */
 [data-cd-icon] .cd_card-title::before {
+  display: block;                          /* --cd-card-bullet:none'ı geçersiz kılar */
   width: var(--cd-icon-size, 1.125rem);
   height: var(--cd-icon-size, 1.125rem);
   border-radius: 0;
@@ -275,8 +284,11 @@
   color: var(--cd-ink);
   margin-bottom: .625rem;
 }
+/* Başlık noktası — v1.5.1'den beri varsayılan KAPALI (--cd-card-bullet).
+   İkon modu bu kutuyu yeniden kullandığı için aşağıda tekrar açılır. */
 .cd_card-title::before {
   content: "";
+  display: var(--cd-card-bullet, none);
   width: 6px;
   height: 6px;
   border-radius: 50%;
