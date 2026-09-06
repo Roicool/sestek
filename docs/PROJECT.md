@@ -69,7 +69,7 @@ All CSS written in this project **must** use the utility classes and CSS variabl
 > **Reference file:** `docs/RC-STRUCTURE-REFERENCE.css`  
 > Webflow Site ID: `6a15b02be7e45b4ce963410c` · Variable Collection: Base collection  
 > All values are fluid `clamp()` based (fluid-min=20rem → fluid-max=90rem)  
-> Sestek sitesinde (`6a15f6e39b139e2c81103be6`) Base collection'da **Tablet** (≤991px) ve **Mobile** (≤767px) variable mode'ları var; `--text--xl`…`--text--9xl` bu breakpoint'lerde daha küçük değerler alır (şu an sabit rem; hedef fluid `clamp()` ifadeleri dokümanda). Tablo: `RC-STRUCTURE-REFERENCE.css` → Typography Scale.
+> Sestek sitesinde (`6a15f6e39b139e2c81103be6`) Base collection'da **Tablet** (≤991px) ve **Mobile** (≤767px) variable mode'ları var; `--text--xl`…`--text--9xl` bu breakpoint'lerde daha küçük değerler alır (sabit rem; fluid clamp Safari uyumu için kullanılmıyor). Tablo: `RC-STRUCTURE-REFERENCE.css` → Typography Scale.
 
 ---
 
