@@ -26,13 +26,13 @@
 import * as React from "react";
 
 export interface HScrollItem {
-  title: string;
-  text?: string;
+  /** rich text HTML — heading + paragraph(s) in one field (h3 + p, like a Webflow Rich Text) */
+  html: string;
   icon?: string;
   iconAlt?: string;
 }
 
-type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}${"Title" | "Text"}`;
+type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}Content`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
 export interface HScrollProps extends Partial<Record<ItemKey, string>> {
@@ -80,12 +80,15 @@ export interface HScrollProps extends Partial<Record<ItemKey, string>> {
 }
 
 export const DEFAULT_ITEMS: HScrollItem[] = [
-  { title: "Technology we own", text: "Speech recognition, text-to-speech, NLU, sentiment, and PII masking are all built in-house, refined over 25+ years of R&D, so you're never dependent on Google, Amazon, or Microsoft." },
-  { title: "Hybrid by design", text: "NLU precision and LLM reasoning work under one architecture, so enterprises with mature NLU deployments migrate gradually, alongside what already works, not all at once." },
-  { title: "Proven before production", text: "An AI testing framework simulates real customer conversations against your own success criteria before launch, and production dashboards keep tracking performance after it." },
-  { title: "Enterprise-grade", text: "Three-layer security, PII masking, and SSO/LDAP support meet enterprise IT requirements, with cloud, on-premise, or hybrid deployment across eight or more LLM providers and no vendor lock-in." },
-  { title: "Connected intelligence", text: "Connect Agentic AI, Conversational Intelligence, and Agent Copilot across the SESTEK Agentic CX Suite for consistent, context-aware support across every interaction." },
+  { html: "<h3>Technology we own</h3><p>Speech recognition, text-to-speech, NLU, sentiment, and PII masking are all built in-house, refined over 25+ years of R&amp;D, so you're never dependent on Google, Amazon, or Microsoft.</p>" },
+  { html: "<h3>Hybrid by design</h3><p>NLU precision and LLM reasoning work under one architecture, so enterprises with mature NLU deployments migrate gradually, alongside what already works, not all at once.</p>" },
+  { html: "<h3>Proven before production</h3><p>An AI testing framework simulates real customer conversations against your own success criteria before launch, and production dashboards keep tracking performance after it.</p>" },
+  { html: "<h3>Enterprise-grade</h3><p>Three-layer security, PII masking, and SSO/LDAP support meet enterprise IT requirements, with cloud, on-premise, or hybrid deployment across eight or more LLM providers and no vendor lock-in.</p>" },
+  { html: "<h3>Connected intelligence</h3><p>Connect Agentic AI, Conversational Intelligence, and Agent Copilot across the SESTEK Agentic CX Suite for consistent, context-aware support across every interaction.</p>" },
 ];
+
+/** rich text with no visible text (Webflow sends "<p></p>" for an emptied field) = hidden card */
+const hasText = (html: string) => /[^\s]/.test(html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " "));
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 type ST = {
@@ -184,13 +187,20 @@ const CSS = `
 .hs_icon{width:2.5rem;height:2.5rem;object-fit:contain;display:block}
 .hs_num{font-size:.8125rem;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:var(--hs-muted);
   transition:color var(--hs-reveal-d) ease}
-.hs_content{margin-top:auto;display:flex;flex-direction:column;gap:.625rem}
-.hs_ctitle{margin:0;font-size:var(--heading--h4,1.375rem);line-height:var(--leading--normal,1.25);font-weight:var(--font-weight--medium,500);
+.hs_content{margin-top:auto;font-size:.9375rem;line-height:var(--leading--relaxed,1.6)}
+/* rich text: heading + paragraphs in one field */
+.hs_content>*{margin:0}
+.hs_content>*+*{margin-top:.625rem}
+.hs_content h1,.hs_content h2,.hs_content h3,.hs_content h4,.hs_content h5,.hs_content h6{font-size:var(--heading--h4,1.375rem);line-height:var(--leading--normal,1.25);font-weight:var(--font-weight--medium,500);color:var(--hs-ink);
   transition:color calc(var(--hs-reveal-d) * .85) ease .05s}
-.hs_ctext{margin:0;font-size:.9375rem;line-height:var(--leading--relaxed,1.6);color:var(--hs-muted);
-  transition:color calc(var(--hs-reveal-d) * .85) ease .09s}
-.hs_card.is-revealed .hs_ctitle,.hs_card.is-revealed .hs_num{color:var(--hs-reveal-text,var(--hs-reveal-text-default))}
-.hs_card.is-revealed .hs_ctext{color:var(--hs-reveal-text,var(--hs-muted))}
+.hs_content p,.hs_content li{color:var(--hs-muted);transition:color calc(var(--hs-reveal-d) * .85) ease .09s}
+.hs_content ul,.hs_content ol{padding-left:1.25rem}
+.hs_content li+li{margin-top:.25rem}
+.hs_content a{color:inherit;text-decoration:underline;text-underline-offset:.15em}
+.hs_content strong{color:var(--hs-ink);font-weight:600}
+.hs_content img{max-width:100%;height:auto;border-radius:.5rem}
+.hs_card.is-revealed .hs_content h1,.hs_card.is-revealed .hs_content h2,.hs_card.is-revealed .hs_content h3,.hs_card.is-revealed .hs_content h4,.hs_card.is-revealed .hs_content h5,.hs_card.is-revealed .hs_content h6,.hs_card.is-revealed .hs_content strong,.hs_card.is-revealed .hs_num{color:var(--hs-reveal-text,var(--hs-reveal-text-default))}
+.hs_card.is-revealed .hs_content p,.hs_card.is-revealed .hs_content li{color:var(--hs-reveal-text,var(--hs-muted))}
 /* progress (pinned) */
 .hs_progress{display:none;align-items:center;gap:1.25rem;width:100%;max-width:var(--container--2xl,96rem);margin:clamp(1.5rem,4vh,2.5rem) auto 0;padding-inline:var(--hs-gutter)}
 .hs.is-pinned .hs_progress{display:flex}
@@ -222,8 +232,7 @@ const CSS = `
 @media (max-width:767px){
   .hs_card{min-height:15rem;padding:1.25rem 1.25rem 1.375rem}
   .hs_icon{width:2rem;height:2rem}
-  .hs_ctitle{font-size:1.1875rem}
-  .hs_ctext{font-size:.9375rem}
+  .hs_content h1,.hs_content h2,.hs_content h3,.hs_content h4,.hs_content h5,.hs_content h6{font-size:1.1875rem}
   .hs_sub{font-size:1rem}
   .hs_arrow{width:2.5rem;height:2.5rem}
 }
@@ -304,10 +313,7 @@ function Card({ item, index, reveal, duration, hoverable, active, onFocusCard }:
       <div className="hs_top">
         {src ? <img className="hs_icon" src={src} alt={item.iconAlt || ""} loading="lazy" /> : <span className="hs_num">{pad2(index + 1)}</span>}
       </div>
-      <div className="hs_content">
-        <h3 className="hs_ctitle">{item.title}</h3>
-        {item.text ? <p className="hs_ctext">{item.text}</p> : null}
-      </div>
+      <div className="hs_content" dangerouslySetInnerHTML={{ __html: item.html }} />
     </div>
   );
 }
@@ -320,11 +326,11 @@ export function HScroll(p: HScrollProps) {
     const px = p as unknown as Record<string, unknown>;
     let any = false;
     for (let n = 1; n <= 8; n++) {
-      const title = ((px["i" + n + "Title"] as string) || "").trim();
-      if (px["i" + n + "Title"] !== undefined) any = true;
-      if (!title) continue;
+      const html = ((px["i" + n + "Content"] as string) || "").trim();
+      if (px["i" + n + "Content"] !== undefined) any = true;
+      if (!html || !hasText(html)) continue;
       const ic = px["i" + n + "Icon"] as ImgProp;
-      out.push({ title, text: ((px["i" + n + "Text"] as string) || "").trim(), icon: imgSrc(ic), iconAlt: imgAlt(ic) });
+      out.push({ html, icon: imgSrc(ic), iconAlt: imgAlt(ic) });
     }
     return out.length || any ? out : DEFAULT_ITEMS;
   }, [p]);

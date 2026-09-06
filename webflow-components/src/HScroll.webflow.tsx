@@ -6,8 +6,7 @@ function item(n: number) {
   const g = "Item " + n;
   const d = DEFAULT_ITEMS[n - 1];
   return {
-    ["i" + n + "Title"]: props.Text({ name: "Title", group: g, defaultValue: d ? d.title : "", tooltip: "Boş = kart gizli" }),
-    ["i" + n + "Text"]: props.Text({ name: "Text", group: g, defaultValue: d ? d.text || "" : "" }),
+    ["i" + n + "Content"]: props.RichText({ name: "Content", group: g, defaultValue: d ? d.html : "", tooltip: "Başlık + gövde tek Rich Text: H3 başlık, altına paragraf(lar). Boş = kart gizli" }),
     ["i" + n + "Icon"]: props.Image({ name: "Icon", group: g, tooltip: "Kartın üst ikonu (opsiyonel). Boş = 01, 02… numarası" }),
   };
 }
