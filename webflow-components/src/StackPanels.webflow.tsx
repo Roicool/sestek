@@ -39,7 +39,7 @@ export default declareComponent(StackPanels, {
     ctaUrl: props.Text({ name: "Button URL", group: "Button", defaultValue: "/request-a-demo" }),
     ctaNewTab: props.Boolean({ name: "Open in new tab", group: "Button", defaultValue: false, trueLabel: "On", falseLabel: "Off" }),
 
-    ...item(1), ...item(2), ...item(3),
+    ...item(1), ...item(2), ...item(3), ...item(4),
 
     mediaRatio: props.Variant({ name: "Media ratio", group: "Media", options: ["1:1", "4:3", "16:10", "16:9", "3:2"], defaultValue: "1:1", tooltip: "Medya kutusunun sabit en-boy oranı (tüm paneller)" }),
     mediaFit: props.Variant({ name: "Media fit", group: "Media", options: ["Cover", "Contain"], defaultValue: "Cover" }),

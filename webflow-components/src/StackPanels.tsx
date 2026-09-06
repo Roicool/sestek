@@ -48,13 +48,13 @@ export interface StackPanelItem {
   accent?: string;
 }
 
-type N = 1 | 2 | 3;
+type N = 1 | 2 | 3 | 4;
 type ItemKey = `i${N}${"Heading" | "HeadingAccent" | "Body" | "Video" | "Poster" | "Side" | "Button" | "Accent"}`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
 export interface StackPanelsProps extends Partial<Record<ItemKey, string>> {
   items?: StackPanelItem[];
-  i1Image?: ImgProp; i2Image?: ImgProp; i3Image?: ImgProp;
+  i1Image?: ImgProp; i2Image?: ImgProp; i3Image?: ImgProp; i4Image?: ImgProp;
 
   /** plain text; **bold** → strong, | → line break */
   title?: string;
@@ -333,7 +333,7 @@ function Inner(p: StackPanelsProps) {
     if (p.items && p.items.length) return p.items;
     const px = p as unknown as Record<string, unknown>;
     const out: StackPanelItem[] = []; let any = false;
-    for (let n = 1; n <= 3; n++) {
+    for (let n = 1; n <= 4; n++) {
       if (px["i" + n + "Heading"] !== undefined) any = true;
       const heading = str(px["i" + n + "Heading"]).trim();
       const headingAccent = str(px["i" + n + "HeadingAccent"]).trim();
