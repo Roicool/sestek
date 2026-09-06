@@ -67,7 +67,7 @@ export default declareComponent(SiteSearch, {
       defaultValue: true,
       trueLabel: "On",
       falseLabel: "Off",
-      tooltip: "Off = yalnız ⌘K ve sayfadaki [data-search-trigger] elemanları açar",
+      tooltip: "Off = yalnız ⌘K ve sayfadaki [data-site-search-trigger] elemanları açar",
     }),
     buttonStyle: props.Variant({
       name: "Button style",
@@ -95,7 +95,7 @@ export default declareComponent(SiteSearch, {
       defaultValue: true,
       trueLabel: "On",
       falseLabel: "Off",
-      tooltip: "Sayfadaki [data-search-trigger] / [data-search-open] elemanlarına tıklayınca da açılır (eski nav ikonu)",
+      tooltip: "Sayfadaki [data-site-search-trigger] / [data-site-search-open] elemanlarına tıklayınca da açılır. search.js'in [data-search-trigger]'ı (blog/CMS araması) BAĞLANMAZ",
     }),
     hotkeys: props.Boolean({
       name: "Keyboard shortcuts",

@@ -58,7 +58,7 @@ isteyin** + **Bize ulaşın**.
 
 ## Davranış
 
-- Açma: `[data-search-trigger]` / `[data-search-open]` tıklaması, ⌘K / Ctrl+K,
+- Açma: `[data-site-search-trigger]` / `[data-site-search-open]` tıklaması (search.js'in `data-search-trigger`'ı değil), ⌘K / Ctrl+K,
   bir alanda yazmıyorken `/`.
 - `role=dialog aria-modal`, focus trap, Esc kapatır, odak açan elemana döner,
   sayfa scroll'u kilitlenir, kapanınca sorgu temizlenir.
