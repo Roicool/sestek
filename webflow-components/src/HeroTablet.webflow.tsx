@@ -83,8 +83,32 @@ export default declareComponent(HeroTablet, {
       name: "Logos",
       group: "Trusted by",
       tooltip:
-        "Buraya 'Logo Marquee' code component'ini bırak (içine Clients " +
-        "Collection List). Boş bırakılırsa satır gizlenir.",
+        "Buraya doğrudan bir Collection List bırak (Clients → Logo image). " +
+        "Marquee hero'nun içinde çalışır; ayrı Logo Marquee component'i " +
+        "GEREKMEZ. Eski marquee bloğu bırakılsa da görselleri okur.",
+    }),
+    marqueeSpeed: props.Number({
+      name: "Marquee speed (px/s)",
+      group: "Trusted by",
+      defaultValue: 60,
+      min: 0,
+      max: 400,
+    }),
+    marqueeLogoSize: props.Number({
+      name: "Marquee logo size (rem)",
+      group: "Trusted by",
+      defaultValue: 6.25,
+      min: 2,
+      max: 16,
+      decimals: 2,
+    }),
+    marqueeGap: props.Number({
+      name: "Marquee gap (rem)",
+      group: "Trusted by",
+      defaultValue: 3,
+      min: 0,
+      max: 12,
+      decimals: 2,
     }),
 
     /* ── Scene 2 ── */
