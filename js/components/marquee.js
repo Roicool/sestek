@@ -1,5 +1,5 @@
 /*!
- * marquee.js v1.3.0
+ * marquee.js v1.3.1
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
  *
@@ -18,6 +18,9 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.3.1 — data-marquee may sit on the .marquee__track element itself (the
+ *          root then doubles as the track) instead of only on a wrapper —
+ *          previously logged ".marquee__track not found" and did nothing.
  * v1.3.0 — two ways out for rows whose items are links: data-marquee-drag="off"
  *          drops the drag gesture entirely (nothing left that could eat a
  *          click), and with the gesture ON a press that stayed under the slop
@@ -66,7 +69,12 @@
     if (root._marqueeInit) return;                        // idempotent — no duplicate ticker loops
     root._marqueeInit = true;
 
-    var track = root.querySelector(".marquee__track");
+    // The attribute normally sits on the .marquee wrapper with the track
+    // inside; a Designer may also put data-marquee straight on the
+    // .marquee__track element — accept that too (root doubles as the track).
+    var track = root.classList.contains("marquee__track")
+      ? root
+      : root.querySelector(".marquee__track");
     if (!track) {
       console.warn("[Sestek Marquee] .marquee__track not found.", root);
       return;
