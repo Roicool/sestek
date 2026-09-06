@@ -47,6 +47,8 @@ export default declareComponent(HScroll, {
     revealDuration: props.Number({ name: "Duration (s)", group: "Hover reveal", defaultValue: 0.7 }),
 
     theme: props.Variant({ name: "Theme", group: "Look", options: ["Dark", "Light"], defaultValue: "Dark", tooltip: "Dark = secondary-900 zemin, secondary-700 kart · Light = beyaz zemin, açık kart" }),
+    controls: props.Variant({ name: "Controls colour", group: "Look", options: ["Auto", "Light", "Dark"], defaultValue: "Auto", tooltip: "Nokta, ok, ilerleme çizgisi ve sayaç rengi. Auto = yazı rengi · Light = beyaz · Dark = koyu" }),
+    controlsColor: props.Text({ name: "Controls custom colour", group: "Look", defaultValue: "", tooltip: "Token / renk; doluysa Controls colour'ı ezer" }),
     sectionBg: props.Text({ name: "Section background", group: "Look", defaultValue: "", tooltip: "Token / renk. Boş = tema" }),
     cardBg: props.Text({ name: "Card background", group: "Look", defaultValue: "" }),
     cardBorder: props.Text({ name: "Card border", group: "Look", defaultValue: "" }),

@@ -76,6 +76,10 @@ export interface HScrollProps extends Partial<Record<ItemKey, unknown>> {
 
   /** "Dark" | "Light" */
   theme?: string;
+  /** "Auto" | "Light" | "Dark" — colour of dots, arrows, progress line + counter */
+  controls?: string;
+  /** custom controls colour (token / var() / colour); overrides `controls` */
+  controlsColor?: string;
   sectionBg?: string;
   cardBg?: string;
   cardBorder?: string;
@@ -174,6 +178,10 @@ const CSS = `
   --hs-reveal:var(--brand-primary--500,#EC008C);
   --hs-reveal-text-default:#fff;
 }
+/* controls (dots, arrows, progress) colour: Auto = text colour, or forced light / dark, or custom */
+.hs{--hs-ctl:var(--hs-ink)}
+.hs[data-controls="light"]{--hs-ctl:#fff}
+.hs[data-controls="dark"]{--hs-ctl:#111}
 .hs_viewport{position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden;
   padding-block:clamp(3rem,7vw,5rem)}
 .hs.is-pinned .hs_viewport{height:100svh;min-height:100svh;padding-block:clamp(2rem,5vh,4rem)}
@@ -225,24 +233,26 @@ const CSS = `
 /* progress (pinned) */
 .hs_progress{display:none;align-items:center;gap:1.25rem;width:100%;max-width:var(--container--2xl,96rem);margin:clamp(1.5rem,4vh,2.5rem) auto 0;padding-inline:var(--hs-gutter)}
 .hs.is-pinned .hs_progress{display:flex}
-.hs_count{font-size:.8125rem;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:var(--hs-muted);white-space:nowrap}
-.hs_count b{color:var(--hs-ink);font-weight:inherit}
-.hs_bar{position:relative;flex:1;height:1px;background:var(--hs-line);overflow:hidden}
-.hs_bar i{position:absolute;inset:0;background:var(--hs-ink);transform-origin:left;transform:scaleX(var(--hs-progress,0));transition:transform .15s linear}
+.hs_progress{color:var(--hs-ctl)}
+.hs_count{font-size:.8125rem;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hs_count b{font-weight:inherit}
+.hs_count span{opacity:.5}
+.hs_bar{position:relative;flex:1;height:1px;background:color-mix(in srgb,var(--hs-ctl) 22%,transparent);overflow:hidden}
+.hs_bar i{position:absolute;inset:0;background:var(--hs-ctl);transform-origin:left;transform:scaleX(var(--hs-progress,0));transition:transform .15s linear}
 /* nav (carousel) */
 .hs_nav{display:none;align-items:center;justify-content:space-between;gap:1rem;width:100%;max-width:var(--container--2xl,96rem);
   margin:clamp(1.5rem,4vw,2rem) auto 0;padding-inline:var(--hs-gutter)}
-.hs.is-carousel .hs_nav{display:flex}
+.hs.is-carousel .hs_nav{display:flex;color:var(--hs-ctl)}
 .hs_nav.is-locked{display:none}
 .hs_dots{display:flex;align-items:center;gap:.5rem}
-.hs_dot{width:.5rem;height:.5rem;padding:0;border:0;border-radius:999px;background:currentColor;opacity:.28;cursor:pointer;
+.hs_dot{width:.5rem;height:.5rem;padding:0;border:0;border-radius:999px;color:inherit;background:var(--hs-ctl);opacity:.28;cursor:pointer;
   transition:opacity .2s ease,width .2s ease}
 .hs_dot.is-active{opacity:1;width:1.25rem}
 .hs_dot:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .hs_arrows{display:flex;gap:.5rem}
-.hs_arrow{display:inline-flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid var(--hs-line-active);
+.hs_arrow{display:inline-flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid color-mix(in srgb,var(--hs-ctl) 35%,transparent);
   border-radius:999px;background:transparent;color:inherit;cursor:pointer;transition:opacity .2s ease,background .2s ease,border-color .2s ease}
-.hs_arrow:hover{background:var(--hs-card)}
+.hs_arrow:hover{border-color:var(--hs-ctl);background:color-mix(in srgb,var(--hs-ctl) 8%,transparent)}
 .hs_arrow:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .hs_arrow svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .hs_arrow[disabled]{opacity:.3;cursor:default;background:transparent}
@@ -376,6 +386,8 @@ function HScrollInner(p: HScrollProps) {
 
   const theme = (p.theme || "Dark").toLowerCase().startsWith("light") ? "light" : "dark";
   const align = (p.headerAlign || "Center").toLowerCase().startsWith("left") ? "left" : "center";
+  const ctl = (p.controls || "Auto").toLowerCase();
+  const controls = ctl.startsWith("light") ? "light" : ctl.startsWith("dark") ? "dark" : "auto";
   const cardW = Math.max(200, p.cardWidth || 420);
   const gap = Math.max(0, p.gap == null ? 32 : p.gap);
   const spvT = Math.max(1, p.spvTablet || 1.4);
@@ -538,6 +550,7 @@ function HScrollInner(p: HScrollProps) {
     ...(p.sectionBg ? { "--hs-bg": color(p.sectionBg, "") } : {}),
     ...(p.cardBg ? { "--hs-card": color(p.cardBg, "") } : {}),
     ...(p.cardBorder ? { "--hs-line": color(p.cardBorder, "") } : {}),
+    ...(p.controlsColor ? { "--hs-ctl": color(p.controlsColor, "") } : {}),
   } as React.CSSProperties;
 
   const dur = reduced ? 0 : p.revealDuration == null ? 0.7 : Math.max(0, p.revealDuration);
@@ -552,7 +565,7 @@ function HScrollInner(p: HScrollProps) {
       <section
         ref={root}
         className={"hs " + (mode === "pinned" ? "is-pinned" : "is-carousel") + (desktop ? " is-desktop" : "")}
-        data-theme={theme} data-align={align} style={style}
+        data-theme={theme} data-align={align} data-controls={controls} style={style}
       >
         <div className="hs_viewport">
           {(p.eyebrow || p.title || p.subtitle) && (
@@ -571,7 +584,7 @@ function HScrollInner(p: HScrollProps) {
           </div>
           {showProgress && !single && (
             <div className="hs_progress" aria-hidden="true">
-              <span className="hs_count"><b>{pad2(active + 1)}</b> / {pad2(items.length)}</span>
+              <span className="hs_count"><b>{pad2(active + 1)}</b> <span>/ {pad2(items.length)}</span></span>
               <span className="hs_bar"><i /></span>
             </div>
           )}

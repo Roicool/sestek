@@ -303,6 +303,8 @@ yüksek ver.
 | Text colour on reveal | Hover reveal | Text | boş | Boş = Dark'ta yazı rengi değişmez, Light'ta beyaz |
 | Duration (s) | Hover reveal | Number | `0.7` | |
 | Theme | Look | Variant | `Dark` | `Light` = beyaz zemin, açık kart, brand-primary reveal |
+| Controls colour | Look | Variant | `Auto` | Nokta, ok, ilerleme çizgisi + sayaç rengi. `Auto` = yazı rengi · `Light` = beyaz · `Dark` = koyu |
+| Controls custom colour | Look | Text | boş | Token ya da renk; doluysa Controls colour'ı ezer |
 | Section background / Card background / Card border | Look | Text | boş | Token ya da renk; boş = tema |
 
 ## Cookie Consent — Designer prop'ları
