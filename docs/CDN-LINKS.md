@@ -2426,6 +2426,19 @@ Designer'da tanımlamadıysan CSS'teki pembe fallback'ler devreye girer.
 
 Açıkken sayfa scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/
 `startScroll`, yoksa `html.search-lock { overflow: hidden }` fallback'i).
+
+**Lenis ile scroll (js v1.5.0):** Durdurulmuş Lenis, yolunda
+`data-lenis-prevent` olmayan her wheel/touchmove'u yutar — bu yüzden sonuç
+listesi (özellikle mobilde parmakla) kaydırılamıyordu. search.js artık
+overlay'e `data-lenis-prevent`'i **kendisi** basıyor; Webflow'da elle
+eklemen gerekmiyor. CSS tarafında `overscroll-behavior: contain` ile listenin
+sonuna gelince hareket arkadaki kilitli sayfaya geçmiyor.
+
+**Mobil tam yükseklik (css v1.8.0):** ≤599px'te overlay `100dvh` (safe-area
+dahil) olur, panel üstten alta viewport'u doldurur ve beyaz sonuç kartı
+sabit bir `max-height` yerine kalan tüm alanı kaplayıp **içeride** kayar —
+son kartın altında bulanık boşluk kalmaz.
+
 Finsweet filtreleri (kategori vb.) ile birlikte kullanılabilir — bu
 component sadece metin arama/sonuç render'ını yönetir. Beklenen bir element
 eksikse konsola `[Sestek.search]` ön ekiyle uyarı basar (sessizce ölmez).
