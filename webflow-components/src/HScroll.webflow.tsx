@@ -27,7 +27,7 @@ export default declareComponent(HScroll, {
     subtitle: props.Text({ name: "Subtitle", group: "Header", defaultValue: "Support built to hold up in production, not just in a sales demo." }),
     headerAlign: props.Variant({ name: "Align", group: "Header", options: ["Center", "Left"], defaultValue: "Center" }),
 
-    ...item(1), ...item(2), ...item(3), ...item(4), ...item(5), ...item(6), ...item(7), ...item(8),
+    ...item(1), ...item(2), ...item(3), ...item(4), ...item(5), ...item(6),
 
     cardWidth: props.Number({ name: "Card width (px)", group: "Layout", defaultValue: 420, tooltip: "Masaüstü kart genişliği" }),
     gap: props.Number({ name: "Gap (px)", group: "Layout", defaultValue: 32, tooltip: "Kartlar arası boşluk" }),
