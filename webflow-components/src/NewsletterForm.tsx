@@ -96,7 +96,7 @@ const CSS = `
   --n-line:rgba(20,18,30,.08);--n-neg:#c9463a;
   --n-btn:#EC008C;--n-btn-h:#d3007d;--n-btn-fg:#fff;--n-ok:#EC008C;
   color:var(--n-text);font:inherit;max-width:30rem;
-  container-type:inline-size}
+  width:100%;min-width:0}
 .snlf.is-deep{--n-text:#f4f2fb;--n-muted:#a09aba;
   --n-pill:#211d33;--n-line:rgba(255,255,255,.11);--n-neg:#ff8274}
 /* SESTEK paleti */
@@ -155,24 +155,31 @@ const CSS = `
  * Kapsül, input ile buton yan yana sığdığında anlamlı. Alt alta geçince
  * uzun bir kutunun etrafındaki tam yuvarlak çerçeve tuhaf duruyordu.
  * Dar alanda dış kabuk kaldırılır: input kendi hapı, buton kendi hapı.
- * Karar viewport'a değil HAP'IN KENDİ GENİŞLİĞİNE göre verilir
- * (container query) — component dar bir grid kolonuna konsa da doğru
- * kırılır. @media bloğu container query desteklemeyen tarayıcılar için. */
-@container (max-width:24rem){
-  .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
+ *
+ * İki tetikleyici var:
+ *   .is-narrow  component'in KENDİ genişliği ölçülerek JS'ten eklenir
+ *               (ResizeObserver). Geniş ekranda dar bir grid kolonuna
+ *               konsa da doğru kırılır.
+ *   @media      telefonlarda ilk boyamada bile doğru olsun diye, ölçüm
+ *               beklemeden.
+ * NEDEN container query DEĞİL: container-type:inline-size elemanın
+ * genişliğini içeriğinden almasını yasaklar. Webflow bu component'i bir
+ * host elemana koyar; host'un üst kabı flex ve align-items stretch değilse
+ * host içerik genişliğini sorar, containment 0 der ve her şey 0px'e çöker
+ * (buton daire, caption kelime kelime). Canlıda tam olarak bu yaşandı. */
+  .snlf.is-narrow .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
     padding:0;background:transparent;box-shadow:none;border-radius:0}
-  .snlf-pill:focus-within,.snlf.is-invalid .snlf-pill{box-shadow:none}
-  .snlf-input{padding:.7em 1.1em;text-align:inherit;
+  .snlf.is-narrow .snlf-pill:focus-within,.snlf.is-narrow.is-invalid .snlf-pill{box-shadow:none}
+  .snlf.is-narrow .snlf-input{padding:.7em 1.1em;text-align:inherit;
     background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
     border-radius:var(--radius--full,9999px);transition:box-shadow .2s}
-  .snlf-input:focus{box-shadow:inset 0 0 0 1px var(--n-text)}
-  .snlf.is-invalid .snlf-input{box-shadow:inset 0 0 0 1px var(--n-neg)}
-  .snlf.is-center .snlf-input{text-align:center}
-  .snlf-btn{width:100%;padding:.7em 1.25em}
-  .snlf-ok{padding:.7em 1.1em;background:var(--n-pill);
+  .snlf.is-narrow .snlf-input:focus{box-shadow:inset 0 0 0 1px var(--n-text)}
+  .snlf.is-narrow.is-invalid .snlf-input{box-shadow:inset 0 0 0 1px var(--n-neg)}
+  .snlf.is-narrow.is-center .snlf-input{text-align:center}
+  .snlf.is-narrow .snlf-btn{width:100%;padding:.7em 1.25em}
+  .snlf.is-narrow .snlf-ok{padding:.7em 1.1em;background:var(--n-pill);
     box-shadow:inset 0 0 0 1px var(--n-line);
     border-radius:var(--radius--full,9999px)}
-}
 @media (max-width:479px){
   .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
     padding:0;background:transparent;box-shadow:none;border-radius:0}
@@ -297,8 +304,24 @@ export function NewsletterForm({
       });
   }
 
+  /* Dar alan ölçümü — bkz. CSS'teki ".is-narrow" notu. Mount'tan sonra
+   * çalışır; sunucu ve ilk tarayıcı render'ı aynıdır (hydration temiz). */
+  const rootEl = React.useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = React.useState(false);
+  React.useEffect(() => {
+    const el = rootEl.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? el.clientWidth;
+      setNarrow(w > 0 && w < 384);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const cls =
     "snlf" +
+    (narrow ? " is-narrow" : "") +
     (theme === "Deep" ? " is-deep" : "") +
     (align === "Center" ? " is-center" : "") +
     (accent === "Lilac" ? " ac-lilac"
@@ -307,7 +330,7 @@ export function NewsletterForm({
     (error ? " is-invalid" : "");
 
   return (
-    <div className={cls}>
+    <div className={cls} ref={rootEl}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <form onSubmit={submit} noValidate aria-busy={sending}>
         <div className="snlf-pill">
