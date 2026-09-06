@@ -15,6 +15,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Scroll Tabs** | `src/ScrollTabs.webflow.tsx` | "Agentic CX Suite" scroll-tab bölümü — **masaüstü + tablet/mobil tek component'te**, `scroll-list.js`/`.css`'in React hali, sıfır bağımlılık. ≥ 992px: solda sticky başlık + akordeon sekmeler, sağda kare video panelleri; viewport ortasından geçen panel aktif, sekmeye tıklayınca panel ortaya kayar. ≤ 991px: tek sütun, her sekme başlık + açıklama + buton + kendi videosu. Play/pause, restart, mute kontrolleri (hover'da, dokunmatikte hep görünür). 4 sekmeye kadar. Bkz. [Scroll Tabs](#scroll-tabs--designer-propları). |
 | **Voice Orbs** | `src/VoiceOrbs.webflow.tsx` | Ses örneği orb carousel'i — `voice-orbs.js` v3.4 + `voice-orbs.css` v2.7'nin React hali, iki artıyla: **(1) sesler Designer'dan manuel** — Voice 1–10 prop grupları (ad, açıklama, ses URL, opsiyonel görsel ve renkler; boş ad = gizli; gerekirse grup sayısı artırılır); **(2) kart görünümü ve Sagitone orb görselleri component'in içinde** (sitedeki tasarımla birebir; aktif orb WebGL ile canlı ve ses-reaktif), ayrıca opsiyonel **Procedural** mod: görselsiz, 3 renkli paletten shader ile üretilen orb'lar (küresel gölgeleme, highlight, film greni; tek WebGL context). Sonsuz döngü, transform-only geçişler, double-buffer audio + AnalyserNode, ilerleme halkası, play/pause, ‹ › ve ←/→. Sıfır bağımlılık. Bkz. [Voice Orbs](#voice-orbs--designer-propları). |
 | **Site Search** | `src/SiteSearch.webflow.tsx` | ⌘K **tam sayfa site araması**. Nav'a bırakılan tetikleyici buton (ikon + etiket + ⌘K rozeti; Pill / Icon only) ve body'ye açılan iki sütunlu palet: solda hızlı erişim/sonuçlar, sağda önizleme kartı (Sestek stili, shadow root ile izole). Index'i **Webflow Cloud app**'ten alır (`GET /demos/api/search/index`, bkz. `docs/sestek-site-search-server-spec.md`); sıralama, TR/EN, önizleme tarayıcıda — tuş başına ağ isteği yok. ⌘K / Ctrl+K, `/`, sayfadaki `[data-search-trigger]` elemanları; ↑↓ Enter Esc, focus trap. Asistan yok; boş durumda Demo + İletişim. Motor `/site-search` paketinin kopyası (`src/site-search/`). Bkz. [Site Search](#site-search--designer-propları). |
+| **Circle Diagram** | `src/CircleDiagram.webflow.tsx` | Dönen halka diyagramı — `circle-diagram.js` v2.2 + `circle-diagram.css` v1.5.1'in React hali ("The conversational lifecycle"). Solda halkaya eşit dağılmış ikonlu chip'ler, sağda üst üste tıklanabilir kartlar; conic-gradient uç sabit hızla döner, geçtiği item aktifleşir ve kart listesi ona kayar. Hover/tık/klavye ucu o node'a süpürür, liste üstünde mouse ve klavye odağı dönüşü durdurur, yalnız viewport'tayken döner. Item'lar **Item 1–8** prop gruplarından (label, 15 ikonluk set, kart başlığı/metni). **Mobilde chip'ler viewport'u taşırmaz** (etiketler sarar, halka chip payı bırakır). GSAP sitenin global'inden, yoksa CSS transition. Bkz. [Circle Diagram](#circle-diagram--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -215,6 +216,25 @@ ikisini birlikte güncelle (`/site-search` testli kaynak).
 | Keyboard shortcuts | Trigger | Boolean | `On` | ⌘K / Ctrl+K, `/` (bir alanda yazmıyorken) |
 
 JS API: `window.__sestekSiteSearch.open() / close() / toggle()`.
+
+## Circle Diagram — Designer prop'ları
+
+Kurulum: Webflow'daki `[data-circle-diagram]` bloğunu (ve `circle-diagram.js` /
+`.css` linklerini, init script'ini) kaldır; component'i bölüm başlığının altına
+bırak. Item'lar **Item 1–8** gruplarından girilir, boş Label = gizli; halkaya
+otomatik eşit dağılır (ilk item tepede). Kartlar item sırasıyla eşleşir.
+Renkler sitenin değişkenlerinden (`--brand-primary--500`, `--surface--base`,
+`--color-text--muted`, `--border--color-border-base`), font `--font--primary`.
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Spin (s / revolution) | Motion | Number | `14` | Bir tam tur süresi; N item'da adım = spin/N sn. `0` = döngü kapalı |
+| Resume after (s) | Motion | Number | `3` | Tık / klavye / hover sonrası dönüşün devam gecikmesi |
+| Start index | Motion | Number | `0` | Açılışta aktif item |
+| Card list | Cards | Boolean | `On` | Off = yalnız halka (tek kolon) |
+| Visible cards | Cards | Number | `3` | Listede görünen kart sayısı; aktif kart ortaya kayar |
+| Card text align | Cards | Variant | `Center` | `Left` = eski sola dayalı hâl |
+| Item N › Label / Icon / Card title / Card text | Item 1–8 | Text · Variant · Text · Text | 6 item dolu (Agentic AI, Human Agent, Agent Copilot, Conversational Intelligence, Insights, Customer) | Icon: None · mic · chat · headset · sparkle · chart · target · check · zap · search · user · clock · shield · bulb · cycle · arrow. Card title boş = Label |
 
 ## Performans notları
 
