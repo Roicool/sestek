@@ -1,5 +1,7 @@
 /*!
- * stack-panels.css v1.0.0
+ * stack-panels.css v1.0.1
+ * v1.0.1 — reduced/mobile fallback drops will-change too (stack-panels.js v1.4.0
+ *          keeps phones in this fallback: no pin/scale/fade below 768px).
  * Behavioural CSS only — geometry + stacking context for the "stacking
  * panels" scrollytelling effect. Colours/spacing/content design in Webflow.
  * Motion (pin, scale, fade, fake-scroll) lives in js/components/stack-panels.js.
@@ -48,4 +50,5 @@
    pin, no scale/fade — every panel just reads top to bottom normally. */
 [data-stack-panels][data-sp-reduced] [data-sp-panel] {
   overflow: visible;
+  will-change: auto;              /* no effect → no compositor layers (phones) */
 }

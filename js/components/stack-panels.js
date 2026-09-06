@@ -1,5 +1,13 @@
 /*!
- * stack-panels.js v1.3.2
+ * stack-panels.js v1.4.0
+ * v1.4.0 — TELEFONDA KAPALI: mobil breakpoint'in altında (default ≤767.98px,
+ * data-sp-mobile-bp) pin/scale/fade kurulmaz, paneller düz akışta okunur
+ * (mevcut data-sp-reduced CSS fallback'i). Dar ekranda panel içeriği
+ * viewport'tan uzuyor, [data-sp-inner] yoksa taşan kısım overflow:hidden ile
+ * kesilip hiç okunmadan sonraki panelin altında kalıyordu; iOS adres çubuğu
+ * her resize'da refresh tetikleyip pinleri zıplatıyor, blur filtresi
+ * scroll'u takıltıyordu. gsap.matchMedia ile döndürme/resize'da iki yönde
+ * temiz geçiş; data-sp-mobile="on" ile telefonda da zorlanabilir.
  * v1.3.2 — BAYAT-ARALIK düzeltmesi: scroll sürerken resize gelirse
  * (masaüstünde pencere/ekran değişimi, mobilde adres çubuğu) ScrollTrigger
  * kendi refresh'ini scroll durana dek erteliyor — o pencerede tüm pinlerin
@@ -103,6 +111,9 @@
  *   data-sp-lift             px the outgoing card drifts upward as it dissolves,
  *                            for a subtle "lifted away" feel. 0 = off (default 0)
  *   data-sp-scrub            ScrollTrigger scrub value/seconds   (default true)
+ *   data-sp-mobile-bp        px; at/below this width the effect is OFF and the
+ *                            panels read in plain flow            (default 767.98)
+ *   data-sp-mobile           "on" → run the effect on phones too  (default off)
  *   data-sp-refresh-priority-start
  *                            refreshPriority of the FIRST panel; each next
  *                            panel gets one less (see PROJECT.md "ScrollTrigger
@@ -163,6 +174,40 @@
       return;
     }
 
+    if (prefersReduced()) {
+      root.setAttribute("data-sp-reduced", "");
+      return; // plain stacked-in-flow panels, no pin/scrub — CSS handles the rest
+    }
+
+    // TELEFONDA KAPALI (v1.4.0): dar ekranda panel içeriği viewport'tan uzar;
+    // [data-sp-inner] yoksa taşan kısım overflow:hidden ile kesilir ve hiç
+    // okunmadan bir sonraki panel üstüne biner. iOS adres çubuğu her resize'da
+    // refresh tetikleyip pinleri zıplatır, blur filtresi scroll'u takıltır.
+    // Bu desen telefonda anlamlı değil: mobil breakpoint'in altında paneller
+    // düz akışta kalır (aynı CSS fallback'i). Genişlik değişince (döndürme)
+    // gsap.matchMedia iki yönde temiz geçiş yapar. data-sp-mobile="on" ile
+    // telefonda da zorlanabilir; eşik data-sp-mobile-bp (default 767.98).
+    var mobileBp = attrNum(root, "data-sp-mobile-bp", 767.98);
+    var mobileOn = root.getAttribute("data-sp-mobile") === "on";
+    var mm = gsap.matchMedia();
+    if (!mobileOn) {
+      mm.add("(max-width: " + mobileBp + "px)", function () {
+        root.setAttribute("data-sp-reduced", "");
+        return function () { root.removeAttribute("data-sp-reduced"); };
+      });
+    }
+    mm.add(mobileOn ? "all" : "(min-width: " + (mobileBp + 0.02) + "px)", function () {
+      setupPins(root, panels);
+      return function () {
+        if (root._stackPanelsDestroy) { root._stackPanelsDestroy(); root._stackPanelsDestroy = null; }
+        if (root._stackPanelsProbe) { clearInterval(root._stackPanelsProbe); root._stackPanelsProbe = null; }
+      };
+    });
+    root._stackPanelsMM = mm;
+  }
+
+  /** The pin/scrub build — everything that must be torn down on a mode change. */
+  function setupPins(root, panels) {
     var endScale   = attrNum(root, "data-sp-scale", 0.7);
     var fadePortion = attrNum(root, "data-sp-fade-portion", 0.1);
     var midFade    = attrNum(root, "data-sp-mid-fade", 0.5);
@@ -184,11 +229,6 @@
     // run sits under a typical hero and in page order among itself.
     var priorityStart = attrNum(root, "data-sp-refresh-priority-start", 0);
 
-    if (prefersReduced()) {
-      root.setAttribute("data-sp-reduced", "");
-      return; // plain stacked-in-flow panels, no pin/scrub — CSS handles the rest
-    }
-
     var blocker = pinBlocker(root, document.body);
     if (blocker) {
       // GEÇİCİ olabilir: init anında süren bir giriş/reveal animasyonu ata
@@ -203,19 +243,21 @@
       var probe = setInterval(function () {
         if (!pinBlocker(root, document.body)) {
           clearInterval(probe);
+          root._stackPanelsProbe = null;
           root.removeAttribute("data-sp-reduced");
-          root._stackPanelsInit = false;          // wire yeniden koşabilsin
-          wire(root);
+          setupPins(root, panels);
           // Geç kurulan pinlerin start'ları jank-guard'lı refresh ile otursun.
           if (global.Sestek && Sestek.refreshScroll) Sestek.refreshScroll();
           else ScrollTrigger.refresh();
         } else if (++tries >= 8) {
           clearInterval(probe);
+          root._stackPanelsProbe = null;
           warn("Pin DISABLED — ancestor'daki transform kalıcı; düz akış " +
                "fallback'inde kalınıyor (PROJECT.md Kural 3).",
                pinBlocker(root, document.body));
         }
       }, 1500);
+      root._stackPanelsProbe = probe;
       return;
     }
 
@@ -364,6 +406,11 @@
         tl.kill();
       });
       gsap.set(panels, { clearProps: "all" });
+      panels.forEach(function (p) { p.style.marginBottom = ""; p.style.zIndex = ""; });
+      panels.forEach(function (p) {
+        var inner = p.querySelector("[data-sp-inner]");
+        if (inner) gsap.set(inner, { clearProps: "all" });
+      });
     };
   }
 
