@@ -1,11 +1,16 @@
 /*!
- * h-scroll.css v2.2.1
+ * h-scroll.css v2.3.0
+ * v2.3.0 — Swiper mode owns the card completely: width from --hscroll-slide-w
+ *          (computed by h-scroll.js v2.1.0), Designer min/max-width, flex-basis
+ *          and margins neutralised, desktop min-height dropped, so a touch
+ *          device wider than 991px (iPad landscape) renders correctly too.
+ *          Fallback tablet bleed default 2.2 → 1.4.
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
  * Desktop (≥992px) : JS pins the section and translates .hscroll__track on x.
  * Tablet & mobile  : h-scroll.js turns the SAME DOM into a Swiper carousel
- * (≤991px)           (~2.2 cards on tablet, ~1.2 on mobile). The required
+ * (≤991px)           (~1.4 cards on tablet, ~1.2 on mobile). The required
  *                    Swiper core styles ship below under .is-swiper — the
  *                    Swiper stylesheet is NOT loaded separately.
  * Fallback         : before JS runs, or if Swiper fails to load, or under
@@ -114,9 +119,9 @@
  */
 @media (max-width: 991px) {
   [data-hscroll]:not(.is-swiper) .hscroll__card {
-    /* tablet: 2 tam kart + 2 gap + 0.2 bleed */
-    width: calc((100% - 2 * var(--hscroll-gap, var(--spacing--6)))
-                / var(--hscroll-spv-t, 2.2));
+    /* tablet: 1 tam kart + 1 gap + 0.4 bleed */
+    width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
+                / var(--hscroll-spv-t, 1.4));
   }
 }
 
@@ -149,6 +154,7 @@
   align-items: center;
   overflow: hidden;
   z-index: 1;
+  min-height: 0;                  /* no pin → drop the ≥992px 100svh (touch iPad) */
   touch-action: pan-y;            /* vertical page scroll stays native */
 }
 
@@ -167,7 +173,18 @@
 }
 
 [data-hscroll].is-swiper .hscroll__card {
-  flex-shrink: 0;
+  /*
+   * SWIPER OWNS THE CARD. Width comes from --hscroll-slide-w, which
+   * h-scroll.js computes from the real viewport, gutter, gap and
+   * slidesPerView (slidesPerView:"auto" reads it back). Everything the
+   * Designer may have set for the desktop card that could fight it —
+   * min/max-width, flex-basis, margins — is neutralised here.
+   */
+  flex: 0 0 auto;
+  width: var(--hscroll-slide-w, var(--hscroll-card-w, clamp(18rem, 38vw, 30rem)));
+  min-width: 0;
+  max-width: none;
+  margin: 0;
   position: relative;
   height: auto;                   /* equal-height cards via flex stretch */
   transition-property: transform;
