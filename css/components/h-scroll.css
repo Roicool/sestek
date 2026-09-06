@@ -1,5 +1,8 @@
 /*!
- * h-scroll.css v2.3.1
+ * h-scroll.css v2.4.0
+ * v2.4.0 — Swiper-mode card is forced to a single vertical column (a 12-col
+ *          Designer grid overflowed a ~300px slide and hid the next card's
+ *          peek). Styles for the arrows + dots h-scroll.js v2.2.0 injects.
  * v2.3.1 — Swiper-mode viewport is content-height (height:auto): a Designer
  *          h-screen on it made the carousel a screen-tall box with the cards
  *          centred inside and every vertical padding/margin invisible.
@@ -201,4 +204,98 @@
   position: relative;
   height: auto;                   /* equal-height cards via flex stretch */
   transition-property: transform;
+  /*
+   * ONE COLUMN. The Designer card is typically a multi-column grid
+   * (grid-12col + w-node areas): in a ~300px slide the columns collapse to
+   * zero, the content overflows the box sideways and covers the next card —
+   * "no peek, widths not applied". While Swiper drives, the card becomes a
+   * vertical flex stack (grid-area placements are ignored by flex) and
+   * clips what still won't fit.
+   */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+[data-hscroll].is-swiper .hscroll__card > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Controls (arrows + dots) — built by h-scroll.js in Swiper mode ──
+ * Override on the root in Webflow:
+ *   --hscroll-nav-color : arrow/dot colour   (default currentColor)
+ *   --hscroll-nav-size  : arrow button size  (default 2.75rem)
+ */
+.hscroll__nav { display: none; }
+
+[data-hscroll].is-swiper .hscroll__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing--4, 1rem);
+  margin-top: var(--spacing--6, 1.5rem);
+  padding-inline: var(--hscroll-gutter,
+    max(var(--view--px, var(--spacing--6)),
+        calc((100% - var(--container--2xl, 96rem)) / 2)));
+  color: var(--hscroll-nav-color, currentColor);
+}
+
+.hscroll__dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hscroll__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.25;
+  cursor: pointer;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.hscroll__dot.is-active {
+  opacity: 1;
+  width: 1.25rem;
+}
+
+.hscroll__arrows {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hscroll__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hscroll-nav-size, 2.75rem);
+  height: var(--hscroll-nav-size, 2.75rem);
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.hscroll__arrow svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.hscroll__arrow.is-disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.hscroll__dots.is-locked,
+.hscroll__arrow.is-locked { display: none; }

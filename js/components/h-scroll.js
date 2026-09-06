@@ -1,7 +1,14 @@
 /*!
- * h-scroll.js v2.1.1
+ * h-scroll.js v2.2.0
  *
  * Changelog
+ * v2.2.0 — carousel controls: arrows + pagination dots are built and wired by
+ *          the JS in Swiper mode (data-hscroll-nav="false" to opt out, or
+ *          supply [data-hscroll-prev] / [data-hscroll-next] /
+ *          [data-hscroll-dots] yourself). Pairs with h-scroll.css v2.4.0,
+ *          which also forces the card into a single column while Swiper
+ *          drives it — a 12-col Designer grid could not fit a ~300px slide,
+ *          overflowed onto the next card and hid the peek.
  * v2.1.1 — slide width is computed against the viewport's CONTENT box (minus
  *          its own padding), the same box Swiper sizes against, so a Designer
  *          padding on .hscroll__viewport no longer makes the cards too wide.
@@ -73,6 +80,8 @@
    *   data-hscroll-spv-m     slides per view on mobile      (default 1.2)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
+   *   data-hscroll-nav       "false" → no auto arrows/dots in Swiper mode
+   *                                                         (default on)
    *
    * Children:
    *   .hscroll__viewport     wrapper around the track (Swiper container)
@@ -209,6 +218,43 @@
       var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       var lastW   = window.innerWidth;
 
+      /*
+       * Controls — arrows + dots, built by the JS so the carousel reads as
+       * one (a lone card with nothing peeking gave no hint there was more).
+       * Injected right after the viewport, styled by h-scroll.css
+       * (.hscroll__nav / __dots / __dot / __arrows / __arrow). Opt out with
+       * data-hscroll-nav="false"; bring your own with [data-hscroll-prev],
+       * [data-hscroll-next], [data-hscroll-dots] anywhere inside the root.
+       */
+      var navEl = null, prevEl, nextEl, dotsEl;
+      if (root.getAttribute("data-hscroll-nav") !== "false") {
+        prevEl = root.querySelector("[data-hscroll-prev]");
+        nextEl = root.querySelector("[data-hscroll-next]");
+        dotsEl = root.querySelector("[data-hscroll-dots]");
+        if (!prevEl || !nextEl || !dotsEl) {
+          navEl = document.createElement("div");
+          navEl.className = "hscroll__nav";
+          navEl.setAttribute("data-hscroll-nav-auto", "");
+          var chevron = function (dir) {
+            return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<path d="' + (dir < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7") +
+              '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          };
+          navEl.innerHTML =
+            '<div class="hscroll__dots" data-hscroll-dots></div>' +
+            '<div class="hscroll__arrows">' +
+              '<button type="button" class="hscroll__arrow hscroll__arrow--prev" ' +
+                'data-hscroll-prev aria-label="Previous">' + chevron(-1) + '</button>' +
+              '<button type="button" class="hscroll__arrow hscroll__arrow--next" ' +
+                'data-hscroll-next aria-label="Next">' + chevron(1) + '</button>' +
+            '</div>';
+          viewport.insertAdjacentElement("afterend", navEl);
+          prevEl = prevEl || navEl.querySelector("[data-hscroll-prev]");
+          nextEl = nextEl || navEl.querySelector("[data-hscroll-next]");
+          dotsEl = dotsEl || navEl.querySelector("[data-hscroll-dots]");
+        }
+      }
+
       var sw = new Swiper(viewport, {
         slidesPerView: "auto",                            // width from --hscroll-slide-w
         spaceBetween: m.gap,
@@ -218,6 +264,19 @@
         grabCursor: true,
         watchOverflow: true,
         keyboard: { enabled: true, onlyInViewport: true },
+        navigation: prevEl && nextEl ? {
+          prevEl: prevEl, nextEl: nextEl,
+          disabledClass: "is-disabled", lockClass: "is-locked",
+        } : false,
+        pagination: dotsEl ? {
+          el: dotsEl, clickable: true,
+          bulletClass: "hscroll__dot", bulletActiveClass: "is-active",
+          lockClass: "is-locked",
+          renderBullet: function (i, cls) {
+            return '<button type="button" class="' + cls + '" aria-label="' +
+              (i + 1) + ' / ' + cards.length + '"></button>';
+          },
+        } : false,
         on: {
           activeIndexChange: function (s) { setActive(s.activeIndex); },
           resize: function (s) {
@@ -243,6 +302,7 @@
       // and hand the untouched DOM back to the pin setup below.
       return function () {
         sw.destroy(true, true);                           // true,true → inline styles cleaned
+        if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
         root.classList.remove("is-swiper");
         root.style.removeProperty("--hscroll-slide-w");
         viewport.classList.remove("swiper");
