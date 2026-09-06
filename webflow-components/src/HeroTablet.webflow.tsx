@@ -3,14 +3,15 @@ import { props } from "@webflow/data-types";
 import { HeroTablet } from "./HeroTablet";
 
 export default declareComponent(HeroTablet, {
-  name: "Hero Tablet",
+  name: "Hero",
   description:
-    "Ana sayfa hero'sunun tablet + mobil (≤ 991px) hali — masaüstü hero.js " +
-    "animasyonunun statik, dikey akan karşılığı. Video bloğu + başlık + 2 CTA, " +
-    "'Trusted by' + Logo Marquee slot'u, vurgulu ifade + açıklama, görünüme " +
-    "girince sayan 4 istatistik. İlk sahne her zaman tam ekran (100svh). " +
-    "Pin/scroll animasyonu yok. ≥ 992px'te KENDİ KENDİNE gizlenir; " +
-    "sadece masaüstü hero'yu ≤ 991px'te gizlemen yeterli.",
+    "Ana sayfa hero'su — TÜM kırılımlar tek component'te. ≥ 992px: hero.js'in " +
+    "birebir React hali (sitenin global gsap + ScrollTrigger'ı ile pin + scrub " +
+    "timeline: video slot'a morph olur, kelimeler/açıklama/istatistikler " +
+    "stagger ile gelir, nav--on-light). ≤ 991px: statik dikey akış, 100svh " +
+    "video bloğu + 'Trusted by' + Logo Marquee slot'u, vurgulu ifade, görünüme " +
+    "girince sayan istatistikler. Masaüstü hero section'ını ve hero.js/hero.css " +
+    "linklerini kaldırıp bunu koy; görünürlük ayarı gerekmez.",
   group: "Sestek",
   props: {
     /* ── Video ── */
@@ -90,8 +91,10 @@ export default declareComponent(HeroTablet, {
     phrase: props.Text({
       name: "Phrase",
       group: "Statement",
-      defaultValue: "Every interaction, better *than the last*",
-      tooltip: "Marka renginde vurgulanacak kelimeleri *yıldız* içine al",
+      defaultValue: "Every interaction, [video] better *than the last*",
+      tooltip:
+        "Marka renginde vurgulanacak kelimeleri *yıldız* içine al. [video] = " +
+        "masaüstünde videonun morph olup yerleştiği slot'un yeri (mobilde yok sayılır)",
     }),
     description: props.Text({
       name: "Description",
@@ -129,7 +132,16 @@ export default declareComponent(HeroTablet, {
       defaultValue: true,
       trueLabel: "On",
       falseLabel: "Off",
-      tooltip: "Giriş fade-up'ları + sayaç animasyonu (reduced-motion'da otomatik kapanır)",
+      tooltip: "Masaüstü scroll animasyonu + mobil fade-up'lar + sayaçlar (reduced-motion'da otomatik kapanır)",
+    }),
+    scrollDistance: props.Number({
+      name: "Scroll distance (× viewport)",
+      group: "Motion",
+      defaultValue: 2.5,
+      min: 1,
+      max: 5,
+      decimals: 1,
+      tooltip: "Masaüstünde hero'nun pinli kaldığı scroll mesafesi; hero.js'te 2.5 (+=250%)",
     }),
   },
   options: {
