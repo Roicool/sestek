@@ -10,7 +10,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | Component | Dosya | Ne yapar |
 |---|---|---|
 | **Soft Gradient BG** ⭐ | `src/SoftGradientBg.webflow.tsx` | **Önerilen.** Minimal (~11KB, sıfır bağımlılık) saf WebGL soft gradient. 4 karakter: Mist (gezinen lekeler), Flow (yatay dalgalar), Silk (çapraz bantlar), Halo (merkez ışıltı). Yumuşak Sestek renkleri varsayılan; base rengi değiştirerek koyu temaya uyar. Viewport dışında durur, reduced-motion'da statik kare, WebGL yoksa CSS fallback. |
-| **Hero Tablet** | `src/HeroTablet.webflow.tsx` | Ana sayfa hero'sunun **tablet + mobil (≤ 991px)** hali — masaüstü `hero.js` scroll-morph animasyonunun statik, dikey akan karşılığı. Video bloğu (poster, muted, loop, preload=none) + H1 + alt metin + 2 CTA, "Trusted by" + **Logos slot'u** (içine Logo Marquee), vurgulu ifade (`*yıldız*` içi marka rengi) + açıklama, görünüme girince sayan 4 istatistik (count-up.js'e bağımlı değil). Pin yok, GSAP yok. Designer'da ≥ 992px'te gizle; masaüstü hero'yu ≤ 991px'te gizle. Bkz. [Hero Tablet](#hero-tablet--designer-propları). |
+| **Hero Tablet** | `src/HeroTablet.webflow.tsx` | Ana sayfa hero'sunun **tablet + mobil (≤ 991px)** hali — masaüstü `hero.js` scroll-morph animasyonunun statik, dikey akan karşılığı. Video bloğu (poster, muted, loop, preload=none) + H1 + alt metin + 2 CTA, "Trusted by" + **Logos slot'u** (içine Logo Marquee), vurgulu ifade (`*yıldız*` içi marka rengi) + açıklama, görünüme girince sayan 4 istatistik (count-up.js'e bağımlı değil). İlk sahne her zaman tam ekran (100svh). Pin yok, GSAP yok. ≥ 992px'te kendi kendine gizlenir; masaüstü hero'yu ≤ 991px'te gizle. Bkz. [Hero Tablet](#hero-tablet--designer-propları). |
 | **Logo Marquee** | `src/LogoMarquee.webflow.tsx` | **CMS'e bağlı** sonsuz logo bandı — `js/components/marquee.js`'in React hali. **Logos slot'una bir Collection List** (Clients → Logo image) bırakılır; component slot'taki `<img>`'leri okuyup gereken sayıda kopya üretir ve kesintisiz kaydırır. Hız, yön, logo boyutu, boşluk; hover'da yumuşak duraklama; drag + momentum (mouse/touch); kenar fade; reduced-motion'da statik. Sıfır bağımlılık. Bkz. [Logo Marquee](#logo-marquee--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
@@ -76,7 +76,10 @@ olarak görünür.
 ## Hero Tablet — Designer prop'ları
 
 Sayfaya kurulum: masaüstü hero section'ına Webflow'da **≤ 991px gizle**, bu
-component'i hemen altına koyup **≥ 992px gizle**. Component sitenin CSS
+component'i hemen altına koy. Component **≥ 992px'te kendi kendine gizlenir**
+(CSS + hiçbir şey render etmez, video da istenmez), Designer'da ekstra
+görünürlük ayarı gerekmez. İlk sahne (video + başlık + logo bandı) her zaman
+**tam ekran (100svh)** yüksekliğindedir. Component sitenin CSS
 değişkenlerini (`--surface--base`, `--color-text--*`, `--brand-primary--500`,
 `--spacing--*`, `--container--*`, `--view--px`, `--section--py-2`) shadow root
 içinden miras alır; font sayfadan gelir.
@@ -85,7 +88,6 @@ içinden miras alır; font sayfadan gelir.
 |---|---|---|---|---|
 | Video URL (mp4) | Video | Text | Cloudflare Stream `downloads/default.mp4` | Boşsa sadece poster gösterilir |
 | Poster URL | Video | Text | Stream thumbnail | Video yüklenene kadar görünen kare |
-| Video height (vh) | Video | Number | `72` | 30–100 |
 | Dark overlay | Video | Boolean | `On` | Alt kenara doğru koyulaşan gradient |
 | Title (H1) | Headline | Text | "New chapter begins for\|AI-first…" | `\|` = satır kır |
 | Subtitle | Headline | Text | … | |

@@ -7,8 +7,9 @@
  * flowing counterpart Designer users drop in for tablet & mobile. Both
  * scenes of the desktop hero are merged into one flow:
  *
- *   1. Video block — background video (poster, muted, loop, preload=none)
- *      with the scene-1 copy on top: title, subtitle, two CTAs.
+ *   1. Video block — always one full viewport tall (100svh) — background
+ *      video (poster, muted, loop, preload=none) with the scene-1 copy on
+ *      top: title, subtitle, two CTAs.
  *   2. Trusted-by row — label + a Slot for the Logo Marquee code component
  *      (which itself holds the Clients Collection List). Sits INSIDE the
  *      video block, at its bottom edge, so the video runs behind the logos
@@ -17,6 +18,9 @@
  *      colour (wrap them in *asterisks* in the prop).
  *   4. Stats — up to four counters that count up once they scroll into view
  *      (no dependency on count-up.js), 2 columns on phones, 4 on tablets.
+ *
+ * Breakpoint: the component hides ITSELF at ≥ 992px (CSS + renders nothing),
+ * so only the desktop hero needs a Designer visibility rule (hide ≤ 991px).
  *
  * No GSAP, no ScrollTrigger, no pin. Entrance reveals are CSS transitions
  * flipped on by an IntersectionObserver; prefers-reduced-motion shows
@@ -35,7 +39,6 @@ type ImageValue = { src: string; alt?: string };
 export interface HeroTabletProps {
   videoUrl?: string;
   posterUrl?: string;
-  videoHeight?: number;
   overlay?: boolean;
 
   title?: string;
@@ -157,7 +160,13 @@ const CSS = `
 .sht *,.sht *::before,.sht *::after{box-sizing:border-box}
 
 /* ── 1. Video block ────────────────────────────────────────── */
-.sht-video{position:relative;width:100%;min-height:480px;overflow:hidden;background:#0b0b0d;display:flex;flex-direction:column;justify-content:flex-end}
+/* First scene is ALWAYS one full viewport tall. svh = the small viewport
+   (mobile address bar visible) so nothing sits under the browser chrome;
+   plain vh is the fallback for browsers without svh. */
+.sht-video{position:relative;width:100%;height:100vh;height:100svh;min-height:480px;overflow:hidden;background:#0b0b0d;display:flex;flex-direction:column;justify-content:flex-end}
+/* Tablet + mobile only: at the desktop breakpoint the component hides itself
+   (hero.js takes over there) — no Designer visibility setting needed. */
+@media (min-width:992px){.sht{display:none!important}}
 .sht-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .sht-ovl{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.05) 15%,rgba(0,0,0,.45) 60%,rgba(0,0,0,.7) 100%);pointer-events:none}
 .sht-s1{position:relative;z-index:2;width:100%;flex:1 1 auto;justify-content:center;padding:clamp(1.5rem,5vw,3rem) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem);display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--spacing--4,1rem);color:var(--color-text--inverted,#fff)}
@@ -218,7 +227,6 @@ const ARROW = (
 export function HeroTablet({
   videoUrl = "",
   posterUrl = "",
-  videoHeight = 72,
   overlay = true,
   title = "",
   subtitle = "",
@@ -241,6 +249,21 @@ export function HeroTablet({
   const reduce = useReducedMotion();
   const animated = animate && !reduce;
 
+  /* ≥ 992px: render nothing at all, so the desktop never even requests the
+     video/poster. (The CSS rule above is the belt for the SSR/first paint.) */
+  const [desktop, setDesktop] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia("(min-width: 992px)");
+    const on = () => setDesktop(mq.matches);
+    on();
+    if (mq.addEventListener) mq.addEventListener("change", on);
+    else mq.addListener(on);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", on);
+      else mq.removeListener(on);
+    };
+  }, []);
+
   /* Reveal-on-scroll: flip .is-in on every [data-reveal] once visible. */
   React.useEffect(() => {
     const root = rootRef.current;
@@ -257,7 +280,7 @@ export function HeroTablet({
     }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [animated, title, subtitle, phrase, description]);
+  }, [animated, desktop, title, subtitle, phrase, description]);
 
   const stats = [
     { v: stat1Value, s: stat1Suffix, l: stat1Label },
@@ -280,12 +303,14 @@ export function HeroTablet({
 
   const bgSrc = bgImage && bgImage.src;
 
+  if (desktop) return <section className="sht" data-hero-tablet hidden />;
+
   return (
     <section ref={rootRef} className={"sht" + (animated ? " is-animated" : "")} data-hero-tablet>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* 1 ── Video + scene-1 copy */}
-      <div className="sht-video" style={{ height: Math.max(30, videoHeight) + "vh" }}>
+      <div className="sht-video">
         {videoUrl && (
           <video
             className="sht-vid"

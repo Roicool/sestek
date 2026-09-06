@@ -8,8 +8,9 @@ export default declareComponent(HeroTablet, {
     "Ana sayfa hero'sunun tablet + mobil (≤ 991px) hali — masaüstü hero.js " +
     "animasyonunun statik, dikey akan karşılığı. Video bloğu + başlık + 2 CTA, " +
     "'Trusted by' + Logo Marquee slot'u, vurgulu ifade + açıklama, görünüme " +
-    "girince sayan 4 istatistik. Pin/scroll animasyonu yok. Designer'da " +
-    "≥ 992px'te gizle; masaüstü hero'yu ≤ 991px'te gizle.",
+    "girince sayan 4 istatistik. İlk sahne her zaman tam ekran (100svh). " +
+    "Pin/scroll animasyonu yok. ≥ 992px'te KENDİ KENDİNE gizlenir; " +
+    "sadece masaüstü hero'yu ≤ 991px'te gizlemen yeterli.",
   group: "Sestek",
   props: {
     /* ── Video ── */
@@ -26,14 +27,6 @@ export default declareComponent(HeroTablet, {
       defaultValue:
         "https://customer-aqbxsulug92giq9c.cloudflarestream.com/e19e71bc22e0db4152bfb447f678687d/thumbnails/thumbnail.jpg?height=600",
       tooltip: "Video yüklenene kadar görünen kare; video URL boşsa tek başına gösterilir",
-    }),
-    videoHeight: props.Number({
-      name: "Video height (vh)",
-      group: "Video",
-      defaultValue: 72,
-      min: 30,
-      max: 100,
-      tooltip: "Video bloğunun yüksekliği, viewport yüzdesi (100 = tam ekran). Trusted by + logo bandı da bu bloğun içinde, altta",
     }),
     overlay: props.Boolean({
       name: "Dark overlay",
