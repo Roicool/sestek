@@ -147,14 +147,19 @@ const CSS = `
    labels are allowed to wrap inside that width. */
 @media (max-width:991px){
   .cd_layout{grid-template-columns:1fr;gap:2.5rem}
-  .cd{padding-left:.5rem;padding-right:.5rem}
   .cd_panel{padding:1.25rem 0}
   .cd_item{font-size:.75rem;letter-spacing:.06em;padding:.5rem .85rem;gap:.45rem}
 }
-@media (max-width:479px){
-  .cd{--cd-icon-size:.9rem;padding-left:.25rem;padding-right:.25rem}
-  .cd_item{font-size:.625rem;letter-spacing:.04em;padding:.4rem .6rem;gap:.35rem;line-height:1.15}
+/* phones: no side padding, NO icons (text-only chips), normal-size labels */
+@media (max-width:767px){
+  .cd{padding-left:0;padding-right:0}
+  .cd_item .cd_dot{display:none}
+  .cd_item{gap:0;font-size:.75rem;letter-spacing:.05em;padding:.5rem .8rem;line-height:1.2}
+  .cd_item .cd_label{text-align:center}
   .cd_item.is-active{transform:translate(-50%,-50%) scale(1.04)}
+}
+@media (max-width:479px){
+  .cd_item{font-size:.6875rem;padding:.45rem .7rem}
   .cd_pcard{padding:1.1rem 1.25rem}
   .cd_card-title{font-size:1rem}
 }
@@ -255,7 +260,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
       const twoCol = Math.abs((pr.left + pr.width / 2) - (rr.left + rr.width / 2)) > 2;
       const avail = (twoCol ? panelEl.clientWidth : rootEl.clientWidth) - 8;
       if (avail <= 0) return;
-      const chipMax = Math.min(240, Math.floor(avail * (avail < 480 ? 0.34 : 0.4)));
+      const chipMax = Math.min(240, Math.floor(avail * (avail < 480 ? 0.36 : 0.4)));
       rootEl.style.setProperty("--cd-chip-max", chipMax + "px");
       let widest = 0;
       nodes.forEach((n) => { widest = Math.max(widest, n.offsetWidth); });
