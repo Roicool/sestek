@@ -1,7 +1,11 @@
 /*!
- * h-scroll.js v2.2.1
+ * h-scroll.js v2.2.2
  *
  * Changelog
+ * v2.2.2 — no more double gutter: a Designer padding on .hscroll__viewport is
+ *          already the gutter (Swiper sizes inside it), so slidesOffset only
+ *          tops it up to the track gutter instead of adding on top. Mobile
+ *          default 1.2 → 1 card (the arrows/dots say there is more).
  * v2.2.1 — the computed slide width is written INLINE on every card (width,
  *          min/max-width, flex-basis) — an inline value outranks any Designer
  *          class or combo, so Swiper's width always wins. The CSS no longer
@@ -36,7 +40,7 @@
  *   always ends with the last card fully inside the gutter.
  *
  *   Tablet & mobile (≤991px) or ANY touch device — the SAME DOM becomes a
- *   Swiper carousel: ~1.4 cards per view on tablet, ~1.2 on mobile (bleed).
+ *   Swiper carousel: ~1.4 cards per view on tablet, 1 on mobile.
  *   Gutter + gap are read from the computed CSS (RC tokens), so spacing stays
  *   token-driven. Swiper's own stylesheet is NOT needed — the required core
  *   styles ship inside h-scroll.css under .is-swiper.
@@ -81,7 +85,7 @@
    *   data-hscroll-bp-m      mobile breakpoint in px — below this width the
    *                          mobile slidesPerView applies   (default 768)
    *   data-hscroll-spv-t     slides per view on tablet      (default 1.4)
-   *   data-hscroll-spv-m     slides per view on mobile      (default 1.2)
+   *   data-hscroll-spv-m     slides per view on mobile      (default 1)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
    *   data-hscroll-nav       "false" → no auto arrows/dots in Swiper mode
@@ -123,7 +127,7 @@
     var bp       = num(root, "data-hscroll-bp", 991);
     var bpM      = num(root, "data-hscroll-bp-m", 768);
     var spvT     = num(root, "data-hscroll-spv-t", 1.4);
-    var spvM     = num(root, "data-hscroll-spv-m", 1.2);
+    var spvM     = num(root, "data-hscroll-spv-m", 1);
     var priority = num(root, "data-hscroll-priority", 1);
 
     /**
@@ -178,9 +182,16 @@
       function measure() {
         root.classList.remove("is-swiper");
         var cs = getComputedStyle(track);
+        var vs = getComputedStyle(viewport);
+        // The viewport's own inline padding already acts as a gutter (Swiper
+        // sizes inside it and the peek shows through it), so the track
+        // gutter only tops it up — otherwise the first card sat behind a
+        // DOUBLE gutter (viewport padding + slidesOffsetBefore).
+        var vpad   = parseFloat(vs.paddingLeft) || 0;
+        var gutter = parseFloat(cs.paddingLeft) || 0;
         var m = {
-          gap:    parseFloat(cs.columnGap)   || 0,
-          gutter: parseFloat(cs.paddingLeft) || 0,
+          gap:    parseFloat(cs.columnGap) || 0,
+          gutter: Math.max(0, gutter - vpad),
         };
         root.classList.add("is-swiper");
         return m;

@@ -1,5 +1,6 @@
 /*!
- * h-scroll.css v2.4.1
+ * h-scroll.css v2.4.2
+ * v2.4.2 — fallback mobile default 1 card, matching h-scroll.js v2.2.2.
  * v2.4.1 — card inner layout is the Designer's again (no forced flex column);
  *          the slide width is written inline by h-scroll.js v2.2.1.
  * v2.4.0 — styles for the arrows + dots h-scroll.js v2.2.0 injects.
@@ -16,7 +17,7 @@
  *
  * Desktop (≥992px) : JS pins the section and translates .hscroll__track on x.
  * Tablet & mobile  : h-scroll.js turns the SAME DOM into a Swiper carousel
- * (≤991px)           (~1.4 cards on tablet, ~1.2 on mobile). The required
+ * (≤991px)           (~1.4 cards on tablet, 1 on mobile). The required
  *                    Swiper core styles ship below under .is-swiper — the
  *                    Swiper stylesheet is NOT loaded separately.
  * Fallback         : before JS runs, or if Swiper fails to load, or under
@@ -133,9 +134,9 @@
 
 @media (max-width: 767px) {
   [data-hscroll]:not(.is-swiper) .hscroll__card {
-    /* mobil: 1 tam kart + 1 gap + 0.2 bleed */
+    /* mobil: 1 tam kart (default) — bleed için data-hscroll-spv-m */
     width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
-                / var(--hscroll-spv-m, 1.2));
+                / var(--hscroll-spv-m, 1));
   }
 }
 
