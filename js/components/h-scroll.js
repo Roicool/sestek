@@ -1,7 +1,11 @@
 /*!
- * h-scroll.js v2.2.2
+ * h-scroll.js v2.2.3
  *
  * Changelog
+ * v2.2.3 — one dot per CARD (Swiper's pagination module renders one per snap
+ *          point, so 3 cards got 4 dots); left/right gutter measured
+ *          separately so an asymmetric viewport padding no longer leaves the
+ *          last card flush against the right edge.
  * v2.2.2 — no more double gutter: a Designer padding on .hscroll__viewport is
  *          already the gutter (Swiper sizes inside it), so slidesOffset only
  *          tops it up to the track gutter instead of adding on top. Mobile
@@ -187,11 +191,17 @@
         // sizes inside it and the peek shows through it), so the track
         // gutter only tops it up — otherwise the first card sat behind a
         // DOUBLE gutter (viewport padding + slidesOffsetBefore).
-        var vpad   = parseFloat(vs.paddingLeft) || 0;
-        var gutter = parseFloat(cs.paddingLeft) || 0;
+        // Left and right measured SEPARATELY: a Designer padding that only
+        // exists on one side (or differs) must not leave the other edge with
+        // no gutter — the last card used to run flush to the right edge.
+        var padL    = parseFloat(vs.paddingLeft)  || 0;
+        var padR    = parseFloat(vs.paddingRight) || 0;
+        var gutterL = parseFloat(cs.paddingLeft)  || 0;
+        var gutterR = parseFloat(cs.paddingRight) || gutterL;
         var m = {
-          gap:    parseFloat(cs.columnGap) || 0,
-          gutter: Math.max(0, gutter - vpad),
+          gap:     parseFloat(cs.columnGap) || 0,
+          gutter:  Math.max(0, gutterL - padL),
+          gutterR: Math.max(0, gutterR - padR),
         };
         root.classList.add("is-swiper");
         return m;
@@ -282,7 +292,7 @@
         slidesPerView: "auto",                            // width from --hscroll-slide-w
         spaceBetween: m.gap,
         slidesOffsetBefore: m.gutter,
-        slidesOffsetAfter: m.gutter,
+        slidesOffsetAfter: m.gutterR,
         speed: reduced ? 0 : 400,
         grabCursor: true,
         watchOverflow: true,
@@ -291,17 +301,11 @@
           prevEl: prevEl, nextEl: nextEl,
           disabledClass: "is-disabled", lockClass: "is-locked",
         } : false,
-        pagination: dotsEl ? {
-          el: dotsEl, clickable: true,
-          bulletClass: "hscroll__dot", bulletActiveClass: "is-active",
-          lockClass: "is-locked",
-          renderBullet: function (i, cls) {
-            return '<button type="button" class="' + cls + '" aria-label="' +
-              (i + 1) + ' / ' + cards.length + '"></button>';
-          },
-        } : false,
+        // Dots are OURS, not Swiper's pagination module: that one renders a
+        // bullet per SNAP POINT, and the trailing snap (last card + right
+        // gutter) gave 4 dots for 3 cards. One dot per card, always.
         on: {
-          activeIndexChange: function (s) { setActive(s.activeIndex); },
+          activeIndexChange: function (s) { setActive(cardIndex(s)); },
           resize: function (s) {
             // iOS fires resize on every URL-bar show/hide while the page
             // scrolls — a height-only change. Re-measuring + update() there
@@ -313,11 +317,39 @@
             slideWidth(r);
             s.params.spaceBetween = s.originalParams.spaceBetween = r.gap;
             s.params.slidesOffsetBefore = s.originalParams.slidesOffsetBefore = r.gutter;
-            s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutter;
+            s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutterR;
             s.update();
           },
         },
       });
+
+      /** Card index for the current position, clamped to the real cards. */
+      function cardIndex(s) {
+        var i = s.activeIndex;
+        if (s.isEnd) i = cards.length - 1;                 // trailing snap → last card
+        return Math.max(0, Math.min(cards.length - 1, i));
+      }
+
+      // One dot per card, kept in sync with setActive.
+      var dots = [];
+      if (dotsEl) {
+        dotsEl.innerHTML = "";
+        dots = cards.map(function (_, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "hscroll__dot";
+          b.setAttribute("aria-label", (i + 1) + " / " + cards.length);
+          b.addEventListener("click", function () { sw.slideTo(i); });
+          dotsEl.appendChild(b);
+          return b;
+        });
+        if (cards.length < 2) dotsEl.classList.add("is-locked");
+      }
+      var _setActive = setActive;
+      setActive = function (idx) {
+        _setActive(idx);
+        for (var i = 0; i < dots.length; i++) dots[i].classList.toggle("is-active", i === idx);
+      };
 
       setActive(0);
 
@@ -325,6 +357,8 @@
       // and hand the untouched DOM back to the pin setup below.
       return function () {
         sw.destroy(true, true);                           // true,true → inline styles cleaned
+        setActive = _setActive;
+        if (dotsEl) dotsEl.innerHTML = "";
         if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
         root.classList.remove("is-swiper");
         root.style.removeProperty("--hscroll-slide-w");
