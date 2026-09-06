@@ -208,7 +208,8 @@ jobs:
       - run: npm ci
       - name: Crawl site → public/search-index.json
         # staging until launch, then set the repo variable to https://www.sestek.com
-        env: { SITE: ${{ vars.SEARCH_SITE || 'https://rc-sestek.webflow.io' }} }
+        env:
+          SITE: ${{ vars.SEARCH_SITE || 'https://rc-sestek.webflow.io' }}
         run: npx tsx scripts/build-search-index.ts --site "$SITE"
       - name: Push index to KV
         env:
