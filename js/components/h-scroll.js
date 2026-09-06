@@ -1,5 +1,28 @@
 /*!
- * h-scroll.js v2.0.0
+ * h-scroll.js v2.2.0
+ *
+ * Changelog
+ * v2.2.0 — carousel controls: arrows + pagination dots are built and wired by
+ *          the JS in Swiper mode (data-hscroll-nav="false" to opt out, or
+ *          supply [data-hscroll-prev] / [data-hscroll-next] /
+ *          [data-hscroll-dots] yourself). Pairs with h-scroll.css v2.4.0,
+ *          which also forces the card into a single column while Swiper
+ *          drives it — a 12-col Designer grid could not fit a ~300px slide,
+ *          overflowed onto the next card and hid the peek.
+ * v2.1.1 — slide width is computed against the viewport's CONTENT box (minus
+ *          its own padding), the same box Swiper sizes against, so a Designer
+ *          padding on .hscroll__viewport no longer makes the cards too wide.
+ * v2.1.0 — Swiper now OWNS the card width on tablet/mobile: the slide width is
+ *          computed from the real viewport, gutter and gap ((content − gutter
+ *          − visible gaps) / slidesPerView) and handed to Swiper as
+ *          slidesPerView:"auto" via --hscroll-slide-w, so the Designer's
+ *          desktop card width, min/max-width or flex-basis can no longer leak
+ *          into the carousel and the bleed is exactly what the attribute says.
+ *          Tablet default 2.2 → 1.4 cards. Touch devices take the Swiper path
+ *          regardless of width (iPad landscape used to get the desktop pin +
+ *          scrub); the pin now needs hover:hover + pointer:fine. Height-only
+ *          resizes (iOS URL bar) no longer re-measure / re-snap the carousel.
+ *
  * Pinned horizontal-scroll card section:
  *   Desktop (≥992px) — section pins, vertical scroll drives the card track to
  *   the LEFT (content moves right-to-left, reading direction feels "scroll
@@ -8,8 +31,8 @@
  *   the container-aligned gutter in h-scroll.css) is measured, so the scroll
  *   always ends with the last card fully inside the gutter.
  *
- *   Tablet & mobile (≤991px) — the SAME DOM becomes a Swiper carousel:
- *   ~2.2 cards per view on tablet, ~1.2 on mobile (partial-card bleed).
+ *   Tablet & mobile (≤991px) or ANY touch device — the SAME DOM becomes a
+ *   Swiper carousel: ~1.4 cards per view on tablet, ~1.2 on mobile (bleed).
  *   Gutter + gap are read from the computed CSS (RC tokens), so spacing stays
  *   token-driven. Swiper's own stylesheet is NOT needed — the required core
  *   styles ship inside h-scroll.css under .is-swiper.
@@ -53,10 +76,12 @@
    *                                                         (default 991)
    *   data-hscroll-bp-m      mobile breakpoint in px — below this width the
    *                          mobile slidesPerView applies   (default 768)
-   *   data-hscroll-spv-t     slides per view on tablet      (default 2.2)
+   *   data-hscroll-spv-t     slides per view on tablet      (default 1.4)
    *   data-hscroll-spv-m     slides per view on mobile      (default 1.2)
    *   data-hscroll-priority  ScrollTrigger refreshPriority — set per page
    *                          position (see PROJECT.md table) (default 1)
+   *   data-hscroll-nav       "false" → no auto arrows/dots in Swiper mode
+   *                                                         (default on)
    *
    * Children:
    *   .hscroll__viewport     wrapper around the track (Swiper container)
@@ -93,7 +118,7 @@
     var snapOn   = root.getAttribute("data-hscroll-snap") !== "false";
     var bp       = num(root, "data-hscroll-bp", 991);
     var bpM      = num(root, "data-hscroll-bp-m", 768);
-    var spvT     = num(root, "data-hscroll-spv-t", 2.2);
+    var spvT     = num(root, "data-hscroll-spv-t", 1.4);
     var spvM     = num(root, "data-hscroll-spv-m", 1.2);
     var priority = num(root, "data-hscroll-priority", 1);
 
@@ -126,8 +151,11 @@
 
     var mm = gsap.matchMedia();
 
-    // ── Tablet & mobile (≤bp) — Swiper carousel ───────────────────
-    mm.add("(max-width: " + bp + "px)", function () {
+    // ── Tablet & mobile (≤bp) or any touch device — Swiper carousel ──
+    // A touch-only device wider than the breakpoint (iPad landscape, iPad
+    // Pro) belongs here too: a pinned scrub on iOS fights the URL-bar resize
+    // and the rubber-band. The pin below needs a real pointer.
+    mm.add("(max-width: " + bp + "px), (hover: none)", function () {
       // Mirror the configured slidesPerView into the CSS fallback widths so
       // the no-Swiper scroll-snap fallback shows the same bleed.
       root.style.setProperty("--hscroll-spv-t", String(spvT));
@@ -154,32 +182,112 @@
         return m;
       }
 
+      /**
+       * Swiper OWNS the card width. Swiper's fractional slidesPerView divides
+       * the whole container, ignoring slidesOffsetBefore, so "1.4 cards"
+       * came out as ~1.2 once the gutter was in. Computed here instead:
+       *   slide = (content − gutter − visibleGaps · gap) / spv
+       * where the first card starts after the gutter and ceil(spv)−1 gaps
+       * are on screen. Written as --hscroll-slide-w; the CSS applies it to
+       * .is-swiper .hscroll__card and Swiper reads it via slidesPerView:"auto"
+       * — the Designer's desktop width, min/max-width or flex-basis can no
+       * longer leak into the carousel.
+       */
+      function slideWidth(m) {
+        var spv  = window.innerWidth < bpM ? spvM : spvT;
+        var gaps = Math.max(0, Math.ceil(spv) - 1);
+        // Swiper's own size is the container's CONTENT box (clientWidth minus
+        // its inline padding) — measure the same box, or a Designer padding
+        // on the viewport makes the slides wider than the room they have.
+        var vs = getComputedStyle(viewport);
+        var content = viewport.clientWidth
+          - (parseFloat(vs.paddingLeft)  || 0)
+          - (parseFloat(vs.paddingRight) || 0);
+        var w    = (content - m.gutter - gaps * m.gap) / spv;
+        w = Math.max(0, Math.floor(w * 100) / 100);
+        root.style.setProperty("--hscroll-slide-w", w + "px");
+        return w;
+      }
+
       var m = measure();                                  // ends with .is-swiper set
+      slideWidth(m);
       viewport.classList.add("swiper");
       track.classList.add("swiper-wrapper");
       cards.forEach(function (c) { c.classList.add("swiper-slide"); });
 
       var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var lastW   = window.innerWidth;
 
-      var breakpoints = {};
-      breakpoints[bpM] = { slidesPerView: spvT };         // ≥bpM → tablet spv
+      /*
+       * Controls — arrows + dots, built by the JS so the carousel reads as
+       * one (a lone card with nothing peeking gave no hint there was more).
+       * Injected right after the viewport, styled by h-scroll.css
+       * (.hscroll__nav / __dots / __dot / __arrows / __arrow). Opt out with
+       * data-hscroll-nav="false"; bring your own with [data-hscroll-prev],
+       * [data-hscroll-next], [data-hscroll-dots] anywhere inside the root.
+       */
+      var navEl = null, prevEl, nextEl, dotsEl;
+      if (root.getAttribute("data-hscroll-nav") !== "false") {
+        prevEl = root.querySelector("[data-hscroll-prev]");
+        nextEl = root.querySelector("[data-hscroll-next]");
+        dotsEl = root.querySelector("[data-hscroll-dots]");
+        if (!prevEl || !nextEl || !dotsEl) {
+          navEl = document.createElement("div");
+          navEl.className = "hscroll__nav";
+          navEl.setAttribute("data-hscroll-nav-auto", "");
+          var chevron = function (dir) {
+            return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<path d="' + (dir < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7") +
+              '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          };
+          navEl.innerHTML =
+            '<div class="hscroll__dots" data-hscroll-dots></div>' +
+            '<div class="hscroll__arrows">' +
+              '<button type="button" class="hscroll__arrow hscroll__arrow--prev" ' +
+                'data-hscroll-prev aria-label="Previous">' + chevron(-1) + '</button>' +
+              '<button type="button" class="hscroll__arrow hscroll__arrow--next" ' +
+                'data-hscroll-next aria-label="Next">' + chevron(1) + '</button>' +
+            '</div>';
+          viewport.insertAdjacentElement("afterend", navEl);
+          prevEl = prevEl || navEl.querySelector("[data-hscroll-prev]");
+          nextEl = nextEl || navEl.querySelector("[data-hscroll-next]");
+          dotsEl = dotsEl || navEl.querySelector("[data-hscroll-dots]");
+        }
+      }
 
       var sw = new Swiper(viewport, {
-        slidesPerView: spvM,                              // <bpM → mobile spv
+        slidesPerView: "auto",                            // width from --hscroll-slide-w
         spaceBetween: m.gap,
         slidesOffsetBefore: m.gutter,
         slidesOffsetAfter: m.gutter,
-        breakpoints: breakpoints,
         speed: reduced ? 0 : 400,
         grabCursor: true,
         watchOverflow: true,
         keyboard: { enabled: true, onlyInViewport: true },
+        navigation: prevEl && nextEl ? {
+          prevEl: prevEl, nextEl: nextEl,
+          disabledClass: "is-disabled", lockClass: "is-locked",
+        } : false,
+        pagination: dotsEl ? {
+          el: dotsEl, clickable: true,
+          bulletClass: "hscroll__dot", bulletActiveClass: "is-active",
+          lockClass: "is-locked",
+          renderBullet: function (i, cls) {
+            return '<button type="button" class="' + cls + '" aria-label="' +
+              (i + 1) + ' / ' + cards.length + '"></button>';
+          },
+        } : false,
         on: {
           activeIndexChange: function (s) { setActive(s.activeIndex); },
           resize: function (s) {
-            // Tokens are fluid clamp()s — re-resolve px on resize. Write to
-            // originalParams too so breakpoint re-application keeps them.
+            // iOS fires resize on every URL-bar show/hide while the page
+            // scrolls — a height-only change. Re-measuring + update() there
+            // re-snapped the carousel under the user's finger. Width only.
+            if (window.innerWidth === lastW) return;
+            lastW = window.innerWidth;
+            // Tokens are fluid clamp()s — re-resolve px on a real resize.
             var r = measure();
+            slideWidth(r);
             s.params.spaceBetween = s.originalParams.spaceBetween = r.gap;
             s.params.slidesOffsetBefore = s.originalParams.slidesOffsetBefore = r.gutter;
             s.params.slidesOffsetAfter  = s.originalParams.slidesOffsetAfter  = r.gutter;
@@ -194,7 +302,9 @@
       // and hand the untouched DOM back to the pin setup below.
       return function () {
         sw.destroy(true, true);                           // true,true → inline styles cleaned
+        if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
         root.classList.remove("is-swiper");
+        root.style.removeProperty("--hscroll-slide-w");
         viewport.classList.remove("swiper");
         track.classList.remove("swiper-wrapper");
         cards.forEach(function (c) { c.classList.remove("swiper-slide", "is-active"); });
@@ -202,9 +312,10 @@
       };
     });
 
-    // ── Desktop (>bp) + motion allowed — GSAP pin + scrub ─────────
+    // ── Desktop (>bp) + real pointer + motion allowed — GSAP pin + scrub ──
     mm.add(
-      "(min-width: " + (bp + 1) + "px) and (prefers-reduced-motion: no-preference)",
+      "(min-width: " + (bp + 1) + "px) and (hover: hover) and (pointer: fine)" +
+      " and (prefers-reduced-motion: no-preference)",
       function () {
         if (getDistance() <= 0) return;                   // track fits — nothing to scroll
 

@@ -1,11 +1,22 @@
 /*!
- * h-scroll.css v2.2.1
+ * h-scroll.css v2.4.0
+ * v2.4.0 — Swiper-mode card is forced to a single vertical column (a 12-col
+ *          Designer grid overflowed a ~300px slide and hid the next card's
+ *          peek). Styles for the arrows + dots h-scroll.js v2.2.0 injects.
+ * v2.3.1 — Swiper-mode viewport is content-height (height:auto): a Designer
+ *          h-screen on it made the carousel a screen-tall box with the cards
+ *          centred inside and every vertical padding/margin invisible.
+ * v2.3.0 — Swiper mode owns the card completely: width from --hscroll-slide-w
+ *          (computed by h-scroll.js v2.1.0), Designer min/max-width, flex-basis
+ *          and margins neutralised, desktop min-height dropped, so a touch
+ *          device wider than 991px (iPad landscape) renders correctly too.
+ *          Fallback tablet bleed default 2.2 → 1.4.
  * Pinned horizontal-scroll card section — critical/behavioural styles only.
  * Colours, fonts and exact card design come from the Webflow Designer + RC tokens.
  *
  * Desktop (≥992px) : JS pins the section and translates .hscroll__track on x.
  * Tablet & mobile  : h-scroll.js turns the SAME DOM into a Swiper carousel
- * (≤991px)           (~2.2 cards on tablet, ~1.2 on mobile). The required
+ * (≤991px)           (~1.4 cards on tablet, ~1.2 on mobile). The required
  *                    Swiper core styles ship below under .is-swiper — the
  *                    Swiper stylesheet is NOT loaded separately.
  * Fallback         : before JS runs, or if Swiper fails to load, or under
@@ -114,9 +125,9 @@
  */
 @media (max-width: 991px) {
   [data-hscroll]:not(.is-swiper) .hscroll__card {
-    /* tablet: 2 tam kart + 2 gap + 0.2 bleed */
-    width: calc((100% - 2 * var(--hscroll-gap, var(--spacing--6)))
-                / var(--hscroll-spv-t, 2.2));
+    /* tablet: 1 tam kart + 1 gap + 0.4 bleed */
+    width: calc((100% - var(--hscroll-gap, var(--spacing--6)))
+                / var(--hscroll-spv-t, 1.4));
   }
 }
 
@@ -149,6 +160,17 @@
   align-items: center;
   overflow: hidden;
   z-index: 1;
+  /*
+   * CONTENT-HEIGHT, not screen-height. The pin needs a viewport-tall box
+   * (100svh at ≥992px, or a Designer h-screen utility) so there is a screen
+   * to hold while the track scrolls; the carousel does not. Keeping 100vh
+   * here left the cards floating in the middle of a screen-tall box and
+   * swallowed every vertical padding/margin the Designer gave the section,
+   * the track or the cards ("my paddings do nothing on tablet"). Height
+   * comes from the content now; spacing is the section's padding.
+   */
+  height: auto;
+  min-height: 0;
   touch-action: pan-y;            /* vertical page scroll stays native */
 }
 
@@ -167,8 +189,113 @@
 }
 
 [data-hscroll].is-swiper .hscroll__card {
-  flex-shrink: 0;
+  /*
+   * SWIPER OWNS THE CARD. Width comes from --hscroll-slide-w, which
+   * h-scroll.js computes from the real viewport, gutter, gap and
+   * slidesPerView (slidesPerView:"auto" reads it back). Everything the
+   * Designer may have set for the desktop card that could fight it —
+   * min/max-width, flex-basis, margins — is neutralised here.
+   */
+  flex: 0 0 auto;
+  width: var(--hscroll-slide-w, var(--hscroll-card-w, clamp(18rem, 38vw, 30rem)));
+  min-width: 0;
+  max-width: none;
+  margin: 0;
   position: relative;
   height: auto;                   /* equal-height cards via flex stretch */
   transition-property: transform;
+  /*
+   * ONE COLUMN. The Designer card is typically a multi-column grid
+   * (grid-12col + w-node areas): in a ~300px slide the columns collapse to
+   * zero, the content overflows the box sideways and covers the next card —
+   * "no peek, widths not applied". While Swiper drives, the card becomes a
+   * vertical flex stack (grid-area placements are ignored by flex) and
+   * clips what still won't fit.
+   */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+[data-hscroll].is-swiper .hscroll__card > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Controls (arrows + dots) — built by h-scroll.js in Swiper mode ──
+ * Override on the root in Webflow:
+ *   --hscroll-nav-color : arrow/dot colour   (default currentColor)
+ *   --hscroll-nav-size  : arrow button size  (default 2.75rem)
+ */
+.hscroll__nav { display: none; }
+
+[data-hscroll].is-swiper .hscroll__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing--4, 1rem);
+  margin-top: var(--spacing--6, 1.5rem);
+  padding-inline: var(--hscroll-gutter,
+    max(var(--view--px, var(--spacing--6)),
+        calc((100% - var(--container--2xl, 96rem)) / 2)));
+  color: var(--hscroll-nav-color, currentColor);
+}
+
+.hscroll__dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hscroll__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.25;
+  cursor: pointer;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.hscroll__dot.is-active {
+  opacity: 1;
+  width: 1.25rem;
+}
+
+.hscroll__arrows {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hscroll__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hscroll-nav-size, 2.75rem);
+  height: var(--hscroll-nav-size, 2.75rem);
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.hscroll__arrow svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.hscroll__arrow.is-disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.hscroll__dots.is-locked,
+.hscroll__arrow.is-locked { display: none; }

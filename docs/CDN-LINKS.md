@@ -900,7 +900,7 @@ DOM:
                            query'leriyle senkron tut             (default 991)
     data-hscroll-bp-m      mobil breakpoint px — altında mobil
                            slidesPerView uygulanır               (default 768)
-    data-hscroll-spv-t     tablet kart/görünüm (bleed)           (default 2.2)
+    data-hscroll-spv-t     tablet kart/görünüm (bleed)           (default 1.4)
     data-hscroll-spv-m     mobil kart/görünüm (bleed)            (default 1.2)
     data-hscroll-priority  ScrollTrigger refreshPriority — sayfadaki dikey
                            konuma göre PROJECT.md tablosundan ver (default 1)
