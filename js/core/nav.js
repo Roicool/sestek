@@ -1,11 +1,19 @@
 /*!
- * nav.js v2.7.5
+ * nav.js v2.8.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.8.0 — the bar no longer hides on scroll-down: the [data-nav-autohide]
+ *           scroll-direction auto-hide is removed (attribute now ignored, no
+ *           Webflow change required) and any leftover .nav--hidden is cleared
+ *           on init, so the navbar stays fixed at the top at all times. The
+ *           .nav--scrolled (transparent-over-hero → solid) toggle is unchanged.
+ *           [data-nav-hide] sections (a pinned section that must own the whole
+ *           viewport) can still slide the bar away — remove that attribute
+ *           from the section if the bar must stay there too.
  * v2.7.5 — fix mobile menu not scrollable on Lenis pages: opening the menu
  *           stops Lenis so the page behind stays put, but a STOPPED Lenis
  *           calls preventDefault() on every wheel/touchmove it sees at the
@@ -789,8 +797,8 @@
     // Always on (no opt-in): at the very top the bar gets no extra class, so
     // it can sit transparent/blended into a hero in Webflow; past a small
     // threshold it gains .nav--scrolled, which is where you set the solid
-    // background + matching text/logo colours. Combined with the scroll-
-    // direction auto-hide below into one rAF-throttled scroll listener.
+    // background + matching text/logo colours. Runs in the rAF-throttled
+    // scroll listener below.
     var scrolled = false;
     function applyScrolled(y, topGuard) {
       var next = y > topGuard;
@@ -800,40 +808,25 @@
       }
     }
 
-    // ── Auto-hide on scroll direction ─────────────────────────────
-    // Opt-in via [data-nav-autohide] on the nav root: the bar slides away
-    // while scrolling down and eases back in while scrolling up — no theme
-    // detection needed, just give it one fixed background colour in CSS.
-    // Independent of the [data-nav-hide] (section-coverage) mechanism above;
-    // reuses the same .nav--hidden slide+fade so both share one CSS rule.
+    // ── Scroll listener ───────────────────────────────────────────
+    // The bar STAYS PUT while scrolling. The scroll-direction auto-hide
+    // ([data-nav-autohide], v2.4.0–v2.7.5) was removed in v2.8.0: the client
+    // wants the navbar fixed at the top at all times, so the attribute is
+    // now ignored and a stale .nav--hidden left over from it is cleared on
+    // init. Only the .nav--scrolled toggle above runs here.
     (function initScroll() {
-      var autoHide  = nav.hasAttribute("data-nav-autohide");
-      var lastY     = global.pageYOffset || document.documentElement.scrollTop || 0;
-      var ticking   = false;
-      var threshold = 8;  // ignore trackpad/sub-pixel jitter
-      var topGuard  = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
+      var ticking  = false;
+      var topGuard = (navBar && navBar.offsetHeight) || nav.offsetHeight || 60;
 
-      applyScrolled(lastY, topGuard); // correct on load if the page opens mid-scroll
+      nav.classList.remove("nav--hidden");
+      applyScrolled(
+        global.pageYOffset || document.documentElement.scrollTop || 0,
+        topGuard
+      ); // correct on load if the page opens mid-scroll
 
       function update() {
         ticking = false;
-        var y     = global.pageYOffset || document.documentElement.scrollTop || 0;
-        var delta = y - lastY;
-
-        applyScrolled(y, topGuard);
-
-        if (autoHide) {
-          if (isOpen) { lastY = y; return; } // leave the bar alone mid mega-menu
-          if (y <= topGuard) {
-            nav.classList.remove("nav--hidden");
-          } else if (delta > threshold) {
-            nav.classList.add("nav--hidden");
-            closeDropdown();
-          } else if (delta < -threshold) {
-            nav.classList.remove("nav--hidden");
-          }
-        }
-        lastY = y;
+        applyScrolled(global.pageYOffset || document.documentElement.scrollTop || 0, topGuard);
       }
 
       on(global, "scroll", function () {
