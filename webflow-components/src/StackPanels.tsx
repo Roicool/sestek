@@ -20,19 +20,22 @@
  * property), playsinline, loop, preload="metadata"; the src is assigned only
  * when the panel comes near the viewport; they play only while visible; the
  * poster (Cloudflare thumbnail URL or a Webflow image) shows meanwhile and
- * stays if the video fails. Any remaining height change (fonts, rich text)
+ * stays if the video fails. Any remaining height change (fonts, long text)
  * is caught by a ResizeObserver → debounced ScrollTrigger.refresh().
  *
- * Header: rich-text title (bold + <em>SESTEK</em> gets the brand shine mask
- * from heading-shine.css), soft reveal on scroll-in. CTA: the site's
+ * Header: plain-text title (**bold** markup, | line break; the shine word
+ * gets the brand shine mask from heading-shine.css), soft reveal on scroll-in. CTA: the site's
  * stagger button (characters roll up on hover), one style per panel.
  */
 
 import * as React from "react";
 
 export interface StackPanelItem {
-  html: string;
-  node?: React.ReactNode;
+  /** heading; the accent part is appended in the accent colour */
+  heading: string;
+  headingAccent?: string;
+  /** body text; **bold** markup → <strong> */
+  body?: string;
   image?: string;
   imageAlt?: string;
   poster?: string;
@@ -45,16 +48,18 @@ export interface StackPanelItem {
   accent?: string;
 }
 
-type N = 1 | 2 | 3 | 4 | 5 | 6;
-type ItemKey = `i${N}${"Content" | "Video" | "Poster" | "Side" | "Button" | "Accent"}`;
+type N = 1 | 2 | 3;
+type ItemKey = `i${N}${"Heading" | "HeadingAccent" | "Body" | "Video" | "Poster" | "Side" | "Button" | "Accent"}`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
-export interface StackPanelsProps extends Partial<Record<ItemKey, unknown>> {
+export interface StackPanelsProps extends Partial<Record<ItemKey, string>> {
   items?: StackPanelItem[];
-  i1Image?: ImgProp; i2Image?: ImgProp; i3Image?: ImgProp; i4Image?: ImgProp; i5Image?: ImgProp; i6Image?: ImgProp;
+  i1Image?: ImgProp; i2Image?: ImgProp; i3Image?: ImgProp;
 
-  /** rich text: <strong> and <em> allowed; <em> gets the brand shine */
+  /** plain text; **bold** → strong, | → line break */
   title?: string;
+  /** the word in the title that gets the brand shine */
+  titleShineWord?: string;
   subtitle?: string;
   titleReveal?: boolean;
   titleShine?: boolean;
@@ -84,15 +89,16 @@ export interface StackPanelsProps extends Partial<Record<ItemKey, unknown>> {
   bottomFade?: boolean;
 }
 
-export const DEFAULT_TITLE = "Why <strong>global</strong> brands are <br>choosing <em>SESTEK</em>";
+export const DEFAULT_TITLE = "Why **global** brands are | choosing SESTEK";
+export const DEFAULT_SHINE_WORD = "SESTEK";
 export const DEFAULT_ITEMS: StackPanelItem[] = [
-  { html: "<h3>Market-leading performance, <em>engineered in-house.</em></h3><p>Our <strong>+100</strong> R&amp;D experts develop all core technologies in-house, delivering <strong>&gt;98% real-world accuracy</strong>. This technical precision guarantees deeper, more reliable insights from every conversation.</p>", button: "White", accent: "--color-teritary--700",
+  { heading: "Market-leading performance,", headingAccent: "engineered in-house.", body: "Our **+100** R&D experts develop all core technologies in-house, delivering **>98% real-world accuracy**. This technical precision guarantees deeper, more reliable insights from every conversation.", button: "White", accent: "--color-teritary--700",
     poster: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/641caf060dbfe2f9463087afb89eb6f6/thumbnails/thumbnail.jpg?width=600&height=600&fit=crop",
     video: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/641caf060dbfe2f9463087afb89eb6f6/downloads/default.mp4" },
-  { html: "<h3>Guaranteed project delivery, <em>deployed anywhere</em></h3><p>Driven by <strong>25+ years</strong> of experience, we maintain a flawless <strong>100%</strong> project delivery rate. Our cloud-agnostic solutions deploy seamlessly on-premise, public, or private clouds.</p>", button: "Brand secondary", accent: "--brand-secondary--500",
+  { heading: "Guaranteed project delivery,", headingAccent: "deployed anywhere", body: "Driven by **25+ years** of experience, we maintain a flawless **100%** project delivery rate. Our cloud-agnostic solutions deploy seamlessly on-premise, public, or private clouds.", button: "Brand secondary", accent: "--brand-secondary--500",
     poster: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/2c20768633609f07771a6e8f9b975574/thumbnails/thumbnail.jpg?height=600",
     video: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/2c20768633609f07771a6e8f9b975574/downloads/default.mp4" },
-  { html: "<h3>High-touch partnership, <em>connected seamlessly</em></h3><p>We work in close contact with customers to tailor <strong>high-touch</strong> solutions to their exact needs. This powers a scalable, end-to-end <strong>omnichannel platform</strong> for all business units.</p>", button: "Dark", accent: "--brand-primary--500",
+  { heading: "High-touch partnership,", headingAccent: "connected seamlessly", body: "We work in close contact with customers to tailor **high-touch** solutions to their exact needs. This powers a scalable, end-to-end **omnichannel platform** for all business units.", button: "Dark", accent: "--brand-primary--500",
     poster: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/8f960c3b6e0adfec5ab2a36841c62eb9/thumbnails/thumbnail.jpg?height=600",
     video: "https://customer-aqbxsulug92giq9c.cloudflarestream.com/8f960c3b6e0adfec5ab2a36841c62eb9/downloads/default.mp4" },
 ];
@@ -120,23 +126,33 @@ function color(v: string | undefined): string {
 }
 function imgSrc(v: ImgProp): string { if (!v) return ""; if (typeof v === "string") return v; return v.src || v.url || ""; }
 function imgAlt(v: ImgProp): string { return v && typeof v === "object" && v.alt ? v.alt : ""; }
-const hasText = (html: string) => /[^\s]/.test(html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " "));
-function richText(v: unknown): { html: string; node?: React.ReactNode } | null {
-  if (v == null || v === false) return null;
-  if (typeof v === "string") return { html: v };
-  if (typeof v === "number") return { html: String(v) };
-  if (React.isValidElement(v) || Array.isArray(v)) return { html: "node", node: v as React.ReactNode };
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    for (const k of ["html", "value", "text", "content"]) if (typeof o[k] === "string") return { html: o[k] as string };
-    if (o.children != null) return { html: "node", node: o.children as React.ReactNode };
-  }
-  return null;
-}
-/** strip wrapping <p> from a single-paragraph rich text so the title stays an inline heading */
-function inlineHtml(html: string): string {
-  const m = html.trim().match(/^<p[^>]*>([\s\S]*)<\/p>$/i);
-  return m && !/<p[\s>]/i.test(m[1]) ? m[1] : html;
+const str = (v: unknown) => (v == null ? "" : String(v));
+/**
+ * Tiny inline markup for plain Text props (no HTML, React text nodes only):
+ *   **bold**  → <strong>      |  → line break (title only)
+ *   shineWord → <em> (brand shine) when given
+ */
+function mark(text: string, opts?: { breaks?: boolean; shine?: string }): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let k = 0;
+  const pushText = (t: string) => {
+    if (!t) return;
+    const shine = opts && opts.shine ? opts.shine.trim() : "";
+    if (shine && t.includes(shine)) {
+      const parts = t.split(shine);
+      parts.forEach((pt, i) => { if (pt) out.push(<React.Fragment key={k++}>{pt}</React.Fragment>); if (i < parts.length - 1) out.push(<em key={k++}>{shine}</em>); });
+    } else out.push(<React.Fragment key={k++}>{t}</React.Fragment>);
+  };
+  const lines = opts && opts.breaks ? text.split("|") : [text];
+  lines.forEach((line, li) => {
+    if (li) out.push(<br key={k++} />);
+    const segs = line.split("**");
+    segs.forEach((seg, i) => {
+      const t = li && i === 0 ? seg.replace(/^\s+/, "") : (li < lines.length - 1 && i === segs.length - 1 ? seg.replace(/\s+$/, "") : seg);
+      if (i % 2 === 1) out.push(<strong key={k++}>{t}</strong>); else pushText(t);
+    });
+  });
+  return out;
 }
 function pinBlocker(el: Element): Element | null {
   let p: Node | null = el.parentNode;
@@ -200,14 +216,11 @@ const CSS = `
 .sp_inner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:var(--sp-pad);padding:var(--sp-pad);will-change:transform}
 .sp_text{display:flex;flex-direction:column;justify-content:center;gap:1.5rem;min-width:0;padding:clamp(.5rem,2vw,1.5rem) clamp(.25rem,2vw,1.5rem)}
 .sp_panel[data-side="left"] .sp_media{order:-1}
-.sp_rt{font-size:var(--text--lg,1.125rem);line-height:var(--leading--normal,1.5);font-weight:var(--font-weight--light,300);letter-spacing:.01em;color:var(--sp-muted)}
-.sp_rt>*{margin:0}
-.sp_rt>*+*{margin-top:1rem}
-.sp_rt h1,.sp_rt h2,.sp_rt h3,.sp_rt h4{font-size:var(--heading--h2,clamp(1.75rem,3.2vw,2.75rem));line-height:var(--leading--tight,1.12);font-weight:var(--font-weight--semibold,600);letter-spacing:0;color:var(--sp-ink);text-wrap:balance;overflow-wrap:anywhere}
-.sp_rt h1 em,.sp_rt h2 em,.sp_rt h3 em,.sp_rt h4 em{font-style:normal;color:var(--sp-accent,var(--brand-primary--500,#EC008C))}
-.sp_rt strong{font-weight:var(--font-weight--semibold,600);color:var(--sp-ink)}
-.sp_rt ul,.sp_rt ol{padding-left:1.25rem}
-.sp_rt a{color:var(--interactive--color-primary-base,var(--brand-primary--500,#EC008C))}
+.sp_rt{display:flex;flex-direction:column;gap:1rem}
+.sp_h{margin:0;font-size:var(--heading--h2,clamp(1.75rem,3.2vw,2.75rem));line-height:var(--leading--tight,1.12);font-weight:var(--font-weight--semibold,600);color:var(--sp-ink);text-wrap:balance;overflow-wrap:anywhere}
+.sp_h em{font-style:normal;color:var(--sp-accent,var(--brand-primary--500,#EC008C))}
+.sp_p{margin:0;font-size:var(--text--lg,1.125rem);line-height:var(--leading--normal,1.5);font-weight:var(--font-weight--light,300);letter-spacing:.01em;color:var(--sp-muted)}
+.sp_p strong{font-weight:var(--font-weight--semibold,600);color:var(--sp-ink)}
 /* CTA — stagger button */
 .sp_cta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:.5rem}
 .sp_btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.25rem .8rem;border-radius:999px;text-decoration:none;font-size:var(--text--sm,.875rem);font-weight:500;line-height:1.2;
@@ -234,13 +247,13 @@ const CSS = `
   .sp_inner{grid-template-columns:minmax(0,1fr);gap:var(--sp-pad)}
   .sp_panel[data-side="left"] .sp_media{order:1}
   .sp_text{padding:.5rem .25rem;gap:1.25rem}
-  .sp_rt h1,.sp_rt h2,.sp_rt h3,.sp_rt h4{font-size:clamp(1.625rem,4.2vw,2.25rem)}
+  .sp_h{font-size:clamp(1.625rem,4.2vw,2.25rem)}
 }
 @media (max-width:767px){
   .sp{padding-inline:var(--view--px,1rem)}
   .sp_title{font-size:clamp(1.75rem,7.5vw,2.5rem)}
-  .sp_rt{font-size:1rem}
-  .sp_rt h1,.sp_rt h2,.sp_rt h3,.sp_rt h4{font-size:clamp(1.5rem,6.5vw,1.875rem)}
+  .sp_p{font-size:1rem}
+  .sp_h{font-size:clamp(1.5rem,6.5vw,1.875rem)}
   .sp_inner{padding:1rem}
   .sp_text{padding:.5rem .25rem .75rem}
 }
@@ -320,19 +333,21 @@ function Inner(p: StackPanelsProps) {
     if (p.items && p.items.length) return p.items;
     const px = p as unknown as Record<string, unknown>;
     const out: StackPanelItem[] = []; let any = false;
-    for (let n = 1; n <= 6; n++) {
-      const raw = px["i" + n + "Content"]; if (raw !== undefined) any = true;
-      const rt = richText(raw); if (!rt) continue;
-      const html = rt.html.trim(); if (!rt.node && (!html || !hasText(html))) continue;
+    for (let n = 1; n <= 3; n++) {
+      if (px["i" + n + "Heading"] !== undefined) any = true;
+      const heading = str(px["i" + n + "Heading"]).trim();
+      const headingAccent = str(px["i" + n + "HeadingAccent"]).trim();
+      const body = str(px["i" + n + "Body"]).trim();
+      if (!heading && !headingAccent && !body) continue;
       const im = px["i" + n + "Image"] as ImgProp;
       out.push({
-        html, node: rt.node,
+        heading, headingAccent, body,
         image: imgSrc(im), imageAlt: imgAlt(im),
-        poster: String(px["i" + n + "Poster"] || "").trim(),
-        video: String(px["i" + n + "Video"] || "").trim(),
-        side: String(px["i" + n + "Side"] || "Right").toLowerCase(),
-        button: String(px["i" + n + "Button"] || "Auto"),
-        accent: String(px["i" + n + "Accent"] || "").trim(),
+        poster: str(px["i" + n + "Poster"]).trim(),
+        video: str(px["i" + n + "Video"]).trim(),
+        side: str(px["i" + n + "Side"] || "Right").toLowerCase(),
+        button: str(px["i" + n + "Button"] || "Auto"),
+        accent: str(px["i" + n + "Accent"]).trim(),
       });
     }
     return out.length || any ? out : DEFAULT_ITEMS;
@@ -352,9 +367,9 @@ function Inner(p: StackPanelsProps) {
   const ctaLabel = p.ctaLabel == null ? "Request a demo" : p.ctaLabel;
   const ctaUrl = p.ctaUrl == null ? "/request-a-demo" : p.ctaUrl;
 
-  const titleRt = React.useMemo(() => (p.title === undefined ? { html: DEFAULT_TITLE } : richText(p.title)), [p.title]);
-  const titleHtml = titleRt && !titleRt.node ? inlineHtml(titleRt.html) : "";
-  const hasTitle = !!titleRt && (!!titleRt.node || hasText(titleHtml));
+  const titleText = (p.title === undefined ? DEFAULT_TITLE : str(p.title)).trim();
+  const shineWord = p.titleShineWord === undefined ? DEFAULT_SHINE_WORD : str(p.titleShineWord).trim();
+  const hasTitle = titleText.length > 0;
 
   const root = React.useRef<HTMLElement>(null);
   const stack = React.useRef<HTMLDivElement>(null);
@@ -500,11 +515,7 @@ function Inner(p: StackPanelsProps) {
         <div className="sp_wrap">
           {(hasTitle || p.subtitle) && (
             <header className="sp_head">
-              {hasTitle ? (
-                titleRt!.node
-                  ? <h2 ref={titleRef} className={titleCls}>{titleRt!.node}</h2>
-                  : <h2 ref={titleRef} className={titleCls} dangerouslySetInnerHTML={{ __html: titleHtml }} />
-              ) : null}
+              {hasTitle ? <h2 ref={titleRef} className={titleCls}>{mark(titleText, { breaks: true, shine: p.titleShine !== false ? shineWord : "" })}</h2> : null}
               {p.subtitle ? <p className="sp_sub">{p.subtitle}</p> : null}
             </header>
           )}
@@ -515,7 +526,12 @@ function Inner(p: StackPanelsProps) {
                 <div key={i} className="sp_panel" data-sp-panel="" data-side={sideOf(it)} style={{ "--sp-accent": accentOf(it, i) } as React.CSSProperties}>
                   <div className="sp_inner" data-sp-inner="">
                     <div className="sp_text">
-                      {it.node ? <div className="sp_rt">{it.node}</div> : <div className="sp_rt" dangerouslySetInnerHTML={{ __html: it.html }} />}
+                      <div className="sp_rt">
+                        {it.heading || it.headingAccent ? (
+                          <h3 className="sp_h">{mark(it.heading || "")}{it.headingAccent ? <>{it.heading ? " " : ""}<em>{it.headingAccent}</em></> : null}</h3>
+                        ) : null}
+                        {it.body ? <p className="sp_p">{mark(it.body)}</p> : null}
+                      </div>
                       {btn && ctaLabel ? (
                         <div className="sp_cta">
                           <a className="sp_btn" data-style={btn} href={ctaUrl || "#"} aria-label={ctaLabel} {...linkProps}><StaggerLabel text={ctaLabel} /></a>
