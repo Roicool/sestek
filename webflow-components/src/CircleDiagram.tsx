@@ -16,9 +16,10 @@
  * text); empty label = hidden. Design tokens are read from the site's CSS
  * variables through the shadow boundary (--brand-primary--500, --surface--base…).
  *
- * MOBILE FIX (vs the CSS file): chips no longer overflow the viewport — under
- * 768px labels may wrap (max-width tied to the stage), the ring shrinks to
- * leave room for the chips that hang outside it, font/padding step down.
+ * FIT (vs the CSS file): chips never leave the panel at ANY width. fit()
+ * measures the panel and the widest chip (chip width capped at 40% of the
+ * panel so long labels wrap) and sizes the ring from the difference; re-run
+ * on resize / font load / panel ResizeObserver.
  */
 
 import * as React from "react";
@@ -105,15 +106,19 @@ const CSS = `
 .cd[data-align="left"]{--cd-card-align:left}
 .cd_layout{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(2.5rem,5vw,5rem);align-items:center}
 .cd[data-cards="off"] .cd_layout{grid-template-columns:1fr}
-.cd_panel{display:flex;justify-content:center;padding:clamp(1.5rem,3vw,2.5rem) clamp(2.5rem,5vw,5rem)}
-.cd_stage{position:relative;width:min(28rem,100%,76vw);aspect-ratio:1/1}
+.cd_panel{display:flex;justify-content:center;padding:clamp(1.5rem,3vw,2.5rem) 0;min-width:0}
+/* stage width + chip max width are MEASURED by JS (fit()) so chips never leave the panel */
+.cd_stage{position:relative;width:var(--cd-stage,min(28rem,100%));aspect-ratio:1/1}
 .cd_connector{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--cd-ring) 328deg,var(--cd-accent) 360deg);
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--cd-ring-w,2px) - .25px),#000 calc(100% - .25px));
           mask:radial-gradient(farthest-side,transparent calc(100% - var(--cd-ring-w,2px) - .25px),#000 calc(100% - .25px));
   pointer-events:none;will-change:transform;transition:transform 1.2s cubic-bezier(.65,0,.35,1)}
 .cd_item{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:.6rem;background:var(--cd-bg);border:1px solid var(--cd-line);border-radius:999px;
   padding:.55rem 1.05rem;box-shadow:0 10px 24px -18px rgba(0,0,0,.28);cursor:pointer;color:var(--cd-muted);font:inherit;font-family:var(--cd-font);font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  white-space:nowrap;line-height:1.2;text-align:left;transition:color .35s,border-color .35s,box-shadow .35s,transform .35s;-webkit-tap-highlight-color:transparent}
+  white-space:normal;max-width:var(--cd-chip-max,11rem);line-height:1.2;text-align:left;transition:color .35s,border-color .35s,box-shadow .35s,transform .35s;-webkit-tap-highlight-color:transparent}
+.cd_item .cd_label{min-width:0;text-align:center}
+.cd_item[data-cd-side="right"] .cd_label{text-align:left}
+.cd_item[data-cd-side="left"] .cd_label{text-align:right}
 .cd_item[data-cd-side="left"]{flex-direction:row-reverse}
 .cd_dot{width:8px;height:8px;flex:none;border-radius:50%;border:.5px solid var(--neutral--400,#9b9b9b);background:var(--cd-bg);transition:background .35s,border-color .35s,transform .35s}
 .cd_label{transition:letter-spacing .35s}
@@ -143,14 +148,10 @@ const CSS = `
 @media (max-width:991px){
   .cd_layout{grid-template-columns:1fr;gap:2.5rem}
   .cd_panel{padding:1.25rem 0}
-  .cd{--cd-chip-w:min(10rem,34vw)}
-  .cd_stage{width:min(22rem,calc(100% - var(--cd-chip-w)))}
-  .cd_item{max-width:var(--cd-chip-w);white-space:normal;text-align:center;font-size:.75rem;letter-spacing:.06em;padding:.5rem .85rem;gap:.45rem;hyphens:auto;-webkit-hyphens:auto}
-  .cd_item[data-cd-side="left"] .cd_label,.cd_item[data-cd-side="right"] .cd_label{text-align:left}
-  .cd_item[data-cd-side="left"] .cd_label{text-align:right}
+  .cd_item{font-size:.75rem;letter-spacing:.06em;padding:.5rem .85rem;gap:.45rem}
 }
 @media (max-width:479px){
-  .cd{--cd-chip-w:min(8.5rem,32vw);--cd-icon-size:1rem;padding-left:var(--spacing--4,1rem);padding-right:var(--spacing--4,1rem)}
+  .cd{--cd-icon-size:1rem;padding-left:var(--spacing--4,1rem);padding-right:var(--spacing--4,1rem)}
   .cd_item{font-size:.6875rem;padding:.45rem .7rem}
   .cd_pcard{padding:1.1rem 1.25rem}
   .cd_card-title{font-size:1rem}
@@ -196,6 +197,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
   }, [props.items, JSON.stringify(itemsFromProps(props))]);
 
   const root = React.useRef<HTMLDivElement>(null);
+  const panel = React.useRef<HTMLDivElement>(null);
   const stage = React.useRef<HTMLDivElement>(null);
   const connector = React.useRef<HTMLDivElement>(null);
   const cardsWrap = React.useRef<HTMLDivElement>(null);
@@ -214,8 +216,8 @@ export function CircleDiagram(props: CircleDiagramProps) {
   };
 
   React.useEffect(() => {
-    const rootEl = root.current, conn = connector.current, wrap = cardsWrap.current, trk = track.current;
-    if (!rootEl || !conn) return;
+    const rootEl = root.current, conn = connector.current, wrap = cardsWrap.current, trk = track.current, panelEl = panel.current, stageEl = stage.current;
+    if (!rootEl || !conn || !panelEl || !stageEl) return;
     const nodes = itemEls.current.slice(0, items.length).filter(Boolean) as HTMLButtonElement[];
     const cards = showCards ? (cardEls.current.slice(0, items.length).filter(Boolean) as HTMLButtonElement[]) : [];
     if (!nodes.length) return;
@@ -237,6 +239,22 @@ export function CircleDiagram(props: CircleDiagramProps) {
       if (best === -1) for (let j = 0; j < tipRots.length; j++) if (tipRots[j] > bestRot) { bestRot = tipRots[j]; best = j; }
       return best;
     };
+
+    /* FIT: left/right chips hang half their width outside the ring, top/bottom
+       ones half their height. Size the ring from the panel's real width minus
+       the widest chip (measured, after capping chip width to 40% of the panel
+       so long labels wrap) — works at every breakpoint, no CSS guesswork. */
+    const fit = () => {
+      const panelW = panelEl.clientWidth;
+      if (!panelW) return;
+      const chipMax = Math.min(240, Math.floor(panelW * 0.4));
+      rootEl.style.setProperty("--cd-chip-max", chipMax + "px");
+      let widest = 0;
+      nodes.forEach((n) => { widest = Math.max(widest, n.offsetWidth); });
+      const stageW = Math.max(150, Math.min(448, panelW - widest - 8));
+      rootEl.style.setProperty("--cd-stage", stageW + "px");
+    };
+    fit();
 
     /* card list window */
     let listH = 0, maxShift = 0;
@@ -333,12 +351,16 @@ export function CircleDiagram(props: CircleDiagramProps) {
     { const g = gs(); if (g) { claim(); g.set(conn, { rotation: arcRot }); } else conn.style.transform = "rotate(" + arcRot + "deg)"; }
 
     let rsTimer: number | null = null;
-    const remeasure = () => { measure(); scrollToCard(active, false); };
-    if (cards.length) {
-      on(window, "resize", () => { if (rsTimer) clearTimeout(rsTimer); rsTimer = window.setTimeout(remeasure, 150); });
-      on(window, "load", remeasure);
-      const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
-      if (fonts && fonts.ready) fonts.ready.then(remeasure).catch(() => {});
+    const remeasure = () => { fit(); measure(); scrollToCard(active, false); };
+    on(window, "resize", () => { if (rsTimer) clearTimeout(rsTimer); rsTimer = window.setTimeout(remeasure, 120); });
+    on(window, "load", remeasure);
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    if (fonts && fonts.ready) fonts.ready.then(remeasure).catch(() => {});
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      let lastW = panelEl.clientWidth;
+      ro = new ResizeObserver(() => { const w = panelEl.clientWidth; if (w !== lastW) { lastW = w; remeasure(); } });
+      ro.observe(panelEl);
     }
 
     /* viewport gate */
@@ -361,6 +383,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
       stopSpin();
       const g = gs(); if (g) { g.killTweensOf(conn); if (trk) g.killTweensOf(trk); }
       if (io) io.disconnect();
+      if (ro) ro.disconnect();
     };
   }, [items, angles, spin, resume, visible, start, showCards]);
 
@@ -368,7 +391,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
     <div ref={root} className="cd" data-circle-diagram="" data-align={cardAlign === "Left" ? "left" : "center"} data-cards={showCards ? "on" : "off"}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="cd_layout">
-        <div className="cd_panel">
+        <div ref={panel} className="cd_panel">
           <div ref={stage} className="cd_stage">
             <div ref={connector} className="cd_connector" aria-hidden="true" />
             {items.map((it, i) => {
