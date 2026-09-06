@@ -2,15 +2,10 @@
  * VoiceOrbs — voice-sample orb carousel (React port of voice-orbs.js v3.4 +
  * voice-orbs.css v2.7), with two upgrades:
  *
- *   1. ANY NUMBER OF VOICES. Drop a Collection List into the "Voices" slot;
- *      every item becomes an orb. Fields are read from attributes on the item
- *      (bind them to CMS fields in the Designer):
- *        data-vo-name   title            data-vo-desc    subtitle
- *        data-vo-src    audio file URL   data-vo-colors  "#hex,#hex,#hex" (opt.)
- *        <img>          optional texture (only used when Orb style = Image)
- *      Without attributes the component falls back to: first <img>, first
- *      two text elements (title, desc), first <a href> / <audio src> (audio).
- *      No slot? Up to six voices come from the Voice 1–6 props.
+ *   1. VOICES FROM PROPS. Up to six voices are entered by hand in the
+ *      Designer (Voice 1–6 groups: name, description, audio URL, optional
+ *      orb image, optional "#hex,#hex,#hex" colours). An empty name hides
+ *      the voice. More voices can be added later by extending the props.
  *
  *   2. PROCEDURAL WEBGL ORBS — no image assets. The same fluid-gradient
  *      shader the old component reserved for the active orb now renders
@@ -37,7 +32,6 @@ type LinkValue = { href: string; target?: string; preload?: string };
 type ImageValue = { src: string; alt?: string };
 
 export interface VoiceOrbsProps {
-  voices?: React.ReactNode;
   orbStyle?: string;
   sizes?: string;
   fit?: number;
@@ -198,32 +192,6 @@ function createViz(canvas: HTMLCanvasElement): Viz | null {
   };
 }
 
-/* ── Read voices from the slot ──────────────────────────────── */
-function readSlot(root: HTMLElement): Voice[] {
-  const containers: Element[] = [];
-  root.querySelectorAll("slot").forEach((s) => (s as HTMLSlotElement).assignedElements({ flatten: true }).forEach((e) => containers.push(e)));
-  if (!containers.length) containers.push(root);
-  const items: Element[] = [];
-  containers.forEach((c) => {
-    const found = c.querySelectorAll("[data-vo-item], [role=listitem], .w-dyn-item");
-    if (found.length) found.forEach((f) => items.push(f));
-    else if (c.hasAttribute("data-vo-item")) items.push(c);
-  });
-  return items.map((el) => {
-    const img = el.querySelector("img");
-    const texts = Array.from(el.querySelectorAll("h1,h2,h3,h4,h5,h6,p,div,span")).filter((t) => t.children.length === 0 && (t.textContent || "").trim());
-    const a = el.querySelector<HTMLAnchorElement>("a[href]");
-    const au = el.querySelector<HTMLAudioElement>("audio");
-    return {
-      name: el.getAttribute("data-vo-name") || (texts[0] && texts[0].textContent!.trim()) || "",
-      desc: el.getAttribute("data-vo-desc") || (texts[1] && texts[1].textContent!.trim()) || "",
-      src: el.getAttribute("data-vo-src") || (au && (au.currentSrc || au.src)) || (a && a.href) || "",
-      img: img ? (img.currentSrc || img.src) : "",
-      colors: parseColors(el.getAttribute("data-vo-colors")),
-    };
-  }).filter((v) => v.name || v.src || v.img);
-}
-
 const PLAY = <svg className="vo-ic-play" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M5.5 3.5v11l9-5.5z" fill="currentColor" /></svg>;
 const PAUSE = <svg className="vo-ic-pause" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.5 3.5h3v11h-3zM10.5 3.5h3v11h-3z" fill="currentColor" /></svg>;
 const CHEV_L = <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path fillRule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" /></svg>;
@@ -232,8 +200,6 @@ const CHEV_R = <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fi
 const CSS = `
 .vo{position:relative;width:100%;box-sizing:border-box;--vo-gap:64px;--vo-caption-w:280px;--vo-nav-offset:230px;--vo-nav-bottom:2.25rem}
 .vo *,.vo *::before,.vo *::after{box-sizing:border-box}
-.vo-src{position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none}
-.vo-fallback{display:block}
 .vo-viewport{width:100%;overflow:hidden;padding:var(--spacing--12,3rem) 0;outline:none}
 .vo-track{display:flex;align-items:flex-start;gap:var(--vo-gap);width:max-content;will-change:transform;transition:transform .55s cubic-bezier(.22,1,.36,1)}
 .vo.vo-no-anim .vo-track,.vo.vo-no-anim .vo-item{transition:none!important}
@@ -268,18 +234,16 @@ let currentlyPlaying: { stop: () => void } | null = null;
 
 export function VoiceOrbs(p: VoiceOrbsProps) {
   const {
-    voices: slot, orbStyle = "Procedural", sizes = "220,150,104", fit = 760, minScale = 0.42,
+    orbStyle = "Procedural", sizes = "220,150,104", fit = 760, minScale = 0.42,
     gap = 64, captionWidth = 280, navOffset = 230, initial = 0,
   } = p;
 
   const rootRef = React.useRef<HTMLDivElement>(null);
-  const srcRef = React.useRef<HTMLDivElement>(null);
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
-  const [slotVoices, setSlotVoices] = React.useState<Voice[] | null>(null);
   const [thumbs, setThumbs] = React.useState<Record<number, string>>({});
 
-  /* Voices from props (fallback when the slot is empty) */
+  /* Voices from the Voice 1–6 props */
   const propVoices = React.useMemo<Voice[]>(() => {
     const g = (n: number) => ({
       name: (p as any)["v" + n + "Name"] || "", desc: (p as any)["v" + n + "Desc"] || "",
@@ -289,29 +253,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     return [1, 2, 3, 4, 5, 6].map(g).filter((v) => v.name || v.src);
   }, [p.v1Name, p.v1Desc, p.v1Audio, p.v1Image, p.v1Colors, p.v2Name, p.v2Desc, p.v2Audio, p.v2Image, p.v2Colors, p.v3Name, p.v3Desc, p.v3Audio, p.v3Image, p.v3Colors, p.v4Name, p.v4Desc, p.v4Audio, p.v4Image, p.v4Colors, p.v5Name, p.v5Desc, p.v5Audio, p.v5Image, p.v5Colors, p.v6Name, p.v6Desc, p.v6Audio, p.v6Image, p.v6Colors]);
 
-  /* Read the slot (and keep reading as the CMS list settles) */
-  React.useEffect(() => {
-    const src = srcRef.current;
-    if (!src) return;
-    let raf = 0;
-    const read = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const next = readSlot(src);
-        setSlotVoices((prev) => {
-          if (prev && prev.length === next.length && prev.every((a, i) => a.name === next[i].name && a.src === next[i].src && a.img === next[i].img)) return prev;
-          return next;
-        });
-      });
-    };
-    read();
-    const mo = new MutationObserver(read);
-    mo.observe(src, { childList: true, subtree: true, attributes: true });
-    src.querySelectorAll("slot").forEach((s) => s.addEventListener("slotchange", read));
-    return () => { cancelAnimationFrame(raf); mo.disconnect(); src.querySelectorAll("slot").forEach((s) => s.removeEventListener("slotchange", read)); };
-  }, []);
-
-  const voices = slotVoices && slotVoices.length ? slotVoices : propVoices;
+  const voices = propVoices;
   const N = voices.length;
   const procedural = orbStyle !== "Image";
   const paletteOf = React.useCallback((i: number): RGB[] => voices[i].colors || PALETTES[i % PALETTES.length], [voices]);
@@ -583,7 +525,6 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   return (
     <div ref={rootRef} className="vo" data-voice-orbs style={style} tabIndex={hasVoices ? 0 : undefined}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div ref={srcRef} className={hasVoices || !slot ? "vo-src" : "vo-fallback"}>{slot}</div>
       {hasVoices && (
         <>
           <div ref={viewportRef} className="vo-viewport">

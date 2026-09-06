@@ -6,7 +6,7 @@ const AUDIO = "https://sestek.roicool.com/EN/";
 function voice(n: number, d: { name: string; desc: string; file: string; colors: string }) {
   const g = "Voice " + n;
   return {
-    ["v" + n + "Name"]: props.Text({ name: "Name", group: g, defaultValue: d.name, tooltip: "Boş = ses gizli. Slot doluysa bu grup yok sayılır" }),
+    ["v" + n + "Name"]: props.Text({ name: "Name", group: g, defaultValue: d.name, tooltip: "Boş = ses gizli" }),
     ["v" + n + "Desc"]: props.Text({ name: "Description", group: g, defaultValue: d.desc }),
     ["v" + n + "Audio"]: props.Text({ name: "Audio URL", group: g, defaultValue: d.file ? AUDIO + d.file : "", tooltip: "wav/mp3 — CORS'lu servis edilmeli (analyser için)" }),
     ["v" + n + "Image"]: props.Image({ name: "Orb image", group: g, tooltip: "Sadece Orb style = Image'da kullanılır" }),
@@ -17,23 +17,14 @@ function voice(n: number, d: { name: string; desc: string; file: string; colors:
 export default declareComponent(VoiceOrbs, {
   name: "Voice Orbs",
   description:
-    "Ses örneği orb carousel'i — voice-orbs.js v3.4'ün React hali. Sınırsız " +
-    "ses: 'Voices' slot'una Collection List bırak (item'da data-vo-name / " +
-    "data-vo-desc / data-vo-src attribute'ları CMS'e bağlı). Orb'lar görsel " +
+    "Ses örneği orb carousel'i — voice-orbs.js v3.4'ün React hali. Sesler " +
+    "Voice 1–6 gruplarından manuel girilir (ad, açıklama, ses URL, renkler; " +
+    "boş ad = gizli). Orb'lar görsel " +
     "yerine prosedürel WebGL fluid-gradient (paletten üretilir); aktif orb " +
     "canlı + ses-reaktif, diğerleri aynı shader'dan statik kare. Sonsuz döngü, " +
     "play/pause, ilerleme halkası, ‹ › ve ←/→. Sıfır bağımlılık.",
   group: "Sestek",
   props: {
-    voices: props.Slot({
-      name: "Voices",
-      group: "Voices",
-      tooltip:
-        "Collection List bırak. Her item'a custom attribute: data-vo-name (ad), " +
-        "data-vo-desc (açıklama), data-vo-src (ses URL), opsiyonel data-vo-colors " +
-        "(#hex,#hex,#hex) ve Orb style=Image için bir Image elemanı. Attribute " +
-        "yoksa: ilk görsel, ilk iki metin, ilk link okunur.",
-    }),
     orbStyle: props.Variant({
       name: "Orb style",
       group: "Look",
@@ -62,7 +53,7 @@ export default declareComponent(VoiceOrbs, {
     ...voice(6, { name: "", desc: "", file: "", colors: "" }),
   },
   options: {
-    /* WebGL + Web Audio + slot DOM — client-only */
+    /* WebGL + Web Audio — client-only */
     ssr: false,
   },
 });
