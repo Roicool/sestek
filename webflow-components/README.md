@@ -20,6 +20,7 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **Cookie Consent** | `src/CookieConsent.webflow.tsx` | Minimal Sestek çerez banner'ı, **gerçekten çalışan**: seçim `sestek_consent` cookie'sinde (180 gün, Policy version değişince yeniden sorar); **Google Consent Mode v2** (`gtag('consent','update')` + `dataLayer` `cookie_consent_update` event'i, her sayfa yüklemesinde sessizce de); `type="text/plain" data-consent="analytics|marketing"` script'leri ve `data-src`'li iframe'ler yalnız izinle açılır; footer'daki `[data-cookie-settings]` tercihleri yeniden açar; GPC sinyali. Zorunlu / Analitik / Pazarlama (+ Tercihler) kategorileri, EN/TR otomatik, sol altta küçük kart, mobilde alt sheet, opsiyonel engelleyici mod. Bkz. [Cookie Consent](#cookie-consent--designer-propları). |
 | **Horizontal Scroll Cards** | `src/HScroll.webflow.tsx` | "Why SESTEK" yatay kart şeridi — `h-scroll.js` v2.2.4 + `hover-reveal.js` v1.0'ın React hali, **Swiper'sız**. ≥ 992px (gerçek fare, motion açık, sayfada gsap + ScrollTrigger): bölüm bir ekran boyu pinlenir, dikey scroll kartları 1px = 1px sola sürükler (`Speed` çarpanı), kart kenarlarına snap, altta **ilerleme çizgisi + sayaç**. Tablet/mobil, dokunmatik cihaz, reduced-motion ya da gsap yoksa aynı DOM **native scroll-snap karusel**: ok + kart başına nokta, tablet 1.4 / mobil 1.1 kart (peek). Kart genişlikleri saf CSS — eski `zoom` + Swiper ölçümü çakışmasından gelen **mobil hizalama kayması yok**. Başlık normal akışta, kartların üstüne binmez. Opsiyonel **hover reveal**: imlecin girdiği noktadan renk dalgası (CSS clip-path), çıkış noktasına doğru kapanır; dokunmatikte tap, klavye odağında da. Item 1–6 (**Rich Text içerik**: H3 başlık + paragraf tek alanda, ikon görseli; ikon yoksa 01, 02… numarası). Dark / Light tema + token override. Bkz. [Horizontal Scroll Cards](#horizontal-scroll-cards--designer-propları). |
 | **Stack Panels** | `src/StackPanels.webflow.tsx` | Ana sayfa "Why global brands are choosing SESTEK" — **üst üste binen panel scrollytelling'i**, `stack-panels.js` v1.4.0 + `stack-panels.css`'in React hali. Her panel (sonuncu hariç) pinlenir; sonraki üstüne kayarken alttaki bekler (Hold), küçülür (0.5), solar, bulanır ve yukarı süzülür; uzun paneller önce içerik kaydırır. Solda başlık + renkli vurgu + açıklama (`**kalın**` işareti) + **stagger "Request a demo" butonu** (panel başına stil), sağda **sabit oranlı kare video** (Cloudflare Stream mp4 + thumbnail poster). GSAP sitenin global'inden; yoksa, reduced-motion'da, ata elemanda transform varsa ya da **telefonda (≤ 767px)** paneller düz akışta. **Mobil kayma düzeltmesi:** medya kutusu sabit oranlı — video geç gelince panel boyu değişmez, pin ölçümleri bayatlamaz; videolar `muted` attribute + property, `playsinline`, viewport'a yaklaşınca yüklenir, yalnız görünürken oynar, hata olursa poster kalır. Başlık düz metin (`**kalın**`, `|` satır kırma, SESTEK'te marka parıltısı), görünüme girince yumuşak belirme. Hiçbir alan Rich Text değil; 3 panel. Bkz. [Stack Panels](#stack-panels--designer-propları). |
+| **TTS Demo** | `src/TtsDemo.webflow.tsx` | Text-to-Speech & Voice Cloning demo iframe'i (`tts-cloning-demo.sestek.com`), Webflow'daki iki onaylı embed + boyutlandırma script'inin React hali. **Side by side** (/demos): solda eyebrow + başlık + açıklama + 2 link, sağda panel — büyük ekran 593px panel / 728px iframe, kısa masaüstü (≤ 700px yükseklik) 760×728 @ zoom .648 ortalı, telefonda alt alta tam genişlik 840px. **Full width** (/demos/tts): yalnız iframe, 960×649 tabanından genişlik ve yüksekliğe göre ölçekli, ortalı. iframe mantıksal boyutunu korur, CSS `zoom` ile ölçeklenir (embed'lerle aynı); viewport'a yaklaşınca yüklenir, yüklenene dek spinner; dil sayfadan (tr → tr-TR). Bkz. [TTS Demo](#tts-demo--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
 ## Yayınlama (ilk kez)
@@ -363,6 +364,26 @@ kalmalı (varsayılan 0 yeterli). Font geç gelirse ve panel boyu değişirse
 | Background image | Look | Image | boş | Section arka planı (cover) |
 | Bottom fade | Look | Boolean | `On` | Alt kenarda zemine karışma maskesi |
 | Section background / Panel background | Look | Text | boş | Token ya da renk; boş = `--surface--base`. Panel zemini opak olmalı |
+
+## TTS Demo — Designer prop'ları
+
+Kurulum: /demos sayfasındaki `article#tts` içindeki `.dp-live__panel` embed'ini
+ve boyutlandırma `<script>`'ini, /demos/tts sayfasındaki `.dp-detail__panel`
+embed'ini ve script'ini kaldır; component'i aynı yere bırak (Layout'u sayfaya
+göre seç). Metin ve linkler prop'lardan; iframe `allow="microphone"` ile gelir.
+
+| Prop | Grup | Tip | Varsayılan | Açıklama |
+|---|---|---|---|---|
+| Layout | Layout | Variant | `Side by side` | `Full width` = yalnız iframe (detay sayfası) |
+| Text side | Layout | Variant | `Left` | Metin sütunu solda / sağda |
+| Frame border | Layout | Boolean | `On` | Panel çerçevesi + köşe yuvarlağı |
+| Mobile height (px) | Layout | Number | `840` | ≤ 767px'te iframe yüksekliği |
+| Bottom margin (px) | Layout | Number | `80` | Full width'te alt boşluk |
+| Eyebrow / Title / Description | Text | Text | `Text to speech` / `Text to Speech & Voice Cloning` / hazır metin | Boş satır çizilmez |
+| Link 1 label / URL / new tab | Links | Text · Text · Boolean | `Open the full page` / `https://rc-sestek.webflow.io/demos/tts` / `Off` | Boş label = link yok |
+| Link 2 label / URL / new tab | Links | Text · Text · Boolean | `All voices and languages` / docs.sestek.com TTS sayfası / `On` | |
+| Demo URL | Demo | Text | `…/Demo.aspx?lang={lang}&embed=1` | `{lang}` seçilen dille değişir |
+| Language | Demo | Variant | `Auto` | `en-US` · `tr-TR`; Auto = /tr ya da `<html lang>` tr ise tr-TR |
 
 ## Cookie Consent — Designer prop'ları
 
