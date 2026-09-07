@@ -315,7 +315,10 @@ const CSS = `
 @media (max-width:991px){
   .sh-top{height:100vh;height:100svh;min-height:480px;overflow:hidden;background:#0b0b0d}
   .sh-ovl{background:linear-gradient(to bottom,rgba(0,0,0,.05) 15%,rgba(0,0,0,.45) 60%,rgba(0,0,0,.7) 100%)}
-  .sh-s1-in{padding:clamp(1.5rem,5vw,3rem) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem)}
+  /* Clear the fixed navbar + Top Bar (when present) so the centered copy never
+     sits under them: --topbar-h is written on <html> by the Top Bar component
+     and inherits through the shadow root; it is 0 when the bar is hidden. */
+  .sh-s1-in{padding:calc(var(--nav-height,3.75rem) + var(--topbar-h,0px) + clamp(1rem,4vw,2rem)) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem)}
   .sh-h1{font-size:clamp(2rem,5.6vw,3.25rem);letter-spacing:-.01em}
   .sh-trust{position:relative;z-index:2;flex:none;display:flex;flex-direction:column;gap:var(--spacing--3,.75rem);padding:0 0 var(--spacing--5,1.25rem)}
   .sh-trust-t{padding:0 var(--view--px,1.5rem);text-align:center}
