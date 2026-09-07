@@ -1,8 +1,12 @@
 /*!
- * search.css v1.7.1
+ * search.css v1.8.0
  * Full-site search overlay skin for search.js. The page behind blurs through
  * a frosted scrim; a search bar sits near the top with a results grid below
  * (image + title cards, matched text shown in bold — Ramp-style).
+ *
+ * Mobile (≤599px): the panel fills the whole viewport (100dvh, safe-area
+ * aware) and the results card stretches to the bottom edge, scrolling
+ * internally — no frosted gap under the last card.
  *
  * [data-search-source] visibility is intentionally NOT controlled here —
  * it can be an on-page (visible) Collection List that search.js reads from,
@@ -170,6 +174,10 @@ html.search-lock { overflow: hidden; }
   /* Leaves room for the bar + margins above so the panel never overflows
      the viewport; results scroll internally instead. */
   max-height: min(34rem, calc(100vh - 13rem));
+  /* Reaching the end of the list must not hand the gesture to the (locked)
+     page behind — matters with Lenis stopped + data-lenis-prevent. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
@@ -287,13 +295,46 @@ html.search-lock { overflow: hidden; }
   [data-search-results] { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Mobile: full-height sheet ────────────────────────────────────── */
 @media (max-width: 599px) {
-  [data-search-panel] { margin-top: var(--spacing--8, 2rem); }
+  [data-search-overlay] {
+    /* Fixed inset:0 already spans the viewport; the explicit height pins it
+       to the *dynamic* viewport on iOS/Android (toolbars showing/hiding)
+       and lets the panel below size itself against it. */
+    height: 100vh;
+    height: 100dvh;
+    box-sizing: border-box;   /* padding below must not push past 100dvh */
+    /* The panel owns the scroll on mobile — the overlay itself never scrolls,
+       so a swipe that overshoots the results can't move the scrim. */
+    overflow: hidden;
+    overscroll-behavior: contain;
+    padding: calc(var(--spacing--4, 1rem) + env(safe-area-inset-top, 0px))
+             var(--spacing--3, 0.75rem)
+             calc(var(--spacing--3, 0.75rem) + env(safe-area-inset-bottom, 0px));
+  }
+  [data-search-panel] {
+    margin-top: 0;
+    /* Fill the overlay top-to-bottom; children lay out in a column and the
+       results grid takes whatever is left. */
+    height: 100%;
+    min-height: 0;
+  }
+  [data-search-bar] {
+    flex: 0 0 auto;
+    padding-left: var(--spacing--4, 1rem);
+  }
+  [data-search-results-label] { flex: 0 0 auto; }
   [data-search-results] {
     grid-template-columns: 1fr;
-    max-height: min(28rem, calc(100vh - 11rem));
+    /* Take the remaining height instead of a fixed cap — the white card
+       reaches the bottom edge and scrolls inside. `align-content: start`
+       keeps the cards packed at the top when there are only one or two. */
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    align-content: start;
   }
-  [data-search-bar] { padding-left: var(--spacing--4, 1rem); }
+  [data-search-empty] { flex: 0 0 auto; }
   [data-search-input] { font-size: var(--text--lg, 1.125rem); }
 }
 

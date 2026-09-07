@@ -1,7 +1,19 @@
 # CDN Links
 
 All files are served via **jsDelivr** from the `roicool/sestek` GitHub repository.  
-Use `@main` for development. Pin to a tag (e.g. `@v1.0.0`) in production.
+Use `@main` for development. Pin to a tag (e.g. `@v2.0.0`) in production.
+
+> **Güncel sürüm: `v2.0.0`**  
+> Bu dosyadaki tüm bağlantılar `@main` ile yazılmıştır (geliştirme). Üretimde
+> `@main` yerine `@v2.0.0` koy — yol aynı kalır:
+> ```
+> https://cdn.jsdelivr.net/gh/roicool/sestek@v2.0.0/js/components/hero.js
+> ```
+>
+> | Sürüm | Tarih | Not |
+> |---|---|---|
+> | `v2.0.0` | 2026-09-07 | Tüm branch'lerin birleşimi; Code Components (Hero, Site Search, Stack Panels, Cookie Consent, Top Bar…), h-scroll v2.x, nav v2.8, locale-switch, icon library, calculators CMS |
+> | `v1.0.0` | 2026-06-28 | İlk sabitlenmiş sürüm (core JS hardening) |
 
 > **PageSpeed 90+ Rule — always `defer`**  
 > Every `<script src>` tag must carry the `defer` attribute.  
@@ -2426,6 +2438,19 @@ Designer'da tanımlamadıysan CSS'teki pembe fallback'ler devreye girer.
 
 Açıkken sayfa scroll'u kilitlenir (Lenis varsa `Sestek.stopScroll`/
 `startScroll`, yoksa `html.search-lock { overflow: hidden }` fallback'i).
+
+**Lenis ile scroll (js v1.5.0):** Durdurulmuş Lenis, yolunda
+`data-lenis-prevent` olmayan her wheel/touchmove'u yutar — bu yüzden sonuç
+listesi (özellikle mobilde parmakla) kaydırılamıyordu. search.js artık
+overlay'e `data-lenis-prevent`'i **kendisi** basıyor; Webflow'da elle
+eklemen gerekmiyor. CSS tarafında `overscroll-behavior: contain` ile listenin
+sonuna gelince hareket arkadaki kilitli sayfaya geçmiyor.
+
+**Mobil tam yükseklik (css v1.8.0):** ≤599px'te overlay `100dvh` (safe-area
+dahil) olur, panel üstten alta viewport'u doldurur ve beyaz sonuç kartı
+sabit bir `max-height` yerine kalan tüm alanı kaplayıp **içeride** kayar —
+son kartın altında bulanık boşluk kalmaz.
+
 Finsweet filtreleri (kategori vb.) ile birlikte kullanılabilir — bu
 component sadece metin arama/sonuç render'ını yönetir. Beklenen bir element
 eksikse konsola `[Sestek.search]` ön ekiyle uyarı basar (sessizce ölmez).
@@ -4334,8 +4359,8 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@main/svg/icons/<isim>.svg
 
 When releasing a new version:
 
-1. Update the version comment in the JS/CSS file header (`v1.0.0` → `v1.1.0`)
-2. Commit and push to `main`
-3. Create a GitHub tag: `git tag v1.1.0 && git push origin v1.1.0`
-4. Update this file's table with the new pinned tag link for production use
-5. jsDelivr will serve the new tag automatically (may take a few minutes to propagate)
+1. Update the version comment in the JS/CSS file header (`v2.0.0` → `v2.1.0`)
+2. Update the **Güncel sürüm** block at the top of this file (tag name + release table row) and merge it to `main`
+3. Create a GitHub tag on that `main` commit: `git tag v2.1.0 && git push origin v2.1.0`
+4. jsDelivr will serve the new tag automatically (may take a few minutes to propagate)
+5. Swap `@main` → `@v2.1.0` in the production embeds
