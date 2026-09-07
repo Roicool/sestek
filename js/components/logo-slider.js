@@ -1,5 +1,5 @@
 /*!
- * logo-slider.js v1.2.0
+ * logo-slider.js v1.2.1
  * Brand-logo tabbed story slider for Webflow CMS. Everything is authored inside
  * the Collection List — JS never copies content into a separate "stage". Each
  * Collection Item = one brand = one slide, carrying BOTH its own logo tab AND
@@ -52,8 +52,10 @@
  *                                                created before the list if omitted.)
  *
  *     [Collection List Wrapper]               ← the Webflow CMS block
- *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage)
+ *       [Collection List]  role="list"        ← the stage (JS tags data-ls-stage,
+ *                                               role → presentation)
  *         [data-ls-item]   role="listitem"    ← Collection Item = one brand/slide
+ *                                               (JS: role → tabpanel)
  *           [data-ls-tab]                       ← logo trigger, MOVED into the tab bar
  *             data-ls-color="#EC6608"           ← OPTIONAL: brand colour (CMS field)
  *                                                 the fill bar draws in; on the item works too
@@ -113,6 +115,10 @@
     //    lets the CSS stack every item in one grid cell (stable height).
     var stage = items[0].parentElement;
     stage.setAttribute("data-ls-stage", "");
+    // Webflow gives the Collection List role="list", which REQUIRES listitem
+    // children — but the items become tabpanels below. Neutralise the list role
+    // so the tree is tablist → tab / tabpanel only (Lighthouse aria-required-children).
+    if (stage.getAttribute("role") === "list") stage.setAttribute("role", "presentation");
 
     // The Collection List Wrapper — the top-level block under the root holding
     // the CMS list. Author the tab bar / arrows OUTSIDE it (root children).
