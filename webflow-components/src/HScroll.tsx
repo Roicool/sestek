@@ -38,6 +38,8 @@ type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6}Content`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
 export interface HScrollProps extends Partial<Record<ItemKey, unknown>> {
+  /** Designer visibility toggle — false renders nothing */
+  visible?: boolean;
   items?: HScrollItem[];
   i1Icon?: ImgProp; i2Icon?: ImgProp; i3Icon?: ImgProp; i4Icon?: ImgProp; i5Icon?: ImgProp; i6Icon?: ImgProp;
 
@@ -360,6 +362,7 @@ class Boundary extends React.Component<{ children?: React.ReactNode }, { err: st
 }
 
 export function HScroll(p: HScrollProps) {
+  if (p.visible === false) return null;
   return <Boundary><HScrollInner {...p} /></Boundary>;
 }
 

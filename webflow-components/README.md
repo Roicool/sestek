@@ -287,6 +287,7 @@ yüksek ver.
 
 | Prop | Grup | Tip | Varsayılan | Açıklama |
 |---|---|---|---|---|
+| Visible | — | Visibility | `On` | Designer görünürlük anahtarı; Off = hiç çizilmez |
 | Eyebrow / Title / Subtitle | Header | Text | boş / `Why SESTEK` / `Support built to hold up…` | Boş bırakılan satır çizilmez |
 | Align | Header | Variant | `Center` | `Left` = başlık gutter'a dayalı |
 | Item N › Content / Icon | Item 1–6 | RichText · Image | 5 item dolu (Technology we own, Hybrid by design, Proven before production, Enterprise-grade, Connected intelligence) | **Başlık + gövde tek Rich Text:** H3 başlık, altında paragraf(lar); liste, link, kalın da olur. Boş = kart gizli. Icon boşsa kartta `01`, `02`… numarası |

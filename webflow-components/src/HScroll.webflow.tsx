@@ -22,6 +22,7 @@ export default declareComponent(HScroll, {
     "UYARI: pin için component'in üstündeki hiçbir elemanda transform / filter / will-change:transform olmamalı.",
   group: "Sestek",
   props: {
+    visible: props.Visibility({ name: "Visible", defaultValue: true }),
     eyebrow: props.Text({ name: "Eyebrow", group: "Header", defaultValue: "", tooltip: "Başlığın üstünde küçük etiket (opsiyonel)" }),
     title: props.Text({ name: "Title", group: "Header", defaultValue: "Why SESTEK" }),
     subtitle: props.Text({ name: "Subtitle", group: "Header", defaultValue: "Support built to hold up in production, not just in a sales demo." }),
