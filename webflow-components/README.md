@@ -30,16 +30,20 @@ Tüm component'ler layout shift, çizimi engelleyen iş ve gereksiz ağ yükü i
 gözden geçirildi. Kurallar:
 
 - **SSR açık** (`ssr: true`, sayfa HTML'inde gelir, hydration'da boy değişmez):
-  Site Search, Horizontal Scroll Cards, Stack Panels, TTS Demo, STT Demo,
-  Soft Gradient BG, Shader Gradient BG ve dört form. Render yolunda
-  `window`/`document` yok; kutu ölçüleri CSS'ten (media query) gelir, JS yalnız
-  hareket / zoom ekler.
-- **SSR kapalı kalanlar** (host eleman JS gelene kadar boş): Hero, Logo
-  Marquee, Scroll Tabs, Voice Orbs, Circle Diagram, Cookie Consent, Top Bar.
-  Bunlarda viewport üstü kullanımda Designer'da host elemana **min-height**
-  ver (Hero `100svh`, Logo Marquee logo boyu, Circle Diagram `~30rem`, Scroll
-  Tabs masaüstünde `~1800px`); Cookie Consent ve Top Bar sabit konumludur,
-  akışı kaydırmaz (Top Bar'da "Push page content" Off).
+  Cookie Consent ve Top Bar dışındaki **tüm** component'ler — Hero, Logo
+  Marquee, Scroll Tabs, Voice Orbs, Circle Diagram, Site Search, Horizontal
+  Scroll Cards, Stack Panels, TTS Demo, STT Demo, Soft Gradient BG, Shader
+  Gradient BG ve dört form. Render yolunda `window`/`document`/`matchMedia`
+  yok; masaüstü/mobil ayrımı tek DOM üzerinde CSS media query ile, kutu
+  ölçüleri CSS'ten (media query, container query birimleri, prop'tan gelen
+  inline custom property) gelir; JS yalnız hareket / zoom / oynatma ekler.
+  Her biri sunucu HTML'i → hydration boy farkı 0px olacak şekilde test
+  edildi; Designer'da min-height vb. ek ayar **gerekmez**.
+- **SSR kapalı** (bilinçli): Cookie Consent ve Top Bar — cookie'ye göre
+  gösterim kararı istemcide verilir; ikisi de sabit konumludur, akışı
+  kaydırmaz (Top Bar'da "Push page content" Off bırak).
+- **Bilinen sınır**: Circle Diagram'da kart içeriği `Card height`'tan uzunsa
+  kart penceresi hydration sonrası büyür; kart yüksekliğini içeriğe göre ver.
 - **Medya**: video/iframe/görsel kutuları sabit oranlı; videolar
   `preload="none|metadata"`, viewport'a yaklaşınca yüklenir, yalnız
   görünürken oynar; iframe'ler viewport'a yaklaşınca `src` alır.
