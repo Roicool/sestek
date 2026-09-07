@@ -6,6 +6,7 @@ function item(n: number) {
   const g = "Item " + n;
   const d = DEFAULT_ITEMS[n - 1];
   return {
+    ["i" + n + "Visible"]: props.Visibility({ name: "Visible", group: g, defaultValue: true }),
     ["i" + n + "Content"]: props.RichText({ name: "Content", group: g, defaultValue: d ? d.html : "", tooltip: "Başlık + gövde tek Rich Text: H3 başlık, altına paragraf(lar). Boş = kart gizli" }),
     ["i" + n + "Icon"]: props.Image({ name: "Icon", group: g, tooltip: "Kartın üst ikonu (opsiyonel). Boş = 01, 02… numarası" }),
   };
@@ -22,7 +23,6 @@ export default declareComponent(HScroll, {
     "UYARI: pin için component'in üstündeki hiçbir elemanda transform / filter / will-change:transform olmamalı.",
   group: "Sestek",
   props: {
-    visible: props.Visibility({ name: "Visible", defaultValue: true }),
     eyebrow: props.Text({ name: "Eyebrow", group: "Header", defaultValue: "", tooltip: "Başlığın üstünde küçük etiket (opsiyonel)" }),
     title: props.Text({ name: "Title", group: "Header", defaultValue: "Why SESTEK" }),
     subtitle: props.Text({ name: "Subtitle", group: "Header", defaultValue: "Support built to hold up in production, not just in a sales demo." }),

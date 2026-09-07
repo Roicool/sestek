@@ -34,12 +34,10 @@ export interface HScrollItem {
   iconAlt?: string;
 }
 
-type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6}Content`;
+type ItemKey = `i${1 | 2 | 3 | 4 | 5 | 6}${"Content" | "Visible"}`;
 type ImgProp = string | { src?: string; url?: string; alt?: string } | null | undefined;
 
 export interface HScrollProps extends Partial<Record<ItemKey, unknown>> {
-  /** Designer visibility toggle — false renders nothing */
-  visible?: boolean;
   items?: HScrollItem[];
   i1Icon?: ImgProp; i2Icon?: ImgProp; i3Icon?: ImgProp; i4Icon?: ImgProp; i5Icon?: ImgProp; i6Icon?: ImgProp;
 
@@ -362,7 +360,6 @@ class Boundary extends React.Component<{ children?: React.ReactNode }, { err: st
 }
 
 export function HScroll(p: HScrollProps) {
-  if (p.visible === false) return null;
   return <Boundary><HScrollInner {...p} /></Boundary>;
 }
 
@@ -376,6 +373,7 @@ function HScrollInner(p: HScrollProps) {
     for (let n = 1; n <= 6; n++) {
       const raw = px["i" + n + "Content"];
       if (raw !== undefined) any = true;
+      if (px["i" + n + "Visible"] === false) continue;                 // Designer visibility toggle per card
       const rt = richText(raw);
       if (!rt) continue;
       const html = rt.html.trim();
