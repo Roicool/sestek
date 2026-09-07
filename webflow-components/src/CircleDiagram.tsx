@@ -185,11 +185,15 @@ const CSS = `
   .cd_item{font-size:.75rem;letter-spacing:.06em;padding:.5rem .85rem;gap:.45rem}
 }
 /* phones: no side padding, NO icons (text-only chips), normal-size labels */
+/* ≤ 1070px: chip icons off (text-only chips) — the ring has no room for icon + label */
+@media (max-width:1070px){
+  .cd_item .cd_dot{display:none}
+  .cd_item{gap:0}
+  .cd_item .cd_label{text-align:center}
+}
 @media (max-width:767px){
   .cd{padding-left:0;padding-right:0}
-  .cd_item .cd_dot{display:none}
-  .cd_item{gap:0;font-size:.75rem;letter-spacing:.05em;padding:.5rem .8rem;line-height:1.2}
-  .cd_item .cd_label{text-align:center}
+  .cd_item{font-size:.75rem;letter-spacing:.05em;padding:.5rem .8rem;line-height:1.2}
   .cd_item.is-active{transform:translate(-50%,-50%) scale(1.04)}
 }
 @media (max-width:479px){
