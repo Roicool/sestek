@@ -76,7 +76,8 @@ export default declareComponent(LogoMarquee, {
     }),
   },
   options: {
-    /* reads slotted DOM + runs a rAF ticker — client-only */
-    ssr: false,
+    /* Server-renderable: the root reserves the final row height inline and the
+       slot DOM is read / the rAF ticker started only in effects after hydration. */
+    ssr: true,
   },
 });

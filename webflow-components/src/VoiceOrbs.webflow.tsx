@@ -66,7 +66,8 @@ export default declareComponent(VoiceOrbs, {
     ...voice(10, { name: "", desc: "", file: "", img: "", colors: "" }),
   },
   options: {
-    /* WebGL + Web Audio — client-only */
-    ssr: false,
+    /* Server-renderable: the orb zone height is reserved from CSS (container
+       units) at render time; WebGL + Web Audio + layout run only in effects. */
+    ssr: true,
   },
 });

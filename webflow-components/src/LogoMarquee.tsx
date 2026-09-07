@@ -25,6 +25,9 @@
 
 import * as React from "react";
 
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 export interface LogoMarqueeProps {
   logos?: React.ReactNode;
   speed?: number;
@@ -76,8 +79,8 @@ const CSS = `
 .slm.has-fade{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 12%,#000 88%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 12%,#000 88%,transparent 100%)}
 .slm.can-drag{cursor:grab}
 .slm.can-drag.is-dragging{cursor:grabbing}
-.slm-track{display:inline-flex;align-items:center;flex-wrap:nowrap;will-change:transform;white-space:nowrap}
-.slm-set{display:inline-flex;align-items:center;flex-wrap:nowrap;flex-shrink:0}
+.slm-track{display:flex;width:max-content;align-items:center;flex-wrap:nowrap;will-change:transform;white-space:nowrap}
+.slm-set{display:flex;align-items:center;flex-wrap:nowrap;flex-shrink:0}
 .slm-item{display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .slm-logo{display:block;object-fit:contain;pointer-events:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
 .slm-item:hover .slm-logo{transform:scale(1.07)}
@@ -117,7 +120,7 @@ export function LogoMarquee({
   const baseSpeed = Math.abs(Number(speed) || 0) * (String(direction).toLowerCase() === "right" ? -1 : 1);
 
   /* ── Read the slot: which logos did the CMS give us? ─────────── */
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const src = srcRef.current;
     if (!src) return;
     let raf = 0;
@@ -344,12 +347,16 @@ export function LogoMarquee({
     (drag && hasLogos ? " can-drag" : "") +
     (dragging ? " is-dragging" : "");
 
-  // minHeight reserves one logo row so a reading/empty marquee never collapses to 0.
+  // SSR / first paint: the root reserves the final track height (one logo row,
+  // or the Min height prop if larger) so nothing moves when the track appears.
+  // The track is a block-level flex row (no inline line-box descender), so its
+  // height is exactly `size`.
+  const reserve = minHeight > 0 ? "max(" + minHeight + "px, " + size + ")" : size;
   return (
     <div
       ref={rootRef}
       className={cls}
-      style={{ minHeight: minHeight > 0 ? minHeight + "px" : size }}
+      style={{ minHeight: reserve }}
       role="region"
       aria-label="Client logos"
     >

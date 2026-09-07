@@ -205,11 +205,12 @@ const CHEV_L = <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fi
 const CHEV_R = <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path fillRule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" /></svg>;
 
 const CSS = `
-.vo{position:relative;width:100%;box-sizing:border-box;--vo-gap:64px;--vo-caption-w:280px;--vo-nav-offset:230px;--vo-nav-bottom:2.25rem}
+.vo{position:relative;width:100%;box-sizing:border-box;container-type:inline-size;--vo-gap:64px;--vo-caption-w:280px;--vo-nav-offset:230px;--vo-nav-bottom:2.25rem}
 .vo *,.vo *::before,.vo *::after{box-sizing:border-box}
 .vo.is-card{background:var(--surface--light,#eeebf8);border-radius:var(--radius--lg,1rem)}
 .vo-viewport{width:100%;overflow:hidden;padding:var(--spacing--12,3rem) 0;outline:none;border-radius:inherit}
-.vo-track{display:flex;align-items:flex-start;gap:var(--vo-gap);width:max-content;will-change:transform;transition:transform .55s cubic-bezier(.22,1,.36,1)}
+.vo-track{display:flex;align-items:flex-start;gap:var(--vo-gap);width:max-content;will-change:transform;transition:transform .55s cubic-bezier(.22,1,.36,1);visibility:hidden}
+.vo.is-ready .vo-track{visibility:visible}
 .vo.vo-no-anim .vo-track,.vo.vo-no-anim .vo-item{transition:none!important}
 .vo-item{flex:0 0 auto;transform-origin:50% calc(var(--vo-zone,256px)/2);opacity:.75;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .55s cubic-bezier(.22,1,.36,1)}
 .vo-item.vo-d1{opacity:.9}.vo-item.is-active{opacity:1}
@@ -565,6 +566,9 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     window.addEventListener("resize", onResize);
 
     activate(); setStatic(); layout(true);
+    // Orbs are positioned by transforms only now: unhide the track (it was
+    // visibility:hidden since the server render, height already reserved).
+    root.classList.add("is-ready");
     const startLoop = () => { if (!alive || inView) return; inView = true; last = performance.now(); raf = requestAnimationFrame(tick); };
     const stopLoop = () => { inView = false; cancelAnimationFrame(raf); };
     let io: IntersectionObserver | null = null;
@@ -580,6 +584,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       cancelAnimationFrame(raf);
       if (io) io.disconnect();
       clearTimeout(rT);
+      root.classList.remove("is-ready");
       stop();
       if (currentlyPlaying === ctl) currentlyPlaying = null;
       track.removeEventListener("click", onClick);
@@ -596,13 +601,20 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     };
   }, [voices, N, procedural, sizes, fit, minScale, gap, initial, paletteOf]);
 
-  /* First-paint orb height: the ladder's first value at scale 1 (what
-     setStatic computes before any effect runs); setStatic refines it. */
+  /* Server / first-paint orb zone height = what setStatic will compute:
+       L0 = ladder[0] * clamp(minScale, rootWidth / fit, 1)
+     expressed in CSS with container-query units (the root is an inline-size
+     container, so 100cqw is its width) — the reserved height is already the
+     final one on phones, no layout shift when the effect runs. setStatic then
+     pins the same value as an integer px. */
   const zone0 = React.useMemo(() => {
     const l = sizes.split(",").map((n) => parseFloat(n) || 0).filter((n) => n > 0);
-    return Math.round(l[0] || 220);
-  }, [sizes]);
-  const style = { "--vo-gap": gap + "px", "--vo-caption-w": captionWidth + "px", "--vo-nav-offset": navOffset + "px", "--vo-zone": zone0 + "px" } as React.CSSProperties;
+    const L = l[0] || 220;
+    const lo = Math.max(0, Math.min(1, minScale)) * L;
+    const f = Math.max(1, fit);
+    return "clamp(" + lo.toFixed(2) + "px, 100cqw * " + (L / f).toFixed(5) + ", " + L + "px)";
+  }, [sizes, fit, minScale]);
+  const style = { "--vo-gap": gap + "px", "--vo-caption-w": captionWidth + "px", "--vo-nav-offset": navOffset + "px", "--vo-zone": zone0 } as React.CSSProperties;
   const hasVoices = N > 0;
 
   const renderItem = (v: Voice, vi: number, copy: number) => (
