@@ -31,6 +31,7 @@ export default declareComponent(SiteSearch, {
       defaultValue: "www.sestek.com",
       tooltip: "Önizleme sütununda URL'nin başında gösterilir",
     }),
+    footerText: props.Text({ name: "Footer text", group: "Data", defaultValue: "SESTEK", tooltip: "Paletin sağ altındaki küçük etiket. Boş = gizli." }),
     demoHref: props.Text({
       name: "Demo link",
       group: "Empty state",

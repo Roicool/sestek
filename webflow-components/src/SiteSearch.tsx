@@ -38,6 +38,7 @@ export interface SiteSearchProps {
   demoHref?: string;
   contactHref?: string;
   siteHost?: string;
+  footerText?: string;
   quickLinksEn?: string;
   quickLinksTr?: string;
   showButton?: boolean;
@@ -87,6 +88,7 @@ export function SiteSearch({
   demoHref = "",
   contactHref = "",
   siteHost = "www.sestek.com",
+  footerText = "SESTEK",
   quickLinksEn = "",
   quickLinksTr = "",
   showButton = true,
@@ -200,7 +202,7 @@ export function SiteSearch({
         </button>
       )}
       {portal && createPortal(
-        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} quickLinks={quickLinks} />,
+        <Palette open={open} onClose={close} indexUrl={indexUrl} locale={loc} demoHref={demo} contactHref={contactHref || undefined} siteHost={siteHost} footerText={footerText} quickLinks={quickLinks} />,
         portal,
       )}
     </>

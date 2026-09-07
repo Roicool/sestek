@@ -29,6 +29,8 @@ export interface SiteSearchProps {
   contactHref?: string;
   /** Shown in the preview column under the title, e.g. "www.sestek.com" */
   siteHost?: string;
+  /** small label at the bottom-right of the palette; empty = hidden */
+  footerText?: string;
   /** Idle-state groups (before typing). Default: curated hub pages per locale. */
   quickLinks?: QuickGroup[];
   /** Called instead of location.assign when set (e.g. SPA router) */
@@ -54,7 +56,7 @@ function Highlight({ doc }: { doc: RankedDoc | SearchDoc }) {
   return <>{out}</>;
 }
 
-export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", quickLinks, onNavigate, inlineCss }: SiteSearchProps) {
+export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, contactHref, siteHost = "www.sestek.com", footerText = "SESTEK", quickLinks, onNavigate, inlineCss }: SiteSearchProps) {
   const t = MESSAGES[locale] || MESSAGES.en;
   const { query, setQuery, debounced, results, status, load } = useSearch({ indexUrl, locale });
   const [active, setActive] = React.useState(0);
@@ -268,7 +270,7 @@ export function SiteSearch({ open, onClose, indexUrl, locale = "en", demoHref, c
             <span><kbd>↵</kbd>{t.enter}</span>
             <span><kbd>Esc</kbd>{t.esc}</span>
           </div>
-          <span className="sst-search__brand">Sestek</span>
+          {footerText ? <span className="sst-search__brand">{footerText}</span> : null}
         </div>
       </div>
     </div>
