@@ -444,6 +444,8 @@ const CSS = `
   .sodc-side{min-height:0}
 }
 @media (max-width:767px){
+  /* phone: half the desktop corner — 24px cards read as pills at 360px wide */
+  .sodc-card,.sodc-side{border-radius:calc(var(--radius--3xl,24px) / 2)}
   .sodc-card{min-height:30rem;
     padding:var(--spacing--7,1.75rem) var(--spacing--5,1.25rem)}
   .sodc-orbwrap{width:17rem}
