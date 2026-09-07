@@ -217,24 +217,17 @@ export default declareComponent(ReportDownloadForm, {
     turnstileSiteKey: props.Text({
       name: "Turnstile site key (ops.)",
       group: "API",
-      defaultValue: "",
+      defaultValue: "0x4AAAAAAEk0PQM8KwJSbVxO",
       tooltip:
-        "Cloudflare Turnstile SITE key. Genelde BOŞ bırakılır: anahtar site " +
-        "geneli custom code'da tek yerde tanımlanır " +
-        "(window.SESTEK_TURNSTILE_SITE_KEY) ve buradan okunur. Yalnız bu " +
-        "örneğe özel bir anahtar gerekiyorsa doldur. Site key gizli değildir; " +
-        "secret key yalnız sunucunun ortam değişkeninde durur.",
+        "Sıra: Head (window.SESTEK_TURNSTILE_SITE_KEY / window.TURNSTILE_SITE_KEY) → body[data-turnstile-sitekey] → env TURNSTILE_SITE_KEY → bu alan. " +
+        "Head'de tanımlıysa burası yok sayılır; boş bırakılsa bile sitenin anahtarı kullanılır.",
     }),
     turnstileWidget: props.Variant({
       name: "Turnstile widget",
       group: "API",
       options: ["Visible", "Invisible"],
-      defaultValue: "Visible",
-      tooltip:
-        "Invisible (bu formda varsayılan): yalnız gerçekten meydan okuma " +
-        "gerekirse görünür. Koruma aynen çalışır, sadece kutu çizilmez. " +
-        "Visible: Cloudflare kutusu her zaman görünür — Outbound Call Demo'da " +
-        "böyle, çünkü orada her gönderim gerçek bir telefon araması başlatıyor.",
+      defaultValue: "Invisible",
+      tooltip: "Invisible = widget gizli, yalnız şüpheli ziyaretçiye çıkar (varsayılan). Visible = kutu hep görünür; anahtar/hostname hatasını görmek için debug'da aç.",
     }),
   },
 });

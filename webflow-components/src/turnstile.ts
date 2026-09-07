@@ -37,36 +37,49 @@
  * için tek ipucu bu olabiliyor.
  */
 
+/** Built-in fallback (the site's own widget). Site keys are public — the
+ *  secret lives only in the Cloud app's TURNSTILE_SECRET env. */
+export const DEFAULT_SITE_KEY = "0x4AAAAAAEk0PQM8KwJSbVxO";
+
 /**
- * Site key'i tek merkezden çözer. Sıra:
+ * Site key'i tek merkezden çözer. Sıra (ilk dolu olan kazanır):
  *
- *   1. Component prop'u (Designer'da o örneğe özel girilmişse)
- *   2. `window.SESTEK_TURNSTILE_SITE_KEY` — site geneli custom code
- *   3. `[data-turnstile-sitekey]` attribute'u (genelde <body> üzerinde)
+ *   1. `window.SESTEK_TURNSTILE_SITE_KEY` / `window.TURNSTILE_SITE_KEY`
+ *      — site geneli custom code (Head), tek gerçek kaynak
+ *   2. `[data-turnstile-sitekey]` attribute'u (genelde <body> üzerinde)
+ *   3. Build-time env `TURNSTILE_SITE_KEY` (bundler process.env'i inline
+ *      ediyorsa; CI'da secret olarak verilebilir)
+ *   4. Component prop'u (Designer; varsayılanı DEFAULT_SITE_KEY)
+ *   5. DEFAULT_SITE_KEY
  *
- * Amaç: anahtarı dört component'e ayrı ayrı girmek zorunda kalmamak.
- * Webflow'un istemci tarafında ortam değişkeni yoktur; en yakın karşılığı
- * Project Settings → Custom Code → Head'e konan tek satırdır:
+ * Amaç: anahtar hiçbir zaman eksik kalmasın ve tek yerden (Head) değişsin.
+ * Head'e konan satır component bundle'ından ÖNCE çalışmalı:
  *
  *   <script>window.SESTEK_TURNSTILE_SITE_KEY="0x4AAA…";</script>
- *
- * Bu satır component bundle'ından ÖNCE çalışmalı, o yüzden Head'e konur.
- * Anahtarı tek bir sayfada değiştirmek gerekirse prop hâlâ üstün gelir.
- *
- * Site key gizli değildir, HTML'de zaten görünür. Gizli olan secret key'dir
- * ve yalnız sunucunun ortam değişkeninde durur.
  */
 export function resolveSiteKey(explicit?: string): string {
+  if (typeof window !== "undefined") {
+    const w = window as unknown as { SESTEK_TURNSTILE_SITE_KEY?: unknown; TURNSTILE_SITE_KEY?: unknown };
+    for (const g of [w.SESTEK_TURNSTILE_SITE_KEY, w.TURNSTILE_SITE_KEY]) {
+      if (typeof g === "string" && g.trim()) return g.trim();
+    }
+    const el = document.querySelector("[data-turnstile-sitekey]");
+    const attr = (el?.getAttribute("data-turnstile-sitekey") || "").trim();
+    if (attr) return attr;
+  }
+  const env = envSiteKey();
+  if (env) return env;
   const own = (explicit || "").trim();
-  if (own) return own;
-  if (typeof window === "undefined") return "";
+  return own || DEFAULT_SITE_KEY;
+}
 
-  const g = (window as unknown as { SESTEK_TURNSTILE_SITE_KEY?: unknown })
-    .SESTEK_TURNSTILE_SITE_KEY;
-  if (typeof g === "string" && g.trim()) return g.trim();
-
-  const el = document.querySelector("[data-turnstile-sitekey]");
-  return (el?.getAttribute("data-turnstile-sitekey") || "").trim();
+function envSiteKey(): string {
+  try {
+    // Guarded: in the browser `process` is usually undefined; a bundler that
+    // inlines process.env.TURNSTILE_SITE_KEY turns this into a literal.
+    const v = typeof process !== "undefined" && process.env ? process.env.TURNSTILE_SITE_KEY : "";
+    return (v || "").trim();
+  } catch { return ""; }
 }
 
 type TurnstileApi = {

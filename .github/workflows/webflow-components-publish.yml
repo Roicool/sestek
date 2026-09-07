@@ -41,6 +41,9 @@ jobs:
       - name: Publish library to Webflow
         env:
           WEBFLOW_API_TOKEN: ${{ secrets.WEBFLOW_API_TOKEN }}
+          # Optional: bundled in as the forms' Turnstile site key fallback
+          # (see webflow-components/src/turnstile.ts resolveSiteKey order).
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
         run: |
           if [ -z "$WEBFLOW_API_TOKEN" ]; then
             echo "::warning::WEBFLOW_API_TOKEN secret'ı tanımlı değil — yayın atlandı. README'deki kurulum adımlarına bak."

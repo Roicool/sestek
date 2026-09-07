@@ -514,9 +514,9 @@ export function OutboundCallDemo({
   phoneCountries = "",
   phonePreferred = "TR,GB,US,DE,FR,NL",
   phoneAutoCountry = "On",
-  geoEndpoint = "",
+  geoEndpoint = "/demos/api/geo",
   turnstileSiteKey = "",
-  turnstileWidget = "Visible",
+  turnstileWidget = "Invisible",
   cooldownSeconds = 600,
 }: OutboundCallDemoProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */

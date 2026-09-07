@@ -399,9 +399,9 @@ export function DemoRequestForm({
   phoneCountries = "",
   phonePreferred = "TR,GB,US,DE,FR,NL",
   phoneAutoCountry = "On",
-  geoEndpoint = "",
+  geoEndpoint = "/demos/api/geo",
   turnstileSiteKey = "",
-  turnstileWidget = "Visible",
+  turnstileWidget = "Invisible",
   lang = "EN",
 }: DemoRequestFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
