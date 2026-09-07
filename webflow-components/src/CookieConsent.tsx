@@ -175,7 +175,6 @@ const CSS = `
 .cc[data-theme="dark"] .cc_card{-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 40px 90px -36px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06) inset}
 /* soft brand glow in the corner */
 .cc_card::before{content:"";position:absolute;right:-22%;top:-40%;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--cc-glow) 0%,var(--cc-glow2) 40%,transparent 70%);pointer-events:none;filter:blur(2px)}
-.cc_card::after{content:"";position:absolute;right:-10%;bottom:-38%;width:48%;aspect-ratio:1;border-radius:50%;border:1px solid var(--cc-glow);pointer-events:none}
 .cc_card>*{position:relative}
 .cc_head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
 .cc_dot{width:10px;height:10px;border-radius:2px;background:var(--cc-accent);transform:rotate(45deg) scale(.8);flex:none;box-shadow:0 0 0 4px var(--cc-glow)}
