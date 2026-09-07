@@ -31,8 +31,8 @@
 <body>
 
   <section class="sv-calc" data-savings-calc
-           data-sv-rate="0.7" data-sv-capacity="600"
-           data-sv-min="1000" data-sv-max="500000"
+           data-sv-rate="0.7"
+           data-sv-min="5" data-sv-max="5000"
            data-sv-currency="$">
     <div class="sv-calc__head">
       <h2>See what your team could save</h2>
@@ -41,21 +41,21 @@
     </div>
 
     <div class="sv-calc__slider">
-      <div class="sv-calc__bubble" data-sv-bubble>50K</div>
+      <div class="sv-calc__bubble" data-sv-bubble>250</div>
       <div class="sv-calc__track" data-sv-track>
         <div class="sv-calc__fill" data-sv-fill></div>
         <div class="sv-calc__thumb" data-sv-thumb tabindex="0"
-             aria-label="Total inquiries per month"></div>
+             aria-label="Number of agents"></div>
       </div>
-      <div class="sv-calc__slider-label">Total Inquiries (monthly)</div>
+      <div class="sv-calc__slider-label">Number of agents</div>
     </div>
 
     <div class="sv-calc__inputs">
       <label>Cost per agent ($/month)
-        <input type="number" data-sv-cost value="1500" min="0" step="50">
+        <input type="number" data-sv-cost value="3000" min="0" step="50">
       </label>
-      <label>Number of agents
-        <input type="number" data-sv-agents value="250" min="0" step="1">
+      <label>Total inquiries (monthly)
+        <input type="number" data-sv-inquiries value="50000" min="0" step="1000">
       </label>
     </div>
 
@@ -65,16 +65,15 @@
     </div>
 
     <p class="sv-calc__disclaimer">
-      For illustrative purposes only. Estimated savings assume the Virtual Agent
-      handles 70% of inquiries, with one agent handling ~600 inquiries per month.
-      This is not a prediction, target, or guarantee.
+      For illustrative purposes only. Estimated savings assume automation cuts
+      cost per inquiry by 70%. This is not a prediction, target, or guarantee.
     </p>
   </section>
 
-  <script src="../../js/components/savings-calculator.js" defer></script>
+  <script src="../../js/components/roi-calculator.js" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      Sestek.initSavingsCalc();
+      Sestek.initRoiCalc();
     });
   </script>
 </body>

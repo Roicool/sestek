@@ -1,50 +1,61 @@
 /*!
- * savings-calculator.js v2.1.0
- * Ramp-style live savings calculator — custom div-based slider (Radix-like
+ * roi-calculator.js v3.0.0  (was savings-calculator.js v2.1.0)
+ * Ramp-style live ROI calculator — custom div-based slider (Radix-like
  * structure, no native <input type=range>, so Webflow CSS can't break it)
  * and a NumberFlow-style rolling counter: every digit is a vertical strip
  * that rolls to its new value (CSS transitions — works with or without gsap).
  * Fully data-attribute driven — configure everything from Webflow.
  *
- * Formula (annual saving):
- *   costPerInquiry = costPerAgent / capacity        (capacity: inquiries one
- *   handled        = totalInquiries × rate           agent handles per month)
- *   monthly        = handled × costPerInquiry, capped at agents × costPerAgent
- *   annual         = monthly × 12
+ * v3: the SLIDER is now "Number of agents"; "Total inquiries (monthly)" and
+ * "Cost per agent" are the two number inputs. Formula = the original sestek.com
+ * ROI page (calculate_roi):
+ *   totalCostOfAgents = agents × costPerAgent
+ *   costPerCall       = totalCostOfAgents / inquiries
+ *   costPerCallAfter  = costPerCall × (1 − rate)
+ *   monthly           = inquiries × (costPerCall − costPerCallAfter)
+ *                     = totalCostOfAgents × rate      (inquiries cancels out —
+ *                       it only shapes the per-call figures, not the total)
+ *   annual            = monthly × 12
+ *   fte               = monthly / costPerAgent
  *
  * DOM (Webflow):
  *   <section data-savings-calc>
  *     <div class="sv-calc__slider">
- *       <div class="sv-calc__bubble" data-sv-bubble>50K</div>
+ *       <div class="sv-calc__bubble" data-sv-bubble>250</div>
  *       <div class="sv-calc__track" data-sv-track>
  *         <div class="sv-calc__fill" data-sv-fill></div>
  *         <div class="sv-calc__thumb" data-sv-thumb tabindex="0"
- *              aria-label="Total inquiries per month"></div>
+ *              aria-label="Number of agents"></div>
  *       </div>
- *       <div class="sv-calc__slider-label">Total Inquiries (monthly)</div>
+ *       <div class="sv-calc__slider-label">Number of agents</div>
  *     </div>
  *     <div class="sv-calc__inputs">
- *       <label>Cost per agent <input type="number" data-sv-cost value="1500"></label>
- *       <label>Number of agents <input type="number" data-sv-agents value="250"></label>
+ *       <label>Cost per agent ($/month)      <input type="number" data-sv-cost value="3000"></label>
+ *       <label>Total inquiries (monthly)     <input type="number" data-sv-inquiries value="50000"></label>
  *     </div>
  *     <div class="sv-calc__result">
  *       <span data-sv-total>$0</span><span class="sv-calc__per">/Year</span>
  *     </div>
+ *     <!-- optional extra outputs (plain text, any element): -->
+ *     <span data-sv-monthly></span> <span data-sv-fte></span>
+ *     <span data-sv-total-cost></span> <span data-sv-cost-per-call></span>
+ *     <span data-sv-cost-per-call-after></span>
  *   </section>
  *
  * Attributes on [data-savings-calc] (all optional):
- *   data-sv-rate       share of inquiries the Virtual Agent handles (default 0.7)
- *   data-sv-capacity   inquiries one human agent handles per month  (default 600)
- *   data-sv-min        slider minimum, monthly inquiries          (default 1000)
- *   data-sv-max        slider maximum, monthly inquiries        (default 500000)
+ *   data-sv-rate       cost decrease after automation: 0.7 or 70 (%)  (default 0.7)
+ *   data-sv-min        slider minimum, number of agents               (default 5)
+ *   data-sv-max        slider maximum, number of agents            (default 5000)
  *   data-sv-start      slider starting value — omit to start at the middle
  *   data-sv-currency   currency prefix on the big number            (default "$")
  *   data-sv-duration   digit roll duration in seconds             (default 0.9)
  *
- * Input defaults: put value="" on the [data-sv-cost] / [data-sv-agents]
- * inputs in the HTML (fallbacks: 1500 / 250).
+ * Input defaults: put value="" on the [data-sv-cost] / [data-sv-inquiries]
+ * inputs in the HTML (fallbacks: 3000 / 50000). A legacy [data-sv-agents]
+ * input is accepted as the inquiries input (with a console warning).
  *
- * Init: Sestek.initSavingsCalc() — scans [data-savings-calc].
+ * Init: Sestek.initRoiCalc() — scans [data-savings-calc].
+ *       Sestek.initSavingsCalc() kept as an alias.
  *
  * https://github.com/roicool/sestek
  */
@@ -54,13 +65,12 @@
 
   var DEFAULTS = {
     rate: 0.7,
-    capacity: 600,
-    min: 1000,
-    max: 500000,
+    min: 5,
+    max: 5000,
     currency: "$",
     duration: 0.9,
-    cost: 1500,
-    agents: 250,
+    cost: 3000,
+    inquiries: 50000,
   };
 
   function num(v, fallback) {
@@ -69,15 +79,24 @@
   }
   function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
-  function computeAnnualSaving(inquiries, costPerAgent, agents, o) {
-    var costPerInquiry = costPerAgent / o.capacity;
-    var monthly = inquiries * o.rate * costPerInquiry;
-    var payroll = agents * costPerAgent;
-    if (payroll > 0) monthly = Math.min(monthly, payroll);
-    return Math.round(monthly * 12);
+  /* Original calculate_roi(), untouched maths. inquiries = 0 only kills the
+     per-call figures; the total is agents × cost × rate regardless. */
+  function computeRoi(agents, costPerAgent, inquiries, rate) {
+    var totalCost = agents * costPerAgent;
+    var costPerCall = inquiries > 0 ? totalCost / inquiries : 0;
+    var costPerCallAfter = costPerCall * (1 - rate);
+    var monthly = totalCost * rate;                 // = inquiries × (costPerCall − costPerCallAfter)
+    return {
+      totalCost: totalCost,
+      costPerCall: costPerCall,
+      costPerCallAfter: costPerCallAfter,
+      monthly: monthly,
+      annual: Math.round(monthly * 12),
+      fte: costPerAgent > 0 ? monthly / costPerAgent : 0,
+    };
   }
 
-  /* Log mapping: slider t∈[0,1] → inquiries, so the low end stays usable. */
+  /* Log mapping: slider t∈[0,1] → agents, so the low end stays usable. */
   function tToValue(t, min, max) {
     return Math.round(min * Math.pow(max / min, t));
   }
@@ -191,12 +210,12 @@
   }
 
   /**
-   * Initializes every savings calculator on the page.
+   * Initializes every ROI calculator on the page.
    * @param {string} [selector="[data-savings-calc]"]
    */
-  function initSavingsCalc(selector) {
+  function initRoiCalc(selector) {
     var nodes = document.querySelectorAll(selector || "[data-savings-calc]");
-    if (!nodes.length) { console.warn("[Sestek SavingsCalc] No element found."); return; }
+    if (!nodes.length) { console.warn("[Sestek RoiCalc] No element found."); return; }
     Array.prototype.forEach.call(nodes, setup);
   }
 
@@ -205,58 +224,82 @@
     root._svCalcInit = true;
 
     var a = function (name) { return root.getAttribute("data-sv-" + name); };
+    var rate = num(a("rate"), DEFAULTS.rate);
+    if (rate > 1) rate = rate / 100;                    // "70" → 0.7
     var o = {
-      rate:     num(a("rate"),     DEFAULTS.rate),
-      capacity: num(a("capacity"), DEFAULTS.capacity),
-      min:      num(a("min"),      DEFAULTS.min),
-      max:      num(a("max"),      DEFAULTS.max),
+      rate:     clamp01(rate),
+      min:      Math.max(1, num(a("min"), DEFAULTS.min)),
+      max:      Math.max(2, num(a("max"), DEFAULTS.max)),
       currency: a("currency") != null ? a("currency") : DEFAULTS.currency,
       duration: num(a("duration"), DEFAULTS.duration),
     };
 
     var el = {
-      track  : root.querySelector("[data-sv-track]"),
-      thumb  : root.querySelector("[data-sv-thumb]"),
-      bubble : root.querySelector("[data-sv-bubble]"),
-      cost   : root.querySelector("[data-sv-cost]"),
-      agents : root.querySelector("[data-sv-agents]"),
-      total  : root.querySelector("[data-sv-total]"),
+      track     : root.querySelector("[data-sv-track]"),
+      thumb     : root.querySelector("[data-sv-thumb]"),
+      bubble    : root.querySelector("[data-sv-bubble]"),
+      cost      : root.querySelector("[data-sv-cost]"),
+      inquiries : root.querySelector("[data-sv-inquiries]"),
+      total     : root.querySelector("[data-sv-total]"),
     };
+    if (!el.inquiries) {
+      // v2 markup: the second input was "Number of agents". Agents now live on
+      // the slider, so that input becomes "Total inquiries" — rename it in Webflow.
+      el.inquiries = root.querySelector("[data-sv-agents]");
+      if (el.inquiries) console.warn("[Sestek RoiCalc] [data-sv-agents] input is used as Total inquiries — rename it to data-sv-inquiries.");
+    }
     var missing = Object.keys(el).filter(function (k) { return !el[k]; });
     if (missing.length) {
-      console.warn("[Sestek SavingsCalc] Missing elements:", missing.join(", ")); return;
+      console.warn("[Sestek RoiCalc] Missing elements:", missing.join(", ")); return;
     }
+    // Optional plain-text outputs (the original ROI page showed these too)
+    var out = {
+      monthly          : root.querySelector("[data-sv-monthly]"),
+      fte              : root.querySelector("[data-sv-fte]"),
+      totalCost        : root.querySelector("[data-sv-total-cost]"),
+      costPerCall      : root.querySelector("[data-sv-cost-per-call]"),
+      costPerCallAfter : root.querySelector("[data-sv-cost-per-call-after]"),
+    };
 
     // ── State — no data-sv-start → start dead centre ───────────
     var t = a("start") != null
       ? clamp01(Math.log(num(a("start"), o.min) / o.min) / Math.log(o.max / o.min))
       : 0.5;
-    if (!el.cost.value)   el.cost.value   = DEFAULTS.cost;   // or value="" in HTML
-    if (!el.agents.value) el.agents.value = DEFAULTS.agents;
+    if (!el.cost.value)      el.cost.value      = DEFAULTS.cost;       // or value="" in HTML
+    if (!el.inquiries.value) el.inquiries.value = DEFAULTS.inquiries;
 
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     root.style.setProperty("--sv-num-dur", (reduceMotion ? 0 : o.duration) + "s");
     var setNumber = createRoller(el.total, reduceMotion, o.duration);
 
-    function currentInquiries() { return tToValue(t, o.min, o.max); }
+    function currentAgents() { return tToValue(t, o.min, o.max); }
 
     function paintSlider() {
-      var inquiries = currentInquiries();
-      el.bubble.textContent = abbreviate(inquiries);
+      var agents = currentAgents();
+      el.bubble.textContent = abbreviate(agents);
       // One source of truth: bubble, thumb and label all ride --sv-left,
       // the fill stretches to --sv-fill (see CSS).
       root.style.setProperty("--sv-left", (t * 100) + "%");
       root.style.setProperty("--sv-fill", (t * 100) + "%");
-      el.thumb.setAttribute("aria-valuenow", inquiries);
-      el.thumb.setAttribute("aria-valuetext", abbreviate(inquiries) + " inquiries per month");
+      el.thumb.setAttribute("aria-valuenow", agents);
+      el.thumb.setAttribute("aria-valuetext", abbreviate(agents) + " agents");
     }
 
+    function setText(node, text) { if (node && node.textContent !== text) node.textContent = text; }
+    function money2(n) { return o.currency + (Math.round(n * 100) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
     function update() {
-      var inquiries = currentInquiries();
-      var cost   = Math.max(0, num(el.cost.value, 0));
-      var agents = Math.max(0, num(el.agents.value, 0));
+      var agents    = currentAgents();
+      var cost      = Math.max(0, num(el.cost.value, 0));
+      var inquiries = Math.max(0, num(el.inquiries.value, 0));
       paintSlider();
-      setNumber(formatMoney(computeAnnualSaving(inquiries, cost, agents, o), o.currency));
+      var r = computeRoi(agents, cost, inquiries, o.rate);
+      setNumber(formatMoney(r.annual, o.currency));
+      setText(out.monthly,          formatMoney(r.monthly, o.currency));
+      setText(out.fte,              String(Math.round(r.fte)));
+      setText(out.totalCost,        formatMoney(r.totalCost, o.currency));
+      setText(out.costPerCall,      money2(r.costPerCall));
+      setText(out.costPerCallAfter, money2(r.costPerCallAfter));
     }
 
     // ── Drag / click (pointer events on the whole track) ───────
@@ -297,12 +340,13 @@
 
     // ── Number inputs ──────────────────────────────────────────
     el.cost.addEventListener("input", update);
-    el.agents.addEventListener("input", update);
+    el.inquiries.addEventListener("input", update);
 
     update();
   }
 
   global.Sestek = global.Sestek || {};
-  global.Sestek.initSavingsCalc = initSavingsCalc;
+  global.Sestek.initRoiCalc = initRoiCalc;
+  global.Sestek.initSavingsCalc = initRoiCalc;          // v2 alias — home page calls this
 
 })(typeof window !== "undefined" ? window : this);
