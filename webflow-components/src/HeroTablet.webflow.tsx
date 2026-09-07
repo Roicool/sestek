@@ -212,7 +212,9 @@ export default declareComponent(HeroTablet, {
     }),
   },
   options: {
-    /* IntersectionObserver + count-up + video — client-only */
-    ssr: false,
+    /* One DOM for every breakpoint, layout by CSS media queries: the server
+       HTML already has the final height and the visible scene-1 text (LCP);
+       gsap / IntersectionObserver / count-up attach in effects only. */
+    ssr: true,
   },
 });
