@@ -174,6 +174,9 @@ const CSS = `
   .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
     padding:0;background:transparent;box-shadow:none;border-radius:0}
   .snlf-pill:focus-within,.snlf.is-invalid .snlf-pill{box-shadow:none}
+  /* flex-basis 12rem is the WIDTH basis in the row layout; in the column it
+   * would become a 12rem-tall input (the giant rounded box seen on phones). */
+  .snlf-input,.snlf-btn,.snlf-ok{flex:0 0 auto}
   .snlf-input{padding:.7em 1.1em;text-align:inherit;
     background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
     border-radius:var(--radius--full,9999px);transition:box-shadow .2s}
