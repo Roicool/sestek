@@ -6,18 +6,26 @@
  * Component shadow root. Up to four tabs, each = title + description + CTA +
  * a square video panel with play/pause, restart and mute controls.
  *
+ * ONE DOM for every breakpoint (server-renderable, zero layout shift at
+ * hydration): heading + tabs live in `.sst-left`, panels in `.sst-right`.
+ * The layout is decided purely by CSS media queries, never by JS, so the
+ * server markup equals the hydrated markup.
+ *
  * ≥ 992px (desktop)
- *   Two columns. LEFT is position:sticky (heading + tab list); the active
- *   tab's body opens like an accordion, the rest collapse. RIGHT stacks the
- *   video panels in normal flow. The panel crossing the viewport centre is
- *   the active one (IntersectionObserver on a zero-height centre band, so it
- *   works with Lenis or native scroll). Clicking a tab smooth-scrolls its
- *   panel to the centre. Only the active panel's video plays.
+ *   Two-column grid. LEFT is position:sticky (heading + tab list); the
+ *   active tab's body opens like an accordion, the rest collapse. RIGHT
+ *   stacks the video panels in normal flow. The panel crossing the viewport
+ *   centre is the active one (IntersectionObserver on a zero-height centre
+ *   band, so it works with Lenis or native scroll). Clicking a tab
+ *   smooth-scrolls its panel to the centre. Only the active panel's video
+ *   plays.
  *
  * ≤ 991px (tablet + mobile)
- *   One column, no sticky, no accordion. Each tab flows as a block: title,
- *   description, CTA, then its own video right below. The video crossing
- *   the centre band plays, the others pause.
+ *   `.sst-left` / `.sst-right` become `display:contents` and the grid turns
+ *   into a flex column; CSS `order` (tab i = 2i, panel i = 2i+1) interleaves
+ *   them so each tab flows as a block: title, description, CTA, then its own
+ *   video right below. No sticky, no accordion (every body is open). The
+ *   video crossing the centre band plays, the others pause.
  *
  * Accordion animation is CSS (grid-template-rows 0fr → 1fr + opacity); the
  * hover/active shadow and control icon swapping mirror the site CSS.
@@ -52,9 +60,11 @@ function lines(text: string | undefined): React.ReactNode {
   ));
 }
 
+/* Behaviour-only media query. Deterministic `false` on the server AND on the
+   first client render (so hydration matches); the real value arrives in an
+   effect. It never changes the DOM structure — layout is pure CSS. */
 function useMedia(query: string): boolean {
-  // Lazy initialiser: correct variant on the first paint, no remount.
-  const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  const [m, setM] = React.useState(false);
   React.useEffect(() => {
     const mq = window.matchMedia(query);
     const on = () => setM(mq.matches);
@@ -136,12 +146,23 @@ const CSS = `
 .sst-panel.is-muted [data-icon="muted"]{display:inline}
 .sst-panel.is-muted [data-icon="volume"]{display:none}
 
-/* ── Tablet + mobile: one column, each tab then its video ───── */
-.sst-stack{display:flex;flex-direction:column;gap:var(--spacing--12,3rem)}
-.sst-stack .sst-h2{margin-bottom:var(--spacing--2,.5rem)}
-.sst-block{display:flex;flex-direction:column;gap:var(--spacing--5,1.25rem);align-items:flex-start}
-.sst-block .sst-panel{max-width:none;margin-top:var(--spacing--2,.5rem)}
-@media (min-width:768px){.sst-block .sst-panel{max-width:600px;align-self:center}}
+/* ── Tablet + mobile: same DOM, one column, tab i then panel i ──
+   Columns dissolve (display:contents); the grid becomes a flex column and
+   the inline \`order\` on tabs (2i) / panels (2i+1) interleaves them. */
+@media (max-width:991px){
+  .sst-grid{display:flex;flex-direction:column;gap:0;align-items:stretch}
+  .sst-left,.sst-right{display:contents}
+  .sst-h2{margin-bottom:calc(var(--spacing--12,3rem) + var(--spacing--2,.5rem))}
+  .sst-div{display:none}
+  .sst-tab{gap:var(--spacing--5,1.25rem);cursor:default}
+  .sst-tab:first-of-type{margin-top:0}
+  .sst-tab .sst-h3,.sst-tab.is-active .sst-h3{opacity:1;transition:none}
+  .sst-body,.sst-tab.is-active .sst-body{grid-template-rows:1fr;opacity:1;transition:none}
+  .sst-body>div{gap:var(--spacing--5,1.25rem)}
+  .sst-panel{max-width:none;margin-top:calc(var(--spacing--5,1.25rem) + var(--spacing--2,.5rem));margin-bottom:var(--spacing--12,3rem)}
+  .sst-right .sst-panel:last-child{margin-bottom:0}
+}
+@media (min-width:768px) and (max-width:991px){.sst-panel{max-width:600px;align-self:center}}
 
 @media (prefers-reduced-motion:reduce){
   .sst-body,.sst-panel,.sst-ctl,.sst-tab .sst-h3{transition:none}
@@ -149,7 +170,9 @@ const CSS = `
 `;
 
 /* One video panel with its controls. `active` drives the is-active look,
-   `play` (active AND confirmed by the centre band) drives play/pause. */
+   `play` (active AND confirmed by the centre band) drives play/pause.
+   Rendered exactly once per tab — the same <video> element serves every
+   breakpoint, so resizing never remounts or reloads media. */
 function Panel({ tab, index, active, play, autoplay, reduce, refCb }: {
   tab: Tab; index: number; active: boolean; play: boolean; autoplay: boolean; reduce: boolean;
   refCb: (i: number, el: HTMLDivElement | null) => void;
@@ -161,6 +184,9 @@ function Panel({ tab, index, active, play, autoplay, reduce, refCb }: {
   React.useEffect(() => {
     const v = vRef.current;
     if (!v) return;
+    // React never serialises `muted` into SSR markup; force the property so
+    // the first play() passes the browser's autoplay policy.
+    v.muted = true;
     const sync = () => { setPaused(v.paused); setMuted(v.muted); };
     v.addEventListener("play", sync);
     v.addEventListener("pause", sync);
@@ -203,6 +229,7 @@ function Panel({ tab, index, active, play, autoplay, reduce, refCb }: {
       ref={(el) => refCb(index, el)}
       className={"sst-panel" + (active ? " is-active" : "") + (paused ? " is-paused" : "") + (muted ? " is-muted" : "")}
       data-index={index}
+      style={{ order: 2 * index + 1 }}
     >
       {tab.video ? (
         <video ref={vRef} className="sst-vid" muted loop playsInline preload="none" poster={tab.poster || undefined}>
@@ -239,6 +266,8 @@ export function ScrollTabs(p: ScrollTabsProps) {
     { title: p.tab4Title || "", text: p.tab4Text || "", ctaLabel: p.tab4CtaLabel || "", ctaLink: p.tab4CtaLink, video: p.tab4Video || "", poster: p.tab4Poster || "" },
   ].filter((t) => t.title);
 
+  // Behaviour switches only (click-to-scroll on desktop, reduced motion);
+  // both are `false` until the mount effect runs, never touching the DOM.
   const desktop = useMedia(DESKTOP);
   const reduce = useMedia("(prefers-reduced-motion: reduce)");
   // -1 = nothing playing until the centre-band observer's first hit (or a
@@ -249,7 +278,9 @@ export function ScrollTabs(p: ScrollTabsProps) {
   const lockUntil = React.useRef(0);
   const refCb = React.useCallback((i: number, el: HTMLDivElement | null) => { panels.current[i] = el; }, []);
 
-  /* Centre-band detection: the panel straddling the viewport centre is active. */
+  /* Centre-band detection (all breakpoints): the panel straddling the
+     viewport centre is active — it opens its accordion tab on desktop and is
+     the only one allowed to play. */
   React.useEffect(() => {
     const els = panels.current.filter((e): e is HTMLDivElement => !!e);
     if (!els.length) return;
@@ -265,7 +296,10 @@ export function ScrollTabs(p: ScrollTabsProps) {
     return () => io.disconnect();
   }, [tabs.length, desktop]);
 
+  /* Desktop only: a tab click scrolls its panel to the centre. On tablet /
+     mobile the tab is plain content (every body is open), as before. */
   const onTab = (i: number) => {
+    if (!desktop) return;
     lockUntil.current = Date.now() + 700;
     setActive(i);
     const el = panels.current[i];
@@ -286,46 +320,38 @@ export function ScrollTabs(p: ScrollTabsProps) {
     <section className="sst" data-scroll-tabs style={style}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="sst-in">
-        {desktop ? (
-          /* ── Desktop: sticky tabs left, panels right ── */
-          <div className="sst-grid">
-            <div className="sst-left">
-              {heading && <h2 className="sst-h2">{lines(heading)}</h2>}
-              {tabs.map((t, i) => (
-                <React.Fragment key={i}>
-                  {i > 0 && <div className="sst-div" />}
-                  <button type="button" className={"sst-tab" + (shown === i ? " is-active" : "")} onClick={() => onTab(i)} aria-expanded={shown === i}>
-                    <h3 className="sst-h3">{t.title}</h3>
-                    <div className="sst-body">
-                      <div>
-                        {t.text && <p className="sst-p">{t.text}</p>}
-                        {t.ctaLabel && <a className="sst-cta" {...link(t.ctaLink)} onClick={(e) => e.stopPropagation()}>{t.ctaLabel}</a>}
-                      </div>
-                    </div>
-                  </button>
-                </React.Fragment>
-              ))}
-            </div>
-            <div className="sst-right">
-              {tabs.map((t, i) => (
-                <Panel key={i} tab={t} index={i} active={shown === i} play={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* ── Tablet + mobile: one column, text then video per tab ── */
-          <div className="sst-stack">
+        <div className="sst-grid">
+          {/* Heading + tabs: sticky column on desktop, dissolved (display:contents) below 992px */}
+          <div className="sst-left">
             {heading && <h2 className="sst-h2">{lines(heading)}</h2>}
             {tabs.map((t, i) => (
-              <div key={i} className="sst-block">
-                <h3 className="sst-h3">{t.title}</h3>
-                {t.text && <p className="sst-p">{t.text}</p>}
-                {t.ctaLabel && <a className="sst-cta" {...link(t.ctaLink)}>{t.ctaLabel}</a>}
-                <Panel tab={t} index={i} active={shown === i} play={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
-              </div>
+              <React.Fragment key={i}>
+                {i > 0 && <div className="sst-div" style={{ order: 2 * i }} />}
+                <button
+                  type="button"
+                  className={"sst-tab" + (shown === i ? " is-active" : "")}
+                  style={{ order: 2 * i }}
+                  onClick={() => onTab(i)}
+                  aria-expanded={shown === i}
+                >
+                  <h3 className="sst-h3">{t.title}</h3>
+                  <div className="sst-body">
+                    <div>
+                      {t.text && <p className="sst-p">{t.text}</p>}
+                      {t.ctaLabel && <a className="sst-cta" {...link(t.ctaLink)} onClick={(e) => e.stopPropagation()}>{t.ctaLabel}</a>}
+                    </div>
+                  </div>
+                </button>
+              </React.Fragment>
             ))}
           </div>
-        )}
+          {/* Panels: right column on desktop, interleaved after their tab below 992px */}
+          <div className="sst-right">
+            {tabs.map((t, i) => (
+              <Panel key={i} tab={t} index={i} active={shown === i} play={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

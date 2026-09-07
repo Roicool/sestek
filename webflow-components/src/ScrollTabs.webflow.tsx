@@ -65,7 +65,9 @@ export default declareComponent(ScrollTabs, {
     ...tab(4, { title: "", text: "", cta: "Explore", id: "" }),
   },
   options: {
-    /* IntersectionObserver + video control — client-only */
-    ssr: false,
+    /* One DOM for every breakpoint, layout by CSS media queries — the server
+       markup equals the hydrated markup (no layout shift, no Designer
+       min-height). IntersectionObserver + video control run in effects. */
+    ssr: true,
   },
 });
