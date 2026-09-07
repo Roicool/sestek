@@ -1,5 +1,5 @@
 /*!
- * logo-slider.js v1.2.1
+ * logo-slider.js v1.2.2
  * Brand-logo tabbed story slider for Webflow CMS. Everything is authored inside
  * the Collection List — JS never copies content into a separate "stage". Each
  * Collection Item = one brand = one slide, carrying BOTH its own logo tab AND
@@ -256,6 +256,14 @@
         var on = idx === i;
         if (on) it.setAttribute("data-ls-active", ""); else it.removeAttribute("data-ls-active");
         it.setAttribute("aria-hidden", on ? "false" : "true");
+        // Hidden panels must not keep focusable links (axe aria-hidden-focus):
+        // `inert` drops them from the tab order + AT tree; older engines without
+        // inert get tabindex=-1 on the links instead.
+        if ("inert" in it) it.inert = !on;
+        else it.querySelectorAll("a[href],button,[tabindex]").forEach(function (f) {
+          if (on) { if (f.hasAttribute("data-ls-tabindex")) { var t = f.getAttribute("data-ls-tabindex"); if (t === "") f.removeAttribute("tabindex"); else f.setAttribute("tabindex", t); f.removeAttribute("data-ls-tabindex"); } }
+          else if (!f.hasAttribute("data-ls-tabindex")) { f.setAttribute("data-ls-tabindex", f.getAttribute("tabindex") || ""); f.setAttribute("tabindex", "-1"); }
+        });
         it.classList.toggle("is-active", on); // convenience hook for the Designer
         var tab = tabs[idx];
         if (!tab) return;
