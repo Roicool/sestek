@@ -16,13 +16,25 @@
  * text); empty label = hidden. Design tokens are read from the site's CSS
  * variables through the shadow boundary (--brand-primary--500, --surface--base…).
  *
- * FIT (vs the CSS file): chips never leave the panel at ANY width. fit()
- * measures the panel and the widest chip (chip width capped at 40% of the
- * panel so long labels wrap) and sizes the ring from the difference; re-run
- * on resize / font load / panel ResizeObserver.
+ * FIT (vs the CSS file): chips never leave the panel at ANY width. The ring
+ * is sized by CSS ALONE from the panel's width (container-query units): chip
+ * width is capped at 40% of the panel (36% on phones) so long labels wrap and
+ * the ring takes what is left — no JS measurement, so the server HTML already
+ * has the final height.
+ *
+ * SSR (DevLink `ssr:true`): the render path never touches window/document;
+ * everything below the first paint is CSS — ring size (above) and the card
+ * window height (`--cd-visible` × `--cd-card-h`, see CSS). After hydration the
+ * effect only re-measures the card window and rewrites it when the content
+ * does not fit `--cd-card-h` (title longer than 2 lines, or a Card text) —
+ * cards then grow uniformly (grid rows) and the window follows; that is the
+ * one case where the height can change after hydration.
  */
 
 import * as React from "react";
+
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
 export interface CircleDiagramItem {
   label: string;
@@ -99,6 +111,15 @@ const CSS = `
   --cd-card-align:center;
   --cd-icon-size:1.125rem;
   --cd-font:var(--font--primary,var(--font--body,inherit));
+  /* chips: max 40% of the panel width (36% on phones), never wider than 240px */
+  --cd-chip-max:min(240px,40cqw);
+  /* card window: "visible" rows (inline --cd-visible) of --cd-card-h each.
+     --cd-card-h = card padding + border + TWO title lines (line-height 1.25) —
+     enough for every default title at 320–1440px; taller content grows all
+     rows uniformly (grid) and the JS then adjusts the window height. */
+  --cd-visible:3;
+  --cd-card-gap:var(--spacing--4,1rem);
+  --cd-card-h:calc(3rem + 2 * 1.125rem * 1.25 + 2px);
   position:relative;width:100%;max-width:var(--container--2xl,96rem);margin-inline:auto;
   padding:var(--spacing--10,2.5rem) var(--view--px,var(--spacing--6,1.5rem));
   font-family:var(--cd-font);
@@ -106,9 +127,13 @@ const CSS = `
 .cd[data-align="left"]{--cd-card-align:left}
 .cd_layout{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(2.5rem,5vw,5rem);align-items:center}
 .cd[data-cards="off"] .cd_layout{grid-template-columns:1fr}
-.cd_panel{display:flex;justify-content:center;padding:clamp(1.5rem,3vw,2.5rem) 0;min-width:0}
-/* stage width + chip max width are MEASURED by JS (fit()) so chips never leave the panel */
-.cd_stage{position:relative;width:var(--cd-stage,min(28rem,100%));aspect-ratio:1/1}
+.cd_panel{display:flex;justify-content:center;padding:clamp(1.5rem,3vw,2.5rem) 0;min-width:0;container-type:inline-size}
+/* stage = panel width − one chip width (left/right chips hang half outside the ring) − 8px slack; CSS only, no JS */
+.cd_stage{position:relative;width:clamp(150px,calc(100cqw - var(--cd-chip-max) - 8px),448px);aspect-ratio:1/1}
+@supports not (width:1cqw){
+  .cd{--cd-chip-max:min(240px,66%)}                                              /* % of the stage ≈ 40% of the panel */
+  .cd_stage{width:clamp(150px,calc(100% - min(240px,40%) - 8px),448px)}
+}
 .cd_connector{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--cd-ring) 328deg,var(--cd-accent) 360deg);
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--cd-ring-w,2px) - .25px),#000 calc(100% - .25px));
           mask:radial-gradient(farthest-side,transparent calc(100% - var(--cd-ring-w,2px) - .25px),#000 calc(100% - .25px));
@@ -128,15 +153,17 @@ const CSS = `
 .cd_item:focus-visible{outline:2px solid var(--cd-accent);outline-offset:2px}
 .cd_item[data-cd-icon] .cd_dot{width:var(--cd-icon-size);height:var(--cd-icon-size);border:0;border-radius:0;background:currentColor;-webkit-mask:var(--cd-icon) center/contain no-repeat;mask:var(--cd-icon) center/contain no-repeat;transition:background-color .35s,transform .35s}
 .cd_item.is-active[data-cd-icon] .cd_dot{background:var(--cd-accent);transform:scale(1.1)}
-.cd_cards{position:relative;overflow:hidden}
-.cd_cards-track{position:relative;display:flex;flex-direction:column;gap:var(--spacing--4,1rem);will-change:transform}
-.cd_pcard{display:block;width:100%;text-align:var(--cd-card-align);background:var(--cd-bg);border:1px solid var(--cd-line);border-radius:var(--radius--lg,.75rem);padding:1.5rem 1.75rem;cursor:pointer;opacity:.5;
+/* card window height is CSS (server HTML already final): visible rows + gaps */
+.cd_cards{position:relative;overflow:hidden;height:calc(var(--cd-visible) * var(--cd-card-h) + (var(--cd-visible) - 1) * var(--cd-card-gap))}
+/* uniform rows: every card is at least --cd-card-h; taller content grows ALL rows (1fr) */
+.cd_cards-track{position:relative;display:grid;grid-auto-rows:minmax(var(--cd-card-h),1fr);gap:var(--cd-card-gap);will-change:transform}
+.cd_pcard{display:block;width:100%;min-height:var(--cd-card-h);text-align:var(--cd-card-align);background:var(--cd-bg);border:1px solid var(--cd-line);border-radius:var(--radius--lg,.75rem);padding:1.5rem 1.75rem;cursor:pointer;opacity:.5;
   font:inherit;font-family:var(--cd-font);color:inherit;transition:opacity .35s,border-color .35s,box-shadow .35s;-webkit-tap-highlight-color:transparent}
 .cd_pcard.is-active{opacity:1;border-color:var(--cd-accent);box-shadow:0 20px 40px -28px rgba(0,0,0,.25)}
 .cd_pcard:hover{opacity:.8}
 .cd_pcard.is-active:hover{opacity:1}
 .cd_pcard:focus-visible{outline:2px solid var(--cd-accent);outline-offset:2px}
-.cd_card-title{display:flex;align-items:center;justify-content:center;gap:.625rem;font-size:1.125rem;font-weight:600;letter-spacing:.01em;color:var(--cd-ink);margin:0}
+.cd_card-title{display:flex;align-items:center;justify-content:center;gap:.625rem;font-size:1.125rem;line-height:1.25;font-weight:600;letter-spacing:.01em;color:var(--cd-ink);margin:0}
 .cd_card-title+.cd_card-text{margin-top:.625rem}
 .cd[data-align="left"] .cd_card-title{justify-content:flex-start}
 .cd_card-text{text-align:var(--cd-card-align);text-wrap:pretty;color:var(--color-text--base,var(--neutral--900,#1a1a1a));font-size:.9375rem;line-height:1.65;letter-spacing:.005em;margin:0}
@@ -159,8 +186,9 @@ const CSS = `
   .cd_item.is-active{transform:translate(-50%,-50%) scale(1.04)}
 }
 @media (max-width:479px){
+  .cd{--cd-chip-max:min(240px,36cqw);--cd-card-h:calc(2.25rem + 2 * 1rem * 1.25 + 2px)}
   .cd_item{font-size:.6875rem;padding:.45rem .7rem}
-  .cd_pcard{padding:1.1rem 1.25rem}
+  .cd_pcard{padding:1.125rem 1.25rem}
   .cd_card-title{font-size:1rem}
 }
 @media (prefers-reduced-motion:reduce){.cd_connector,.cd_item,.cd_dot,.cd_label,.cd_pcard{transition:none}}
@@ -223,9 +251,9 @@ export function CircleDiagram(props: CircleDiagramProps) {
   };
 
   /* layout effect: ring size + card window are final BEFORE the first paint (no post-paint shrink) */
-  React.useLayoutEffect(() => {
-    const rootEl = root.current, conn = connector.current, wrap = cardsWrap.current, trk = track.current, panelEl = panel.current, stageEl = stage.current;
-    if (!rootEl || !conn || !panelEl || !stageEl) return;
+  useIsoLayoutEffect(() => {
+    const rootEl = root.current, conn = connector.current, wrap = cardsWrap.current, trk = track.current, panelEl = panel.current;
+    if (!rootEl || !conn || !panelEl) return;
     const nodes = itemEls.current.slice(0, items.length).filter(Boolean) as HTMLButtonElement[];
     const cards = showCards ? (cardEls.current.slice(0, items.length).filter(Boolean) as HTMLButtonElement[]) : [];
     if (!nodes.length) return;
@@ -248,37 +276,18 @@ export function CircleDiagram(props: CircleDiagramProps) {
       return best;
     };
 
-    /* FIT: left/right chips hang half their width outside the ring, top/bottom
-       ones half their height. Size the ring from the panel's real width minus
-       the widest chip (measured, after capping chip width to 40% of the panel
-       so long labels wrap) — works at every breakpoint, no CSS guesswork. */
-    let lastWidest = -1, lastAvail = -1;
-    const fit = () => {
-      /* available width: single column → the component's own box (padding
-         included — chips may overlap it, never leave it); two columns → the
-         diagram column only, so chips never bleed into the card list */
-      const rr = rootEl.getBoundingClientRect(), pr = panelEl.getBoundingClientRect();
-      const twoCol = Math.abs((pr.left + pr.width / 2) - (rr.left + rr.width / 2)) > 2;
-      const avail = (twoCol ? panelEl.clientWidth : rootEl.clientWidth) - 8;
-      if (avail <= 0) return;
-      const chipMax = Math.min(240, Math.floor(avail * (avail < 480 ? 0.36 : 0.4)));
-      rootEl.style.setProperty("--cd-chip-max", chipMax + "px");
-      let widest = 0;
-      nodes.forEach((n) => { widest = Math.max(widest, n.offsetWidth); });
-      if (widest === lastWidest && avail === lastAvail) return;
-      lastWidest = widest; lastAvail = avail;
-      const stageW = Math.max(150, Math.min(448, avail - widest));
-      rootEl.style.setProperty("--cd-stage", stageW + "px");
-    };
-    fit();
+    /* ring size + chip width are pure CSS (container-query units) — nothing to fit here */
 
-    /* card list window */
+    /* card list window: the height is already set by CSS (--cd-visible ×
+       --cd-card-h, uniform grid rows). Measure the real rows and only rewrite
+       the height when the content outgrew --cd-card-h (all rows grow together),
+       so the common case is a no-op and the server height stands. */
     let listH = 0, maxShift = 0;
     const measure = () => {
       if (!trk || !wrap || !cards.length) return;
       const last = cards[Math.min(VISIBLE, cards.length) - 1];
       listH = last.offsetTop + last.offsetHeight;
-      wrap.style.height = listH + "px";
+      if (Math.abs(wrap.getBoundingClientRect().height - listH) > 1) wrap.style.height = listH + "px";
       maxShift = Math.max(0, trk.scrollHeight - listH);
     };
     const scrollToCard = (i: number, animate: boolean) => {
@@ -367,7 +376,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
     { const g = gs(); if (g) { claim(); g.set(conn, { rotation: arcRot }); } else conn.style.transform = "rotate(" + arcRot + "deg)"; }
 
     let rsTimer: number | null = null;
-    const remeasure = () => { fit(); measure(); scrollToCard(active, false); };
+    const remeasure = () => { measure(); scrollToCard(active, false); };
     on(window, "resize", () => { if (rsTimer) clearTimeout(rsTimer); rsTimer = window.setTimeout(remeasure, 120); });
     on(window, "load", remeasure);
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
@@ -405,13 +414,26 @@ export function CircleDiagram(props: CircleDiagramProps) {
     };
   }, [items, angles, spin, resume, visible, start, showCards]);
 
+  /* server-rendered initial state (deterministic, no DOM access): the card
+     window height (--cd-visible), the start item active and the tip on it */
+  const visibleRows = Math.min(Math.max(1, Math.floor(Number(visible)) || 3), items.length);
+  const startIdx = Math.min(Math.max(0, Math.floor(Number(start)) || 0), items.length - 1);
+  const startRot = (((angles[startIdx] + 90) % 360) + 360) % 360;
+
   return (
-    <div ref={root} className="cd" data-circle-diagram="" data-align={cardAlign === "Left" ? "left" : "center"} data-cards={showCards ? "on" : "off"}>
+    <div
+      ref={root}
+      className="cd"
+      data-circle-diagram=""
+      data-align={cardAlign === "Left" ? "left" : "center"}
+      data-cards={showCards ? "on" : "off"}
+      style={{ "--cd-visible": visibleRows } as React.CSSProperties}
+    >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="cd_layout">
         <div ref={panel} className="cd_panel">
           <div ref={stage} className="cd_stage">
-            <div ref={connector} className="cd_connector" aria-hidden="true" />
+            <div ref={connector} className="cd_connector" aria-hidden="true" style={{ transform: "rotate(" + startRot + "deg)" }} />
             {items.map((it, i) => {
               const rad = angles[i] * Math.PI / 180;
               const icon = it.icon && ICONS[it.icon] ? it.icon : undefined;
@@ -420,7 +442,8 @@ export function CircleDiagram(props: CircleDiagramProps) {
                   key={i}
                   ref={(el) => { itemEls.current[i] = el; }}
                   type="button"
-                  className="cd_item"
+                  className={"cd_item" + (i === startIdx ? " is-active" : "")}
+                  aria-current={i === startIdx ? "true" : undefined}
                   data-cd-side={sideOf(angles[i])}
                   data-cd-icon={icon}
                   style={{ left: (50 + 50 * Math.cos(rad)) + "%", top: (50 + 50 * Math.sin(rad)) + "%", ...(icon ? ({ "--cd-icon": ICONS[icon] } as React.CSSProperties) : {}) }}
@@ -436,7 +459,7 @@ export function CircleDiagram(props: CircleDiagramProps) {
           <div ref={cardsWrap} className="cd_cards">
             <div ref={track} className="cd_cards-track">
               {items.map((it, i) => (
-                <button key={i} ref={(el) => { cardEls.current[i] = el; }} type="button" className="cd_pcard">
+                <button key={i} ref={(el) => { cardEls.current[i] = el; }} type="button" className={"cd_pcard" + (i === startIdx ? " is-active" : "")} aria-current={i === startIdx ? "true" : undefined}>
                   <div className="cd_card-title">{it.cardTitle || it.label}</div>
                   {it.cardText && <p className="cd_card-text">{it.cardText}</p>}
                 </button>

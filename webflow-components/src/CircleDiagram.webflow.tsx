@@ -31,5 +31,5 @@ export default declareComponent(CircleDiagram, {
     cardAlign: props.Variant({ name: "Card text align", group: "Cards", options: ["Center", "Left"], defaultValue: "Center" }),
     ...item(1), ...item(2), ...item(3), ...item(4), ...item(5), ...item(6), ...item(7), ...item(8),
   },
-  options: { ssr: false },
+  options: { ssr: true },
 });
