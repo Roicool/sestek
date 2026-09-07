@@ -1,11 +1,17 @@
 /*!
- * nav.js v2.8.0
+ * nav.js v2.8.1
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.8.1 — first-open sizing: the open panel is re-measured (width AND height)
+ *           when an image inside it loads or its content resizes, and the
+ *           mega-menu images are warmed on hover intent — the Products panel
+ *           no longer opens narrow/clipped on the first hover after load.
+ *           Measurement cap respects the dropdown's max-width when a closed
+ *           dropdown reports 0 width.
  * v2.8.0 — the bar no longer hides on scroll-down: the [data-nav-autohide]
  *           scroll-direction auto-hide is removed (attribute now ignored, no
  *           Webflow change required) and any leftover .nav--hidden is cleared
@@ -194,6 +200,7 @@
     var closeTimer   = null;
     var pendingReset = null;   // GSAP delayedCall that resets panels after close
     var targetH      = 0;      // height the container is currently animating to
+    var targetW      = 0;      // width the container is currently animating to
 
     // Honour reduced-motion: snap instead of animate (kept live via listener).
     var reduceMotion = false;
@@ -262,8 +269,13 @@
       var cap = dropdown.clientWidth || 0;
       dropdown.style.width = prevDropW;
       if (!cap) {
+        // Closed dropdown (CSS may hold it at width:0 before the first open):
+        // fall back to the wrap, clamped to the dropdown's own max-width so the
+        // number is still one the clip box can show.
         var capEl = (dropdown.parentElement || dropdown);
         cap = capEl.clientWidth || 0;
+        var maxW = parseFloat(global.getComputedStyle(dropdown).maxWidth);
+        if (maxW > 0 && cap > maxW) cap = maxW;
       }
       if (cap) s.maxWidth = cap + "px";
 
@@ -286,6 +298,39 @@
      * overflow for good. Compared against the height we last animated TO (not
      * the container's live height) so it never fights the open/close tween.
      */
+    /*
+     * Re-read the ACTIVE panel's size and glide the container (and the panel's
+     * pinned width) to it. Width matters as much as height: a lazy <img> inside
+     * a closed (0×0, overflow:hidden) dropdown has no intrinsic size yet, so the
+     * very first measurement of a panel whose column is sized by that image
+     * comes up narrow; the image then lands, the column grows past the pinned
+     * width and the layout breaks — until the next open re-measures with the
+     * image cached. (Seen on the Products panel: broken on the first hover after
+     * load, fine afterwards.) Called when an image inside the open panel loads
+     * and once when the webfonts land. `overwrite:"auto"` lets it take over
+     * width/height from an in-flight open tween instead of losing to it.
+     */
+    function remeasureActive() {
+      if (!isOpen || !activeId) return;
+      var p = getPanel(activeId);
+      if (!p) return;
+      var dim = measurePanel(activeId);
+      var wDiff = dim.w && Math.abs(dim.w - targetW) >= 1;
+      var hDiff = dim.h && Math.abs(dim.h - targetH) >= 1;
+      if (!wDiff && !hDiff) return;
+      if (wDiff) { targetW = dim.w; p.style.width = dim.w + "px"; }
+      if (hDiff) targetH = dim.h;
+      if (reduceMotion) gsap.set(dropdown, { width: targetW, height: targetH });
+      else gsap.to(dropdown, { width: targetW, height: targetH, duration: 0.25, ease: "power2.out", overwrite: "auto" });
+    }
+
+    /*
+     * Safety net for height-only changes a one-shot measurement can't see
+     * (text rewrapping, CMS copy streaming in). Reads offsetHeight only — it
+     * must NOT call measurePanel, whose transient width toggle would retrigger
+     * the observer every frame. Compared against the height we last animated TO
+     * so it never fights the open/close tween.
+     */
     var panelWatcher = null;
     if (typeof ResizeObserver !== "undefined") {
       panelWatcher = new ResizeObserver(function () {
@@ -296,9 +341,39 @@
         if (!h || Math.abs(h - targetH) < 1) return;
         targetH = h;
         if (reduceMotion) gsap.set(dropdown, { height: h });
-        else gsap.to(dropdown, { height: h, duration: 0.2, ease: "power2.out" });
+        else gsap.to(dropdown, { height: h, duration: 0.2, ease: "power2.out", overwrite: "auto" });
       });
       panels.forEach(function (p) { panelWatcher.observe(p); });
+    }
+
+    // <img> load does not bubble — capture it at the nav so any image landing
+    // inside the open panel triggers a full re-measure (see remeasureActive).
+    var _onImgLoad = function (e) {
+      var t = e.target;
+      if (!t || t.tagName !== "IMG" || !isOpen || !activeId) return;
+      var p = getPanel(activeId);
+      if (p && p.contains(t)) remeasureActive();
+    };
+    nav.addEventListener("load", _onImgLoad, true);
+    // Webfont swap rewraps text: one re-measure when the fonts land.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { remeasureActive(); }).catch(function () {});
+    }
+
+    // Warm the mega-menu images on hover intent (first pointer over the bar or
+    // keyboard focus on a trigger): lazy images inside the hidden dropdown are
+    // never fetched by the browser on their own, so the first open would
+    // otherwise always measure without them. Loading stays lazy for everything
+    // else on the page; this only flips the nav's own images once.
+    var _warmed = false;
+    function warmPanelImages() {
+      if (_warmed) return;
+      _warmed = true;
+      panels.forEach(function (p) {
+        Array.prototype.forEach.call(p.querySelectorAll("img[loading='lazy']"), function (img) {
+          img.loading = "eager";
+        });
+      });
     }
 
     /** Sync a trigger's visual + a11y open state. */
@@ -401,6 +476,7 @@
       isOpen   = true;
       activeId = id;
       targetH  = h;
+      targetW  = w;
       nav.classList.add("nav--open");
 
       gsap.killTweensOf(dropdown);
@@ -497,6 +573,7 @@
       var closingId = activeId;
       activeId = null;
       targetH  = 0;
+      targetW  = 0;
       nav.classList.remove("nav--open");
 
       triggers.forEach(function (t) { markTrigger(t, false); });
@@ -544,7 +621,8 @@
         trigger.setAttribute("aria-controls", panel.id);
       }
 
-      on(trigger, "mouseenter", function () { openPanel(id); });
+      on(trigger, "mouseenter", function () { warmPanelImages(); openPanel(id); });
+      on(trigger, "focus", warmPanelImages);
       on(trigger, "click", function () {
         if (activeId === id && isOpen) closeDropdown();
         else openPanel(id);
@@ -563,7 +641,7 @@
     if (navBar) {
       on(navBar, "mouseleave", scheduleClose);
       // Cancel any pending close when re-entering the bar.
-      on(navBar, "mouseenter", function () { clearTimeout(closeTimer); });
+      on(navBar, "mouseenter", function () { clearTimeout(closeTimer); warmPanelImages(); });
       // Hovering a NON-trigger bar item (Pricing, logo, Log in…) while a menu
       // is open should close it — otherwise it stays open as long as the cursor
       // is anywhere in the bar. The trigger's own mouseenter still rules when
@@ -841,6 +919,7 @@
     // ── Public API ────────────────────────────────────────────────
     var instance = {
       _destroy: function () {
+        nav.removeEventListener("load", _onImgLoad, true);
         clearTimeout(closeTimer);
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
         if (panelWatcher) { panelWatcher.disconnect(); panelWatcher = null; }
