@@ -36,6 +36,9 @@ export interface TtsDemoProps {
   link2Label?: string;
   link2Url?: string;
   link2NewTab?: boolean;
+  /** "Dark" | "White" | "Brand secondary" | "Brand primary" — site stagger button styles */
+  link1Style?: string;
+  link2Style?: string;
   /** demo URL; {lang} is replaced by the resolved language */
   iframeSrc?: string;
   /** "Auto" | "en-US" | "tr-TR" */
@@ -75,13 +78,23 @@ const CSS = `
 .tts_eyebrow{margin:0;font-size:.8125rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tts-accent)}
 .tts_title{margin:0;font-size:var(--heading--h3,clamp(1.625rem,2.6vw,2.25rem));line-height:var(--leading--tight,1.15);font-weight:var(--font-weight--semibold,600);text-wrap:balance}
 .tts_desc{margin:0;font-size:var(--text--lg,1.0625rem);line-height:var(--leading--relaxed,1.6);color:var(--tts-muted)}
-.tts_links{display:flex;flex-direction:column;align-items:flex-start;gap:.625rem;margin-top:.5rem}
-.tts_link{display:inline-flex;align-items:center;gap:.5rem;font-size:.9375rem;font-weight:600;color:var(--tts-ink);text-decoration:none;border-bottom:1px solid transparent;transition:color .2s ease,border-color .2s ease}
-.tts_link svg{width:1rem;height:1rem;flex:none;transition:transform .25s cubic-bezier(.2,.7,.2,1)}
-.tts_link:hover{color:var(--tts-accent);border-color:currentColor}
-.tts_link:hover svg{transform:translateX(3px)}
-.tts_link:focus-visible{outline:2px solid var(--tts-accent);outline-offset:3px}
-.tts_link--muted{color:var(--tts-muted);font-weight:500}
+/* CTA — the site's stagger buttons (btn-stagger: pill, characters roll up on hover) */
+.tts_links{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-top:.75rem}
+.tts_btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.25rem .8rem;border-radius:999px;text-decoration:none;font-size:var(--text--sm,.875rem);font-weight:500;line-height:1.2;
+  background:var(--surface--accent,#111);color:var(--color-text--inverted,#fff);transition:transform .35s cubic-bezier(.65,0,.35,1),box-shadow .35s ease;-webkit-tap-highlight-color:transparent}
+.tts_btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px -14px rgb(15 23 42/.5)}
+.tts_btn:focus-visible{outline:2px solid var(--tts-accent);outline-offset:3px}
+.tts_btn[data-style="white"]{background:var(--surface--light,#f3f4f6);color:var(--color-text--base,#111)}
+.tts_btn[data-style="brand-secondary"]{background:var(--brand-secondary--500,#3d6bb3);color:#fff}
+.tts_btn[data-style="brand-primary"]{background:var(--brand-primary--500,#EC008C);color:#fff}
+.tts_stg{position:relative;display:inline-block;overflow:hidden;line-height:1.2}
+.tts_stg-t{display:inline-block;white-space:nowrap}
+.tts_stg-t--clone{position:absolute;top:0;left:0;width:100%;pointer-events:none}
+.tts_stg-c{display:inline-block;transition:transform .5s cubic-bezier(.65,0,.35,1),opacity .5s cubic-bezier(.65,0,.35,1);transition-delay:calc(var(--i) * .03s)}
+.tts_stg-t--clone .tts_stg-c{transform:translateY(100%);opacity:0}
+.tts_btn:hover .tts_stg-t--orig .tts_stg-c{transform:translateY(-100%);opacity:0}
+.tts_btn:hover .tts_stg-t--clone .tts_stg-c{transform:translateY(0);opacity:1}
+@media (prefers-reduced-motion:reduce){.tts_stg-c{transition:none}.tts_btn:hover .tts_stg-t--orig .tts_stg-c{transform:none;opacity:1}.tts_stg-t--clone{display:none}}
 .tts_panel{position:relative;box-sizing:border-box;padding:0;margin:0 auto;max-width:100%}
 .tts_frame{position:relative;overflow:hidden;width:100%;max-width:none;background:#fff}
 .tts[data-framed="on"] .tts_frame{border:1px solid var(--tts-line);border-radius:var(--tts-radius)}
@@ -101,6 +114,23 @@ const CSS = `
 type Size = { mobile: boolean; panelW: string; frameW: string; frameH: string; ifW: string; ifH: string; zoom: string };
 
 function linkHref(v: LinkValue): string { if (!v) return ""; return typeof v === "string" ? v : v.href || ""; }
+function btnStyle(v: string | undefined, fallback: string): string {
+  const s = (v || fallback).toLowerCase();
+  if (s.startsWith("white")) return "white";
+  if (s.startsWith("brand s")) return "brand-secondary";
+  if (s.startsWith("brand p")) return "brand-primary";
+  return "dark";
+}
+/* label split into characters + a clone, for the hover stagger (stagger-button.js port) */
+function StaggerLabel({ text }: { text: string }) {
+  const chars = Array.from(text);
+  const row = (cls: string) => (
+    <span className={"tts_stg-t " + cls} aria-hidden="true">
+      {chars.map((ch, i) => <span key={i} className="tts_stg-c" style={{ "--i": i } as React.CSSProperties}>{ch === " " ? "\u00A0" : ch}</span>)}
+    </span>
+  );
+  return <span className="tts_stg">{row("tts_stg-t--orig")}{row("tts_stg-t--clone")}</span>;
+}
 
 export function TtsDemo(p: TtsDemoProps) {
   const full = (p.layout || "Side by side").toLowerCase().startsWith("full");
@@ -169,7 +199,6 @@ export function TtsDemo(p: TtsDemoProps) {
   const l2 = linkHref(p.link2Url) || "https://docs.sestek.com/docs/tts-supported-languages-and-voices";
   const ext1 = p.link1NewTab ? { target: "_blank", rel: "noopener" } : {};
   const ext2 = p.link2NewTab !== false ? { target: "_blank", rel: "noopener" } : {};
-  const arrow = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 
   const panelStyle: React.CSSProperties = size ? { width: size.panelW, maxWidth: "100%", marginBottom: full ? bottom + "px" : undefined } : { width: full ? "100%" : SIDE.bigPanel + "px" };
   const frameStyle: React.CSSProperties = size ? { width: size.frameW, height: size.frameH } : { height: (full ? FULL.baseH : SIDE.bigIframe) + "px" };
@@ -198,8 +227,8 @@ export function TtsDemo(p: TtsDemoProps) {
               {p.description ? <p className="tts_desc">{p.description}</p> : null}
               {(p.link1Label || p.link2Label) && (
                 <div className="tts_links">
-                  {p.link1Label ? <a className="tts_link" href={l1} {...ext1}>{p.link1Label}{arrow}</a> : null}
-                  {p.link2Label ? <a className="tts_link tts_link--muted" href={l2} {...ext2}>{p.link2Label}{arrow}</a> : null}
+                  {p.link1Label ? <a className="tts_btn" data-style={btnStyle(p.link1Style, "Dark")} href={l1} aria-label={p.link1Label} {...ext1}><StaggerLabel text={p.link1Label} /></a> : null}
+                  {p.link2Label ? <a className="tts_btn" data-style={btnStyle(p.link2Style, "White")} href={l2} aria-label={p.link2Label} {...ext2}><StaggerLabel text={p.link2Label} /></a> : null}
                 </div>
               )}
             </div>
