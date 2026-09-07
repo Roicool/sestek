@@ -1,5 +1,5 @@
 /*!
- * roi-calculator.js v3.0.0  (was savings-calculator.js v2.1.0)
+ * roi-calculator.js v3.0.1  (was savings-calculator.js v2.1.0)
  * Ramp-style live ROI calculator — custom div-based slider (Radix-like
  * structure, no native <input type=range>, so Webflow CSS can't break it)
  * and a NumberFlow-style rolling counter: every digit is a vertical strip
@@ -131,6 +131,14 @@
     measure.className = "sv-num__measure";
     measure.setAttribute("aria-hidden", "true");
     host.appendChild(measure);
+
+    // Screen-reader text: the rolling columns are aria-hidden, so the value is
+    // announced from this visually hidden span (an aria-label on a plain <div>
+    // is a prohibited ARIA attribute — Lighthouse "aria-prohibited-attr").
+    var sr = document.createElement("span");
+    sr.className = "sv-num__sr";
+    sr.style.cssText = "position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap";
+    host.appendChild(sr);
     var emCache = {};
     function charEm(ch) {
       if (emCache[ch] == null) {
@@ -193,7 +201,7 @@
     }
 
     return function set(str) {
-      host.setAttribute("aria-label", str);
+      sr.textContent = str;
       var chars = str.split("");
       while (cols.length < chars.length) {            // grow at the LEFT
         var col = makeCol();
