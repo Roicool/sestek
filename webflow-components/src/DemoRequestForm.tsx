@@ -264,8 +264,10 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
 .sdrf-consent a{color:inherit;text-decoration:underline;
   text-underline-offset:2px}
 .sdrf-consent a:hover{color:var(--x-text)}
+/* Hata satırı her zaman DOM'da (boşken de yer tutar) — mesaj gelince
+ * altındaki buton kaymaz (CLS). */
 .sdrf-err{padding:0 .5em;font-size:var(--text--xs,.75rem);line-height:1.5;
-  color:var(--x-neg)}
+  min-height:1.5em;color:var(--x-neg)}
 
 /* Butonlar — marka rengi */
 .sdrf-cta{font:inherit;font-size:var(--text--base,1rem);font-weight:500;
@@ -338,7 +340,10 @@ textarea.sdrf-input{border-radius:var(--radius--2xl,20px);
 .sdrf-field--phone.is-invalid .sdrf-cc{border-color:var(--x-neg)}
 .sdrf-cc .spf-panel{--spf-bg:var(--x-card,#fff);--spf-fg:var(--x-text,#101014)}
 .sdrf-ts{margin-top:var(--spacing--3,.75rem)}
-.sdrf-ts:empty{display:none;margin:0}
+/* Görünür widget (65px) için yer önceden ayrılır; Invisible modda boşken
+ * yer kaplamaz. */
+.sdrf-ts.is-vis{min-height:65px}
+.sdrf-ts:empty:not(.is-vis){display:none;margin:0}
 `;
 
 const CheckIcon = () => (
@@ -400,7 +405,18 @@ export function DemoRequestForm({
   lang = "EN",
 }: DemoRequestFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
-  const ts = createTurnstile(React, turnstileSiteKey, turnstileWidget !== "Invisible");
+  const tsVisible = turnstileWidget !== "Invisible";
+  const ts = createTurnstile(React, turnstileSiteKey, tsVisible);
+
+  /* Başarı sahnesi formdan kısa; karta geçişten önce ölçülen yükseklik
+   * min-height olarak sabitlenir ki altındaki içerik kaymasın (CLS). */
+  const cardEl = React.useRef<HTMLDivElement>(null);
+  const [cardMin, setCardMin] = React.useState<number | undefined>(undefined);
+  function finish() {
+    const h = cardEl.current?.offsetHeight;
+    if (h) setCardMin(h);
+    setDone(true);
+  }
 
   const [firstname, setFirstname] = React.useState("");
   const [lastname, setLastname] = React.useState("");
@@ -496,7 +512,7 @@ export function DemoRequestForm({
 
     /* Honeypot doluysa (bot) istek atmadan başarı göster. */
     if (hp) {
-      setDone(true);
+      finish();
       return;
     }
 
@@ -528,7 +544,7 @@ export function DemoRequestForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
-          setDone(true);
+          finish();
         } else if (res.status === 429) {
           fail("rate_limited");
         } else {
@@ -628,7 +644,8 @@ export function DemoRequestForm({
           )}
         </div>
 
-        <div className="sdrf-card">
+        <div className="sdrf-card" ref={cardEl}
+          style={cardMin !== undefined ? { minHeight: cardMin } : undefined}>
           {!done ? (
             <form className="sdrf-form" onSubmit={submit} noValidate aria-busy={sending}>
               {formTitle && <h3 className="sdrf-t">{formTitle}</h3>}
@@ -711,10 +728,13 @@ export function DemoRequestForm({
                 onChange={(e) => setHp(e.target.value)}
               />
 
-              {error && <div className="sdrf-err" role="alert">{error}</div>}
-              {/* Turnstile — appearance interaction-only, yalnız meydan okuma
-                  gerektiğinde görünür; aksi halde yer kaplamaz. */}
-              {ts.enabled && <div className="sdrf-ts" ref={ts.slotRef} />}
+              {/* her zaman DOM'da: boşken yer tutar, mesaj gelince kayma olmaz */}
+              <div className="sdrf-err" role="alert">{error}</div>
+              {/* Turnstile — Visible modda 65px yer önceden ayrılır; Invisible
+                  modda yalnız meydan okuma gerektiğinde görünür. */}
+              {ts.enabled && (
+                <div className={"sdrf-ts" + (tsVisible ? " is-vis" : "")} ref={ts.slotRef} />
+              )}
               {ts.failed && <div className="sdrf-err" role="alert">{t.captcha_unavailable}</div>}
 
               {!stepped ? (

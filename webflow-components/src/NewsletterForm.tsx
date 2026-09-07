@@ -110,18 +110,20 @@ const CSS = `
 .snlf.is-center{margin-inline:auto}
 
 /* ── Pill ──────────────────────────────────────────────────── */
-.snlf-pill{display:flex;align-items:stretch;gap:.35rem;
+/* Dar alanda input ile buton CSS ile doğal olarak alt alta sarar — ilk
+ * boyama doğru olsun diye JS ölçümü (ResizeObserver) yok. */
+.snlf-pill{display:flex;flex-wrap:wrap;align-items:stretch;gap:.35rem;
   padding:.3rem;border-radius:var(--radius--full,9999px);
   background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
   transition:box-shadow .2s}
 .snlf-pill:focus-within{box-shadow:inset 0 0 0 1px var(--n-text)}
 .snlf.is-invalid .snlf-pill{box-shadow:inset 0 0 0 1px var(--n-neg)}
-.snlf-input{flex:1;min-width:0;font:inherit;
+.snlf-input{flex:1 1 12rem;min-width:0;font:inherit;
   font-size:var(--text--sm,.875rem);color:var(--n-text);
   background:transparent;border:0;outline:none;
   padding:.5em 0 .5em 1.1em}
 .snlf-input::placeholder{color:var(--n-muted)}
-.snlf-btn{flex:none;font:inherit;font-size:var(--text--sm,.875rem);
+.snlf-btn{flex:1 0 auto;font:inherit;font-size:var(--text--sm,.875rem);
   font-weight:500;color:var(--n-btn-fg);border:0;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:.5em;
   padding:.55em 1.25em;border-radius:var(--radius--full,9999px);
@@ -136,8 +138,9 @@ const CSS = `
 @keyframes snlf-rot{to{transform:rotate(360deg)}}
 
 /* ── Başarı: pill içeriği onaya döner ──────────────────────── */
+/* Buton satırıyla aynı blok yüksekliği (padding + satır) — pill kısalmaz. */
 .snlf-ok{display:flex;align-items:center;gap:.6em;flex:1;
-  padding:.55em 1.1em;font-size:var(--text--sm,.875rem);
+  padding:.55em 1.1em;min-height:2.3em;font-size:var(--text--sm,.875rem);
   animation:snlf-in .4s cubic-bezier(.22,1,.36,1)}
 @keyframes snlf-in{from{opacity:0;transform:translateY(6px)}
   to{opacity:1;transform:none}}
@@ -146,40 +149,27 @@ const CSS = `
 /* ── Alt satırlar ──────────────────────────────────────────── */
 .snlf-cap{margin:.6rem .25rem 0;font-size:var(--text--xs,.75rem);
   line-height:1.5;color:var(--n-muted)}
+/* Hata satırı her zaman DOM'da (boşken de yer tutar) — mesaj gelince
+ * caption kaymaz (CLS). */
 .snlf-err{margin:.55rem .25rem 0;font-size:var(--text--xs,.75rem);
-  line-height:1.5;color:var(--n-neg)}
+  line-height:1.5;min-height:1.5em;color:var(--n-neg)}
 .snlf.is-center .snlf-cap,.snlf.is-center .snlf-err{text-align:center}
 
 /* ── Responsive / reduced motion ───────────────────────────── */
-/* ── Dar alan: hap iki parçaya ayrılır ─────────────────────────
+/* ── Dar alan (telefon): hap iki parçaya ayrılır ───────────────
  * Kapsül, input ile buton yan yana sığdığında anlamlı. Alt alta geçince
  * uzun bir kutunun etrafındaki tam yuvarlak çerçeve tuhaf duruyordu.
  * Dar alanda dış kabuk kaldırılır: input kendi hapı, buton kendi hapı.
  *
- * İki tetikleyici var:
- *   .is-narrow  component'in KENDİ genişliği ölçülerek JS'ten eklenir
- *               (ResizeObserver). Geniş ekranda dar bir grid kolonuna
- *               konsa da doğru kırılır.
- *   @media      telefonlarda ilk boyamada bile doğru olsun diye, ölçüm
- *               beklemeden.
+ * Yalnız @media ile: ilk boyamada doğru, hydration sonrası yeniden düzen
+ * (CLS) yok. Geniş ekranda dar bir kolona konursa kapsül içinde
+ * flex-wrap ile sarar (yukarıda). Eski ResizeObserver/.is-narrow yolu
+ * hydration'dan sonra satır→sütun geçişi yaptırdığı için kaldırıldı.
  * NEDEN container query DEĞİL: container-type:inline-size elemanın
  * genişliğini içeriğinden almasını yasaklar. Webflow bu component'i bir
  * host elemana koyar; host'un üst kabı flex ve align-items stretch değilse
  * host içerik genişliğini sorar, containment 0 der ve her şey 0px'e çöker
  * (buton daire, caption kelime kelime). Canlıda tam olarak bu yaşandı. */
-  .snlf.is-narrow .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
-    padding:0;background:transparent;box-shadow:none;border-radius:0}
-  .snlf.is-narrow .snlf-pill:focus-within,.snlf.is-narrow.is-invalid .snlf-pill{box-shadow:none}
-  .snlf.is-narrow .snlf-input{padding:.7em 1.1em;text-align:inherit;
-    background:var(--n-pill);box-shadow:inset 0 0 0 1px var(--n-line);
-    border-radius:var(--radius--full,9999px);transition:box-shadow .2s}
-  .snlf.is-narrow .snlf-input:focus{box-shadow:inset 0 0 0 1px var(--n-text)}
-  .snlf.is-narrow.is-invalid .snlf-input{box-shadow:inset 0 0 0 1px var(--n-neg)}
-  .snlf.is-narrow.is-center .snlf-input{text-align:center}
-  .snlf.is-narrow .snlf-btn{width:100%;padding:.7em 1.25em}
-  .snlf.is-narrow .snlf-ok{padding:.7em 1.1em;background:var(--n-pill);
-    box-shadow:inset 0 0 0 1px var(--n-line);
-    border-radius:var(--radius--full,9999px)}
 @media (max-width:479px){
   .snlf-pill{flex-direction:column;align-items:stretch;gap:.5rem;
     padding:0;background:transparent;box-shadow:none;border-radius:0}
@@ -200,7 +190,10 @@ const CSS = `
   .snlf-ok{animation:none}
 }
 .snlf-ts{margin-top:var(--spacing--3,.75rem)}
-.snlf-ts:empty{display:none;margin:0}
+/* Görünür widget (65px) için yer önceden ayrılır; Invisible modda boşken
+ * yer kaplamaz. */
+.snlf-ts.is-vis{min-height:65px}
+.snlf-ts:empty:not(.is-vis){display:none;margin:0}
 `;
 
 const CheckIcon = () => (
@@ -229,13 +222,24 @@ export function NewsletterForm({
   lang = "EN",
 }: NewsletterFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
-  const ts = createTurnstile(React, turnstileSiteKey, turnstileWidget !== "Invisible");
+  const tsVisible = turnstileWidget !== "Invisible";
+  const ts = createTurnstile(React, turnstileSiteKey, tsVisible);
 
   const [email, setEmail] = React.useState("");
   const [hp, setHp] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [done, setDone] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  /* Onay bloğu input satırından kısa olabilir; geçişten önce pill'in
+   * ölçülen yüksekliği min-height olarak sabitlenir (CLS). */
+  const pillEl = React.useRef<HTMLDivElement>(null);
+  const [pillMin, setPillMin] = React.useState<number | undefined>(undefined);
+  function finish() {
+    const h = pillEl.current?.offsetHeight;
+    if (h) setPillMin(h);
+    setDone(true);
+  }
 
   const t = MESSAGES[lang] || MESSAGES.EN;
   const msg = (code: string) => t[code] || t.generic;
@@ -263,7 +267,7 @@ export function NewsletterForm({
 
     /* Honeypot doluysa (bot) istek atmadan başarı göster. */
     if (hp) {
-      setDone(true);
+      finish();
       return;
     }
 
@@ -290,7 +294,7 @@ export function NewsletterForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
-          setDone(true);
+          finish();
         } else if (res.status === 429) {
           setError(msg("rate_limited"));
         } else {
@@ -304,24 +308,8 @@ export function NewsletterForm({
       });
   }
 
-  /* Dar alan ölçümü — bkz. CSS'teki ".is-narrow" notu. Mount'tan sonra
-   * çalışır; sunucu ve ilk tarayıcı render'ı aynıdır (hydration temiz). */
-  const rootEl = React.useRef<HTMLDivElement>(null);
-  const [narrow, setNarrow] = React.useState(false);
-  React.useEffect(() => {
-    const el = rootEl.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? el.clientWidth;
-      setNarrow(w > 0 && w < 384);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   const cls =
     "snlf" +
-    (narrow ? " is-narrow" : "") +
     (theme === "Deep" ? " is-deep" : "") +
     (align === "Center" ? " is-center" : "") +
     (accent === "Lilac" ? " ac-lilac"
@@ -330,10 +318,11 @@ export function NewsletterForm({
     (error ? " is-invalid" : "");
 
   return (
-    <div className={cls} ref={rootEl}>
+    <div className={cls}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <form onSubmit={submit} noValidate aria-busy={sending}>
-        <div className="snlf-pill">
+        <div className="snlf-pill" ref={pillEl}
+          style={pillMin !== undefined ? { minHeight: pillMin } : undefined}>
           {!done ? (
             <>
               <input
@@ -368,12 +357,19 @@ export function NewsletterForm({
           value={hp}
           onChange={(e) => setHp(e.target.value)}
         />
-        {error && <div className="snlf-err" role="alert">{error}</div>}
-        {/* Turnstile — appearance interaction-only, yalnız meydan okuma
-            gerektiğinde görünür; aksi halde yer kaplamaz. */}
-        {ts.enabled && <div className="snlf-ts" ref={ts.slotRef} />}
+        {/* her zaman DOM'da: boşken yer tutar, mesaj gelince kayma olmaz */}
+        <div className="snlf-err" role="alert">{error}</div>
+        {/* Turnstile — Visible modda 65px yer önceden ayrılır; Invisible
+            modda yalnız meydan okuma gerektiğinde görünür. */}
+        {ts.enabled && (
+          <div className={"snlf-ts" + (tsVisible ? " is-vis" : "")} ref={ts.slotRef} />
+        )}
         {ts.failed && <div className="snlf-err" role="alert">{t.captcha_unavailable}</div>}
-        {caption && !done && <div className="snlf-cap">{caption}</div>}
+        {/* Başarıda caption DOM'da kalır (görünmez) — alt içerik kaymaz. */}
+        {caption && (
+          <div className="snlf-cap" style={done ? { visibility: "hidden" } : undefined}
+            aria-hidden={done || undefined}>{caption}</div>
+        )}
       </form>
     </div>
   );

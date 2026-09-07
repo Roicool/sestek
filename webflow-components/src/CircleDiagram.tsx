@@ -222,7 +222,8 @@ export function CircleDiagram(props: CircleDiagramProps) {
     return "right";
   };
 
-  React.useEffect(() => {
+  /* layout effect: ring size + card window are final BEFORE the first paint (no post-paint shrink) */
+  React.useLayoutEffect(() => {
     const rootEl = root.current, conn = connector.current, wrap = cardsWrap.current, trk = track.current, panelEl = panel.current, stageEl = stage.current;
     if (!rootEl || !conn || !panelEl || !stageEl) return;
     const nodes = itemEls.current.slice(0, items.length).filter(Boolean) as HTMLButtonElement[];
@@ -370,14 +371,14 @@ export function CircleDiagram(props: CircleDiagramProps) {
     on(window, "resize", () => { if (rsTimer) clearTimeout(rsTimer); rsTimer = window.setTimeout(remeasure, 120); });
     on(window, "load", remeasure);
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
-    if (fonts && fonts.ready) fonts.ready.then(remeasure).catch(() => {});
+    if (fonts && fonts.ready && (fonts as { status?: string }).status !== "loaded") fonts.ready.then(remeasure).catch(() => {});
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
       let pending = false;
       ro = new ResizeObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; remeasure(); }); });
-      ro.observe(panelEl);
-      nodes.forEach((n) => ro!.observe(n));   // chips grow when the web font lands
-      cards.forEach((c) => ro!.observe(c));
+      ro.observe(panelEl);                    // chips/cards are NOT observed: the active chip's metrics change
+                                              // on every step and would re-fit the ring every few seconds;
+                                              // the web font landing is covered by fonts.ready above
     }
 
     /* viewport gate */

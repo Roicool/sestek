@@ -183,6 +183,9 @@ const CSS = `
 .hs[data-controls="dark"]{--hs-ctl:#111}
 .hs_viewport{position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden;
   padding-block:clamp(3rem,7vw,5rem)}
+/* the pin box is reserved by the SAME media query the JS uses, so switching carousel→pinned after
+   hydration never changes the section height (no layout shift); gsap missing = carousel in the box */
+@media (min-width:992px) and (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){.hs_viewport{min-height:100svh}}
 .hs.is-pinned .hs_viewport{height:100svh;min-height:100svh;padding-block:clamp(2rem,5vh,4rem)}
 .hs_head{display:flex;flex-direction:column;gap:.75rem;align-items:center;text-align:center;width:100%;
   max-width:var(--container--2xl,96rem);margin:0 auto clamp(2rem,5vh,3.5rem);padding-inline:var(--hs-gutter)}
@@ -209,7 +212,7 @@ const CSS = `
 .hs_card.is-active{border-color:var(--hs-line-active)}
 .hs_card:focus-visible{outline:2px solid var(--hs-line-active);outline-offset:3px}
 .hs_reveal{position:absolute;inset:0;border-radius:inherit;background:var(--hs-reveal);pointer-events:none;
-  clip-path:circle(0px at 50% 50%);will-change:clip-path}
+  clip-path:circle(0px at 50% 50%)}
 .hs_card>:not(.hs_reveal){position:relative;z-index:1}
 .hs_top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .hs_icon{width:2.5rem;height:2.5rem;object-fit:contain;display:block}
@@ -237,7 +240,7 @@ const CSS = `
 .hs_count b{font-weight:inherit}
 .hs_count span{opacity:.5}
 .hs_bar{position:relative;flex:1;height:1px;background:color-mix(in srgb,var(--hs-ctl) 22%,transparent);overflow:hidden}
-.hs_bar i{position:absolute;inset:0;background:var(--hs-ctl);transform-origin:left;transform:scaleX(var(--hs-progress,0));transition:transform .15s linear}
+.hs_bar i{position:absolute;inset:0;background:var(--hs-ctl);transform-origin:left;transform:scaleX(0);transition:transform .15s linear}
 /* nav (carousel) */
 .hs_nav{display:none;align-items:center;justify-content:space-between;gap:1rem;width:100%;max-width:var(--container--2xl,96rem);
   margin:clamp(1.5rem,4vw,2rem) auto 0;padding-inline:var(--hs-gutter)}
@@ -365,6 +368,12 @@ export function HScroll(p: HScrollProps) {
 
 /* ── Component ───────────────────────────────────────────────────────── */
 function HScrollInner(p: HScrollProps) {
+  /* stable key over the flat Designer props: a parent re-render must not rebuild the pin */
+  const itemsKey = React.useMemo(() => {
+    const px = p as unknown as Record<string, unknown>; const parts: unknown[] = [];
+    for (let n = 1; n <= 6; n++) { const ic = px["i" + n + "Icon"] as ImgProp; parts.push(px["i" + n + "Content"], px["i" + n + "Visible"], imgSrc(ic), imgAlt(ic)); }
+    return JSON.stringify(parts);
+  }, [p]);
   const items = React.useMemo<HScrollItem[]>(() => {
     if (p.items && p.items.length) return p.items;
     const out: HScrollItem[] = [];
@@ -382,7 +391,8 @@ function HScrollInner(p: HScrollProps) {
       out.push({ html, node: rt.node, icon: imgSrc(ic), iconAlt: imgAlt(ic) });
     }
     return out.length || any ? out : DEFAULT_ITEMS;
-  }, [p]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.items, itemsKey]);
 
   const theme = (p.theme || "Dark").toLowerCase().startsWith("light") ? "light" : "dark";
   const align = (p.headerAlign || "Center").toLowerCase().startsWith("left") ? "left" : "center";
@@ -409,8 +419,11 @@ function HScrollInner(p: HScrollProps) {
   const [desktop, setDesktop] = React.useState(false);
   const [hoverable, setHoverable] = React.useState(false);
   const [reduced, setReduced] = React.useState(false);
-  const [active, setActive] = React.useState(0);
-  const [progress, setProgress] = React.useState(0);
+  const [active, setActiveState] = React.useState(0);
+  const activeRef = React.useRef(0);
+  const setActive = React.useCallback((i: number) => { if (activeRef.current !== i) { activeRef.current = i; setActiveState(i); } }, []);
+  const barRef = React.useRef<HTMLElement>(null);
+  const setProgress = React.useCallback((v: number) => { if (barRef.current) barRef.current.style.transform = "scaleX(" + v + ")"; }, []);
   const [edges, setEdges] = React.useState({ start: true, end: false });
 
   /* mode selection — reacts to width / pointer / motion changes */
@@ -544,7 +557,6 @@ function HScrollInner(p: HScrollProps) {
     "--hs-spv-t": String(spvT), "--hs-spv-m": String(spvM),
     "--hs-gaps-t": String(Math.max(0, Math.ceil(spvT) - 1)), "--hs-gaps-m": String(Math.max(0, Math.ceil(spvM) - 1)),
     "--hs-reveal-d": (reduced ? 0 : p.revealDuration == null ? 0.7 : Math.max(0, p.revealDuration)) + "s",
-    "--hs-progress": String(progress),
     ...(p.revealBg ? { "--hs-reveal": color(p.revealBg, "") } : {}),
     ...(p.revealText ? { "--hs-reveal-text": color(p.revealText, "") } : {}),
     ...(p.sectionBg ? { "--hs-bg": color(p.sectionBg, "") } : {}),
@@ -576,7 +588,7 @@ function HScrollInner(p: HScrollProps) {
             </header>
           )}
           <div className="hs_body" ref={body}>
-            <div className="hs_track" ref={track} aria-live="polite">
+            <div className="hs_track" ref={track}>
               {items.map((it, i) => (
                 <Card key={i} item={it} index={i} reveal={reveal} duration={dur} hoverable={hoverable} active={i === active} onFocusCard={onFocusCard} />
               ))}
@@ -584,8 +596,8 @@ function HScrollInner(p: HScrollProps) {
           </div>
           {showProgress && !single && (
             <div className="hs_progress" aria-hidden="true">
-              <span className="hs_count"><b>{pad2(active + 1)}</b> <span>/ {pad2(items.length)}</span></span>
-              <span className="hs_bar"><i /></span>
+              <span className="hs_count" aria-live="polite"><b>{pad2(active + 1)}</b> <span>/ {pad2(items.length)}</span></span>
+              <span className="hs_bar"><i ref={barRef} /></span>
             </div>
           )}
           {showNav && (

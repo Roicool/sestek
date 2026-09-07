@@ -106,27 +106,35 @@ export function LogoMarquee({
   const setRef = React.useRef<HTMLDivElement>(null);
 
   const [items, setItems] = React.useState<Logo[]>([]);
+  // "reading" until the slot has been read once: render only the hidden
+  // source wrapper (no fallback flash); "empty" shows the slot as-is;
+  // "ok" shows the marquee.
+  const [status, setStatus] = React.useState<"reading" | "empty" | "ok">("reading");
   const [copies, setCopies] = React.useState(2);
   const [dragging, setDragging] = React.useState(false);
+  const setWRef = React.useRef(1);
 
   const baseSpeed = Math.abs(Number(speed) || 0) * (String(direction).toLowerCase() === "right" ? -1 : 1);
 
   /* ── Read the slot: which logos did the CMS give us? ─────────── */
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const src = srcRef.current;
     if (!src) return;
     let raf = 0;
+    const apply = () => {
+      const next = collectImages(src);
+      setItems((prev) => {
+        if (prev.length === next.length && prev.every((p, i) => p.src === next[i].src && p.srcset === next[i].srcset)) return prev;
+        return next;
+      });
+      setStatus(next.length ? "ok" : "empty");
+    };
     const read = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const next = collectImages(src);
-        setItems((prev) => {
-          if (prev.length === next.length && prev.every((p, i) => p.src === next[i].src && p.srcset === next[i].srcset)) return prev;
-          return next;
-        });
-      });
+      raf = requestAnimationFrame(apply);
     };
-    read();
+    // First read synchronously (before paint); later changes are batched via rAF.
+    apply();
     const mo = new MutationObserver(read);
     mo.observe(src, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "srcset"] });
     src.querySelectorAll("slot").forEach((s) => s.addEventListener("slotchange", read));
@@ -142,9 +150,11 @@ export function LogoMarquee({
     const root = rootRef.current;
     const set = setRef.current;
     if (!root || !set || !items.length) return;
+    // Single ResizeObserver: feeds both the copy count and the ticker's setW.
     const measure = () => {
       const setW = set.getBoundingClientRect().width;
       const rootW = root.getBoundingClientRect().width;
+      setWRef.current = setW || 1;
       if (!setW || !rootW) return;
       const need = Math.max(2, Math.ceil((rootW * 2) / setW) + 1);
       setCopies((c) => (c === need ? c : need));
@@ -164,11 +174,7 @@ export function LogoMarquee({
     if (!root || !track || !set || !items.length) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let setW = set.getBoundingClientRect().width || 1;
-    const ro = new ResizeObserver(() => {
-      setW = set.getBoundingClientRect().width || 1;
-    });
-    ro.observe(set);
+    setWRef.current = set.getBoundingClientRect().width || 1;
 
     let pos = 0;
     let v = baseSpeed;       // current speed px/s
@@ -194,6 +200,7 @@ export function LogoMarquee({
 
     const tick = (now: number) => {
       if (!alive) return;
+      const setW = setWRef.current;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       if (!isDragging) {
@@ -209,7 +216,14 @@ export function LogoMarquee({
       track.style.transform = "translate3d(" + -wrapped + "px,0,0)";
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    // Only tick while the marquee is on screen: off-screen the rAF loop is
+    // cancelled, on re-entry the clock is reset so there's no catch-up jump.
+    const start = () => { if (!raf && alive) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+    const io = new IntersectionObserver((entries) => {
+      if (entries[entries.length - 1].isIntersecting) start(); else stop();
+    }, { threshold: 0 });
+    io.observe(root);
 
     const onEnter = () => { if (!isDragging && pauseOnHover) setSpeed(0, 0.9); };
     const onLeave = () => { if (!isDragging) setSpeed(baseSpeed, 1.1); };
@@ -275,7 +289,8 @@ export function LogoMarquee({
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
-      ro.disconnect();
+      raf = 0;
+      io.disconnect();
       root.removeEventListener("mouseenter", onEnter);
       root.removeEventListener("mouseleave", onLeave);
       if (drag) {
@@ -293,7 +308,7 @@ export function LogoMarquee({
     };
   }, [items, copies, baseSpeed, pauseOnHover, drag]);
 
-  const hasLogos = items.length > 0;
+  const hasLogos = status === "ok" && items.length > 0;
   const size = logoSize + "rem";
   const gapPx = gap + "rem";
 
@@ -313,7 +328,7 @@ export function LogoMarquee({
             srcSet={it.srcset}
             sizes={it.sizes}
             alt={hidden ? "" : it.alt}
-            loading="lazy"
+            loading={hidden ? "lazy" : "eager"}
             decoding="async"
             draggable={false}
             style={{ width: size, height: size }}
@@ -329,18 +344,20 @@ export function LogoMarquee({
     (drag && hasLogos ? " can-drag" : "") +
     (dragging ? " is-dragging" : "");
 
+  // minHeight reserves one logo row so a reading/empty marquee never collapses to 0.
   return (
     <div
       ref={rootRef}
       className={cls}
-      style={minHeight > 0 ? { minHeight: minHeight + "px" } : undefined}
+      style={{ minHeight: minHeight > 0 ? minHeight + "px" : size }}
       role="region"
       aria-label="Client logos"
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      {/* The CMS list lives here: hidden once we've read it, visible as a
-          fallback when there's nothing to read (empty slot in the Designer). */}
-      <div ref={srcRef} className={hasLogos ? "slm-src" : "slm-fallback"}>
+      {/* The CMS list lives here: hidden while reading and once we've read it,
+          visible as a fallback only when there's nothing to read (empty slot
+          in the Designer). */}
+      <div ref={srcRef} className={status === "empty" ? "slm-fallback" : "slm-src"}>
         {logos}
       </div>
       {hasLogos && (

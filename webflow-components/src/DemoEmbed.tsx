@@ -118,8 +118,15 @@ const CSS = `
 .tts_btn:hover .tts_stg-t--orig .tts_stg-c{transform:translateY(-100%);opacity:0}
 .tts_btn:hover .tts_stg-t--clone .tts_stg-c{transform:translateY(0);opacity:1}
 @media (prefers-reduced-motion:reduce){.tts_stg-c{transition:none}.tts_btn:hover .tts_stg-t--orig .tts_stg-c{transform:none;opacity:1}.tts_stg-t--clone{display:none}}
-.tts_panel{position:relative;box-sizing:border-box;padding:0;margin:0 auto;max-width:100%}
-.tts_frame{position:relative;overflow:hidden;width:100%;max-width:none;background:#fff}
+/* BOXES ARE PURE CSS (first paint = final size, no layout shift); JS only sets the iframe's zoom.
+   Side by side: --dm-side-w × --dm-side-h; short desktop (≤700px tall): the approved laptop box;
+   Full width: base width capped by the container and by the viewport height (the approved
+   height-scale rule expressed as vh), aspect-ratio keeps the height; phones: fixed height or square. */
+.tts_panel{position:relative;box-sizing:border-box;padding:0;margin:0 auto;max-width:100%;width:var(--dm-side-w)}
+.tts_frame{position:relative;overflow:hidden;width:100%;max-width:none;background:#fff;height:var(--dm-side-h)}
+@media (min-width:768px) and (max-height:700px){.tts[data-layout="side"] .tts_panel{width:var(--dm-lap-w)}.tts[data-layout="side"] .tts_frame{height:var(--dm-lap-h)}}
+.tts[data-layout="full"] .tts_panel{width:100%;margin-bottom:var(--dm-bottom)}
+.tts[data-layout="full"] .tts_frame{width:min(var(--dm-bw),calc(100% - 2px),var(--dm-full-vh));height:auto;aspect-ratio:var(--dm-ratio);margin:0 auto}
 .tts[data-framed="on"] .tts_frame{border:1px solid var(--tts-line);border-radius:var(--tts-radius)}
 .tts_frame iframe{display:block;border:0;max-width:none;width:100%;height:100%}
 .tts_ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--tts-muted);font-size:.875rem;background:linear-gradient(135deg,#fafafc,#f1f1f5)}
@@ -129,12 +136,12 @@ const CSS = `
   .tts_grid,.tts[data-side="right"] .tts_grid{grid-template-columns:minmax(0,1fr);gap:1.75rem}
   .tts[data-side="right"] .tts_text{order:0}
   .tts_text{max-width:none}
-  .tts_panel{width:100%!important;max-width:100%!important}
+  .tts_panel,.tts[data-layout="full"] .tts_panel{width:100%;max-width:100%}
+  .tts[data-mobile="fixed"] .tts_frame{width:100%;height:var(--dm-mh);aspect-ratio:auto}
+  .tts[data-mobile="square"] .tts_frame{width:100%;height:auto;aspect-ratio:var(--dm-ratio)}
 }
 @media (prefers-reduced-motion:reduce){.tts_ph i{animation:none}}
 `;
-
-type Size = { mobile: boolean; panelW: string; frameW: string; frameH: string; ifW: string; ifH: string; zoom: string };
 
 function linkHref(v: LinkValue): string { if (!v) return ""; return typeof v === "string" ? v : v.href || ""; }
 function btnStyle(v: string | undefined, fallback: string): string {
@@ -165,7 +172,10 @@ export function DemoEmbed(p: TtsDemoProps) {
   const framed = p.framed !== false;
 
   const root = React.useRef<HTMLDivElement>(null);
-  const [size, setSize] = React.useState<Size | null>(null);
+  const frameRef = React.useRef<HTMLDivElement>(null);
+  const [ifStyle, setIfStyleState] = React.useState<React.CSSProperties>({});
+  const ifKey = React.useRef("");
+  const setIfStyle = React.useCallback((v: React.CSSProperties) => { const k = JSON.stringify(v); if (k !== ifKey.current) { ifKey.current = k; setIfStyleState(v); } }, []);
   const [near, setNear] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   const [lang, setLang] = React.useState("en-US");
@@ -179,46 +189,30 @@ export function DemoEmbed(p: TtsDemoProps) {
     setLang(tr ? (shortLang ? "tr" : "tr-TR") : (shortLang ? "en" : "en-US"));
   }, [p.lang, shortLang]);
 
-  /* sizing — port of the two approved embed scripts */
-  React.useEffect(() => {
-    const el = root.current; if (!el) return;
+  /* iframe zoom — the box is CSS; the app keeps its LOGICAL size and is scaled to the box width
+     (port of the two approved embed scripts, minus the box maths). Layout effect + ResizeObserver
+     on the frame: correct before first paint, never changes the box. */
+  React.useLayoutEffect(() => {
+    const f = frameRef.current; if (!f) return;
     const compute = () => {
+      const w = f.clientWidth; if (!w) return;
       const mobile = window.innerWidth <= MOBILE_BP;
-      const cs = getComputedStyle(el);
-      const avail = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
       if (mobile) {
-        if (P.mobile === "square") {
-          // keep the app's logical width, scale it to the phone width — height follows the ratio
-          const z = Math.max(0.2, Math.min(1, avail / BASE.w));
-          const vh = BASE.h * z;
-          setSize({ mobile: true, panelW: "100%", frameW: "100%", frameH: vh + "px", ifW: BASE.w + "px", ifH: BASE.h + "px", zoom: String(z) });
-          return;
-        }
-        setSize({ mobile: true, panelW: "100%", frameW: "100%", frameH: mobileH + "px", ifW: "100%", ifH: mobileH + "px", zoom: "1" }); return;
-      }
-      if (full) {
-        const widthScale = (avail - 2) / BASE.w;
-        const heightScale = FULL.lapScale * (window.innerHeight / FULL.lapVH);
-        const scale = Math.max(0.2, Math.min(1, widthScale, heightScale * FULL.adjust));
-        const vw = BASE.w * scale, vh = BASE.h * scale;
-        setSize({ mobile: false, panelW: vw + 2 + "px", frameW: vw + "px", frameH: vh + "px", ifW: BASE.w + "px", ifH: BASE.h + "px", zoom: String(scale) });
+        if (P.mobile === "square") setIfStyle({ width: BASE.w + "px", height: BASE.h + "px", zoom: String(Math.max(0.2, Math.min(1, w / BASE.w))) } as React.CSSProperties);
+        else setIfStyle({ width: "100%", height: "100%", zoom: "1" } as React.CSSProperties);
         return;
       }
-      const short = window.innerHeight <= SIDE.shortMax;
-      if (short) {
-        const vw = SIDE.lapW * SIDE.lapZoom, vh = SIDE.lapH * SIDE.lapZoom;
-        setSize({ mobile: false, panelW: vw + "px", frameW: "100%", frameH: vh + "px", ifW: SIDE.lapW + "px", ifH: SIDE.lapH + "px", zoom: String(SIDE.lapZoom) });
-        return;
-      }
-      setSize({ mobile: false, panelW: SIDE.panelW + "px", frameW: "100%", frameH: SIDE.iframeH + "px", ifW: "100%", ifH: SIDE.iframeH + "px", zoom: "1" });
+      if (full) { setIfStyle({ width: BASE.w + "px", height: BASE.h + "px", zoom: String(Math.max(0.2, Math.min(1, w / BASE.w))) } as React.CSSProperties); return; }
+      if (window.innerHeight <= SIDE.shortMax) { setIfStyle({ width: SIDE.lapW + "px", height: SIDE.lapH + "px", zoom: String(SIDE.lapZoom) } as React.CSSProperties); return; }
+      setIfStyle({ width: "100%", height: "100%", zoom: "1" } as React.CSSProperties);
     };
     compute();
     let t = 0;
     const onResize = () => { clearTimeout(t); t = window.setTimeout(compute, 80); };
     window.addEventListener("resize", onResize);
-    const ro = new ResizeObserver(onResize); ro.observe(el);
+    const ro = new ResizeObserver(onResize); ro.observe(f);
     return () => { window.removeEventListener("resize", onResize); clearTimeout(t); ro.disconnect(); };
-  }, [full, mobileH, P]);
+  }, [full, P, BASE, SIDE, setIfStyle]);
 
   /* src only near the viewport (the demo app is heavy) */
   React.useEffect(() => {
@@ -235,13 +229,18 @@ export function DemoEmbed(p: TtsDemoProps) {
   const ext1 = p.link1NewTab ? { target: "_blank", rel: "noopener" } : {};
   const ext2 = p.link2NewTab !== false ? { target: "_blank", rel: "noopener" } : {};
 
-  const panelStyle: React.CSSProperties = size ? { width: size.panelW, maxWidth: "100%", marginBottom: full ? bottom + "px" : undefined } : { width: full ? "100%" : SIDE.panelW + "px" };
-  const frameStyle: React.CSSProperties = size ? { width: size.frameW, height: size.frameH } : { height: (full ? BASE.h : SIDE.iframeH) + "px" };
-  const ifStyle = (size ? { width: size.ifW, height: size.ifH, zoom: size.zoom } : {}) as React.CSSProperties;
+  const vars = {
+    "--dm-side-w": SIDE.panelW + "px", "--dm-side-h": SIDE.iframeH + "px",
+    "--dm-lap-w": SIDE.lapW * SIDE.lapZoom + "px", "--dm-lap-h": SIDE.lapH * SIDE.lapZoom + "px",
+    "--dm-bw": BASE.w + "px", "--dm-ratio": BASE.w + " / " + BASE.h,
+    // approved height rule: frame = base · lapScale · adjust · (innerHeight / lapVH)  →  expressed in vh
+    "--dm-full-vh": (FULL.lapScale * FULL.adjust / FULL.lapVH * BASE.w * 100).toFixed(2) + "vh",
+    "--dm-mh": mobileH + "px", "--dm-bottom": bottom + "px",
+  } as React.CSSProperties;
 
   const panel = (
-    <div className="tts_panel" style={panelStyle}>
-      <div className="tts_frame" style={frameStyle}>
+    <div className="tts_panel">
+      <div className="tts_frame" ref={frameRef}>
         {!loaded && <div className="tts_ph" aria-hidden="true"><i /></div>}
         {near && (
           <iframe src={src} title={p.title || P.title} allow={P.allow} loading="lazy" style={ifStyle} onLoad={() => setLoaded(true)} />
@@ -253,7 +252,7 @@ export function DemoEmbed(p: TtsDemoProps) {
   return (
     <>
       <style>{CSS}</style>
-      <div ref={root} className="tts" data-side={side} data-framed={framed ? "on" : "off"} data-layout={full ? "full" : "side"}>
+      <div ref={root} className="tts" style={vars} data-side={side} data-framed={framed ? "on" : "off"} data-layout={full ? "full" : "side"} data-mobile={P.mobile}>
         {full ? panel : (
           <div className="tts_grid">
             <div className="tts_text">

@@ -33,5 +33,5 @@ export default declareComponent(SttDemo, {
     iframeSrc: props.Text({ name: "Demo URL", group: "Demo", defaultValue: "https://sr-demo-performance.sestek.com/index.html?lang={lang}&embed&env=demo", tooltip: "{lang} yerine seçilen dil yazılır (en / tr)" }),
     lang: props.Variant({ name: "Language", group: "Demo", options: ["Auto", "en", "tr"], defaultValue: "Auto", tooltip: "Auto = /tr ya da <html lang> tr ise tr, değilse en" }),
   },
-  options: { ssr: false },
+  options: { ssr: true },
 });

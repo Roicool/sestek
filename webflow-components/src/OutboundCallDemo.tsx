@@ -238,9 +238,13 @@ function useFluidOrb(
     const uE = gl.getUniformLocation(prog, "E");
 
     let raf = 0, phase = Math.random() * 20, energy = 0,
-      last = performance.now(), dead = false;
+      last = performance.now(), dead = false, running = false, frame = 0;
     const tick = () => {
-      if (dead) return;
+      if (dead || !running) return;
+      raf = requestAnimationFrame(tick);
+      /* Idle'da her iki karede bir çizim yeter — ana iş parçacığını yormaz.
+       * (dt bir sonraki çizimde iki kare olarak birikir, 50 ms'e kırpılır.) */
+      if (!callingRef.current && (frame++ & 1)) return;
       const now = performance.now();
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
@@ -250,12 +254,31 @@ function useFluidOrb(
       gl.uniform1f(uT, phase);
       gl.uniform1f(uE, energy);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+    const play = () => {
+      if (running || dead) return;
+      running = true;
+      last = performance.now(); // zaman tabanı sıfırlanır, sıçrama olmaz
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    const pause = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+    /* Ekran dışındayken rAF döngüsü tamamen durur; geri girince kalır. */
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) play(); else pause();
+      });
+      io.observe(canvas.parentElement || canvas);
+    } else {
+      play();
+    }
     return () => {
       dead = true;
-      cancelAnimationFrame(raf);
+      pause();
+      io?.disconnect();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
   }, [canvasRef]);
@@ -295,9 +318,12 @@ const CSS = `
 .sodc-mid{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:var(--spacing--6,1.5rem);
   padding:var(--spacing--6,1.5rem) 0}
+/* Küçülme layout'a dokunmaz: genişlik sabit, transform ile ölçeklenir
+ * (22/24 = calling'deki eski genişlik oranı). */
 .sodc-orbwrap{position:relative;width:24rem;max-width:70vw;aspect-ratio:1;
-  transition:width .6s cubic-bezier(.22,1,.36,1)}
-.sodc-mid.st-calling .sodc-orbwrap{width:22rem}
+  transform-origin:center;
+  transition:transform .6s cubic-bezier(.22,1,.36,1)}
+.sodc-mid.st-calling .sodc-orbwrap{transform:scale(calc(22 / 24))}
 .sodc-orb,.sodc-orb-fb{position:absolute;inset:0;width:100%;height:100%;
   border-radius:50%;display:block}
 .sodc-orb-fb{background:radial-gradient(circle at 34% 30%,#cfc5ff,#8fd6ea 55%,#b7a8f5 95%)}
@@ -370,7 +396,10 @@ const CSS = `
 .sodc-consent.is-invalid{color:var(--x-neg)}
 .sodc-consent a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .sodc-consent a:hover{color:var(--x-text)}
-.sodc-err{padding:0 .5em;font-size:var(--text--xs,.75rem);line-height:1.5;color:var(--x-neg)}
+/* Hata satırı her zaman DOM'da (boşken de yer tutar) — mesaj gelince
+ * altındaki buton kaymaz (CLS). */
+.sodc-err{padding:0 .5em;font-size:var(--text--xs,.75rem);line-height:1.5;
+  min-height:1.5em;color:var(--x-neg)}
 .sodc-cta{font:inherit;font-size:var(--text--base,1rem);font-weight:500;color:#fff;
   width:100%;border:0;cursor:pointer;
   display:inline-flex;justify-content:center;align-items:center;gap:.55em;
@@ -418,7 +447,7 @@ const CSS = `
   .sodc-card{min-height:30rem;
     padding:var(--spacing--7,1.75rem) var(--spacing--5,1.25rem)}
   .sodc-orbwrap{width:17rem}
-  .sodc-mid.st-calling .sodc-orbwrap{width:13rem}
+  .sodc-mid.st-calling .sodc-orbwrap{transform:scale(calc(13 / 17))}
   .sodc-foot{flex-direction:column;align-items:flex-start}
   .sodc-chips{justify-content:flex-start}
 }
@@ -428,7 +457,10 @@ const CSS = `
 }
 ` + PHONE_CSS + `
 .sodc-ts{margin-top:var(--spacing--3,.75rem)}
-.sodc-ts:empty{display:none;margin:0}
+/* Görünür widget (65px) için yer önceden ayrılır; Invisible modda boşken
+ * yer kaplamaz. */
+.sodc-ts.is-vis{min-height:65px}
+.sodc-ts:empty:not(.is-vis){display:none;margin:0}
 `;
 
 const PhoneIcon = ({ size = 20 }: { size?: number }) => (
@@ -488,9 +520,20 @@ export function OutboundCallDemo({
   cooldownSeconds = 600,
 }: OutboundCallDemoProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
-  const ts = createTurnstile(React, turnstileSiteKey, turnstileWidget !== "Invisible");
+  const tsVisible = turnstileWidget !== "Invisible";
+  const ts = createTurnstile(React, turnstileSiteKey, tsVisible);
 
   const [stage, setStage] = React.useState<Stage>("idle");
+
+  /* Sağ kart form → arama bilgisine dönerken kısalır (özellikle mobilde
+   * alt alta); geçişten önce ölçülen yükseklik min-height olur (CLS). */
+  const asideEl = React.useRef<HTMLElement>(null);
+  const [asideMin, setAsideMin] = React.useState<number | undefined>(undefined);
+  function startCalling() {
+    const h = asideEl.current?.offsetHeight;
+    if (h) setAsideMin(h);
+    setStage("calling");
+  }
   const [name, setName] = React.useState("");
   const [digits, setDigits] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -568,7 +611,7 @@ export function OutboundCallDemo({
         const body = await res.json().catch(() => ({}));
         if (res.status === 200 && body?.ok) {
           recordSubmit(phone);
-          setStage("calling");
+          startCalling();
         } else {
           fail(errorCode(body));
         }
@@ -634,7 +677,8 @@ export function OutboundCallDemo({
         </div>
       </div>
 
-      <aside className="sodc-side">
+      <aside className="sodc-side" ref={asideEl}
+        style={asideMin !== undefined ? { minHeight: asideMin } : undefined}>
         {sideTitle && <h3 className="sodc-t">{sideTitle}</h3>}
         {stage !== "calling" ? (
           <form className="sodc-form" onSubmit={submit} noValidate aria-busy={sending}>
@@ -722,10 +766,13 @@ export function OutboundCallDemo({
                 )}
               </span>
             </label>
-            {error && <div className="sodc-err" role="alert">{error}</div>}
-            {/* Turnstile — appearance interaction-only, yalnız meydan okuma
-                gerektiğinde görünür; aksi halde yer kaplamaz. */}
-            {ts.enabled && <div className="sodc-ts" ref={ts.slotRef} />}
+            {/* her zaman DOM'da: boşken yer tutar, mesaj gelince kayma olmaz */}
+            <div className="sodc-err" role="alert">{error}</div>
+            {/* Turnstile — Visible modda 65px yer önceden ayrılır; Invisible
+                modda yalnız meydan okuma gerektiğinde görünür. */}
+            {ts.enabled && (
+              <div className={"sodc-ts" + (tsVisible ? " is-vis" : "")} ref={ts.slotRef} />
+            )}
             {ts.failed && <div className="sodc-err" role="alert">{t.captcha_unavailable}</div>}
             <button className="sodc-cta" type="submit" disabled={sending}>
               {sending ? <span className="sodc-spin" aria-hidden="true" /> : <PhoneIcon size={15} />}

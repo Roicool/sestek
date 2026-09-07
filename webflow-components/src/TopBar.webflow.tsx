@@ -24,6 +24,7 @@ export default declareComponent(TopBar, {
     showOnMobile: props.Boolean({ name: "Show on mobile", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Off = 768px altında gizli (nav itilmez)" }),
     behavior: props.Variant({ name: "Behavior", group: "Layout", options: ["Sticky", "Scrolls away"], defaultValue: "Sticky", tooltip: "Sticky: en üstte sabit, nav altında kalır · Scrolls away: sayfayla kayar, nav yerine döner" }),
     pushNav: props.Boolean({ name: "Push fixed navbar", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Sabit navbar'ı bar yüksekliği kadar aşağı iter (inline top). --topbar-h değişkeni her durumda <html>'e yazılır" }),
+    pushContent: props.Boolean({ name: "Push page content", group: "Layout", defaultValue: false, trueLabel: "On", falseLabel: "Off", tooltip: "On = sayfa içeriği bar yüksekliği kadar aşağı iner (hydration sonrası layout shift yapar, CLS). Off = bar sabit navbar gibi üstte durur, içerik kaymaz" }),
     navSelector: props.Text({ name: "Navbar selector", group: "Layout", defaultValue: "[data-nav]", tooltip: "İtilecek navbar" }),
 
     theme: props.Variant({ name: "Theme", group: "Look", options: ["Brand", "Dark", "Light", "Custom"], defaultValue: "Brand", tooltip: "Brand = magenta zemin beyaz yazı · Dark · Light (lila) · Custom = aşağıdaki renkler" }),

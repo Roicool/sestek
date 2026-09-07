@@ -195,20 +195,24 @@ export function SoftGradientBg({
     let visible = false;
     let start = performance.now();
 
-    const resize = () => {
+    /* Measured only by the ResizeObserver (and once up front) — never per
+       frame, so draw() does no layout reads. */
+    let w = 1;
+    let h = 1;
+    const measure = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const w = Math.max(1, Math.round(wrap.clientWidth * dpr));
-      const h = Math.max(1, Math.round(wrap.clientHeight * dpr));
+      w = Math.max(1, Math.round(wrap.clientWidth * dpr));
+      h = Math.max(1, Math.round(wrap.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
         gl.viewport(0, 0, w, h);
       }
-      gl.uniform2f(uRes, canvas.width, canvas.height);
     };
+    measure();
 
     const draw = () => {
-      resize();
+      gl.uniform2f(uRes, w, h);
       gl.uniform1f(uTime, ((performance.now() - start) / 1000) * speed);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
@@ -220,6 +224,7 @@ export function SoftGradientBg({
     };
 
     const ro = new ResizeObserver(() => {
+      measure();
       if (!running && visible) draw(); /* static frame follows resizes too */
     });
     ro.observe(wrap);
@@ -229,6 +234,7 @@ export function SoftGradientBg({
         const on = entries.some((e) => e.isIntersecting);
         if (on && !visible) {
           visible = true;
+          measure(); /* catches a DPR change while hidden */
           loop();
         } else if (!on && visible) {
           visible = false;
@@ -256,12 +262,12 @@ export function SoftGradientBg({
         height: "100%",
         minHeight: minHeight > 0 ? minHeight : undefined,
         overflow: "hidden",
-        /* CSS fallback — also paints first frame before GL boots */
-        background: webglOk
-          ? baseColor
-          : `radial-gradient(90% 90% at 20% 25%, ${color1} 0%, transparent 60%),` +
-            `radial-gradient(90% 90% at 80% 30%, ${color2} 0%, transparent 60%),` +
-            `radial-gradient(110% 110% at 50% 90%, ${color3} 0%, transparent 65%), ${baseColor}`,
+        /* CSS fallback — always painted: it is the pre-GL first frame (the
+           opaque canvas covers it once GL draws) and the no-WebGL look */
+        background:
+          `radial-gradient(90% 90% at 20% 25%, ${color1} 0%, transparent 60%),` +
+          `radial-gradient(90% 90% at 80% 30%, ${color2} 0%, transparent 60%),` +
+          `radial-gradient(110% 110% at 50% 90%, ${color3} 0%, transparent 65%), ${baseColor}`,
       }}
     >
       {webglOk && (

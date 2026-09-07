@@ -249,8 +249,10 @@ const CSS = `
 .srpf-consent a{color:inherit;text-decoration:underline;
   text-underline-offset:2px}
 .srpf-consent a:hover{color:var(--r-text)}
+/* Hata satırı her zaman DOM'da (boşken de yer tutar) — mesaj gelince
+ * altındaki buton kaymaz (CLS). */
 .srpf-err{padding:0 .45em;font-size:var(--text--xs,.75rem);line-height:1.5;
-  color:var(--r-neg)}
+  min-height:1.5em;color:var(--r-neg)}
 .srpf-cta{font:inherit;font-size:var(--text--sm,.9375rem);font-weight:500;
   color:#fff;width:100%;border:0;cursor:pointer;
   display:inline-flex;justify-content:center;align-items:center;gap:.55em;
@@ -299,7 +301,10 @@ const CSS = `
   .srpf-done{animation:none}
 }
 .srpf-ts{margin-top:var(--spacing--3,.75rem)}
-.srpf-ts:empty{display:none;margin:0}
+/* Görünür widget (65px) için yer önceden ayrılır; Invisible modda boşken
+ * yer kaplamaz. */
+.srpf-ts.is-vis{min-height:65px}
+.srpf-ts:empty:not(.is-vis){display:none;margin:0}
 `;
 
 const CheckIcon = () => (
@@ -354,7 +359,18 @@ export function ReportDownloadForm({
   lang = "EN",
 }: ReportDownloadFormProps) {
   /* Turnstile — site key boşsa hiçbir şey olmaz (script bile yüklenmez). */
-  const ts = createTurnstile(React, turnstileSiteKey, turnstileWidget !== "Invisible");
+  const tsVisible = turnstileWidget !== "Invisible";
+  const ts = createTurnstile(React, turnstileSiteKey, tsVisible);
+
+  /* Başarı sahnesi formdan kısa; karta geçişten önce ölçülen yükseklik
+   * min-height olarak sabitlenir ki altındaki içerik kaymasın (CLS). */
+  const cardEl = React.useRef<HTMLDivElement>(null);
+  const [cardMin, setCardMin] = React.useState<number | undefined>(undefined);
+  function finish() {
+    const h = cardEl.current?.offsetHeight;
+    if (h) setCardMin(h);
+    setDone(true);
+  }
 
   const [firstname, setFirstname] = React.useState("");
   const [lastname, setLastname] = React.useState("");
@@ -401,7 +417,7 @@ export function ReportDownloadForm({
 
     /* Honeypot doluysa (bot) istek atmadan başarı göster. */
     if (hp) {
-      setDone(true);
+      finish();
       return;
     }
 
@@ -431,7 +447,7 @@ export function ReportDownloadForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
-          setDone(true);
+          finish();
         } else if (res.status === 429) {
           fail("rate_limited");
         } else {
@@ -475,7 +491,8 @@ export function ReportDownloadForm({
   const onImage = layout === "Hero" && !!imageUrl && imageStyle === "Background";
 
   const card = (
-    <div className="srpf-card">
+    <div className="srpf-card" ref={cardEl}
+      style={cardMin !== undefined ? { minHeight: cardMin } : undefined}>
         {!done ? (
           <form className="srpf-form" onSubmit={submit} noValidate aria-busy={sending}>
             {formTitle && <h3 className="srpf-t">{formTitle}</h3>}
@@ -520,10 +537,13 @@ export function ReportDownloadForm({
                 )}
               </span>
             </label>
-            {error && <div className="srpf-err" role="alert">{error}</div>}
-            {/* Turnstile — appearance interaction-only, yalnız meydan okuma
-                gerektiğinde görünür; aksi halde yer kaplamaz. */}
-            {ts.enabled && <div className="srpf-ts" ref={ts.slotRef} />}
+            {/* her zaman DOM'da: boşken yer tutar, mesaj gelince kayma olmaz */}
+            <div className="srpf-err" role="alert">{error}</div>
+            {/* Turnstile — Visible modda 65px yer önceden ayrılır; Invisible
+                modda yalnız meydan okuma gerektiğinde görünür. */}
+            {ts.enabled && (
+              <div className={"srpf-ts" + (tsVisible ? " is-vis" : "")} ref={ts.slotRef} />
+            )}
             {ts.failed && <div className="srpf-err" role="alert">{t.captcha_unavailable}</div>}
             <button className="srpf-cta" type="submit" disabled={sending}>
               {sending && <span className="srpf-spin" aria-hidden="true" />}

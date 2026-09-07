@@ -105,7 +105,9 @@ export default declareComponent(ShaderGradientBg, {
     }),
   },
   options: {
-    /* WebGL canvas — client-only, no server prerender */
-    ssr: false,
+    /* First render (reduced=false, loadDone=false, nearView=false) emits only
+       the wrapper + CSS fallback gradient + keyframes; the lazy WebGL scene
+       mounts from effects on the client. */
+    ssr: true,
   },
 });

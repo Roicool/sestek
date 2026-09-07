@@ -103,6 +103,6 @@ export default declareComponent(SiteSearch, {
   },
   options: {
     /* portal to document.body + fetch + keyboard — client-only */
-    ssr: false,
+    ssr: true,
   },
 });

@@ -71,7 +71,8 @@ export default declareComponent(SoftGradientBg, {
     }),
   },
   options: {
-    /* WebGL canvas — client-only */
-    ssr: false,
+    /* Render output is identical on server and client (wrapper + canvas
+       element + CSS gradient); all WebGL/window access lives in effects. */
+    ssr: true,
   },
 });

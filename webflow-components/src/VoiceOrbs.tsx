@@ -130,8 +130,10 @@ type Viz = {
   dispose: () => void;
 };
 
-function createViz(canvas: HTMLCanvasElement): Viz | null {
-  const opts = { alpha: true, premultipliedAlpha: false, preserveDrawingBuffer: true };
+function createViz(canvas: HTMLCanvasElement, preserveDrawingBuffer = false): Viz | null {
+  /* preserveDrawingBuffer only for the offscreen thumbnail context (toDataURL
+     needs it); the live canvas must not pay for it. */
+  const opts = { alpha: true, premultipliedAlpha: false, preserveDrawingBuffer };
   const gl = (canvas.getContext("webgl", opts) || canvas.getContext("experimental-webgl", opts)) as WebGLRenderingContext | null;
   if (!gl) return null;
   const compile = (type: number, src: string) => {
@@ -209,7 +211,7 @@ const CSS = `
 .vo-viewport{width:100%;overflow:hidden;padding:var(--spacing--12,3rem) 0;outline:none;border-radius:inherit}
 .vo-track{display:flex;align-items:flex-start;gap:var(--vo-gap);width:max-content;will-change:transform;transition:transform .55s cubic-bezier(.22,1,.36,1)}
 .vo.vo-no-anim .vo-track,.vo.vo-no-anim .vo-item{transition:none!important}
-.vo-item{flex:0 0 auto;transform-origin:50% calc(var(--vo-zone,256px)/2);will-change:transform;opacity:.75;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .55s cubic-bezier(.22,1,.36,1)}
+.vo-item{flex:0 0 auto;transform-origin:50% calc(var(--vo-zone,256px)/2);opacity:.75;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .55s cubic-bezier(.22,1,.36,1)}
 .vo-item.vo-d1{opacity:.9}.vo-item.is-active{opacity:1}
 .vo-orb{position:relative;height:var(--vo-zone,256px);cursor:pointer;transition:transform .3s cubic-bezier(.22,1,.36,1)}
 .vo-item:not(.is-active):hover .vo-orb{transform:scale(1.05)}
@@ -268,22 +270,50 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   const paletteOf = React.useCallback((i: number): RGB[] => voices[i].colors || PALETTES[i % PALETTES.length], [voices]);
 
   /* Still frames for the non-active orbs (procedural mode): one shared
-     offscreen context renders each voice once at a fixed phase. */
+     offscreen context renders each voice once at a fixed phase. Deferred
+     until the root first nears the viewport, then one voice per frame so the
+     work never blocks a single frame. */
   React.useEffect(() => {
     if (!procedural || !N) return;
-    const cv = document.createElement("canvas");
-    const viz = createViz(cv);
-    if (!viz) return;
-    viz.resize(320);
+    const root = rootRef.current;
+    if (!root) return;
+    let alive = true, raf = 0, i = 0;
+    let cv: HTMLCanvasElement | null = null, viz: Viz | null = null;
     const out: Record<number, string> = {};
-    for (let i = 0; i < N; i++) {
+    const step = () => {
+      if (!alive || !viz || !cv) return;
       viz.setImage(null);
       viz.setColors(paletteOf(i));
       viz.draw(1.3 + i * 1.7, 0);
       out[i] = cv.toDataURL("image/png");
-    }
-    setThumbs(out);
-    viz.dispose();
+      i++;
+      if (i < N) { raf = requestAnimationFrame(step); return; }
+      setThumbs(out);
+      viz.dispose(); viz = null;
+    };
+    const start = () => {
+      if (!alive || viz) return;
+      cv = document.createElement("canvas");
+      viz = createViz(cv, true);
+      if (!viz) return;
+      viz.resize(320);
+      raf = requestAnimationFrame(step);
+    };
+    let io: IntersectionObserver | null = null;
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        if (io) { io.disconnect(); io = null; }
+        start();
+      }, { rootMargin: "50% 0px" });
+      io.observe(root);
+    } else start();
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      if (io) io.disconnect();
+      if (viz) viz.dispose();
+    };
   }, [procedural, N, paletteOf]);
 
   /* ── The carousel engine (port of setup() in voice-orbs.js) ───── */
@@ -408,10 +438,13 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       textureFor((vi + 1) % N); textureFor((vi + N - 1) % N);
     };
 
-    // rAF — unconditional; energy drives speed, phase never jumps
-    let last = performance.now(), energy = 0, phase = 0, raf = 0, alive = true;
+    // rAF — runs only while the root intersects the viewport (IO below);
+    // energy drives speed, phase never jumps. Idle (not playing, energy ≈ 0)
+    // draws every other frame — phase still advances per tick, so motion
+    // speed is unchanged.
+    let last = performance.now(), energy = 0, phase = 0, raf = 0, alive = true, inView = true, frame = 0;
     const tick = () => {
-      if (!alive) return;
+      if (!alive || !inView) return;
       const now = performance.now();
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
       let target = 0;
@@ -422,7 +455,9 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       }
       energy += (target - energy) * 0.18;
       phase += dt * (0.28 + energy * 1.1);
-      if (viz) viz.draw(phase, energy);
+      frame++;
+      const idle = !playing && energy < 0.002;
+      if (viz && !(idle && (frame & 1))) viz.draw(phase, energy);
       if (playing) {
         if (canvas) canvas.style.transform = "translate(-50%,-50%) scale(" + (1 + energy * 0.06).toFixed(4) + ")";
         const a = audios[flip];
@@ -530,12 +565,20 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     window.addEventListener("resize", onResize);
 
     activate(); setStatic(); layout(true);
-    raf = requestAnimationFrame(tick);
+    const startLoop = () => { if (!alive || inView) return; inView = true; last = performance.now(); raf = requestAnimationFrame(tick); };
+    const stopLoop = () => { inView = false; cancelAnimationFrame(raf); };
+    let io: IntersectionObserver | null = null;
+    if ("IntersectionObserver" in window) {
+      inView = false;
+      io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) startLoop(); else stopLoop(); });
+      io.observe(root);
+    } else raf = requestAnimationFrame(tick);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (alive) updateNavTop(); }).catch(() => {});
 
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      if (io) io.disconnect();
       clearTimeout(rT);
       stop();
       if (currentlyPlaying === ctl) currentlyPlaying = null;
@@ -553,15 +596,21 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     };
   }, [voices, N, procedural, sizes, fit, minScale, gap, initial, paletteOf]);
 
-  const style = { "--vo-gap": gap + "px", "--vo-caption-w": captionWidth + "px", "--vo-nav-offset": navOffset + "px" } as React.CSSProperties;
+  /* First-paint orb height: the ladder's first value at scale 1 (what
+     setStatic computes before any effect runs); setStatic refines it. */
+  const zone0 = React.useMemo(() => {
+    const l = sizes.split(",").map((n) => parseFloat(n) || 0).filter((n) => n > 0);
+    return Math.round(l[0] || 220);
+  }, [sizes]);
+  const style = { "--vo-gap": gap + "px", "--vo-caption-w": captionWidth + "px", "--vo-nav-offset": navOffset + "px", "--vo-zone": zone0 + "px" } as React.CSSProperties;
   const hasVoices = N > 0;
 
   const renderItem = (v: Voice, vi: number, copy: number) => (
     <div key={copy + "-" + vi} className="vo-item" data-vo-voice={vi}>
       <div className="vo-orb">
         {procedural
-          ? (thumbs[vi] ? <img src={thumbs[vi]} alt="" draggable={false} /> : <div className="vo-ph" style={{ position: "absolute", inset: "0 0 0 0", borderRadius: "9999px", background: "radial-gradient(circle at 35% 30%, #fff 0%, #dcd6f7 45%, #9f95e0 100%)" }} />)
-          : (v.img ? <img src={v.img} alt="" draggable={false} crossOrigin="anonymous" /> : null)}
+          ? (thumbs[vi] ? <img src={thumbs[vi]} alt="" draggable={false} decoding="async" /> : <div className="vo-ph" style={{ position: "absolute", inset: "0 0 0 0", borderRadius: "9999px", background: "radial-gradient(circle at 35% 30%, #fff 0%, #dcd6f7 45%, #9f95e0 100%)" }} />)
+          : (v.img ? <img src={v.img} alt="" draggable={false} crossOrigin="anonymous" decoding="async" loading={copy === 2 ? undefined : "lazy"} /> : null)}
         <button type="button" className="vo-play" aria-label={"Play " + (v.name || "voice") + " preview"} tabIndex={copy === 2 ? 0 : -1}>{PLAY}{PAUSE}</button>
       </div>
       <div className="vo-caption">

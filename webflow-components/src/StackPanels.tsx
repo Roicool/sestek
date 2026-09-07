@@ -213,7 +213,7 @@ const CSS = `
   transform-origin:center center;will-change:transform,opacity,filter;
   box-shadow:0 1px 2px -1px rgb(var(--sp-shadow-rgb)/.06),0 6px 14px -6px rgb(var(--sp-shadow-rgb)/.1),0 22px 40px -24px rgb(var(--sp-shadow-rgb)/.14)}
 .sp_panel~.sp_panel{z-index:2}
-.sp_inner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:var(--sp-pad);padding:var(--sp-pad);will-change:transform}
+.sp_inner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:var(--sp-pad);padding:var(--sp-pad)}
 .sp_text{display:flex;flex-direction:column;justify-content:center;gap:1.5rem;min-width:0;padding:clamp(.5rem,2vw,1.5rem) clamp(.25rem,2vw,1.5rem)}
 .sp_panel[data-side="left"] .sp_media{order:-1}
 .sp_rt{display:flex;flex-direction:column;gap:1rem}
@@ -238,7 +238,7 @@ const CSS = `
 .sp_btn:hover .sp_stg-t--orig .sp_stg-c{transform:translateY(-100%);opacity:0}
 .sp_btn:hover .sp_stg-t--clone .sp_stg-c{transform:translateY(0);opacity:1}
 /* media: FIXED ratio box, inside the card padding */
-.sp_media{position:relative;min-width:0;width:100%;aspect-ratio:var(--sp-ratio);border-radius:var(--sp-radius);overflow:hidden;background:rgb(var(--sp-shadow-rgb)/.06);transform:translateZ(0);isolation:isolate}
+.sp_media{position:relative;min-width:0;width:100%;aspect-ratio:var(--sp-ratio);border-radius:var(--sp-radius);overflow:hidden;background:rgb(var(--sp-shadow-rgb)/.06);isolation:isolate}
 .sp_media img,.sp_media video{position:absolute;inset:0;width:100%;height:100%;object-fit:var(--sp-fit);display:block}
 .sp_media video{background:transparent}
 .sp_empty{position:absolute;inset:0;background:linear-gradient(135deg,rgb(var(--sp-shadow-rgb)/.08),rgb(var(--sp-shadow-rgb)/.18))}
@@ -287,7 +287,7 @@ function Media({ poster, alt, video, eager }: { poster?: string; alt?: string; v
     if (!video || !ref.current) return;
     const el = ref.current;
     if (!("IntersectionObserver" in window)) { setNear(true); return; }
-    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); } }, { rootMargin: "120% 0px" });
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); } }, { rootMargin: "50% 0px" });
     io.observe(el);
     return () => io.disconnect();
   }, [video]);
@@ -329,6 +329,12 @@ export function StackPanels(p: StackPanelsProps) { return <Boundary><Inner {...p
 
 /* ── Component ── */
 function Inner(p: StackPanelsProps) {
+  /* stable key over the flat Designer props: a parent re-render must not tear the pins down */
+  const itemsKey = React.useMemo(() => {
+    const px = p as unknown as Record<string, unknown>; const parts: unknown[] = [];
+    for (let n = 1; n <= 4; n++) { const im = px["i" + n + "Image"] as ImgProp; parts.push(px["i" + n + "Heading"], px["i" + n + "HeadingAccent"], px["i" + n + "Body"], px["i" + n + "Poster"], px["i" + n + "Video"], px["i" + n + "Side"], px["i" + n + "Button"], px["i" + n + "Accent"], imgSrc(im), imgAlt(im)); }
+    return JSON.stringify(parts);
+  }, [p]);
   const items = React.useMemo<StackPanelItem[]>(() => {
     if (p.items && p.items.length) return p.items;
     const px = p as unknown as Record<string, unknown>;
@@ -351,7 +357,8 @@ function Inner(p: StackPanelsProps) {
       });
     }
     return out.length || any ? out : DEFAULT_ITEMS;
-  }, [p]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.items, itemsKey]);
 
   const hold = p.hold == null ? 0.5 : Math.min(0.95, Math.max(0, p.hold));
   const endScale = p.scale == null ? 0.5 : Math.min(1, Math.max(0.2, p.scale));
@@ -376,6 +383,7 @@ function Inner(p: StackPanelsProps) {
   const titleRef = React.useRef<HTMLHeadingElement>(null);
   const [flow, setFlow] = React.useState(true);
   const [titleIn, setTitleIn] = React.useState(false);
+  const [revealArmed, setRevealArmed] = React.useState(false);   // opacity:0 only once JS knows the title is below the fold
 
   /* mode: pin unless reduced motion / phone (unless forced) / no gsap */
   React.useEffect(() => {
@@ -387,10 +395,13 @@ function Inner(p: StackPanelsProps) {
     return () => { red.removeEventListener("change", apply); mob.removeEventListener("change", apply); };
   }, [mobileEffect, items.length]);
 
-  /* title reveal on scroll-in (once) */
-  React.useEffect(() => {
+  /* title reveal on scroll-in (once). The heading is NEVER hidden before JS runs (SSR / no-JS paint
+     shows it); it is only armed (opacity:0) when it is still below the fold at hydration. */
+  React.useLayoutEffect(() => {
     const h = titleRef.current;
     if (!h || p.titleReveal === false || !("IntersectionObserver" in window)) { setTitleIn(true); return; }
+    if (h.getBoundingClientRect().top < window.innerHeight * 0.85) { setTitleIn(true); return; }   // already visible: no reveal
+    setRevealArmed(true);
     const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { setTitleIn(true); io.disconnect(); } }, { threshold: 0.2 });
     io.observe(h);
     return () => io.disconnect();
@@ -408,14 +419,18 @@ function Inner(p: StackPanelsProps) {
     let destroy: (() => void) | null = null;
 
     const build = () => {
+      // read every height first, then write (no forced reflow per panel)
+      const windowH = window.innerHeight;
+      const inners = panels.map((pn) => pn.querySelector<HTMLElement>("[data-sp-inner]")!);
+      const innerH = inners.map((el) => el.offsetHeight);
+      const panelH = panels.map((pn) => pn.offsetHeight);
       panels.forEach((panel, idx) => { if (!panel.style.zIndex) panel.style.zIndex = String(idx + 1); });
       const tls: Tl[] = [];
       const marginRefreshers: Array<() => void> = [];
 
       panels.slice(0, -1).forEach((panel, i) => {
-        const inner = panel.querySelector<HTMLElement>("[data-sp-inner]")!;
-        const windowH = window.innerHeight;
-        const diff = inner.offsetHeight - windowH;
+        const inner = inners[i];
+        const diff = innerH[i] - windowH;
         const fakeRatio = diff > 0 ? diff / (diff + windowH) : 0;
         if (fakeRatio) {
           const applyMargin = () => {
@@ -435,8 +450,7 @@ function Inner(p: StackPanelsProps) {
         });
         if (fakeRatio) tl.to(inner, { yPercent: -100, y: () => window.innerHeight, ease: "none", duration: 1 / (1 - fakeRatio) - 1 });
         if (!fakeRatio && hold > 0 && hold < 1) tl.to({}, { duration: hold / (1 - hold), ease: "none" });
-        const next = panels[i + 1];
-        const uncovered = next ? 1 - Math.min(1, next.offsetHeight / windowH) : 0;
+        const uncovered = panels[i + 1] ? 1 - Math.min(1, panelH[i + 1] / windowH) : 0;
         const fadeDur = Math.min(0.9, Math.max(fadePortion, uncovered));
         const fromVars: Record<string, unknown> = { scale: 1, opacity: 1 };
         const toVars: Record<string, unknown> = { scale: endScale, opacity: midFade, duration: 1 - fadeDur, ease: "none" };
@@ -449,22 +463,24 @@ function Inner(p: StackPanelsProps) {
       const onRefreshInit = () => marginRefreshers.forEach((f) => f());
       if (marginRefreshers.length) g.ST.addEventListener("refreshInit", onRefreshInit);
 
+      // ONE debounced refresh for window resize, stack size changes and late fonts
       let rt = 0; let lastW = window.innerWidth;
+      const scheduleRefresh = () => { clearTimeout(rt); rt = window.setTimeout(() => refreshST(g.ST), 150); };
       const onResize = () => {
         if (window.innerWidth === lastW && window.innerWidth <= 991) return;     // tablet/phone URL bar: height-only
         lastW = window.innerWidth;
-        clearTimeout(rt); rt = window.setTimeout(() => refreshST(g.ST), 150);
+        scheduleRefresh();
       };
       window.addEventListener("resize", onResize);
-      let first = true, ro2 = 0;
-      const ro = new ResizeObserver(() => { if (first) { first = false; return; } clearTimeout(ro2); ro2 = window.setTimeout(() => refreshST(g.ST), 120); });
+      let first = true;
+      const ro = new ResizeObserver(() => { if (first) { first = false; return; } scheduleRefresh(); });
       ro.observe(s);
       // fonts landing after init change panel heights → refresh once
-      const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
-      if (fonts && fonts.ready) fonts.ready.then(() => { if (!cancelled) refreshST(g.ST); });
+      const fonts = (document as Document & { fonts?: { ready: Promise<unknown>; status?: string } }).fonts;
+      if (fonts && fonts.ready && fonts.status !== "loaded") fonts.ready.then(() => { if (!cancelled) scheduleRefresh(); });
 
       destroy = () => {
-        window.removeEventListener("resize", onResize); clearTimeout(rt); clearTimeout(ro2); ro.disconnect();
+        window.removeEventListener("resize", onResize); clearTimeout(rt); ro.disconnect();
         if (marginRefreshers.length) g.ST.removeEventListener("refreshInit", onRefreshInit);
         tls.forEach((tl) => { if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.kill(); });
         g.gsap.set(panels, { clearProps: "all" });
@@ -504,7 +520,7 @@ function Inner(p: StackPanelsProps) {
   };
   const accentOf = (it: StackPanelItem, i: number) => color(it.accent) || `var(${AUTO_ACCENT[i % AUTO_ACCENT.length]})`;
   const linkProps = p.ctaNewTab ? { target: "_blank", rel: "noopener" } : {};
-  const titleCls = "sp_title" + (p.titleReveal !== false ? " is-reveal" : "") + (titleIn ? " is-in" : "") + (p.titleShine !== false ? " is-shine" : "");
+  const titleCls = "sp_title" + (revealArmed ? " is-reveal" : "") + (titleIn ? " is-in" : "") + (p.titleShine !== false ? " is-shine" : "");
 
   return (
     <>

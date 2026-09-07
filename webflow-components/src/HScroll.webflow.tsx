@@ -54,5 +54,5 @@ export default declareComponent(HScroll, {
     cardBg: props.Text({ name: "Card background", group: "Look", defaultValue: "" }),
     cardBorder: props.Text({ name: "Card border", group: "Look", defaultValue: "" }),
   },
-  options: { ssr: false },
+  options: { ssr: true },
 });

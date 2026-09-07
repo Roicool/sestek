@@ -24,6 +24,32 @@ workspace'e yayınlanır ve Designer'da native component gibi kullanılır.
 | **STT Demo** | `src/SttDemo.webflow.tsx` | Speech Recognition (speech-to-text) demo iframe'i (`sr-demo-performance.sestek.com`, 600×600, kamera + mikrofon) — TTS Demo ile **aynı gövde** (`src/DemoEmbed.tsx`, preset `stt`). Side by side: solda eyebrow + başlık + açıklama + 2 stagger buton, sağda 600px kare panel; kısa masaüstünde zoom .78; **telefonda alt alta, kare, ekran genişliğine ölçekli** (uygulama mantıksal 600px genişliğini korur). Full width: yalnız iframe, ortalı, ölçekli. Dil sayfadan (tr → `lang=tr`). Bkz. [STT Demo](#stt-demo--designer-propları). |
 | **Shader Gradient BG** | `src/ShaderGradientBg.webflow.tsx` | [ShaderGradient](https://www.shadergradient.co) tabanlı zengin 3D gradient (three.js, ~1MB lazy chunk — viewport'a yaklaşana dek inmez). Soft Sestek pastel preset'leri: **Soft Mist** (nefes alan sis) · **Soft Water** (yumuşak su yüzeyi) · **Soft Silk** (yavaş çapraz akış) · **Soft Halo** (kürede ışıltı) · **Sestek Deep** (koyu section'lar için canlı) · **Custom** (tür + 3 renk serbest). `prefers-reduced-motion` desteği, WebGL yoksa CSS fallback. |
 
+## Performans notları (CLS / LCP / PageSpeed)
+
+Tüm component'ler layout shift, çizimi engelleyen iş ve gereksiz ağ yükü için
+gözden geçirildi. Kurallar:
+
+- **SSR açık** (`ssr: true`, sayfa HTML'inde gelir, hydration'da boy değişmez):
+  Site Search, Horizontal Scroll Cards, Stack Panels, TTS Demo, STT Demo,
+  Soft Gradient BG, Shader Gradient BG ve dört form. Render yolunda
+  `window`/`document` yok; kutu ölçüleri CSS'ten (media query) gelir, JS yalnız
+  hareket / zoom ekler.
+- **SSR kapalı kalanlar** (host eleman JS gelene kadar boş): Hero, Logo
+  Marquee, Scroll Tabs, Voice Orbs, Circle Diagram, Cookie Consent, Top Bar.
+  Bunlarda viewport üstü kullanımda Designer'da host elemana **min-height**
+  ver (Hero `100svh`, Logo Marquee logo boyu, Circle Diagram `~30rem`, Scroll
+  Tabs masaüstünde `~1800px`); Cookie Consent ve Top Bar sabit konumludur,
+  akışı kaydırmaz (Top Bar'da "Push page content" Off).
+- **Medya**: video/iframe/görsel kutuları sabit oranlı; videolar
+  `preload="none|metadata"`, viewport'a yaklaşınca yüklenir, yalnız
+  görünürken oynar; iframe'ler viewport'a yaklaşınca `src` alır.
+- **Ana iş parçacığı**: rAF döngüleri (Marquee, Voice Orbs, Outbound orb) ve
+  gradient'ler görünüm dışında durur; gereksiz `will-change` kaldırıldı;
+  ölçümler okuma→yazma sırasıyla, ResizeObserver/resize tek debounce.
+- **Formlar**: Turnstile kutusu 65px rezerve (Visible modda), hata satırı hep
+  yerinde, başarı ekranı formun yüksekliğini korur, Turnstile script'i form
+  viewport'a yaklaşınca / odaklanınca yüklenir.
+
 ## Yayınlama (ilk kez)
 
 ```bash
@@ -263,6 +289,7 @@ cookie'si tüm site için geçerlidir (`path=/`); test için konsolda
 | Show on mobile | Layout | Boolean | `On` | Off = 768px altında gizli, nav itilmez |
 | Behavior | Layout | Variant | `Sticky` | `Scrolls away` = sayfayla kayar |
 | Push fixed navbar | Layout | Boolean | `On` | `[data-nav]`'a inline top |
+| Push page content | Layout | Boolean | `Off` | On = sayfa içeriği bar kadar aşağı iner (hydration sonrası layout shift → CLS). Off = bar sabit navbar gibi üstte durur, içerik kaymaz |
 | Navbar selector | Layout | Text | `[data-nav]` | |
 | Theme | Look | Variant | `Brand` | `Dark` · `Light` · `Custom` |
 | Custom background / text color | Look | Text | boş | Theme = Custom |

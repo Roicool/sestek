@@ -33,5 +33,5 @@ export default declareComponent(TtsDemo, {
     iframeSrc: props.Text({ name: "Demo URL", group: "Demo", defaultValue: "https://tts-cloning-demo.sestek.com:12443/Demo.aspx?lang={lang}&embed=1", tooltip: "{lang} yerine seçilen dil yazılır" }),
     lang: props.Variant({ name: "Language", group: "Demo", options: ["Auto", "en-US", "tr-TR"], defaultValue: "Auto", tooltip: "Auto = /tr ya da <html lang> tr ise tr-TR, değilse en-US" }),
   },
-  options: { ssr: false },
+  options: { ssr: true },
 });

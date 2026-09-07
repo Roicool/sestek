@@ -53,7 +53,8 @@ function lines(text: string | undefined): React.ReactNode {
 }
 
 function useMedia(query: string): boolean {
-  const [m, setM] = React.useState(false);
+  // Lazy initialiser: correct variant on the first paint, no remount.
+  const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
   React.useEffect(() => {
     const mq = window.matchMedia(query);
     const on = () => setM(mq.matches);
@@ -115,7 +116,7 @@ const CSS = `
 .sst-right{display:flex;flex-direction:column;align-items:flex-end;gap:var(--gap--xl,4rem);margin-top:var(--spacing--16,4rem)}
 
 /* ── Panels ─────────────────────────────────────────────────── */
-.sst-panel{position:relative;width:100%;max-width:600px;aspect-ratio:var(--sst-ratio,1/1);border-radius:var(--radius--lg,1rem);overflow:hidden;background:var(--surface--muted,#f2f2f4);box-shadow:0 1px 2px -1px rgb(var(--shadow-rgb,0 0 0)/calc(.06*var(--shadow-strength,1))),0 6px 14px -6px rgb(var(--shadow-rgb,0 0 0)/calc(.1*var(--shadow-strength,1))),0 22px 40px -24px rgb(var(--shadow-rgb,0 0 0)/calc(.14*var(--shadow-strength,1)));transition:box-shadow .45s var(--shadow-ease,ease),transform .45s var(--shadow-ease,ease)}
+.sst-panel{position:relative;width:100%;max-width:600px;aspect-ratio:var(--sst-ratio,1/1);border-radius:var(--radius--lg,1rem);overflow:hidden;background:var(--surface--muted,#f2f2f4);box-shadow:0 1px 2px -1px rgb(var(--shadow-rgb,0 0 0)/calc(.06*var(--shadow-strength,1))),0 6px 14px -6px rgb(var(--shadow-rgb,0 0 0)/calc(.1*var(--shadow-strength,1))),0 22px 40px -24px rgb(var(--shadow-rgb,0 0 0)/calc(.14*var(--shadow-strength,1)));transition:box-shadow .45s var(--shadow-ease,ease)}
 .sst-panel.is-active,.sst-panel:hover,.sst-panel:focus-within{box-shadow:0 2px 4px -2px rgb(var(--shadow-rgb,0 0 0)/calc(.08*var(--shadow-strength,1))),0 12px 24px -8px rgb(var(--shadow-rgb,0 0 0)/calc(.12*var(--shadow-strength,1))),0 36px 60px -28px rgb(var(--shadow-rgb,0 0 0)/calc(.2*var(--shadow-strength,1)))}
 .sst-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:transparent}
 
@@ -126,6 +127,7 @@ const CSS = `
 .sst-ctl-l{display:flex;gap:var(--spacing--2,.5rem)}
 .sst-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:999px;background:rgba(0,0,0,.35);color:inherit;cursor:pointer;padding:0;transition:background .2s ease;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .sst-btn:hover{background:rgba(0,0,0,.55)}
+@media (hover:none){.sst-btn{background:rgba(0,0,0,.5);-webkit-backdrop-filter:none;backdrop-filter:none}}
 .sst-btn svg{width:22px;height:22px}
 .sst-panel [data-icon="play"]{display:none}
 .sst-panel.is-paused [data-icon="play"]{display:inline}
@@ -146,9 +148,10 @@ const CSS = `
 }
 `;
 
-/* One video panel with its controls. `active` drives play/pause. */
-function Panel({ tab, index, active, autoplay, reduce, refCb }: {
-  tab: Tab; index: number; active: boolean; autoplay: boolean; reduce: boolean;
+/* One video panel with its controls. `active` drives the is-active look,
+   `play` (active AND confirmed by the centre band) drives play/pause. */
+function Panel({ tab, index, active, play, autoplay, reduce, refCb }: {
+  tab: Tab; index: number; active: boolean; play: boolean; autoplay: boolean; reduce: boolean;
   refCb: (i: number, el: HTMLDivElement | null) => void;
 }) {
   const vRef = React.useRef<HTMLVideoElement>(null);
@@ -170,12 +173,25 @@ function Panel({ tab, index, active, autoplay, reduce, refCb }: {
     };
   }, []);
 
+  // Per-panel viewport tracking: play only when active AND on screen; pause the
+  // moment the panel leaves so no video keeps decoding off-screen.
+  const [inView, setInView] = React.useState(false);
+  React.useEffect(() => {
+    const el = vRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      setInView(entries[entries.length - 1].isIntersecting);
+    }, { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   React.useEffect(() => {
     const v = vRef.current;
     if (!v) return;
-    if (active && autoplay && !reduce) v.play().catch(() => {});
+    if (play && inView && autoplay && !reduce) v.play().catch(() => {});
     else v.pause();
-  }, [active, autoplay, reduce]);
+  }, [play, inView, autoplay, reduce]);
 
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   const togglePlay = (e: React.MouseEvent) => { stop(e); const v = vRef.current; if (!v) return; if (v.paused) v.play().catch(() => {}); else v.pause(); };
@@ -189,7 +205,7 @@ function Panel({ tab, index, active, autoplay, reduce, refCb }: {
       data-index={index}
     >
       {tab.video ? (
-        <video ref={vRef} className="sst-vid" muted loop playsInline preload="metadata" poster={tab.poster || undefined}>
+        <video ref={vRef} className="sst-vid" muted loop playsInline preload="none" poster={tab.poster || undefined}>
           <source src={tab.video} type="video/mp4" />
         </video>
       ) : tab.poster ? (
@@ -225,7 +241,10 @@ export function ScrollTabs(p: ScrollTabsProps) {
 
   const desktop = useMedia(DESKTOP);
   const reduce = useMedia("(prefers-reduced-motion: reduce)");
-  const [active, setActive] = React.useState(0);
+  // -1 = nothing playing until the centre-band observer's first hit (or a
+  // click). The accordion still shows tab 0 open meanwhile, as before.
+  const [active, setActive] = React.useState(-1);
+  const shown = active < 0 ? 0 : active;
   const panels = React.useRef<(HTMLDivElement | null)[]>([]);
   const lockUntil = React.useRef(0);
   const refCb = React.useCallback((i: number, el: HTMLDivElement | null) => { panels.current[i] = el; }, []);
@@ -275,7 +294,7 @@ export function ScrollTabs(p: ScrollTabsProps) {
               {tabs.map((t, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <div className="sst-div" />}
-                  <button type="button" className={"sst-tab" + (active === i ? " is-active" : "")} onClick={() => onTab(i)} aria-expanded={active === i}>
+                  <button type="button" className={"sst-tab" + (shown === i ? " is-active" : "")} onClick={() => onTab(i)} aria-expanded={shown === i}>
                     <h3 className="sst-h3">{t.title}</h3>
                     <div className="sst-body">
                       <div>
@@ -289,7 +308,7 @@ export function ScrollTabs(p: ScrollTabsProps) {
             </div>
             <div className="sst-right">
               {tabs.map((t, i) => (
-                <Panel key={i} tab={t} index={i} active={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
+                <Panel key={i} tab={t} index={i} active={shown === i} play={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
               ))}
             </div>
           </div>
@@ -302,7 +321,7 @@ export function ScrollTabs(p: ScrollTabsProps) {
                 <h3 className="sst-h3">{t.title}</h3>
                 {t.text && <p className="sst-p">{t.text}</p>}
                 {t.ctaLabel && <a className="sst-cta" {...link(t.ctaLink)}>{t.ctaLabel}</a>}
-                <Panel tab={t} index={i} active={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
+                <Panel tab={t} index={i} active={shown === i} play={active === i} autoplay={autoplay} reduce={reduce} refCb={refCb} />
               </div>
             ))}
           </div>

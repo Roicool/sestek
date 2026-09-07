@@ -82,10 +82,20 @@ declare global {
   }
 }
 
+/* Script hazır olunca `?onload=` ile bu global çağrılır; polling yok. */
+const ONLOAD_CB = "__sestekTurnstileOnload";
 const SCRIPT_SRC =
-  "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=" + ONLOAD_CB;
 
 let loading = false;
+/** Script'in yüklenmesini (ya da engellenmesini) bekleyenler. */
+let scriptWaiters: Array<() => void> = [];
+
+function notifyScript() {
+  const list = scriptWaiters;
+  scriptWaiters = [];
+  list.forEach((fn) => fn());
+}
 
 /** Script'i tek sefer yükler; hazır olunca çözülür, gelmezse null döner. */
 export function loadTurnstile(timeoutMs = 10000): Promise<TurnstileApi | null> {
@@ -94,23 +104,32 @@ export function loadTurnstile(timeoutMs = 10000): Promise<TurnstileApi | null> {
 
   if (!loading) {
     loading = true;
+    (window as unknown as Record<string, unknown>)[ONLOAD_CB] = notifyScript;
     const s = document.createElement("script");
     s.src = SCRIPT_SRC;
     s.async = true;
     s.defer = true;
+    // onload çoğu tarayıcıda `?onload=` geri çağrısından hemen sonra gelir;
+    // ikisi de aynı listeyi boşaltır, ikinci çağrı no-op olur.
+    s.onload = notifyScript;
+    // Engellenmişse (ad blocker, ağ) zaman aşımını beklemeden bırak.
+    s.onerror = notifyScript;
     document.head.appendChild(s);
   }
 
   return new Promise((resolve) => {
-    const started = Date.now();
-    const tick = () => {
-      if (window.turnstile) return resolve(window.turnstile);
-      // Script engellenmiş olabilir (ad blocker, ağ). Formu kilitlemeyiz;
-      // jeton boş gider, kararı sunucu verir.
-      if (Date.now() - started > timeoutMs) return resolve(null);
-      setTimeout(tick, 100);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      scriptWaiters = scriptWaiters.filter((w) => w !== finish);
+      // Script engellenmiş olabilir. Formu kilitlemeyiz; jeton boş gider,
+      // kararı sunucu verir.
+      resolve(window.turnstile || null);
     };
-    tick();
+    const timer = setTimeout(finish, timeoutMs);
+    scriptWaiters.push(finish);
   });
 }
 
@@ -170,6 +189,37 @@ export function createTurnstile(
     if (!enabled) return;
     let dead = false;
 
+    /* Script tembel yüklenir: form görünür alana yaklaşınca (300px) ya da
+     * içine ilk odaklanınca — hangisi önce gelirse. Slot `:empty` iken
+     * display:none olabildiğinden (Invisible mod) kesişim FORM üzerinden
+     * gözlenir. getToken() zaten 30 sn beklediği için geç gelen script
+     * gönderimi bozmaz. */
+    let started = false;
+    let io: IntersectionObserver | null = null;
+    const slot = slotEl.current;
+    const form = slot ? slot.closest("form") : null;
+    const watch: Element | null = form || (slot ? slot.parentElement || slot : null);
+    const stopTriggers = () => {
+      if (io) { io.disconnect(); io = null; }
+      if (form) form.removeEventListener("focusin", start);
+    };
+    const start = () => {
+      if (started || dead) return;
+      started = true;
+      stopTriggers();
+      load();
+    };
+    if (watch && typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) start();
+      }, { rootMargin: "300px" });
+      io.observe(watch);
+      if (form) form.addEventListener("focusin", start);
+    } else {
+      start();
+    }
+
+    function load() {
     loadTurnstile().then((ts) => {
       if (dead || !ts || !slotEl.current) return;
       api.current = ts;
@@ -202,9 +252,11 @@ export function createTurnstile(
         /* çift render / geçersiz anahtar — jeton boş gider, sunucu karar verir */
       }
     });
+    }
 
     return () => {
       dead = true;
+      stopTriggers();
       const ts = api.current;
       const id = widgetId.current;
       if (ts && id !== null) {

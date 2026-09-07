@@ -39,6 +39,8 @@ export interface TopBarProps {
   customBg?: string;
   customText?: string;
   pushNav?: boolean;
+  /** insert a spacer so page content moves down by the bar height (default off: no layout shift) */
+  pushContent?: boolean;
   navSelector?: string;
 }
 
@@ -112,20 +114,19 @@ export function TopBar({
   customBg = "",
   customText = "",
   pushNav = true,
+  pushContent = false,
   navSelector = "[data-nav]",
 }: TopBarProps) {
   const id = (campaignId || "default").trim();
   const fixed = behavior !== "Scrolls away";
-  const [hidden, setHidden] = React.useState(true);      // until the cookie is read (client only)
+  // cookie read synchronously (client-only component) so the first paint is final — no bar popping in later
+  const [hidden, setHidden] = React.useState(() => typeof document === "undefined" ? true : readCookie(COOKIE) === id);
   const [closing, setClosing] = React.useState(false);
   const bar = React.useRef<HTMLDivElement>(null);
   const spacer = React.useRef<HTMLDivElement>(null);
   const height = React.useRef(0);
 
-  /* cookie check on mount */
-  React.useEffect(() => {
-    setHidden(readCookie(COOKIE) === id);
-  }, [id]);
+  React.useEffect(() => { setHidden(readCookie(COOKIE) === id); }, [id]);
 
   const dismiss = React.useCallback(() => {
     if (!bar.current) { setHidden(true); return; }
@@ -142,8 +143,9 @@ export function TopBar({
     };
   }, [dismiss]);
 
-  /* push the fixed navbar + expose --topbar-h; scroll-away mode shrinks the offset with the scroll */
-  React.useEffect(() => {
+  /* push the fixed navbar + expose --topbar-h; scroll-away mode shrinks the offset with the scroll.
+     Layout effect: nav offset + spacer are applied BEFORE the first paint (no second shift). */
+  React.useLayoutEffect(() => {
     const el = bar.current;
     const root = document.documentElement;
     const nav = pushNav ? document.querySelector<HTMLElement>(navSelector || "[data-nav]") : null;
@@ -165,7 +167,9 @@ export function TopBar({
       height.current = h;
       root.style.setProperty("--topbar-h", h + "px");
       root.setAttribute("data-topbar", h ? "on" : "off");
-      if (spacer.current) spacer.current.style.height = (fixed ? h : 0) + "px";
+      // the spacer pushes the page content down — off by default: the fixed navbar already
+      // overlays the page top, and a spacer that appears after hydration is a layout shift
+      if (spacer.current) spacer.current.style.height = (fixed && pushContent ? h : 0) + "px";
       if (nav) nav.style.top = (fixed ? h : Math.max(0, h - (window.scrollY || 0))) + "px";
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
@@ -181,7 +185,7 @@ export function TopBar({
       if (raf) cancelAnimationFrame(raf);
       clear();
     };
-  }, [hidden, closing, fixed, pushNav, navSelector, showOnMobile]);
+  }, [hidden, closing, fixed, pushNav, pushContent, navSelector, showOnMobile]);
 
   if (hidden) return <style dangerouslySetInnerHTML={{ __html: CSS }} />;
 

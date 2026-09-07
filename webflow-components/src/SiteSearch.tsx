@@ -96,7 +96,12 @@ export function SiteSearch({
   const [open, setOpen] = React.useState(false);
   const [portal, setPortal] = React.useState<HTMLElement | null>(null);
   const btnRef = React.useRef<HTMLButtonElement>(null);
-  const loc: SearchLocale = locale === "tr" || locale === "en" ? locale : detectLocale();
+  /* locale + platform are resolved in effects (never in render) so the chip can be server-rendered */
+  const forced: SearchLocale | null = locale === "tr" || locale === "en" ? locale : null;
+  const [detected, setDetected] = React.useState<SearchLocale>("en");
+  const [isMac, setIsMac] = React.useState(false);
+  React.useEffect(() => { setDetected(detectLocale()); setIsMac(/Mac|iPhone|iPad/.test(navigator.platform)); }, []);
+  const loc: SearchLocale = forced || detected;
   const t = MESSAGES[loc];
   const toggle = React.useCallback(() => setOpen((o) => !o), []);
   const openIt = React.useCallback(() => setOpen(true), []);
@@ -107,7 +112,8 @@ export function SiteSearch({
     requestAnimationFrame(() => btnRef.current?.focus());
   }, []);
 
-  useSearchHotkey(hotkeys ? toggle : () => {});
+  const noop = React.useCallback(() => {}, []);
+  useSearchHotkey(hotkeys ? toggle : noop);
 
   /* Chip = EXACTLY the nav's locale switch. The defaults above mirror
      locale-switch.css, but the site may override --ls-* / the trigger in
@@ -115,7 +121,7 @@ export function SiteSearch({
      its computed box, type and colours onto the button (re-measured once the
      fonts land). Pill / Icon only keep their own sizes. */
   const [sync, setSync] = React.useState<React.CSSProperties | null>(null);
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (buttonStyle === "Pill" || buttonStyle === "Icon only") { setSync(null); return; }
     const measure = () => {
       const root = document.querySelector<HTMLElement>("[data-locale-switch]");
@@ -137,11 +143,9 @@ export function SiteSearch({
       if (strong) v["--ls-fg-strong"] = strong;
       setSync(v as React.CSSProperties);
     };
-    measure();
-    const t1 = window.setTimeout(measure, 600);
-    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
-    if (fonts && fonts.ready) fonts.ready.then(measure);
-    return () => clearTimeout(t1);
+    measure();                                             // before first paint — one measure, no visible re-style
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown>; status?: string } }).fonts;
+    if (fonts && fonts.ready && fonts.status !== "loaded") fonts.ready.then(measure);
   }, [buttonStyle]);
 
   /* palette host on <body>: own shadow root + palette CSS */
@@ -175,7 +179,6 @@ export function SiteSearch({
   }, [open, openIt, close, toggle]);
 
   const demo = demoHref || (loc === "tr" ? "/tr/demo-isteyin" : "/request-a-demo");
-  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const cls = "ssb" + (buttonStyle === "Pill" ? " ssb--pill" : buttonStyle === "Icon only" ? " ssb--icon" : "");
   const quickText = (loc === "tr" ? quickLinksTr : quickLinksEn).trim();
   const quickLinks = React.useMemo(

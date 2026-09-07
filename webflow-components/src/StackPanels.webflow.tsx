@@ -59,5 +59,5 @@ export default declareComponent(StackPanels, {
     sectionBg: props.Text({ name: "Section background", group: "Look", defaultValue: "", tooltip: "Token / renk. Boş = --surface--base" }),
     cardBg: props.Text({ name: "Panel background", group: "Look", defaultValue: "", tooltip: "Token / renk. Boş = --surface--base (opak olmalı)" }),
   },
-  options: { ssr: false },
+  options: { ssr: true },
 });

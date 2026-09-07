@@ -3,7 +3,7 @@
  *
  * Wraps @shadergradient/react (three.js bundled in the package) with:
  *   • lazy-mount: the WebGL canvas + shader chunks load only when the section
- *     nears the viewport (rootMargin 300px) — zero cost on initial page load
+ *     nears the viewport (rootMargin 400px) — zero cost on initial page load
  *   • soft Sestek pastel presets (Mist/Water/Silk/Halo) + a vivid Deep
  *     variant + fully Custom mode
  *   • colours ALWAYS win: Color 1-3 override the preset's palette whenever a
@@ -248,7 +248,7 @@ function useNearViewport(
       /* Erken tetik: kullanıcı section'a varmadan shader hazır olsun —
        * pinli section'ların geometri kaydırmasına karşı geniş marj; giriş
        * anı zaten fade ile maskeleniyor. */
-      { rootMargin: "900px" }
+      { rootMargin: "400px" }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -319,7 +319,7 @@ export function ShaderGradientBg({
      * canvas'ı unmount eder, girince yeniden kurar — her girişte shader
      * yeniden derlenir ve animasyon saati sıfırlanır (görünür "atlama").
      * Lazy'liği zaten dışarıda tek seferlik yapıyoruz (useNearViewport,
-     * 300px, disconnect) — içerideki kapalı: canvas bir kez kurulur, kalır. */
+     * 400px, disconnect) — içerideki kapalı: canvas bir kez kurulur, kalır. */
     lazyLoad: false,
   };
 
