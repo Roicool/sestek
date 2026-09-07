@@ -22,6 +22,9 @@
  */
 
 import * as React from "react";
+
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 import { createPortal } from "react-dom";
 import { SiteSearch as Palette, useSearchHotkey } from "./site-search/components/SiteSearch/SiteSearch";
 import { SEARCH_CSS } from "./site-search/components/SiteSearch/styles";
@@ -121,7 +124,7 @@ export function SiteSearch({
      its computed box, type and colours onto the button (re-measured once the
      fonts land). Pill / Icon only keep their own sizes. */
   const [sync, setSync] = React.useState<React.CSSProperties | null>(null);
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     if (buttonStyle === "Pill" || buttonStyle === "Icon only") { setSync(null); return; }
     const measure = () => {
       const root = document.querySelector<HTMLElement>("[data-locale-switch]");

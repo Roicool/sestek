@@ -23,6 +23,9 @@
 
 import * as React from "react";
 
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 type LinkValue = { href?: string; target?: string } | string | null | undefined;
 
 export type DemoPreset = {
@@ -192,7 +195,7 @@ export function DemoEmbed(p: TtsDemoProps) {
   /* iframe zoom — the box is CSS; the app keeps its LOGICAL size and is scaled to the box width
      (port of the two approved embed scripts, minus the box maths). Layout effect + ResizeObserver
      on the frame: correct before first paint, never changes the box. */
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const f = frameRef.current; if (!f) return;
     const compute = () => {
       const w = f.clientWidth; if (!w) return;
@@ -251,7 +254,7 @@ export function DemoEmbed(p: TtsDemoProps) {
 
   return (
     <>
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div ref={root} className="tts" style={vars} data-side={side} data-framed={framed ? "on" : "off"} data-layout={full ? "full" : "side"} data-mobile={P.mobile}>
         {full ? panel : (
           <div className="tts_grid">

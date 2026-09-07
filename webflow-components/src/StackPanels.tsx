@@ -30,6 +30,9 @@
 
 import * as React from "react";
 
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 export interface StackPanelItem {
   /** heading; the accent part is appended in the accent colour */
   heading: string;
@@ -397,7 +400,7 @@ function Inner(p: StackPanelsProps) {
 
   /* title reveal on scroll-in (once). The heading is NEVER hidden before JS runs (SSR / no-JS paint
      shows it); it is only armed (opacity:0) when it is still below the fold at hydration. */
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const h = titleRef.current;
     if (!h || p.titleReveal === false || !("IntersectionObserver" in window)) { setTitleIn(true); return; }
     if (h.getBoundingClientRect().top < window.innerHeight * 0.85) { setTitleIn(true); return; }   // already visible: no reveal
@@ -524,7 +527,7 @@ function Inner(p: StackPanelsProps) {
 
   return (
     <>
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <section ref={root} className={"sp " + (flow ? "is-flow" : "is-pinned")} style={style} data-stack-panels="">
         {bg ? <img className="sp_bg" src={bg} alt="" aria-hidden="true" loading="lazy" /> : null}
         {p.bottomFade !== false ? <div className="sp_fade" aria-hidden="true" /> : null}

@@ -24,6 +24,9 @@
 
 import * as React from "react";
 
+/* useLayoutEffect on the client, useEffect on the server (no SSR warning, same result after hydration) */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 export interface TopBarProps {
   text?: string;
   linkLabel?: string;
@@ -145,7 +148,7 @@ export function TopBar({
 
   /* push the fixed navbar + expose --topbar-h; scroll-away mode shrinks the offset with the scroll.
      Layout effect: nav offset + spacer are applied BEFORE the first paint (no second shift). */
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const el = bar.current;
     const root = document.documentElement;
     const nav = pushNav ? document.querySelector<HTMLElement>(navSelector || "[data-nav]") : null;

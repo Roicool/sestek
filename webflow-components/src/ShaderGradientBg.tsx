@@ -364,7 +364,7 @@ export function ShaderGradientBg({
             `radial-gradient(140% 140% at 50% 95%, ${c3} 0%, transparent 60%)`,
         }}
       />
-      <style>{`@keyframes sgb-fade-in{from{opacity:0}to{opacity:1}}`}</style>
+      <style dangerouslySetInnerHTML={{ __html: "@keyframes sgb-fade-in{from{opacity:0}to{opacity:1}}" }} />
       {near && (
         <React.Suspense fallback={null}>
           <LazyGradient key={sceneKey} canvas={canvas} gradient={gradient} />

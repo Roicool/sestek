@@ -573,7 +573,7 @@ function HScrollInner(p: HScrollProps) {
 
   return (
     <>
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <section
         ref={root}
         className={"hs " + (mode === "pinned" ? "is-pinned" : "is-carousel") + (desktop ? " is-desktop" : "")}
