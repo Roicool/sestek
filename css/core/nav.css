@@ -280,6 +280,15 @@
   position      : relative;
 }
 
+/* Closed state in CSS, not only in JS: before nav.js runs the dropdown would
+   otherwise paint at its natural (panel-tall, full-width) box and collapse to
+   0×0 on init — a layout shift Lighthouse scores against the page (~0.29).
+   While a menu is open GSAP's inline width/height win over this rule. */
+.nav:not(.nav--open) .nav__dropdown {
+  width  : 0;
+  height : 0;
+}
+
 /* Shadow only while a menu is open — premium fade in/out, and it lifts off
    the page the moment every mega-menu is closed. */
 .nav--open .nav__dropdown {
