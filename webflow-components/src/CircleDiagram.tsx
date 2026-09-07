@@ -140,8 +140,15 @@ const CSS = `
   pointer-events:none;will-change:transform;transition:transform 1.2s cubic-bezier(.65,0,.35,1)}
 .cd_item{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:.6rem;background:var(--cd-bg);border:1px solid var(--cd-line);border-radius:999px;
   padding:.55rem 1.05rem;box-shadow:0 10px 24px -18px rgba(0,0,0,.28);cursor:pointer;color:var(--cd-muted);font:inherit;font-family:var(--cd-font);font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  white-space:normal;max-width:var(--cd-chip-max,11rem);line-height:1.2;text-align:left;transition:color .35s,border-color .35s,box-shadow .35s,transform .35s;-webkit-tap-highlight-color:transparent}
-.cd_item .cd_label{min-width:0;text-align:center}
+  white-space:normal;width:max-content;max-width:var(--cd-chip-max,11rem);line-height:1.2;text-align:left;transition:color .35s,border-color .35s,box-shadow .35s,transform .35s;-webkit-tap-highlight-color:transparent}
+.cd_item .cd_label{min-width:0;text-align:center;overflow-wrap:anywhere}
+/* width:max-content above: an absolutely positioned chip at left:50% would otherwise be
+   limited to HALF the stage (shrink-to-fit = containing block minus the offset), so a
+   long label like "Conversational Intelligence" folded into 3 lines at 1024px. */
+/* top/bottom chips sit centred on the ring and never hang off the side, so they may
+   use (almost) the whole panel width — "Conversational Intelligence" wraps to two
+   comfortable lines instead of overflowing the side-chip budget */
+.cd_item[data-cd-side="top"],.cd_item[data-cd-side="bottom"]{max-width:min(340px,94cqw)}
 .cd_item[data-cd-side="right"] .cd_label{text-align:left}
 .cd_item[data-cd-side="left"] .cd_label{text-align:right}
 .cd_item[data-cd-side="left"]{flex-direction:row-reverse}
@@ -187,7 +194,7 @@ const CSS = `
 }
 @media (max-width:479px){
   .cd{--cd-chip-max:min(240px,36cqw);--cd-card-h:calc(2.25rem + 2 * 1rem * 1.25 + 2px)}
-  .cd_item{font-size:.6875rem;padding:.45rem .7rem}
+  .cd_item{font-size:.6875rem;padding:.45rem .7rem;letter-spacing:.03em}
   .cd_pcard{padding:1.125rem 1.25rem}
   .cd_card-title{font-size:1rem}
 }
