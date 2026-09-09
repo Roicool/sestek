@@ -1,11 +1,18 @@
 /*!
- * nav.js v2.8.1
+ * nav.js v2.9.0
  * Mega-menu navbar — desktop hover panels + mobile slide-level menu
  * Requires: gsap (global)
  * Optional: Sestek.stopScroll/startScroll (Lenis) — locks virtual scroll too
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v2.9.0 — viewport fit: a panel taller than the space under the bar (short
+ *           laptops, a Top Bar above the nav, a docked DevTools window) is
+ *           zoomed down as a whole — text, images, spacing — to the ratio that
+ *           fits, down to NAV_FIT_MIN_ZOOM; if that is still not enough the
+ *           dropdown is capped at the available height and the panel scrolls
+ *           inside it. Panels that fit are untouched (no zoom, no cap), the
+ *           fit follows window resizes, and nothing is hidden.
  * v2.8.1 — first-open sizing: the open panel is re-measured (width AND height)
  *           when an image inside it loads or its content resizes, and the
  *           mega-menu images are warmed on hover intent — the Products panel
@@ -201,6 +208,10 @@
     var pendingReset = null;   // GSAP delayedCall that resets panels after close
     var targetH      = 0;      // height the container is currently animating to
     var targetW      = 0;      // width the container is currently animating to
+    var lastMeasureAt = 0;     // measurePanel() timestamp — see the ResizeObserver
+    var NAV_FIT_MIN_ZOOM = 0.75; // whole-panel zoom floor before it scrolls instead
+    var NAV_FIT_MARGIN   = 16;   // px kept free under the dropdown
+    var now = function () { return (global.performance && performance.now) ? performance.now() : Date.now(); };
 
     // Honour reduced-motion: snap instead of animate (kept live via listener).
     var reduceMotion = false;
@@ -253,8 +264,11 @@
       var s = p.style;
       var prev = {
         opacity : s.opacity, width: s.width, maxWidth: s.maxWidth, right: s.right,
+        transform: s.transform,
       };
       s.opacity = "0";
+      // Natural size first: any fit from an earlier open comes off before the read.
+      s.zoom = ""; s.maxHeight = ""; s.overflowY = "";
       s.right   = "auto";        // release the CSS left:0/right:0 stretch
       s.width   = "max-content";
       // Cap to the box that actually CLIPS the panel — the dropdown itself,
@@ -283,11 +297,66 @@
       s.width  = w + "px";       // the geometry it will be rendered with…
       var h = p.offsetHeight;    // …so this is the height it will really need
 
+      // ── Viewport fit ─────────────────────────────────────────────
+      // `w`/`h` is the panel's natural size in ITS OWN px. The dropdown must
+      // be given the VISUAL size (after zoom), the panel keeps its own width.
+      var fit = { zoom: 1, scroll: false, panelW: w, w: w, h: h };
+      var avail = availHeight();
+      if (avail > 0 && h > avail) {
+        var z = Math.max(avail / h, NAV_FIT_MIN_ZOOM);
+        z = Math.floor(z * 1000) / 1000;
+        s.zoom = String(z);
+        // Read the zoomed box off getBoundingClientRect (offset* is defined in
+        // the element's own, unzoomed px). Transform off for the read so an
+        // in-flight scale tween (open animation) can't leak into the number.
+        s.transform = "none";
+        var r = p.getBoundingClientRect();
+        s.transform = prev.transform;
+        fit.zoom = z;
+        fit.w = Math.ceil(r.width);
+        fit.h = Math.ceil(r.height);
+        if (fit.h > avail) {
+          // Zoom floor reached and it still overflows: cap the dropdown at the
+          // available height, the panel scrolls inside it (own px, so ÷ zoom).
+          fit.scroll = true;
+          fit.h = avail;
+          s.maxHeight = Math.floor(avail / z) + "px";
+          s.overflowY = "auto";
+          p.setAttribute("data-lenis-prevent", "");   // wheel scrolls the panel, not the page
+        }
+      }
+      if (!fit.scroll) {
+        s.maxHeight = "";
+        s.overflowY = "";
+        p.removeAttribute("data-lenis-prevent");
+      }
+      if (fit.zoom === 1) s.zoom = "";
+      lastMeasureAt = now();
+
       s.opacity  = prev.opacity;
       s.width    = prev.width;
       s.maxWidth = prev.maxWidth;
       s.right    = prev.right;
-      return { w: w, h: h };
+      return fit;
+    }
+
+    /*
+     * Space under the bar for the dropdown: viewport height minus where the
+     * dropdown-wrap starts (nav bottom — already includes a Top Bar pushing the
+     * fixed nav down) minus a breathing margin. 0 = unknown (don't fit).
+     */
+    function availHeight() {
+      var wrap = dropdown.parentElement || dropdown;
+      var top  = wrap.getBoundingClientRect().top;
+      var vh   = global.innerHeight || 0;
+      if (!vh || !isFinite(top)) return 0;
+      return Math.floor(vh - top - NAV_FIT_MARGIN);
+    }
+
+    function clearFit(p) {
+      var s = p.style;
+      s.zoom = ""; s.maxHeight = ""; s.overflowY = ""; s.transform = "";
+      p.removeAttribute("data-lenis-prevent");
     }
 
     /*
@@ -318,8 +387,9 @@
       var wDiff = dim.w && Math.abs(dim.w - targetW) >= 1;
       var hDiff = dim.h && Math.abs(dim.h - targetH) >= 1;
       if (!wDiff && !hDiff) return;
-      if (wDiff) { targetW = dim.w; p.style.width = dim.w + "px"; }
+      if (wDiff) targetW = dim.w;
       if (hDiff) targetH = dim.h;
+      p.style.width = dim.panelW + "px";   // the panel's OWN width (pre-zoom)
       if (reduceMotion) gsap.set(dropdown, { width: targetW, height: targetH });
       else gsap.to(dropdown, { width: targetW, height: targetH, duration: 0.25, ease: "power2.out", overwrite: "auto" });
     }
@@ -337,6 +407,13 @@
         if (!isOpen || !activeId) return;
         var p = getPanel(activeId);
         if (!p) return;
+        // A fitted (zoomed / capped) panel: offsetHeight is in its own px, not
+        // the dropdown's — go through the full measure instead. measurePanel's
+        // own width toggle re-fires this observer once; the timestamp eats it.
+        if (p.style.zoom || p.style.maxHeight) {
+          if (now() - lastMeasureAt > 120) remeasureActive();
+          return;
+        }
         var h = p.offsetHeight;
         if (!h || Math.abs(h - targetH) < 1) return;
         targetH = h;
@@ -391,6 +468,7 @@
         // Drop the pinned measure-width so it's re-read fresh next open.
         p.style.width = "";
         p.style.right = "";
+        clearFit(p);
       });
       triggers.forEach(function (t) { markTrigger(t, false); });
     }
@@ -504,7 +582,7 @@
       // container morphs around it — the box reveals the panel, it doesn't
       // squeeze it. (right:auto lets the explicit width take effect.)
       targetPanel.style.right = "auto";
-      targetPanel.style.width = w + "px";
+      targetPanel.style.width = dim.panelW + "px";
 
       triggers.forEach(function (t) { markTrigger(t, t.dataset.navTrigger === id); });
       moveIndicator(getTrigger(id));
@@ -670,8 +748,13 @@
     });
 
     // Keep the active-trigger indicator aligned when the layout reflows.
+    var resizeRaf = 0;
     on(global, "resize", function () {
-      if (isOpen && activeId) moveIndicator(getTrigger(activeId));
+      if (!isOpen || !activeId) return;
+      moveIndicator(getTrigger(activeId));
+      // Re-fit the open panel to the new viewport height (next frame, once).
+      if (resizeRaf) return;
+      resizeRaf = global.requestAnimationFrame(function () { resizeRaf = 0; remeasureActive(); });
     });
 
     // ── Mobile state ──────────────────────────────────────────────
@@ -921,6 +1004,7 @@
       _destroy: function () {
         nav.removeEventListener("load", _onImgLoad, true);
         clearTimeout(closeTimer);
+        if (resizeRaf) { global.cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
         if (pendingReset) { pendingReset.kill(); pendingReset = null; }
         if (panelWatcher) { panelWatcher.disconnect(); panelWatcher = null; }
         if (indicator) gsap.killTweensOf(indicator);
