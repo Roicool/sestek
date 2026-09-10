@@ -124,7 +124,9 @@ edilmez); `Sestek.refreshScroll` varsa rebuild'ler onun üzerinden gider.
 Component sitenin CSS değişkenlerini (`--surface--base`, `--color-text--*`,
 `--brand-primary--500`, `--text--6xl`, `--spacing--*`, `--container--*`,
 `--view--px`, `--section--py-2`, `--neutral--050`) shadow root içinden miras
-alır; font sayfadan gelir.
+alır; font sayfadan gelir. ≤ 991px'te hero metni navbar + Top Bar'ın altına
+konumlanır: üst boşluk `--nav-height` (yoksa 3.75rem) + `--topbar-h` (Top Bar
+component'i `<html>`'e yazar, bar yokken 0) ile hesaplanır; masaüstü etkilenmez.
 
 | Prop | Grup | Tip | Varsayılan | Açıklama |
 |---|---|---|---|---|
