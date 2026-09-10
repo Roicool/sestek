@@ -14,6 +14,13 @@
  *    960×649; scale = min(1, (available − 2) / 960, .7147 · innerHeight / 554
  *    · 1.01). Phones: full width, 840px tall, no zoom.
  *
+ *  • "Hero"  (detail page top): centred hero copy — eyebrow, an <h1> in the
+ *    site's h1 metrics (--text--6xl / tight / medium, the same as the home
+ *    Hero), description, the two buttons — with the demo panel below it,
+ *    sized exactly like "Full width". The "Title (slot)" slot can replace the
+ *    generated <h1> with a real Webflow heading (class h1-style) so the site's
+ *    own class styles it and Localization edits it in place.
+ *
  * The iframe keeps its LOGICAL size and is scaled with CSS `zoom` (exactly
  * like the approved embeds — the app inside re-flows for the logical width,
  * a transform would only shrink pixels). Sizes are recomputed on resize and
@@ -56,10 +63,12 @@ export const PRESETS: Record<string, DemoPreset> = {
 export interface TtsDemoProps {
   /** "tts" | "stt" */
   preset?: string;
-  /** "Side by side" | "Full width" */
+  /** "Side by side" | "Full width" | "Hero" */
   layout?: string;
   eyebrow?: string;
   title?: string;
+  /** Hero: a Webflow heading dropped into the slot replaces the generated <h1> */
+  titleSlot?: React.ReactNode;
   description?: string;
   link1Label?: string;
   link1Url?: string;
@@ -104,6 +113,13 @@ const CSS = `
 .tts_eyebrow{margin:0;font-size:.8125rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tts-accent)}
 .tts_title{margin:0;font-size:var(--heading--h3,clamp(1.625rem,2.6vw,2.25rem));line-height:var(--leading--tight,1.15);font-weight:var(--font-weight--semibold,600);text-wrap:balance}
 .tts_desc{margin:0;font-size:var(--text--lg,1.0625rem);line-height:var(--leading--relaxed,1.6);color:var(--tts-muted)}
+/* HERO — centred copy above the panel; the <h1> mirrors the site's h1-style (home Hero metrics) */
+.tts_hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--spacing--4,1rem);width:100%;max-width:var(--container--lg,64rem);margin:0 auto clamp(2rem,5vw,3.5rem)}
+.tts_h1{margin:0;font-size:var(--text--6xl,3.75rem);line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500);letter-spacing:-.01em;text-wrap:balance}
+.tts_hero .tts_desc{max-width:var(--container--sm,40rem)}
+.tts_hero .tts_links{justify-content:center}
+.tts_hero .tts_eyebrow{margin-bottom:var(--spacing--1,.25rem)}
+@media (max-width:991px){.tts_h1{font-size:clamp(2rem,5.6vw,3.25rem)}}
 /* CTA — the site's stagger buttons (btn-stagger: pill, characters roll up on hover) */
 .tts_links{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-top:.75rem}
 .tts_btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.25rem .8rem;border-radius:999px;text-decoration:none;font-size:var(--text--sm,.875rem);font-weight:500;line-height:1.2;
@@ -128,8 +144,8 @@ const CSS = `
 .tts_panel{position:relative;box-sizing:border-box;padding:0;margin:0 auto;max-width:100%;width:var(--dm-side-w)}
 .tts_frame{position:relative;overflow:hidden;width:100%;max-width:none;background:#fff;height:var(--dm-side-h)}
 @media (min-width:768px) and (max-height:700px){.tts[data-layout="side"] .tts_panel{width:var(--dm-lap-w)}.tts[data-layout="side"] .tts_frame{height:var(--dm-lap-h)}}
-.tts[data-layout="full"] .tts_panel{width:100%;margin-bottom:var(--dm-bottom)}
-.tts[data-layout="full"] .tts_frame{width:min(var(--dm-bw),calc(100% - 2px),var(--dm-full-vh));height:auto;aspect-ratio:var(--dm-ratio);margin:0 auto}
+.tts[data-layout="full"] .tts_panel,.tts[data-layout="hero"] .tts_panel{width:100%;margin-bottom:var(--dm-bottom)}
+.tts[data-layout="full"] .tts_frame,.tts[data-layout="hero"] .tts_frame{width:min(var(--dm-bw),calc(100% - 2px),var(--dm-full-vh));height:auto;aspect-ratio:var(--dm-ratio);margin:0 auto}
 .tts[data-framed="on"] .tts_frame{border:1px solid var(--tts-line);border-radius:var(--tts-radius)}
 .tts_frame iframe{display:block;border:0;max-width:none;width:100%;height:100%}
 .tts_ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--tts-muted);font-size:.875rem;background:linear-gradient(135deg,#fafafc,#f1f1f5)}
@@ -139,7 +155,8 @@ const CSS = `
   .tts_grid,.tts[data-side="right"] .tts_grid{grid-template-columns:minmax(0,1fr);gap:1.75rem}
   .tts[data-side="right"] .tts_text{order:0}
   .tts_text{max-width:none}
-  .tts_panel,.tts[data-layout="full"] .tts_panel{width:100%;max-width:100%}
+  .tts_panel,.tts[data-layout="full"] .tts_panel,.tts[data-layout="hero"] .tts_panel{width:100%;max-width:100%}
+  .tts_hero{gap:var(--spacing--3,.75rem);margin-bottom:1.75rem}
   .tts[data-mobile="fixed"] .tts_frame{width:100%;height:var(--dm-mh);aspect-ratio:auto}
   .tts[data-mobile="square"] .tts_frame{width:100%;height:auto;aspect-ratio:var(--dm-ratio)}
 }
@@ -168,7 +185,9 @@ function StaggerLabel({ text }: { text: string }) {
 export function DemoEmbed(p: TtsDemoProps) {
   const P = PRESETS[(p.preset || "tts").toLowerCase()] || PRESETS.tts;
   const SIDE = P.side, FULL = P.full, BASE = P.base;
-  const full = (p.layout || "Side by side").toLowerCase().startsWith("full");
+  const layoutKey = (p.layout || "Side by side").toLowerCase();
+  const hero = layoutKey.startsWith("hero");
+  const full = hero || layoutKey.startsWith("full");   // hero sizes its panel like Full width
   const side = (p.textSide || "Left").toLowerCase().startsWith("right") ? "right" : "left";
   const mobileH = Math.max(300, p.mobileHeight || 840);
   const bottom = p.bottomMargin == null ? 80 : Math.max(0, p.bottomMargin);
@@ -255,8 +274,23 @@ export function DemoEmbed(p: TtsDemoProps) {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div ref={root} className="tts" style={vars} data-side={side} data-framed={framed ? "on" : "off"} data-layout={full ? "full" : "side"} data-mobile={P.mobile}>
-        {full ? panel : (
+      <div ref={root} className="tts" style={vars} data-side={side} data-framed={framed ? "on" : "off"} data-layout={hero ? "hero" : full ? "full" : "side"} data-mobile={P.mobile}>
+        {hero ? (
+          <>
+            <div className="tts_hero">
+              {p.eyebrow ? <p className="tts_eyebrow">{p.eyebrow}</p> : null}
+              {p.titleSlot ? p.titleSlot : (p.title ? <h1 className="tts_h1">{p.title}</h1> : null)}
+              {p.description ? <p className="tts_desc">{p.description}</p> : null}
+              {(p.link1Label || p.link2Label) && (
+                <div className="tts_links">
+                  {p.link1Label ? <a className="tts_btn" data-style={btnStyle(p.link1Style, "Dark")} href={l1} aria-label={p.link1Label} {...ext1}><StaggerLabel text={p.link1Label} /></a> : null}
+                  {p.link2Label ? <a className="tts_btn" data-style={btnStyle(p.link2Style, "White")} href={l2} aria-label={p.link2Label} {...ext2}><StaggerLabel text={p.link2Label} /></a> : null}
+                </div>
+              )}
+            </div>
+            {panel}
+          </>
+        ) : full ? panel : (
           <div className="tts_grid">
             <div className="tts_text">
               {p.eyebrow ? <p className="tts_eyebrow">{p.eyebrow}</p> : null}

@@ -11,13 +11,14 @@ export default declareComponent(TtsDemo, {
     "genişlik + yüksekliğe göre ölçekli. Dil sayfadan otomatik (tr → tr-TR). iframe viewport'a yaklaşınca yüklenir, mikrofon izni açık.",
   group: "Sestek",
   props: {
-    layout: props.Variant({ name: "Layout", group: "Layout", options: ["Side by side", "Full width"], defaultValue: "Side by side", tooltip: "Side by side = /demos genel sayfası (metin + panel) · Full width = /demos/tts detay sayfası (yalnız iframe)" }),
+    layout: props.Variant({ name: "Layout", group: "Layout", options: ["Side by side", "Full width", "Hero"], defaultValue: "Side by side", tooltip: "Side by side = /demos genel sayfası (metin + panel) · Full width = yalnız iframe · Hero = detay sayfası üstü: ortalı eyebrow + H1 + açıklama + butonlar, altında panel" }),
     textSide: props.Variant({ name: "Text side", group: "Layout", options: ["Left", "Right"], defaultValue: "Left" }),
     framed: props.Boolean({ name: "Frame border", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Panel etrafında ince çerçeve + köşe yuvarlağı" }),
     mobileHeight: props.Number({ name: "Mobile height (px)", group: "Layout", defaultValue: 840, tooltip: "≤767px'te iframe yüksekliği" }),
     bottomMargin: props.Number({ name: "Bottom margin (px)", group: "Layout", defaultValue: 80, tooltip: "Full width'te panelin alt boşluğu" }),
 
     eyebrow: props.Text({ name: "Eyebrow", group: "Text", defaultValue: "Text to speech" }),
+    titleSlot: props.Slot({ name: "Title (slot)", group: "Text", tooltip: "Yalnız Hero layout. Buraya h1-style sınıflı bir Webflow Heading bırakırsan sitenin kendi H1 stili uygulanır ve Localization ile çevrilir; boşsa Title prop'u <h1> olarak basılır." }),
     title: props.Text({ name: "Title", group: "Text", defaultValue: "Text to Speech & Voice Cloning" }),
     description: props.Text({ name: "Description", group: "Text", defaultValue: "Type any sentence, pick a language and a voice, and hear it spoken back with a natural, human-like tone. You can also clone a voice from a short recording and generate speech with it." }),
 

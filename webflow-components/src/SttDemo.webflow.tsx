@@ -11,13 +11,14 @@ export default declareComponent(SttDemo, {
     "genişlik + yüksekliğe göre ölçekli. Dil sayfadan otomatik (tr → tr). iframe viewport'a yaklaşınca yüklenir, kamera + mikrofon izni açık.",
   group: "Sestek",
   props: {
-    layout: props.Variant({ name: "Layout", group: "Layout", options: ["Side by side", "Full width"], defaultValue: "Side by side", tooltip: "Side by side = /demos genel sayfası (metin + panel) · Full width = /demos/tts detay sayfası (yalnız iframe)" }),
+    layout: props.Variant({ name: "Layout", group: "Layout", options: ["Side by side", "Full width", "Hero"], defaultValue: "Side by side", tooltip: "Side by side = /demos genel sayfası (metin + panel) · Full width = yalnız iframe · Hero = detay sayfası üstü: ortalı eyebrow + H1 + açıklama + butonlar, altında panel" }),
     textSide: props.Variant({ name: "Text side", group: "Layout", options: ["Left", "Right"], defaultValue: "Left" }),
     framed: props.Boolean({ name: "Frame border", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Panel etrafında ince çerçeve + köşe yuvarlağı" }),
     
     bottomMargin: props.Number({ name: "Bottom margin (px)", group: "Layout", defaultValue: 80, tooltip: "Full width'te panelin alt boşluğu" }),
 
     eyebrow: props.Text({ name: "Eyebrow", group: "Text", defaultValue: "Speech to text" }),
+    titleSlot: props.Slot({ name: "Title (slot)", group: "Text", tooltip: "Yalnız Hero layout. Buraya h1-style sınıflı bir Webflow Heading bırakırsan sitenin kendi H1 stili uygulanır ve Localization ile çevrilir; boşsa Title prop'u <h1> olarak basılır." }),
     title: props.Text({ name: "Title", group: "Text", defaultValue: "Speech Recognition" }),
     description: props.Text({ name: "Description", group: "Text", defaultValue: "Real-time speech to text. Speak into your microphone or upload an audio file of up to 100MB and see every word land as you talk." }),
 
