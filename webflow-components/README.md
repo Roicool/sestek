@@ -126,7 +126,12 @@ edilmez); `Sestek.refreshScroll` varsa rebuild'ler onun üzerinden gider.
 Component sitenin CSS değişkenlerini (`--surface--base`, `--color-text--*`,
 `--brand-primary--500`, `--text--6xl`, `--spacing--*`, `--container--*`,
 `--view--px`, `--section--py-2`, `--neutral--050`) shadow root içinden miras
-alır; font sayfadan gelir. ≤ 991px'te hero metni navbar + Top Bar'ın altına
+alır; font sayfadan gelir. Başlık her hâlükârda `<h1>`'dir, ama component'in
+shadow root'unun içindedir — shadow DOM'u açmayan SEO tarayıcıları onu
+saymaz. Sayfanın H1'inin light DOM'da olması gerekiyorsa **Title (slot)**
+slot'una `h1-style` sınıflı bir Webflow Heading bırak; slot içeriği light
+DOM'da durur (`<h1 slot="titleSlot">`), üretilen `<h1>` de o zaman basılmaz,
+yani sayfada tek H1 kalır. ≤ 991px'te hero metni navbar + Top Bar'ın altına
 konumlanır: üst boşluk `--nav-height` (yoksa 3.75rem) + `--topbar-h` (Top Bar
 component'i `<html>`'e yazar, bar yokken 0) ile hesaplanır; masaüstü etkilenmez.
 
@@ -136,6 +141,7 @@ component'i `<html>`'e yazar, bar yokken 0) ile hesaplanır; masaüstü etkilenm
 | Poster URL | Video | Text | Stream thumbnail | Video yüklenene kadar görünen kare |
 | Dark overlay | Video | Boolean | `On` | Masaüstünde 0.06–0.28 arasında sönen, mobilde sabit gradient |
 | Title (H1) | Headline | Text | "New chapter begins for\|AI-first…" | `\|` = satır kır |
+| Title (slot) | Headline | Slot | — | Buraya bırakılan Webflow Heading (H1) üretilen `<h1>`'in yerine geçer ve **light DOM'da** kalır: shadow root'a girmeyen SEO araçları da sayfanın H1'ini görür, metin Localization'dan çevrilir. Sınıfsız bırakılırsa hero'nun kendi puntosunu alır (masaüstü `--text--6xl`, mobil clamp), `h1-style` gibi bir sınıf varsa o kazanır; renk hero'dan miras gelir. Boşsa Title prop'u `<h1>` olarak basılır |
 | Subtitle | Headline | Text | … | |
 | Button 1 label / link | Buttons | Text / Link | "Read success stories" | Boş label = buton gizli |
 | Button 2 label / link | Buttons | Text / Link | "Request a demo" | Ok ikonlu birincil buton |

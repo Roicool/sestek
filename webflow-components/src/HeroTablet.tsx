@@ -75,6 +75,8 @@ export interface HeroTabletProps {
 
   trustedText?: string;
   logos?: React.ReactNode;
+  /** a Webflow Heading dropped here replaces the generated <h1> (stays in the light DOM) */
+  titleSlot?: React.ReactNode;
 
   phrase?: string;
   description?: string;
@@ -237,6 +239,17 @@ const CSS = `
 .sh-s1{position:relative;width:100%;height:100%;display:flex;flex-direction:column;color:var(--color-text--inverted,#fff)}
 .sh-s1-in{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:var(--spacing--4,1rem)}
 .sh-h1{margin:0;line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500);text-wrap:balance}
+/* Title slot — the heading dropped into it stays in the LIGHT DOM (Webflow
+   projects slot content through a real <slot>), so crawlers and SEO tools that
+   never pierce a shadow root still find the page's <h1>.
+   The wrapper deliberately carries NO font-size: the UA sheet sizes h1 at 2em,
+   which would double whatever the wrapper set. The hero's type is handed to the
+   slotted element itself instead, per breakpoint below. A site class on the
+   heading (h1-style) overrides all of it — document styles beat ::slotted()
+   whatever the specificity — and the colour is inherited from .sh-s1, so it is
+   white over the video unless that class sets one. */
+.sh-h1--slot{display:block;width:100%;min-width:0}
+.sh-h1--slot ::slotted(*){margin:0;color:inherit;text-wrap:balance}
 .sh-sub{margin:0;max-width:var(--container--sm,36rem);font-size:var(--text--base,1rem);line-height:var(--leading--relaxed,1.6);opacity:.85;text-wrap:balance}
 .sh-ctas{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--spacing--4,1rem);margin-top:var(--spacing--2,.5rem);pointer-events:auto;position:relative;z-index:20;width:100%;max-width:100%}
 .sh-ctas>*{flex:0 1 auto;max-width:100%;min-width:0}
@@ -284,6 +297,7 @@ const CSS = `
   .sh-ovl{background:linear-gradient(to bottom,transparent 35%,oklch(14% 0 0 / .5) 100%)}
   .sh-s1-in{padding:0 var(--view--px,2rem)}
   .sh-h1{font-size:var(--text--6xl,3.75rem)}
+  .sh-h1--slot ::slotted(*){font-size:var(--text--6xl,3.75rem);line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500)}
   .sh-trust{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:var(--spacing--8,2rem);max-width:var(--container--2xl,80rem);margin:0 auto;padding:0 var(--view--px,2rem) var(--spacing--6,1.5rem)}
   .sh-trust-t{flex:none;padding-right:var(--spacing--12,3rem);border-right:1px solid rgba(255,255,255,.35)}
   .sh-trust-b{flex:1 1 auto;min-width:0}
@@ -320,6 +334,7 @@ const CSS = `
      and inherits through the shadow root; it is 0 when the bar is hidden. */
   .sh-s1-in{padding:calc(var(--nav-height,3.75rem) + var(--topbar-h,0px) + clamp(1rem,4vw,2rem)) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem)}
   .sh-h1{font-size:clamp(2rem,5.6vw,3.25rem);letter-spacing:-.01em}
+  .sh-h1--slot ::slotted(*){font-size:clamp(2rem,5.6vw,3.25rem);letter-spacing:-.01em;line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500)}
   .sh-trust{position:relative;z-index:2;flex:none;display:flex;flex-direction:column;gap:var(--spacing--3,.75rem);padding:0 0 var(--spacing--5,1.25rem)}
   .sh-trust-t{padding:0 var(--view--px,1.5rem);text-align:center}
   .sh-trust-b{width:100%}
@@ -435,6 +450,7 @@ type Content = {
   title: string; subtitle: string;
   cta1Label: string; cta1Link?: LinkValue; cta2Label: string; cta2Link?: LinkValue;
   trustedText: string; logos?: React.ReactNode;
+  titleSlot?: React.ReactNode;
   phrase: string; description: string; stats: StatDef[]; bgSrc?: string;
   animated: boolean;
   grain: boolean; grainIntensity: number; grainSize: number; grainSpeed: number;
@@ -482,7 +498,7 @@ export function HeroTablet(p: HeroTabletProps) {
     videoUrl: p.videoUrl || "", posterUrl: p.posterUrl || "", overlay: p.overlay !== false,
     title: p.title || "", subtitle: p.subtitle || "",
     cta1Label: p.cta1Label || "", cta1Link: p.cta1Link, cta2Label: p.cta2Label || "", cta2Link: p.cta2Link,
-    trustedText: p.trustedText || "", logos: p.logos,
+    trustedText: p.trustedText || "", logos: p.logos, titleSlot: p.titleSlot,
     phrase: p.phrase || "", description: p.description || "", stats, bgSrc: p.bgImage && p.bgImage.src,
     animated,
     grain: p.grain !== false, grainIntensity: p.grainIntensity ?? 0.08, grainSize: p.grainSize ?? 0.3, grainSpeed: p.grainSpeed ?? 800,
@@ -756,7 +772,9 @@ export function HeroTablet(p: HeroTabletProps) {
           <div className="sh-scene sh-scene--1">
             <div ref={s1} className="sh-s1">
               <div className="sh-s1-in">
-                {c.title && <h1 className="sh-h1" data-reveal>{renderLines(c.title)}</h1>}
+                {c.titleSlot
+                  ? <div className="sh-h1--slot" data-reveal>{c.titleSlot}</div>
+                  : c.title ? <h1 className="sh-h1" data-reveal>{renderLines(c.title)}</h1> : null}
                 {c.subtitle && <p className="sh-sub" data-reveal>{c.subtitle}</p>}
                 {(c.cta1Label || c.cta2Label) && (
                   <div className="sh-ctas" data-reveal>

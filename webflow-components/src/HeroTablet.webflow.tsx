@@ -79,6 +79,16 @@ export default declareComponent(HeroTablet, {
       defaultValue: "Trusted by|700+ companies",
       tooltip: "Satır kırmak için | kullan; boş = etiket gizli",
     }),
+    titleSlot: props.Slot({
+      name: "Title (slot)",
+      group: "Headline",
+      tooltip:
+        "Buraya bir Webflow Heading (H1, sitenin h1-style sınıfıyla) bırak — başlık " +
+        "LIGHT DOM'da kalır, yani shadow root'a girmeyen SEO araçları da sayfanın H1'ini " +
+        "görür ve metin Localization'dan çevrilir. Boşsa üstteki Title prop'u <h1> olarak " +
+        "basılır (o da gerçek bir <h1>'dir, ama shadow root'un içindedir). " +
+        "Heading'in margin'ini 0 yap; renk hero'dan miras gelir.",
+    }),
     logos: props.Slot({
       name: "Logos",
       group: "Trusted by",
