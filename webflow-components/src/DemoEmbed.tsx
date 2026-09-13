@@ -21,11 +21,23 @@
  *    generated <h1> with a real Webflow heading (class h1-style) so the site's
  *    own class styles it and Localization edits it in place.
  *
- * The iframe keeps its LOGICAL size and is scaled with CSS `zoom` (exactly
- * like the approved embeds — the app inside re-flows for the logical width,
- * a transform would only shrink pixels). Sizes are recomputed on resize and
- * on the host's ResizeObserver; the iframe src is only set once the block
- * comes near the viewport.
+ * The iframe keeps its LOGICAL size and is scaled down to the box. The scale
+ * is applied with `transform: scale()` + `transform-origin: 0 0`, NOT `zoom`:
+ * zoom on an iframe is a non-standard property whose effect on the embedded
+ * document's viewport differs between engines (on iOS Safari the demo came out
+ * laid out on a much wider canvas and only half of it was visible), while a
+ * transform is defined everywhere — the inner document always gets the iframe's
+ * CSS width as its viewport and only the painted result is scaled. The frame
+ * clips whatever falls outside. Sizes are recomputed on resize and on the
+ * host's ResizeObserver; the iframe src is only set once the block comes near
+ * the viewport.
+ *
+ * `mobileCanvasWidth` covers the other half of that failure mode: an embedded
+ * page with no <meta name="viewport"> is laid out by iOS Safari on its 980px
+ * fallback canvas instead of the iframe's width, so its (narrower, left-aligned)
+ * content only fills part of the box. Setting the canvas width to that number
+ * makes BOTH engines lay the app out on the same canvas, while the scale still
+ * maps the app's own content width onto the box and the rest is clipped.
  */
 
 import * as React from "react";
@@ -87,6 +99,8 @@ export interface TtsDemoProps {
   textSide?: string;
   /** phones: iframe height in px */
   mobileHeight?: number;
+  /** phones: width the embedded app lays itself out at (0 = the preset's own width) */
+  mobileCanvasWidth?: number;
   /** Full width: bottom margin in px */
   bottomMargin?: number;
   /** panel border + radius on the frame */
@@ -182,6 +196,20 @@ function StaggerLabel({ text }: { text: string }) {
   return <span className="tts_stg">{row("tts_stg-t--orig")}{row("tts_stg-t--clone")}</span>;
 }
 
+/* Scaled iframe: logical box at (canvasW x h), painted at `scale` from its top-left
+   corner. The frame is position:relative + overflow:hidden, so anything past the
+   box (an app narrower than the canvas leaves empty space on the right) is clipped. */
+function scaledBox(contentW: number, h: number, scale: number, canvasW?: number): React.CSSProperties {
+  return {
+    position: "absolute", top: 0, left: 0,
+    width: (canvasW && canvasW > 0 ? canvasW : contentW) + "px",
+    height: h + "px",
+    transform: "scale(" + scale + ")",
+    transformOrigin: "0 0",
+  };
+}
+const fitScale = (box: number, content: number) => Math.max(0.2, Math.min(1, box / content));
+
 export function DemoEmbed(p: TtsDemoProps) {
   const P = PRESETS[(p.preset || "tts").toLowerCase()] || PRESETS.tts;
   const SIDE = P.side, FULL = P.full, BASE = P.base;
@@ -192,6 +220,7 @@ export function DemoEmbed(p: TtsDemoProps) {
   const mobileH = Math.max(300, p.mobileHeight || 840);
   const bottom = p.bottomMargin == null ? 80 : Math.max(0, p.bottomMargin);
   const framed = p.framed !== false;
+  const canvasW = Math.max(0, p.mobileCanvasWidth || 0);
 
   const root = React.useRef<HTMLDivElement>(null);
   const frameRef = React.useRef<HTMLDivElement>(null);
@@ -220,13 +249,13 @@ export function DemoEmbed(p: TtsDemoProps) {
       const w = f.clientWidth; if (!w) return;
       const mobile = window.innerWidth <= MOBILE_BP;
       if (mobile) {
-        if (P.mobile === "square") setIfStyle({ width: BASE.w + "px", height: BASE.h + "px", zoom: String(Math.max(0.2, Math.min(1, w / BASE.w))) } as React.CSSProperties);
-        else setIfStyle({ width: "100%", height: "100%", zoom: "1" } as React.CSSProperties);
+        if (P.mobile === "square") setIfStyle(scaledBox(BASE.w, BASE.h, fitScale(w, BASE.w), canvasW));
+        else setIfStyle({ width: "100%", height: "100%" });
         return;
       }
-      if (full) { setIfStyle({ width: BASE.w + "px", height: BASE.h + "px", zoom: String(Math.max(0.2, Math.min(1, w / BASE.w))) } as React.CSSProperties); return; }
-      if (window.innerHeight <= SIDE.shortMax) { setIfStyle({ width: SIDE.lapW + "px", height: SIDE.lapH + "px", zoom: String(SIDE.lapZoom) } as React.CSSProperties); return; }
-      setIfStyle({ width: "100%", height: "100%", zoom: "1" } as React.CSSProperties);
+      if (full) { setIfStyle(scaledBox(BASE.w, BASE.h, fitScale(w, BASE.w))); return; }
+      if (window.innerHeight <= SIDE.shortMax) { setIfStyle(scaledBox(SIDE.lapW, SIDE.lapH, SIDE.lapZoom)); return; }
+      setIfStyle({ width: "100%", height: "100%" });
     };
     compute();
     let t = 0;
@@ -234,7 +263,7 @@ export function DemoEmbed(p: TtsDemoProps) {
     window.addEventListener("resize", onResize);
     const ro = new ResizeObserver(onResize); ro.observe(f);
     return () => { window.removeEventListener("resize", onResize); clearTimeout(t); ro.disconnect(); };
-  }, [full, P, BASE, SIDE, setIfStyle]);
+  }, [full, P, BASE, SIDE, setIfStyle, canvasW]);
 
   /* src only near the viewport (the demo app is heavy) */
   React.useEffect(() => {

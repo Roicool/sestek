@@ -16,6 +16,14 @@ export default declareComponent(SttDemo, {
     framed: props.Boolean({ name: "Frame border", group: "Layout", defaultValue: true, trueLabel: "On", falseLabel: "Off", tooltip: "Panel etrafında ince çerçeve + köşe yuvarlağı" }),
     
     bottomMargin: props.Number({ name: "Bottom margin (px)", group: "Layout", defaultValue: 80, tooltip: "Full width'te panelin alt boşluğu" }),
+    mobileCanvasWidth: props.Number({
+      name: "Mobile canvas width (px)", group: "Layout", defaultValue: 0,
+      tooltip:
+        "Telefonda demo uygulamasının KAÇ px genişlikte yerleştiği. 0 = demo'nun kendi genişliği (600). " +
+        "iOS Safari, viewport meta'sı olmayan gömülü sayfaları 980px'lik varsayılan tuvalde yerleştirir; " +
+        "uygulama solda kalıp sağda boşluk bırakıyorsa buraya 980 yaz — panel yine uygulamanın 600px'lik " +
+        "içeriğini kutuya oturtur, artan boş alan kırpılır.",
+    }),
 
     eyebrow: props.Text({ name: "Eyebrow", group: "Text", defaultValue: "Speech to text" }),
     titleSlot: props.Slot({ name: "Title (slot)", group: "Text", tooltip: "Yalnız Hero layout. Buraya h1-style sınıflı bir Webflow Heading bırakırsan sitenin kendi H1 stili uygulanır ve Localization ile çevrilir; boşsa Title prop'u <h1> olarak basılır." }),
