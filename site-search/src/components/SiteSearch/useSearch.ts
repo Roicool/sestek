@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { prepare, rankPrepared, suggestions } from "../../lib/search/rank";
+import { decodeEntities } from "../../lib/search/normalize";
 import type { RankedDoc, SearchDoc, SearchIndex, SearchLocale } from "../../lib/search/types";
 
 const CACHE_KEY = "sestek:search-index";
@@ -15,6 +16,14 @@ export interface UseSearchOptions {
 }
 
 export type SearchStatus = "idle" | "loading" | "ready" | "error";
+
+/* Entities the index builder may have left in the text (see decodeEntities). */
+const cleanDocs = (docs: SearchDoc[]): SearchDoc[] =>
+  docs.map((d) => {
+    const title = decodeEntities(d.title);
+    const summary = d.summary ? decodeEntities(d.summary) : d.summary;
+    return title === d.title && summary === d.summary ? d : { ...d, title, summary };
+  });
 
 export function useSearch({ indexUrl, locale, limit = 10, debounceMs = 60 }: UseSearchOptions) {
   const [docs, setDocs] = useState<SearchDoc[] | null>(null);
@@ -33,13 +42,13 @@ export function useSearch({ indexUrl, locale, limit = 10, debounceMs = 60 }: Use
           const raw = sessionStorage.getItem(CACHE_KEY);
           if (raw) {
             const c = JSON.parse(raw) as { at: number; url: string; index: SearchIndex };
-            if (c.url === indexUrl && Date.now() - c.at < CACHE_TTL) { setDocs(c.index.docs); setStatus("ready"); return; }
+            if (c.url === indexUrl && Date.now() - c.at < CACHE_TTL) { setDocs(cleanDocs(c.index.docs)); setStatus("ready"); return; }
           }
         } catch { /* storage unavailable */ }
         const r = await fetch(indexUrl, { credentials: "omit" });
         if (!r.ok) throw new Error(String(r.status));
         const index = (await r.json()) as SearchIndex;
-        setDocs(index.docs);
+        setDocs(cleanDocs(index.docs));
         setStatus("ready");
         try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), url: indexUrl, index })); } catch { /* quota */ }
       } catch {

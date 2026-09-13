@@ -21,6 +21,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { kindForPath, localeForPath, titleFromSlug } from "../src/lib/search/kinds";
+import { decodeEntities } from "../src/lib/search/normalize";
 import { SEEDS } from "../src/data/search-seeds";
 import type { SearchDoc, SearchIndex } from "../src/lib/search/types";
 
@@ -36,9 +37,7 @@ const SITEMAP_ONLY = args.includes("--sitemap-only");
 const OUT = resolve(__dirname, "..", opt("--out") || "fixtures-search-index.json");
 const CONCURRENCY = 6;
 
-const decode = (s: string) => s
-  .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
-  .replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, " ").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n));
+const decode = decodeEntities;   // hex + decimal + named, &amp; last
 const strip = (html: string) => decode(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 const clip = (s: string, n = 200) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…");
 
