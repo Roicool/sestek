@@ -240,8 +240,9 @@ const CSS = `
 .sh-s1-in{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:var(--spacing--4,1rem)}
 .sh-h1{margin:0;line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500);text-wrap:balance}
 /* Title slot — the heading dropped into it stays in the LIGHT DOM (Webflow
-   projects slot content through a real <slot>), so crawlers and SEO tools that
-   never pierce a shadow root still find the page's <h1>.
+   projects slot content through a real slot element), so crawlers and SEO tools
+   that never pierce a shadow root still find the page's heading. (No literal tag
+   names in this comment: it ships inside the page's inline CSS.)
    The wrapper deliberately carries NO font-size: the UA sheet sizes h1 at 2em,
    which would double whatever the wrapper set. The hero's type is handed to the
    slotted element itself instead, per breakpoint below. A site class on the

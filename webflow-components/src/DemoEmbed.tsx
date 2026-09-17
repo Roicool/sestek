@@ -127,7 +127,9 @@ const CSS = `
 .tts_eyebrow{margin:0;font-size:.8125rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tts-accent)}
 .tts_title{margin:0;font-size:var(--heading--h3,clamp(1.625rem,2.6vw,2.25rem));line-height:var(--leading--tight,1.15);font-weight:var(--font-weight--semibold,600);text-wrap:balance}
 .tts_desc{margin:0;font-size:var(--text--lg,1.0625rem);line-height:var(--leading--relaxed,1.6);color:var(--tts-muted)}
-/* HERO — centred copy above the panel; the <h1> mirrors the site's h1-style (home Hero metrics) */
+/* HERO — centred copy above the panel; the heading mirrors the site's h1-style
+   (home Hero metrics). No literal tag names in this comment: it ships inside the
+   page's inline CSS, and the search indexer used to match them as real markup. */
 .tts_hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--spacing--4,1rem);width:100%;max-width:var(--container--lg,64rem);margin:0 auto clamp(2rem,5vw,3.5rem)}
 .tts_h1{margin:0;font-size:var(--text--6xl,3.75rem);line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500);letter-spacing:-.01em;text-wrap:balance}
 .tts_hero .tts_desc{max-width:var(--container--sm,40rem)}

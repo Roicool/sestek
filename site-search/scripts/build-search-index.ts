@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { kindForPath, localeForPath, titleFromSlug } from "../src/lib/search/kinds";
-import { decodeEntities } from "../src/lib/search/normalize";
+import { decodeEntities, stripNonContent } from "../src/lib/search/normalize";
 import { SEEDS } from "../src/data/search-seeds";
 import type { SearchDoc, SearchIndex } from "../src/lib/search/types";
 
@@ -74,7 +74,10 @@ async function fetchDoc(path: string): Promise<SearchDoc> {
   try {
     const r = await fetch(SITE + path, { headers: { "user-agent": "SestekSearchIndexer/1.0 (+https://www.sestek.com)" }, redirect: "follow" });
     if (!r.ok) return base;
-    const html = await r.text();
+    const raw = await r.text();
+    // Scripts, styles and comments are not page content — a tag NAMED inside
+    // them must never be mistaken for the page's heading (see stripNonContent).
+    const html = stripNonContent(raw);
     const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
     const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)["']/i)

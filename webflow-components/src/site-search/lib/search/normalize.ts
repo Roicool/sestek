@@ -47,6 +47,22 @@ const NAMED_ENTITIES: Record<string, string> = {
 const codePoint = (n: number, raw: string): string =>
   n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : raw;
 
+/*
+ * Everything in a page that is markup-shaped but is NOT page content: HTML
+ * comments, <script> and <style> blocks. The index builder must drop these
+ * before it looks for the <h1>/<title>, because a stylesheet may *mention* a
+ * tag in a comment — a Code Component's inline CSS carried the words
+ * "the <h1> mirrors the site's h1-style", and the builder's `<h1[^>]*>` then
+ * matched there and captured everything up to the real closing </h1>, so the
+ * two demo pages were indexed under a title made of CSS source.
+ */
+export function stripNonContent(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, " ");
+}
+
 export function decodeEntities(s: string): string {
   if (!s || s.indexOf("&") < 0) return s;
   return s
