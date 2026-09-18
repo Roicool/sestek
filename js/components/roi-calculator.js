@@ -1,14 +1,25 @@
 /*!
- * roi-calculator.js v3.0.1  (was savings-calculator.js v2.1.0)
+ * roi-calculator.js v3.1.0  (was savings-calculator.js v2.1.0)
  * Ramp-style live ROI calculator — custom div-based slider (Radix-like
  * structure, no native <input type=range>, so Webflow CSS can't break it)
  * and a NumberFlow-style rolling counter: every digit is a vertical strip
  * that rolls to its new value (CSS transitions — works with or without gsap).
  * Fully data-attribute driven — configure everything from Webflow.
  *
- * v3: the SLIDER is now "Number of agents"; "Total inquiries (monthly)" and
- * "Cost per agent" are the two number inputs. Formula = the original sestek.com
- * ROI page (calculate_roi):
+ * Changelog
+ * v3.1.0 — the rate is the AHT (average handling time) reduction that speech
+ *          analytics delivers, and the business fixes it at 10 %: default
+ *          0.10 (was 0.7). data-sv-rate still overrides it for one-off pages.
+ * v3.0.1 — total announced via visually hidden text, not aria-label on a div
+ * v3.0.0 — slider = number of agents; original calculate_roi formula
+ *
+ * Inputs: 3 values from the visitor + 1 constant.
+ *   agents        Number of agents                  (slider)
+ *   costPerAgent  Cost per agent, monthly           (input)
+ *   inquiries     Total calls / inquiries, monthly  (input)
+ *   rate          AHT reduction from speech analytics — FIXED 10 % (0.10)
+ *
+ * Formula (the original sestek.com ROI page, calculate_roi):
  *   totalCostOfAgents = agents × costPerAgent
  *   costPerCall       = totalCostOfAgents / inquiries
  *   costPerCallAfter  = costPerCall × (1 − rate)
@@ -16,7 +27,7 @@
  *                     = totalCostOfAgents × rate      (inquiries cancels out —
  *                       it only shapes the per-call figures, not the total)
  *   annual            = monthly × 12
- *   fte               = monthly / costPerAgent
+ *   fte               = monthly / costPerAgent        (savings in full-time staff)
  *
  * DOM (Webflow):
  *   <section data-savings-calc>
@@ -43,7 +54,8 @@
  *   </section>
  *
  * Attributes on [data-savings-calc] (all optional):
- *   data-sv-rate       cost decrease after automation: 0.7 or 70 (%)  (default 0.7)
+ *   data-sv-rate       AHT reduction rate: 0.1 or 10 (%) — the business
+ *                      constant is 10 %, override only for a one-off page  (default 0.1)
  *   data-sv-min        slider minimum, number of agents               (default 5)
  *   data-sv-max        slider maximum, number of agents            (default 5000)
  *   data-sv-start      slider starting value — omit to start at the middle
@@ -64,7 +76,7 @@
   "use strict";
 
   var DEFAULTS = {
-    rate: 0.7,
+    rate: 0.10,          // AHT reduction from speech analytics — fixed business constant (10 %)
     min: 5,
     max: 5000,
     currency: "$",
@@ -79,8 +91,9 @@
   }
   function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
-  /* Original calculate_roi(), untouched maths. inquiries = 0 only kills the
-     per-call figures; the total is agents × cost × rate regardless. */
+  /* Original calculate_roi(), untouched maths. rate = AHT reduction (0.10).
+     inquiries = 0 only kills the per-call figures; the total is
+     agents × cost × rate regardless. */
   function computeRoi(agents, costPerAgent, inquiries, rate) {
     var totalCost = agents * costPerAgent;
     var costPerCall = inquiries > 0 ? totalCost / inquiries : 0;
