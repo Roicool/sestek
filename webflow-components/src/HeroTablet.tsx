@@ -328,12 +328,24 @@ const CSS = `
 
 /* ═══ TABLET + MOBILE (≤ 991px) — static vertical flow ═════════ */
 @media (max-width:991px){
-  .sh-top{height:100vh;height:100svh;min-height:480px;overflow:hidden;background:#0b0b0d}
+  /* The screen height is a FLOOR here, not a fixed box. At the site's normal
+     type the copy fits and the hero is exactly one screen, as before. When the
+     viewer has enlarged text (iOS "larger text" scales the rem-based H1, which
+     then wraps to five or six lines) the copy is taller than 100svh, and a
+     fixed box would centre it and let it overflow BOTH edges — under the
+     navbar at the top, over the Trusted-by row at the bottom. So scene 1 sits
+     in normal flow on this breakpoint and the box grows with it; it stays an
+     absolute overlay on desktop, where the pinned scroll timeline needs it.
+     The doubled min-height keeps the old landscape floor on engines without
+     svh units. */
+  .sh-top{height:auto;min-height:480px;min-height:max(100svh,480px);display:flex;flex-direction:column;overflow:hidden;background:#0b0b0d}
+  .sh-scene--1{position:relative;inset:auto;flex:1 1 auto;display:flex;flex-direction:column}
+  .sh-s1{height:auto;flex:1 1 auto}
   .sh-ovl{background:linear-gradient(to bottom,rgba(0,0,0,.05) 15%,rgba(0,0,0,.45) 60%,rgba(0,0,0,.7) 100%)}
   /* Clear the fixed navbar + Top Bar (when present) so the centered copy never
      sits under them: --topbar-h is written on <html> by the Top Bar component
      and inherits through the shadow root; it is 0 when the bar is hidden. */
-  .sh-s1-in{padding:calc(var(--nav-height,3.75rem) + var(--topbar-h,0px) + clamp(1rem,4vw,2rem)) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem)}
+  .sh-s1-in{flex:1 0 auto;padding:calc(var(--nav-height,3.75rem) + var(--topbar-h,0px) + clamp(1rem,4vw,2rem)) var(--view--px,1.5rem) clamp(1.5rem,4vw,2.5rem)}
   .sh-h1{font-size:clamp(2rem,5.6vw,3.25rem);letter-spacing:-.01em}
   .sh-h1--slot ::slotted(*){font-size:clamp(2rem,5.6vw,3.25rem);letter-spacing:-.01em;line-height:var(--leading--tight,1.1);font-weight:var(--font-weight--medium,500)}
   .sh-trust{position:relative;z-index:2;flex:none;display:flex;flex-direction:column;gap:var(--spacing--3,.75rem);padding:0 0 var(--spacing--5,1.25rem)}

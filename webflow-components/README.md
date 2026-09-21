@@ -126,7 +126,12 @@ edilmez); `Sestek.refreshScroll` varsa rebuild'ler onun üzerinden gider.
 Component sitenin CSS değişkenlerini (`--surface--base`, `--color-text--*`,
 `--brand-primary--500`, `--text--6xl`, `--spacing--*`, `--container--*`,
 `--view--px`, `--section--py-2`, `--neutral--050`) shadow root içinden miras
-alır; font sayfadan gelir. Başlık her hâlükârda `<h1>`'dir, ama component'in
+alır; font sayfadan gelir. ≤ 991px'te hero kutusu **sabit bir ekran değil, en az
+bir ekran**: normal yazı tipinde tam 100svh (bugünkü görünüm birebir aynı), ama
+ziyaretçi yazı tipini büyütmüşse (iOS "büyük yazı" rem tabanlı H1'i büyütür)
+metin sığmadığında kutu uzar. Sabit kutuda metin ortalandığı için taşma hem
+yukarı hem aşağı gidiyor, navbar'ın altına giriyor ve "Trusted by" satırının
+üstüne biniyordu. Başlık her hâlükârda `<h1>`'dir, ama component'in
 shadow root'unun içindedir — shadow DOM'u açmayan SEO tarayıcıları onu
 saymaz. Sayfanın H1'inin light DOM'da olması gerekiyorsa **Title (slot)**
 slot'una `h1-style` sınıflı bir Webflow Heading bırak; slot içeriği light
