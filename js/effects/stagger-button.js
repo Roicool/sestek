@@ -1,5 +1,5 @@
 /*!
- * stagger-button.js v1.0.0
+ * stagger-button.js v1.1.0
  * Button hover text animation — the label's characters stagger UP and fade
  * out while a cloned copy of the same label staggers up FROM BELOW and fades
  * in, on mouseenter. Reverses on mouseleave. Degrades to no-op (text just
@@ -44,8 +44,14 @@
     });
 
     global.requestAnimationFrame(function () {
-      var splitOriginal = new SplitText(originalText, { type: "chars" });
-      var splitClone = new SplitText(cloneText, { type: "chars" });
+      // "words,chars", not "chars": each character becomes an inline-block, so a
+      // chars-only split lets the line break between ANY two letters when the
+      // button is narrower than its label ("Request a de / mo" on a phone with
+      // enlarged text). Wrapping the chars in word boxes keeps line breaks at
+      // word boundaries, like a normal button. The animation still drives
+      // `.chars`, unchanged.
+      var splitOriginal = new SplitText(originalText, { type: "words,chars" });
+      var splitClone = new SplitText(cloneText, { type: "words,chars" });
 
       gsap.set(splitClone.chars, { y: 100, opacity: 0 });
 
