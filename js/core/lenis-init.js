@@ -112,7 +112,7 @@
   var lateTimeouts = [];
   var guardActive = false;
   var nativeMode = false;
-  var lastNativeScroll = 0;
+  var lastNativeScroll = -Infinity;
   var nativeScrollListener = null;
   var lastRefreshHeight = -1;
 
