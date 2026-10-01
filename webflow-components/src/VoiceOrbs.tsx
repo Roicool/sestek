@@ -4,20 +4,22 @@
  *
  *   1. VOICES FROM PROPS. Up to ten voices are entered by hand in the
  *      Designer (Voice 1–10 groups: name, description, audio URL, optional
- *      orb image, optional "#hex,#hex,#hex" colours). An empty name hides
- *      the voice. More voices can be added later by extending the props.
+ *      "#hex,#hex,#hex" colours). An empty name hides the voice. More
+ *      voices can be added later by extending the props.
  *
- *   2. PROCEDURAL WEBGL ORBS — no image assets. The same fluid-gradient
- *      shader the old component reserved for the active orb now renders
- *      every orb from a 3-colour palette: fbm domain-warp flow, spherical
- *      rim shading, top-left highlight, film grain. The active orb runs live
- *      (audio-reactive: energy speeds up the flow and brightens it); the
- *      other orbs show a still frame of the same shader, rendered once per
- *      voice into a data-URL and cached, so only ONE WebGL context is ever
- *      alive. Palettes: per-voice data-vo-colors, else a rotating set of
- *      Sagitone-like bold palettes. Orb style = Image (the default, matching
- *      the live site) uses the Sagitone gradient images: neighbours show the
- *      image, the active orb warps it live as a WebGL texture.
+ *   2. PROCEDURAL WEBGL ORBS — no image assets, ever. The fluid-gradient
+ *      shader renders every orb from a 3-colour palette: fbm domain-warp
+ *      flow, spherical rim shading, top-left highlight, film grain. The
+ *      active orb runs live (audio-reactive: energy speeds up the flow and
+ *      brightens it); the other orbs show a still frame of the same shader,
+ *      rendered once per voice into a data-URL and cached, so only ONE
+ *      WebGL context is ever alive. Palettes: per-voice Colors prop, else a
+ *      rotating set of Sagitone-like bold palettes.
+ *
+ *      The former "Image" orb style (Sagitone gradient JPGs as <img> +
+ *      WebGL texture) was removed: the assets were ~4 MB each and the
+ *      procedural orbs are indistinguishable at orb size. No image URL is
+ *      read or fetched anywhere in this component any more.
  *
  * Behaviour (as v3.4): 5-orb ladder (centre + 2 + 2), infinite loop via
  * FIVE DOM copies and an invisible ±N re-centre (three copies let rapid
@@ -31,7 +33,6 @@
 import * as React from "react";
 
 export interface VoiceOrbsProps {
-  orbStyle?: string;
   sizes?: string;
   fit?: number;
   minScale?: number;
@@ -42,20 +43,20 @@ export interface VoiceOrbsProps {
 
   card?: boolean;
 
-  v1Name?: string; v1Desc?: string; v1Audio?: string; v1Image?: string; v1Colors?: string;
-  v2Name?: string; v2Desc?: string; v2Audio?: string; v2Image?: string; v2Colors?: string;
-  v3Name?: string; v3Desc?: string; v3Audio?: string; v3Image?: string; v3Colors?: string;
-  v4Name?: string; v4Desc?: string; v4Audio?: string; v4Image?: string; v4Colors?: string;
-  v5Name?: string; v5Desc?: string; v5Audio?: string; v5Image?: string; v5Colors?: string;
-  v6Name?: string; v6Desc?: string; v6Audio?: string; v6Image?: string; v6Colors?: string;
-  v7Name?: string; v7Desc?: string; v7Audio?: string; v7Image?: string; v7Colors?: string;
-  v8Name?: string; v8Desc?: string; v8Audio?: string; v8Image?: string; v8Colors?: string;
-  v9Name?: string; v9Desc?: string; v9Audio?: string; v9Image?: string; v9Colors?: string;
-  v10Name?: string; v10Desc?: string; v10Audio?: string; v10Image?: string; v10Colors?: string;
+  v1Name?: string; v1Desc?: string; v1Audio?: string; v1Colors?: string;
+  v2Name?: string; v2Desc?: string; v2Audio?: string; v2Colors?: string;
+  v3Name?: string; v3Desc?: string; v3Audio?: string; v3Colors?: string;
+  v4Name?: string; v4Desc?: string; v4Audio?: string; v4Colors?: string;
+  v5Name?: string; v5Desc?: string; v5Audio?: string; v5Colors?: string;
+  v6Name?: string; v6Desc?: string; v6Audio?: string; v6Colors?: string;
+  v7Name?: string; v7Desc?: string; v7Audio?: string; v7Colors?: string;
+  v8Name?: string; v8Desc?: string; v8Audio?: string; v8Colors?: string;
+  v9Name?: string; v9Desc?: string; v9Audio?: string; v9Colors?: string;
+  v10Name?: string; v10Desc?: string; v10Audio?: string; v10Colors?: string;
 }
 
 type RGB = [number, number, number];
-type Voice = { name: string; desc: string; src: string; img: string; colors: RGB[] | null };
+type Voice = { name: string; desc: string; src: string; colors: RGB[] | null };
 
 /* ── Palettes ───────────────────────────────────────────────── */
 const PALETTES: RGB[][] = [
@@ -123,7 +124,6 @@ void main(){
 
 type Viz = {
   canvas: HTMLCanvasElement;
-  setImage: (img: HTMLImageElement | null) => boolean;
   setColors: (c: RGB[]) => void;
   resize: (side: number) => void;
   draw: (t: number, e: number) => void;
@@ -163,7 +163,6 @@ function createViz(canvas: HTMLCanvasElement, preserveDrawingBuffer = false): Vi
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  const orbTex = gl.createTexture();
 
   const uRes = gl.getUniformLocation(prog, "u_res"), uTime = gl.getUniformLocation(prog, "u_time");
   const uEnergy = gl.getUniformLocation(prog, "u_energy"), uHasTex = gl.getUniformLocation(prog, "u_hasTex");
@@ -174,20 +173,6 @@ function createViz(canvas: HTMLCanvasElement, preserveDrawingBuffer = false): Vi
 
   return {
     canvas,
-    setImage(img) {
-      if (!img) { gl.uniform1f(uHasTex, 0); return false; }
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, orbTex);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); }
-      catch (_) { gl.uniform1f(uHasTex, 0); return false; }
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.uniform1f(uHasTex, 1);
-      return true;
-    },
     setColors(cols) { for (let i = 0; i < 3; i++) gl.uniform3fv(uC[i], cols[i] || PALETTES[0][i]); },
     resize(side) { canvas.width = side; canvas.height = side; gl.viewport(0, 0, side, side); },
     draw(t, e) {
@@ -243,7 +228,7 @@ let currentlyPlaying: { stop: () => void } | null = null;
 
 export function VoiceOrbs(p: VoiceOrbsProps) {
   const {
-    orbStyle = "Image", sizes = "220,150,104", fit = 760, minScale = 0.42,
+    sizes = "220,150,104", fit = 760, minScale = 0.42,
     gap = 64, captionWidth = 280, navOffset = 230, initial = 0, card = true,
   } = p;
 
@@ -254,11 +239,11 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
 
   /* Voices from the Voice 1–10 props */
   const P = p as Record<string, unknown>;
-  const propKey = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => [P["v" + n + "Name"], P["v" + n + "Desc"], P["v" + n + "Audio"], P["v" + n + "Image"], P["v" + n + "Colors"]].join("\u0001")).join("\u0002");
+  const propKey = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => [P["v" + n + "Name"], P["v" + n + "Desc"], P["v" + n + "Audio"], P["v" + n + "Colors"]].join("\u0001")).join("\u0002");
   const propVoices = React.useMemo<Voice[]>(() => {
     const g = (n: number): Voice => ({
       name: String(P["v" + n + "Name"] || ""), desc: String(P["v" + n + "Desc"] || ""),
-      src: String(P["v" + n + "Audio"] || ""), img: String(P["v" + n + "Image"] || ""),
+      src: String(P["v" + n + "Audio"] || ""),
       colors: parseColors(P["v" + n + "Colors"] as string | undefined),
     });
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g).filter((v) => v.name || v.src);
@@ -267,15 +252,14 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
 
   const voices = propVoices;
   const N = voices.length;
-  const procedural = orbStyle !== "Image";
   const paletteOf = React.useCallback((i: number): RGB[] => voices[i].colors || PALETTES[i % PALETTES.length], [voices]);
 
-  /* Still frames for the non-active orbs (procedural mode): one shared
+  /* Still frames for the non-active orbs: one shared
      offscreen context renders each voice once at a fixed phase. Deferred
      until the root first nears the viewport, then one voice per frame so the
      work never blocks a single frame. */
   React.useEffect(() => {
-    if (!procedural || !N) return;
+    if (!N) return;
     const root = rootRef.current;
     if (!root) return;
     let alive = true, raf = 0, i = 0;
@@ -283,7 +267,6 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     const out: Record<number, string> = {};
     const step = () => {
       if (!alive || !viz || !cv) return;
-      viz.setImage(null);
       viz.setColors(paletteOf(i));
       viz.draw(1.3 + i * 1.7, 0);
       out[i] = cv.toDataURL("image/png");
@@ -315,7 +298,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       if (io) io.disconnect();
       if (viz) viz.dispose();
     };
-  }, [procedural, N, paletteOf]);
+  }, [N, paletteOf]);
 
   /* ── The carousel engine (port of setup() in voice-orbs.js) ───── */
   React.useEffect(() => {
@@ -373,16 +356,6 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
     rc.style.strokeDasharray = "100"; rc.style.strokeDashoffset = "100";
     ring.appendChild(rc);
 
-    const texCache: Record<number, Promise<HTMLImageElement | null>> = {};
-    const textureFor = (vi: number) => {
-      if (!texCache[vi]) texCache[vi] = new Promise((res) => {
-        const s = voices[vi].img;
-        if (!procedural && s) { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = s; }
-        else res(null);
-      });
-      return texCache[vi];
-    };
-
     // layout — transform-only
     let L0 = 0, gapNow = 0;
     const scaleNow = () => Math.max(minScale, Math.min(1, (viewport.clientWidth || root.clientWidth) / fit));
@@ -419,7 +392,6 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       root.style.setProperty("--vo-nav-top", Math.round(tr.top - rt + tr.height / 2 - 20) + "px");
     };
 
-    let colorSeq = 0;
     const activate = () => {
       els.forEach((el, i) => {
         el.classList.toggle("is-active", i === pos);
@@ -430,13 +402,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       if (orb && ring.parentNode !== orb) { rc.style.strokeDashoffset = "100"; orb.insertBefore(ring, orb.querySelector(".vo-play")); }
       if (!canvas) return;
       if (orb && canvas.parentNode !== orb) orb.insertBefore(canvas, orb.querySelector(".vo-play"));
-      const vi = voiceOf(pos), seq = ++colorSeq;
-      textureFor(vi).then((im) => {
-        if (seq !== colorSeq || !viz) return;
-        if (viz.setImage(im)) return;
-        viz.setColors(paletteOf(vi));
-      });
-      textureFor((vi + 1) % N); textureFor((vi + N - 1) % N);
+      if (viz) viz.setColors(paletteOf(voiceOf(pos)));
     };
 
     // rAF — runs only while the root intersects the viewport (IO below);
@@ -599,7 +565,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
       if (ring.parentNode) ring.parentNode.removeChild(ring);
       els.forEach((el) => { el.style.transform = ""; el.style.width = ""; el.classList.remove("is-active", "vo-d1", "is-playing"); });
     };
-  }, [voices, N, procedural, sizes, fit, minScale, gap, initial, paletteOf]);
+  }, [voices, N, sizes, fit, minScale, gap, initial, paletteOf]);
 
   /* Server / first-paint orb zone height = what setStatic will compute:
        L0 = ladder[0] * clamp(minScale, rootWidth / fit, 1)
@@ -620,9 +586,7 @@ export function VoiceOrbs(p: VoiceOrbsProps) {
   const renderItem = (v: Voice, vi: number, copy: number) => (
     <div key={copy + "-" + vi} className="vo-item" data-vo-voice={vi}>
       <div className="vo-orb">
-        {procedural
-          ? (thumbs[vi] ? <img src={thumbs[vi]} alt="" draggable={false} decoding="async" /> : <div className="vo-ph" style={{ position: "absolute", inset: "0 0 0 0", borderRadius: "9999px", background: "radial-gradient(circle at 35% 30%, #fff 0%, #dcd6f7 45%, #9f95e0 100%)" }} />)
-          : (v.img ? <img src={v.img} alt="" draggable={false} crossOrigin="anonymous" decoding="async" loading={copy === 2 ? undefined : "lazy"} /> : null)}
+        {thumbs[vi] ? <img src={thumbs[vi]} alt="" draggable={false} decoding="async" /> : <div className="vo-ph" style={{ position: "absolute", inset: "0 0 0 0", borderRadius: "9999px", background: "radial-gradient(circle at 35% 30%, #fff 0%, #dcd6f7 45%, #9f95e0 100%)" }} />}
         <button type="button" className="vo-play" aria-label={"Play " + (v.name || "voice") + " preview"} tabIndex={copy === 2 ? 0 : -1}>{PLAY}{PAUSE}</button>
       </div>
       <div className="vo-caption">
