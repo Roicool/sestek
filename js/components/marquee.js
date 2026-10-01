@@ -1,5 +1,5 @@
 /*!
- * marquee.js v1.3.1
+ * marquee.js v1.4.0
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
  *
@@ -18,6 +18,9 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.4.0 — init is split into a WRITE phase (clone the items of every marquee)
+ *          and a READ phase (measure every track): one forced reflow for the
+ *          whole page instead of one per marquee. Behaviour unchanged.
  * v1.3.1 — data-marquee may sit on the .marquee__track element itself (the
  *          root then doubles as the track) instead of only on a wrapper —
  *          previously logged ".marquee__track not found" and did nothing.
@@ -59,13 +62,17 @@
     );
     if (!roots.length) return;
 
-    roots.forEach(setupInstance);
+    // Phase 1 (writes): clone the items of EVERY marquee. Phase 2 (reads):
+    // measure every track. Interleaving them (clone → measure → clone → …)
+    // forced a layout per marquee; batched, the page lays out once.
+    var finishers = roots.map(prepareInstance).filter(Boolean);
+    finishers.forEach(function (finish) { finish(); });
   }
 
   /* ─────────────────────────────────────────────────────────────
-   *  Single-instance setup
+   *  Single-instance setup — returns the read-phase continuation
    * ───────────────────────────────────────────────────────────── */
-  function setupInstance(root) {
+  function prepareInstance(root) {
     if (root._marqueeInit) return;                        // idempotent — no duplicate ticker loops
     root._marqueeInit = true;
 
@@ -107,6 +114,10 @@
       clone.setAttribute("aria-hidden", "true");
       track.appendChild(clone);
     });
+
+    // Everything from here reads layout — deferred until every marquee on
+    // the page has finished its DOM writes (see initMarquee).
+    return function finish() {
 
     // ── 2. Measure loop cycle width ───────────────────────────
     //    With N original + N clone items and uniform column-gap G:
@@ -350,6 +361,8 @@
       gsap.ticker.remove(tick);
       if (spTween) spTween.kill();
     };
+
+    }; // finish
   }
 
   global.Sestek            = global.Sestek || {};
