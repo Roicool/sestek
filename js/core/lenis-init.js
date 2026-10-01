@@ -1,9 +1,17 @@
 /*!
- * lenis-init.js v1.5.0
+ * lenis-init.js v1.5.1
  * Lenis smooth scroll — optional GSAP ScrollTrigger sync + stale-height guard
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.5.1 — Geç güvenlik refresh'leri (500/1500 ms) artık KOŞULLU: gerçek
+ *          `load` geldiyse ScrollTrigger zaten kendi load-refresh'ini atmış
+ *          olur; sayfa yüksekliği o ölçümden beri değişmediyse ikinci ve
+ *          üçüncü tam refresh (her trigger için layout) atlanır. Mobil
+ *          Lighthouse'ta lenis-init'e yazılan CPU'nun büyük kısmı bu
+ *          refresh'lerin yerleşim maliyetiydi. 4 sn asılı-load sigortasıyla
+ *          gelen settle'da refresh yine koşulsuz koşar (load-refresh hiç
+ *          gelmemiştir). Pin bekçisi değişmeden sürer.
  * v1.5.0 — NATİVE MOD (mobil ana-iş-parçacığı diyeti): dokunmatik cihazda
  *          Lenis zaten hissedilmez (touch kaydırma tarayıcıya bırakılır,
  *          smoothTouch kapalı) ama her karede lenis.raf + ScrollTrigger.update
@@ -106,6 +114,11 @@
   var nativeMode = false;
   var lastNativeScroll = 0;
   var nativeScrollListener = null;
+  var lastRefreshHeight = -1;
+
+  function pageHeight() {
+    return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  }
 
   function wantsNative(native) {
     if (native === true) return true;
@@ -158,8 +171,17 @@
       refreshTimer = null;
       var lenis = global.lenisInstance;
       if (lenis) lenis.resize();
+      lastRefreshHeight = pageHeight();
       if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
     }, 200);
+  }
+
+  // Late safety pass: only pay for a full refresh when the page height moved
+  // since the last measured one. ScrollTrigger's own load-refresh counts as
+  // a measurement when `load` really fired.
+  function refreshIfChanged() {
+    if (lastRefreshHeight === pageHeight()) return;
+    refreshScroll();
   }
 
   // ── Stale-height guard ──────────────────────────────────────────────
@@ -239,21 +261,26 @@
       }
     };
 
-    var settle = function () {
+    var settle = function (fromLoad) {
       if (loadSettled) return;
       loadSettled = true;
+      var late = refreshScroll;
+      if (fromLoad === true) {
+        lastRefreshHeight = pageHeight();   // ScrollTrigger'ın load-refresh ölçümü
+        late = refreshIfChanged;
+      }
       lateTimeouts.push(
-        setTimeout(refreshScroll, 500),
-        setTimeout(refreshScroll, 1500),
+        setTimeout(late, 500),
+        setTimeout(late, 1500),
         setTimeout(sentry, 2500),            // kalibrasyon (refresh'ler oturdu)
         setTimeout(sentry, 6000),            // yoklama 1
         setTimeout(sentry, 12000)            // yoklama 2 — geç sürprizler
       );
     };
     if (document.readyState === "complete") {
-      settle();
+      settle(true);
     } else {
-      global.addEventListener("load", settle, { once: true });
+      global.addEventListener("load", function () { settle(true); }, { once: true });
       // ASILI-LOAD SİGORTASI: takılı bir kaynak load'u sonsuza dek asarsa
       // (kurumsal proxy/adblock karartması) 4 sn sonra devral — gözcü açılır,
       // telafi refresh'leri koşar. ScrollTrigger'ın kendi load-refresh'inin
@@ -273,6 +300,7 @@
       nativeScrollListener = null;
     }
     nativeMode = false;
+    lastRefreshHeight = -1;
   }
 
   function initLenis(options) {
