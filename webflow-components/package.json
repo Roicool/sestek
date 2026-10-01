@@ -4,6 +4,7 @@
   "private": true,
   "description": "Sestek Webflow Code Components — React components importable into the Webflow Designer via DevLink",
   "scripts": {
+    "stamp": "node scripts/stamp-version.mjs",
     "typecheck": "tsc --noEmit",
     "bundle": "webflow devlink bundle",
     "publish:webflow": "webflow devlink import"

@@ -38,21 +38,13 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      # Designer'daki Libraries panelinde hangi derlemenin güncel olduğu
-      # okunabilsin diye kütüphane adına package.json sürümü eklenir
-      # ("Sestek Code Components v1.13.0"). library.id değişmez, aynı
-      # kütüphane güncellenir; webflow.json repo'da sürümsüz kalır.
-      - name: Stamp library name with the package version
-        run: |
-          node -e '
-            const fs = require("fs");
-            const m = require("./webflow.json");
-            const v = require("./package.json").version;
-            const base = m.library.name.replace(/\s+v\d+\.\d+\.\d+$/, "");
-            m.library.name = base + " v" + v;
-            fs.writeFileSync("webflow.json", JSON.stringify(m, null, 2) + "\n");
-            console.log("library name:", m.library.name);
-          '
+      # Designer'da hangi derlemenin güncel olduğu adından okunabilsin diye
+      # kütüphane adına VE her component adına package.json sürümü eklenir
+      # ("Sestek Code Components v1.13.0", "Top Bar v1.13.0"). library.id ve
+      # export adları değişmez: aynı kütüphane/component'ler yeniden adlanır.
+      # Damgalı dosyalar commit'lenmez; repo sürümsüz kalır.
+      - name: Stamp library + component names with the package version
+        run: node scripts/stamp-version.mjs
 
       - name: Publish library to Webflow
         env:

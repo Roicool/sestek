@@ -97,11 +97,14 @@ Aktifleşmesi için iki tek seferlik adım:
    API access → token oluştur; GitHub repo → Settings → Secrets and
    variables → Actions → `WEBFLOW_API_TOKEN` adıyla kaydet.
 
-CI yayından hemen önce kütüphane adına `package.json` sürümünü ekler
-("Sestek Code Components v1.13.0"): Designer'daki Libraries panelinde hangi
-derlemenin güncel olduğu adından okunur. `library.id` aynı kaldığı için
-bu bir yeniden adlandırmadır, yeni kütüphane değil; `webflow.json` repo'da
-sürümsüz kalır. Bu yüzden her yayın öncesi `package.json` sürümünü yükselt.
+CI yayından hemen önce `scripts/stamp-version.mjs` ile kütüphane adına
+**ve her component adına** `package.json` sürümünü ekler ("Sestek Code
+Components v1.13.0", "Top Bar v1.13.0"): Designer'da Site Components
+altındaki eski kopya ile kütüphanedeki güncel sürüm adından ayırt edilir.
+`library.id` ve export adları aynı kaldığı için bu bir yeniden
+adlandırmadır, yeni kütüphane/component değil; repo sürümsüz kalır, damgalı
+dosyalar commit'lenmez. Her yayın öncesi `package.json` sürümünü yükselt.
+Yerelde denemek için `npm run stamp`, sonra `git checkout -- src webflow.json`.
 
 **Dikkat:** PR'lar GitHub App token'ıyla merge edilirse `push` tetikleyicisi
 çalışmaz (GitHub'ın döngü koruması). Bu durumda Actions sekmesinden
