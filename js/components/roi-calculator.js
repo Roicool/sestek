@@ -1,5 +1,5 @@
 /*!
- * roi-calculator.js v3.1.0  (was savings-calculator.js v2.1.0)
+ * roi-calculator.js v3.1.1  (was savings-calculator.js v2.1.0)
  * Ramp-style live ROI calculator — custom div-based slider (Radix-like
  * structure, no native <input type=range>, so Webflow CSS can't break it)
  * and a NumberFlow-style rolling counter: every digit is a vertical strip
@@ -7,6 +7,9 @@
  * Fully data-attribute driven — configure everything from Webflow.
  *
  * Changelog
+ * v3.1.1 — no forced reflows in the roller: non-digit widths come from a
+ *          canvas measureText (no layout read), and new columns / digit
+ *          strips are flushed ONCE per update instead of once each
  * v3.1.0 — the rate is the AHT (average handling time) reduction that speech
  *          analytics delivers, and the business fixes it at 10 %: default
  *          0.10 (was 0.7). data-sv-rate still overrides it for one-off pages.
@@ -138,13 +141,6 @@
     host.classList.add("sv-num");
     var cols = [];                       // left → right
 
-    // Hidden measurer: non-digit chars ($ , .) get their real width in em,
-    // so column widths can transition smoothly when the number grows/shrinks.
-    var measure = document.createElement("span");
-    measure.className = "sv-num__measure";
-    measure.setAttribute("aria-hidden", "true");
-    host.appendChild(measure);
-
     // Screen-reader text: the rolling columns are aria-hidden, so the value is
     // announced from this visually hidden span (an aria-label on a plain <div>
     // is a prohibited ARIA attribute — Lighthouse "aria-prohibited-attr").
@@ -152,14 +148,28 @@
     sr.className = "sv-num__sr";
     sr.style.cssText = "position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap";
     host.appendChild(sr);
-    var emCache = {};
+
+    // Non-digit chars ($ , .) need their real width in em so column widths can
+    // transition smoothly. Measured on a canvas with the host's computed font:
+    // no DOM node, no layout read, so nothing here can force a reflow. The
+    // cache is dropped once web fonts land, in case the metrics changed.
+    var emCache = {}, ctx = null, fontStr = null, fontPx = 16;
     function charEm(ch) {
       if (emCache[ch] == null) {
-        measure.textContent = ch;
-        var fs = parseFloat(getComputedStyle(host).fontSize) || 16;
-        emCache[ch] = measure.getBoundingClientRect().width / fs;
+        if (!ctx) ctx = document.createElement("canvas").getContext("2d");
+        if (!fontStr) {
+          var cs = getComputedStyle(host);
+          fontPx = parseFloat(cs.fontSize) || 16;
+          fontStr = cs.font || (cs.fontStyle + " " + cs.fontWeight + " " + fontPx + "px " + cs.fontFamily);
+        }
+        var w = 0;
+        if (ctx) { ctx.font = fontStr; w = ctx.measureText(ch).width; }
+        emCache[ch] = w > 0 ? w / fontPx : 0.6;        // 0.6em: safe default if canvas is unavailable
       }
       return emCache[ch];
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { emCache = {}; fontStr = null; });
     }
 
     function makeCol() {
@@ -178,16 +188,20 @@
       }
       return strip;
     }
+    /* Give a column its 0-9 strip. Pure DOM write — the single style flush
+       that makes the first roll animate happens in set(), once per update. */
+    function ensureStrip(c) {
+      if (c.strip) return false;
+      c.el.textContent = "";
+      c.el.classList.add("sv-num__col--digit");
+      c.strip = makeStrip();
+      c.el.appendChild(c.strip);
+      return true;
+    }
     function setCol(c, ch) {
       var isDigit = ch >= "0" && ch <= "9";
       if (isDigit) {
-        if (!c.strip) {
-          c.el.textContent = "";
-          c.el.classList.add("sv-num__col--digit");
-          c.strip = makeStrip();
-          c.el.appendChild(c.strip);
-          if (!reduceMotion) void c.el.offsetWidth;   // flush → first roll animates
-        }
+        ensureStrip(c);
         c.strip.style.transform = "translateY(" + (-(+ch) * 10) + "%)";
         c.el.style.width = "1ch";
       } else {
@@ -215,18 +229,27 @@
 
     return function set(str) {
       sr.textContent = str;
-      var chars = str.split("");
+      var chars = str.split(""), i;
+      // 1. DOM writes only: new columns (collapsed) and the digit strips they need
+      var fresh = [], dirty = false;
       while (cols.length < chars.length) {            // grow at the LEFT
         var col = makeCol();
         col.style.width = "0px";                      // expands to its width
         col.style.opacity = "0";
         host.insertBefore(col, host.firstChild);
-        if (!reduceMotion) void col.offsetWidth;      // flush → width animates
-        col.style.opacity = "1";
         cols.unshift({ el: col, strip: null, ch: null });
+        fresh.push(col);
       }
       while (cols.length > chars.length) retire(cols.shift());  // shrink at LEFT
-      for (var i = 0; i < chars.length; i++) setCol(cols[i], chars[i]);
+      for (i = 0; i < chars.length; i++) {
+        if (chars[i] >= "0" && chars[i] <= "9" && ensureStrip(cols[i])) dirty = true;
+      }
+      // 2. ONE style flush so the collapsed columns / fresh strips have a
+      //    starting state to transition from (was one flush per column)
+      if (!reduceMotion && (fresh.length || dirty)) void host.offsetWidth;
+      // 3. Targets
+      for (i = 0; i < fresh.length; i++) fresh[i].style.opacity = "1";
+      for (i = 0; i < chars.length; i++) setCol(cols[i], chars[i]);
     };
   }
 
