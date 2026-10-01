@@ -1,5 +1,5 @@
 /*!
- * marquee.js v1.4.0
+ * marquee.js v1.5.0
  * Infinite logo marquee — GSAP-driven, drag + momentum + hover-pause
  * Requires: gsap (global)
  *
@@ -18,6 +18,11 @@
  * https://github.com/roicool/sestek
  *
  * Changelog
+ * v1.5.0 — the ticker runs only while the marquee is on screen: an
+ *          IntersectionObserver (200px margin) adds/removes the tick, so a
+ *          page with several marquees no longer pays a gsap.set per frame
+ *          for rows nobody can see. Position is kept; the row resumes where
+ *          it left off. Behaviour on screen unchanged.
  * v1.4.0 — init is split into a WRITE phase (clone the items of every marquee)
  *          and a READ phase (measure every track): one forced reflow for the
  *          whole page instead of one per marquee. Behaviour unchanged.
@@ -186,7 +191,23 @@
       gsap.set(track, { x: -wrapped, force3D: true });
     }
 
-    gsap.ticker.add(tick);
+    // Tick only while on screen. Off-screen rows cost a gsap.set per frame
+    // for nothing; with several marquees on a page that was the single
+    // largest share of gsap's main-thread time. gsap's lagSmoothing caps the
+    // first deltaTime after a pause, so resuming never jumps.
+    var ticking = false;
+    function startTick() { if (!ticking) { ticking = true; gsap.ticker.add(tick); } }
+    function stopTick()  { if (ticking)  { ticking = false; gsap.ticker.remove(tick); } }
+    var io = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(function (entries) {
+        var en = entries[entries.length - 1];
+        if (en.isIntersecting) startTick(); else stopTick();
+      }, { rootMargin: "200px 0px" });
+      io.observe(root);
+    } else {
+      startTick();
+    }
 
     // ── 5. Hover ──────────────────────────────────────────────
     root.addEventListener("mouseenter", function () {
@@ -358,7 +379,8 @@
 
     // ── 8. Public cleanup ─────────────────────────────────────
     root._marqueeDestroy = function () {
-      gsap.ticker.remove(tick);
+      if (io) io.disconnect();
+      stopTick();
       if (spTween) spTween.kill();
     };
 
