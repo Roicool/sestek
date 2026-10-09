@@ -746,6 +746,7 @@ DOM yapısı:
 | `js/components/site-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/site-utils.js` |
 | `css/components/site-utils.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/site-utils.css` |
 | `js/components/sticky-utms.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/sticky-utms.js` |
+| `js/components/lead-events.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/lead-events.js` |
 | `js/components/search.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/search.js` |
 | `css/components/search.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/search.css` |
 | `js/components/dropdown.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/dropdown.js` |
@@ -1531,6 +1532,22 @@ DOM:
 - `data-view-persist="anahtar"` verilirse son seçim `localStorage`'a yazılır ve sayfalar arasında korunur.
 - `sestek:list-updated` event'ini dinler: pagination.js ile AJAX'la gelen yeni kartlara da mevcut görünümü basar.
 - **Mobil (≤ 767px — yatay mobil ve altı):** toggle gizlenir (`.is-mobile-hidden` + inline `display:none`) ve görünüm `is-list`'e zorlanır. Masaüstündeki seçim ve `localStorage` değeri bozulmaz; ekran büyüyünce geri gelir. Kırılım toggle başına `data-view-mobile-max="479"` ile değiştirilebilir.
+
+### Lead Events (dataLayer)
+
+Lead endpoint'ine (`/demos/api/crm/lead`) giden her **başarılı** POST'ta
+`dataLayer`'a `{ lead: null }` ve ardından `form_submit_success` event'ini
+basar (`form_type`, `event_id`, `page_url`, `lead: { email, phone,
+first_name, last_name, country }`). `window.fetch`'i sardığı için formlara
+dokunmadan çalışır — eski kütüphaneye bağlı React formları, crm-forms.js
+vb. hepsi kapsanır. Kütüphane ≥ 1.14.0 formları event'i zaten kendisi
+basıyorsa ikinci kez basmaz. Hatalı/honeypot gönderimlerde event çıkmaz.
+
+Site settings → Custom code → **Footer**, tek sefer (init gerekmez):
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/lead-events.js" defer></script>
+```
 
 ### Sticky UTMs
 
