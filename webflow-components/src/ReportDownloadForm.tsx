@@ -30,6 +30,7 @@ import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
 import { errorCode } from "./apiError";
+import { pushLeadEvent } from "./leadEvent";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -447,6 +448,11 @@ export function ReportDownloadForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
+          pushLeadEvent(formType, {
+            email: payload.emailaddress1 as string,
+            first_name: v.firstname,
+            last_name: v.lastname,
+          });
           finish();
         } else if (res.status === 429) {
           fail("rate_limited");

@@ -510,6 +510,32 @@ cookie'yi siler. `window` üzerinde `sestek:consent` event'i de fırlatılır.
 | Blocking | Look | Boolean | `Off` | On = karartma, seçim yapılana dek sayfa kullanılamaz |
 | Show after (ms) | Look | Number | `600` | |
 
+## Form dönüşüm event'i (dataLayer)
+
+Demo Request Form, Report Download Form ve Newsletter Form, gönderim CRM'e
+**başarıyla** yazıldığında (`src/leadEvent.ts`) şunu basar:
+
+```js
+dataLayer.push({ lead: null });   // önceki gönderimden kalan veriyi temizler
+dataLayer.push({
+  event: "form_submit_success",
+  form_type: "frm-demo",          // component'in Form type prop'u
+  event_id: "…uuid…",             // Google Ads orderId + tekilleştirme
+  page_url: location.href,
+  lead: { email, phone, first_name, last_name, country }
+});
+```
+
+- Honeypot dolu (bot) ve hatalı gönderimlerde event **çıkmaz**.
+- `lead` alanları formda yoksa ya da boşsa anahtar eklenmez: Newsletter yalnız
+  `email`, Report `email`/`first_name`/`last_name`; Demo hepsini gönderir.
+  `phone` E.164 (+905XXXXXXXXX), `country` telefon seçicideki ülke kodudur.
+- Newsletter'ın `Demo` modu (e-postayı demo sayfasına taşıyan) kayıt yapmaz,
+  event de basmaz.
+- GTM: Custom Event tetikleyicisi `form_submit_success`; `form_type` ile
+  formları ayır. `lead.*` kişisel veridir — yalnız Enhanced Conversions gibi
+  pazarlama izni olan tag'lerde kullan.
+
 ## Performans notları
 
 - Component girişi ~12 KB; three.js + shader içeren ~1 MB'lık (gzip ~%75

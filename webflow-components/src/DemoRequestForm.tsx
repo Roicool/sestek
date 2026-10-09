@@ -29,6 +29,7 @@ import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
 import { errorCode } from "./apiError";
+import { pushLeadEvent } from "./leadEvent";
 import {
   CountryPicker, PHONE_CSS, readPhone, useAutoCountry, type CountryCode,
 } from "./PhoneField";
@@ -544,6 +545,13 @@ export function DemoRequestForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
+          pushLeadEvent(formType, {
+            email: payload.emailaddress1 as string,
+            phone: phoneInfo.e164,
+            first_name: payload.firstname as string,
+            last_name: payload.lastname as string,
+            country,
+          });
           finish();
         } else if (res.status === 429) {
           fail("rate_limited");

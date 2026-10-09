@@ -26,6 +26,7 @@ import * as React from "react";
 import { classifyEmail } from "./emailPolicy";
 import { createTurnstile } from "./turnstile";
 import { errorCode } from "./apiError";
+import { pushLeadEvent } from "./leadEvent";
 
 type Lang = "TR" | "EN";
 type Theme = "Deep" | "Soft";
@@ -297,6 +298,7 @@ export function NewsletterForm({
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (res.ok && body?.ok !== false) {
+          pushLeadEvent(formType, { email: clean });
           finish();
         } else if (res.status === 429) {
           setError(msg("rate_limited"));
