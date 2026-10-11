@@ -21,6 +21,11 @@
  *
  * Header (title + subtitle) is in normal flow above the cards — no absolute
  * overlap, so it never collides with the cards on short viewports.
+ *
+ * Ultra-wide fix: header / nav / progress rows carry ONLY the gutter padding
+ * (which already centres a --container--2xl column); an extra max-width on
+ * the same box made the content width 2×container − viewport, i.e. a
+ * 172px column on a 2900px screen.
  */
 
 import * as React from "react";
@@ -188,7 +193,7 @@ const CSS = `
 @media (min-width:992px) and (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){.hs_viewport{min-height:100svh}}
 .hs.is-pinned .hs_viewport{height:100svh;min-height:100svh;padding-block:clamp(2rem,5vh,4rem)}
 .hs_head{display:flex;flex-direction:column;gap:.75rem;align-items:center;text-align:center;width:100%;
-  max-width:var(--container--2xl,96rem);margin:0 auto clamp(2rem,5vh,3.5rem);padding-inline:var(--hs-gutter)}
+  margin:0 auto clamp(2rem,5vh,3.5rem);padding-inline:var(--hs-gutter)}
 .hs_head>*{max-width:38rem}
 .hs[data-align="left"] .hs_head{align-items:flex-start;text-align:left}
 .hs_eyebrow{margin:0;font-size:.8125rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--hs-muted)}
@@ -233,7 +238,7 @@ const CSS = `
 .hs_card.is-revealed .hs_content h1,.hs_card.is-revealed .hs_content h2,.hs_card.is-revealed .hs_content h3,.hs_card.is-revealed .hs_content h4,.hs_card.is-revealed .hs_content h5,.hs_card.is-revealed .hs_content h6,.hs_card.is-revealed .hs_content strong,.hs_card.is-revealed .hs_num{color:var(--hs-reveal-text,var(--hs-reveal-text-default))}
 .hs_card.is-revealed .hs_content p,.hs_card.is-revealed .hs_content li{color:var(--hs-reveal-text,var(--hs-muted))}
 /* progress (pinned) */
-.hs_progress{display:none;align-items:center;gap:1.25rem;width:100%;max-width:var(--container--2xl,96rem);margin:clamp(1.5rem,4vh,2.5rem) auto 0;padding-inline:var(--hs-gutter)}
+.hs_progress{display:none;align-items:center;gap:1.25rem;width:100%;margin:clamp(1.5rem,4vh,2.5rem) auto 0;padding-inline:var(--hs-gutter)}
 .hs.is-pinned .hs_progress{display:flex}
 .hs_progress{color:var(--hs-ctl)}
 .hs_count{font-size:.8125rem;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -242,7 +247,7 @@ const CSS = `
 .hs_bar{position:relative;flex:1;height:1px;background:color-mix(in srgb,var(--hs-ctl) 22%,transparent);overflow:hidden}
 .hs_bar i{position:absolute;inset:0;background:var(--hs-ctl);transform-origin:left;transform:scaleX(0);transition:transform .15s linear}
 /* nav (carousel) */
-.hs_nav{display:none;align-items:center;justify-content:space-between;gap:1rem;width:100%;max-width:var(--container--2xl,96rem);
+.hs_nav{display:none;align-items:center;justify-content:space-between;gap:1rem;width:100%;
   margin:clamp(1.5rem,4vw,2rem) auto 0;padding-inline:var(--hs-gutter)}
 .hs.is-carousel .hs_nav{display:flex;color:var(--hs-ctl)}
 .hs_nav.is-locked{display:none}

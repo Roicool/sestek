@@ -13,7 +13,7 @@ function item(n: number) {
 }
 
 export default declareComponent(HScroll, {
-  name: "Horizontal Scroll Cards",
+  name: "Horizontal Scroll Cards v1.14.1",
   description:
     "Yatay kart şeridi (h-scroll.js v2.2.4 + hover-reveal.js'in React hali, Swiper'sız). " +
     "Masaüstünde bölüm bir ekran boyu pinlenir, dikey scroll kartları sola sürükler (GSAP ScrollTrigger sitenin global'inden), " +

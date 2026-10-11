@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { LogoMarquee } from "./LogoMarquee";
 
 export default declareComponent(LogoMarquee, {
-  name: "Logo Marquee",
+  name: "Logo Marquee v1.14.1",
   description:
     "CMS'e bağlı sonsuz logo bandı — marquee.js'in React hali. 'Logos' " +
     "slot'una bir Collection List (Clients → Logo image) bırak; component " +

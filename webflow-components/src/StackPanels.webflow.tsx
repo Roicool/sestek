@@ -19,7 +19,7 @@ function item(n: number) {
 }
 
 export default declareComponent(StackPanels, {
-  name: "Stack Panels",
+  name: "Stack Panels v1.14.1",
   description:
     "\"Why global brands are choosing SESTEK\" — üst üste binen panel scrollytelling'i (stack-panels.js v1.4.0'ın React hali). " +
     "Her panel (sonuncu hariç) pinlenir; sonraki üstüne kayarken alttaki bekler, küçülür, solar, bulanır ve yukarı süzülür. " +

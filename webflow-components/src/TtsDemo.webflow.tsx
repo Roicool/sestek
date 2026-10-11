@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { TtsDemo } from "./TtsDemo";
 
 export default declareComponent(TtsDemo, {
-  name: "TTS Demo",
+  name: "TTS Demo v1.14.1",
   description:
     "Text-to-Speech & Voice Cloning demo iframe'i (tts-cloning-demo.sestek.com), Webflow'daki iki onaylı embed'in React hali. " +
     "Side by side: solda eyebrow + başlık + açıklama + 2 stagger buton, sağda demo paneli (büyük ekran 593px panel / 728px iframe; " +

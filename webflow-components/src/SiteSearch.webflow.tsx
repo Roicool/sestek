@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { SiteSearch } from "./SiteSearch";
 
 export default declareComponent(SiteSearch, {
-  name: "Site Search",
+  name: "Site Search v1.14.1",
   description:
     "⌘K tam sayfa site araması. Nav'a bırakılan tetikleyici buton + body'ye " +
     "açılan iki sütunlu palet (solda sonuçlar, sağda önizleme). Index'i " +

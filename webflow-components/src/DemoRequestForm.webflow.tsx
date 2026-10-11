@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { DemoRequestForm } from "./DemoRequestForm";
 
 export default declareComponent(DemoRequestForm, {
-  name: "Demo Request Form",
+  name: "Demo Request Form v1.14.1",
   description:
     "Request a Demo sayfası — solda H2 başlık + açıklama + opsiyonel görsel " +
     "(URL boşsa gizli), sağda CRM'e DOĞRUDAN yazan form kartı (ad, soyad, " +
