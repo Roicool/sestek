@@ -19,7 +19,7 @@ function tab(n: number, d: { title: string; text: string; cta: string; id: strin
 }
 
 export default declareComponent(ScrollTabs, {
-  name: "Scroll Tabs",
+  name: "Scroll Tabs v1.14.1",
   description:
     "'Agentic CX Suite' scroll-tab bölümü — masaüstü + tablet/mobil tek " +
     "component'te. ≥ 992px: solda sticky başlık + akordeon sekmeler, sağda " +

@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { NotFoundPage } from "./NotFoundPage";
 
 export default declareComponent(NotFoundPage, {
-  name: "Not Found Page",
+  name: "Not Found Page v1.14.1",
   description:
     "Tam sayfa 404 şablonu: cam efektli minimal navbar, ortalanmış 404 gövdesi, ince footer. Tamamı 100svh'ye kilitli, " +
     "hiçbir ekranda scroll oluşmaz. Arka plan iki yumuşak marka tonu + soluk nokta ızgarası; renkler ve font sitenin token'larından gelir. " +

@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { CookieConsent } from "./CookieConsent";
 
 export default declareComponent(CookieConsent, {
-  name: "Cookie Consent",
+  name: "Cookie Consent v1.14.1",
   description:
     "Minimal Sestek çerez banner'ı — gerçekten çalışır: seçim cookie'de hatırlanır, Google Consent Mode v2 " +
     "güncellenir (gtag consent update + dataLayer 'cookie_consent_update' event'i), " +

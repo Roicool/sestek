@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { ShaderGradientBg } from "./ShaderGradientBg";
 
 export default declareComponent(ShaderGradientBg, {
-  name: "Shader Gradient BG",
+  name: "Shader Gradient BG v1.14.1",
   description:
     "Animated 3D shader-gradient background (ShaderGradient/three.js). Soft " +
     "Sestek pastel presets; Color 1-3 override the preset palette on ANY " +

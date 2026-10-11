@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { ReportDownloadForm } from "./ReportDownloadForm";
 
 export default declareComponent(ReportDownloadForm, {
-  name: "Report Download Form",
+  name: "Report Download Form v1.14.1",
   description:
     "Opus Report lead-magnet'i, iki düzende. HERO: Outbound Call Demo gibi " +
     "İKİ AYRI KART — solda içerik kartı (eyebrow + H1 + açıklama + kanıt " +

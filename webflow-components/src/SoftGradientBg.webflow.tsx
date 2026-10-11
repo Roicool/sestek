@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { SoftGradientBg } from "./SoftGradientBg";
 
 export default declareComponent(SoftGradientBg, {
-  name: "Soft Gradient BG",
+  name: "Soft Gradient BG v1.14.1",
   description:
     "Minimal (~6KB, zero-dependency) soft gradient background in Sestek " +
     "colours — four characters: Mist, Flow, Silk, Halo. Pure WebGL " +

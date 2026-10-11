@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { HeroTablet } from "./HeroTablet";
 
 export default declareComponent(HeroTablet, {
-  name: "Hero",
+  name: "Hero v1.14.1",
   description:
     "Ana sayfa hero'su — TÜM kırılımlar tek component'te. ≥ 992px: hero.js'in " +
     "birebir React hali (sitenin global gsap + ScrollTrigger'ı ile pin + scrub " +

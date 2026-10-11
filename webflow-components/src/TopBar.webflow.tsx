@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { TopBar } from "./TopBar";
 
 export default declareComponent(TopBar, {
-  name: "Top Bar",
+  name: "Top Bar v1.14.1",
   description:
     "Navbar'ın ÜSTÜNDE duyuru çubuğu. Metin + link, kapatma (×); kapatılınca cookie ile " +
     "hatırlanır ve hiçbir sayfada bir daha çıkmaz (Campaign id değişince yeniden gösterilir). " +

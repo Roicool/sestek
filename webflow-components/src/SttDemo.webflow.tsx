@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { SttDemo } from "./SttDemo";
 
 export default declareComponent(SttDemo, {
-  name: "STT Demo",
+  name: "STT Demo v1.14.1",
   description:
     "Speech Recognition (speech-to-text) demo iframe'i (sr-demo-performance.sestek.com, 600×600), TTS Demo ile aynı yapı. " +
     "Side by side: solda eyebrow + başlık + açıklama + 2 stagger buton, sağda demo paneli (büyük ekran 600px kare; " +

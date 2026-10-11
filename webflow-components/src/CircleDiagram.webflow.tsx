@@ -14,7 +14,7 @@ function item(n: number) {
 }
 
 export default declareComponent(CircleDiagram, {
-  name: "Circle Diagram",
+  name: "Circle Diagram v1.14.1",
   description:
     "Dönen halka diyagramı (circle-diagram.js v2.2 + css v1.5.1'in React hali). " +
     "Solda halkaya eşit dağılmış ikonlu chip'ler, sağda üst üste tıklanabilir kartlar. " +
