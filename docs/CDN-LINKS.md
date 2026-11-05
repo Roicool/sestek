@@ -55,7 +55,7 @@ https://cdn.jsdelivr.net/gh/roicool/sestek@<tag-or-branch>/<path>
 js/
   core/        utils.js, lenis-init.js, nav.js
   components/  hero.js, hero-slider.js, marquee.js, scroll-tabs.js, video-modal.js,
-               video-inline.js, webinar-player.js, card-marquee.js, section-title.js,
+               video-inline.js, webinar-player.js, video-player.js, card-marquee.js, section-title.js,
                text-rotator.js, story.js, accordion.js, demo-form.js, blog-utils.js,
                site-utils.js, sticky-utms.js
   effects/     grain.js, btn-glow.js, parallax.js
@@ -738,6 +738,8 @@ DOM yapısı:
 | `css/components/video-inline.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-inline.css` |
 | `js/components/webinar-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/webinar-player.js` |
 | `css/components/webinar-player.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/webinar-player.css` |
+| `js/components/video-player.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/video-player.js` |
+| `css/components/video-player.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/video-player.css` |
 | `js/components/card-marquee.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/card-marquee.js` |
 | `css/components/card-marquee.css` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/css/components/card-marquee.css` |
 | `js/components/blog-utils.js` | `https://cdn.jsdelivr.net/gh/roicool/sestek@main/js/components/blog-utils.js` |

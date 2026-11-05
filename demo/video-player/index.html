@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Player — demo</title>
+  <link rel="stylesheet" href="../../css/components/video-player.css">
+  <style>
+    :root{--brand-primary--500:#ec008c;--brand-secondary--900:#0b1220;--radius--xl:1.5rem;--radius--base:.625rem}
+    *{box-sizing:border-box}
+    body{margin:0;background:#f6f6f7;color:#17151f;font-family:Montserrat,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    main{max-width:72rem;margin:0 auto;padding:4rem 1.5rem 8rem;display:grid;gap:3rem}
+    h1{margin:0;font-size:clamp(2rem,4vw,3rem);font-weight:500;letter-spacing:-.02em}
+    p{margin:.75rem 0 0;color:#5b5b66;line-height:1.5}
+    .spacer{height:120vh;display:grid;place-items:center;color:#9a9aa5}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Video player</h1>
+      <p>Muted preview on load, “Watch video” restarts from 0:00 with sound.</p>
+    </header>
+
+    <div data-video-player data-vp-youtube="M7lc1UVf-VE" data-vp-title="YouTube IFrame API demo"></div>
+
+    <div class="spacer">scroll</div>
+
+    <div lang="tr" data-video-player data-vp-youtube="https://youtu.be/M7lc1UVf-VE" data-vp-load="interaction"></div>
+  </main>
+
+  <script src="../../js/components/video-player.js" defer></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () { Sestek.initVideoPlayer(); });
+  </script>
+</body>
+</html>
