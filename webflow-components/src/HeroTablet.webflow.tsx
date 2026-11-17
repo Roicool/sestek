@@ -3,14 +3,14 @@ import { props } from "@webflow/data-types";
 import { HeroTablet } from "./HeroTablet";
 
 export default declareComponent(HeroTablet, {
-  name: "Hero v1.14.1",
+  name: "Hero v1.14.2",
   description:
     "Ana sayfa hero'su — TÜM kırılımlar tek component'te. ≥ 992px: hero.js'in " +
     "birebir React hali (sitenin global gsap + ScrollTrigger'ı ile pin + scrub " +
     "timeline: video slot'a morph olur, kelimeler/açıklama/istatistikler " +
     "stagger ile gelir, nav--on-light). ≤ 991px: statik dikey akış, 100svh " +
     "video bloğu + 'Trusted by' + Logo Marquee slot'u, vurgulu ifade, görünüme " +
-    "girince sayan istatistikler. Masaüstü hero section'ını ve hero.js/hero.css " +
+    "girince beliren istatistikler (sayaç yok, değer doğrudan gelir). Masaüstü hero section'ını ve hero.js/hero.css " +
     "linklerini kaldırıp bunu koy; görünürlük ayarı gerekmez.",
   group: "Sestek",
   props: {
@@ -167,7 +167,7 @@ export default declareComponent(HeroTablet, {
       defaultValue: true,
       trueLabel: "On",
       falseLabel: "Off",
-      tooltip: "Masaüstü scroll animasyonu + mobil fade-up'lar + sayaçlar (reduced-motion'da otomatik kapanır)",
+      tooltip: "Masaüstü scroll animasyonu + mobil fade-up'lar (reduced-motion'da otomatik kapanır)",
     }),
     grain: props.Boolean({
       name: "Film grain",

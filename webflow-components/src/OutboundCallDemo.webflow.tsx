@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { OutboundCallDemo } from "./OutboundCallDemo";
 
 export default declareComponent(OutboundCallDemo, {
-  name: "Outbound Call Demo v1.14.1",
+  name: "Outbound Call Demo v1.14.2",
   description:
     "'Sizi arayalım' canlı demo — ikili kart: solda dev canlı orb'lu " +
     "vitrin kartı (telefon butonu sağdaki forma odaklar, altta caption + " +

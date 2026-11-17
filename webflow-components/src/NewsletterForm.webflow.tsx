@@ -3,7 +3,7 @@ import { props } from "@webflow/data-types";
 import { NewsletterForm } from "./NewsletterForm";
 
 export default declareComponent(NewsletterForm, {
-  name: "Newsletter Form v1.14.1",
+  name: "Newsletter Form v1.14.2",
   description:
     "Tek alanlı e-posta kayıt pill'i — solda input, içinde renkli buton, " +
     "altta caption. CRM lead endpoint'ine DOĞRUDAN gönderir (formType " +
