@@ -22,7 +22,7 @@
  *     0.74–0.86 description
  *     0.80–0.88 video fades out of the slot
  *     0.86–0.96 slot collapses (width 7rem → 0)
- *     0.76–0.92 stats stagger in; each counter rolls on its first reveal
+ *     0.76–0.92 stats stagger in (final values — no count-up)
  *   Slot geometry is measured hero-relative (hero top-left = viewport
  *   top-left while pinned), rebuilt on resize and font load without moving
  *   the scroll. Without gsap on the page, scene 2 is shown statically.
@@ -30,7 +30,7 @@
  * ≤ 991px  (tablet + mobile) — static vertical flow:
  *   100svh video block with title/subtitle/CTAs and the Trusted-by row
  *   pinned to its bottom edge, then phrase + description, then stats that
- *   count up when scrolled into view.
+ *   fade up when scrolled into view (final values — no count-up).
  *
  * SSR contract: nothing in render touches window/document; scene 1 (H1,
  * subtitle, CTAs = the LCP text) is fully visible in the server HTML; the
@@ -172,53 +172,13 @@ function useMedia(query: string): boolean | null {
   return m;
 }
 
-/* Count-up driven by a `start` flag: rolls 0 → target once start turns true.
-   Initial value is deterministic (0 while animated, else the target). */
-function useCountUp(target: number, start: boolean, enabled: boolean, duration = 1.6) {
-  const [value, setValue] = React.useState(enabled ? 0 : target);
-  const done = React.useRef(false);
-  React.useEffect(() => {
-    if (!enabled) { setValue(target); return; }
-    if (!start || done.current) return;
-    done.current = true;
-    let raf = 0;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const p = Math.min(1, (now - t0) / (duration * 1000));
-      const eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);   // easeOutExpo
-      setValue(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, start, enabled, duration]);
-  return value;
-}
-
-/* Reserve the final formatted width (in ch, tabular-nums) so digits rolling
-   in during the count-up don't re-space the stats row. */
-function statWidth(stat: StatDef): string {
-  return (stat.v.toLocaleString("en-US") + (stat.s || "")).length + "ch";
-}
-
-/* One stat for both breakpoints. Desktop: the scroll timeline says when to
-   start (`start`). Mobile (`io`): starts counting when it scrolls into view. */
-function Stat({ stat, start, io, animate, refCb }: { stat: StatDef; start: boolean; io: boolean; animate: boolean; refCb: (el: HTMLDivElement | null) => void }) {
-  const ref = React.useRef<HTMLDivElement | null>(null);
-  const [ioStart, setIoStart] = React.useState(false);
-  React.useEffect(() => {
-    const el = ref.current;
-    if (!el || !io || !animate) return;
-    const obs = new IntersectionObserver((es) => {
-      if (es.some((e) => e.isIntersecting)) { setIoStart(true); obs.disconnect(); }
-    }, { threshold: 0.4 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [io, animate]);
-  const shown = useCountUp(stat.v, io ? ioStart : start, animate);
+/* One stat for both breakpoints. The number is rendered at its FINAL value
+   (server HTML included) — it never counts up; only the fade/slide reveal of
+   the whole stat is animated (gsap on desktop, [data-reveal] on mobile). */
+function Stat({ stat, refCb }: { stat: StatDef; refCb: (el: HTMLDivElement | null) => void }) {
   return (
-    <div ref={(el) => { ref.current = el; refCb(el); }} className="sh-stat" data-reveal>
-      <div className="sh-stat-n" style={{ minWidth: statWidth(stat) }}>{shown.toLocaleString("en-US")}{stat.s || ""}</div>
+    <div ref={refCb} className="sh-stat" data-reveal>
+      <div className="sh-stat-n">{stat.v.toLocaleString("en-US")}{stat.s || ""}</div>
       {stat.l && <div className="sh-stat-l">{renderLines(stat.l)}</div>}
     </div>
   );
@@ -481,7 +441,7 @@ export function HeroTablet(p: HeroTabletProps) {
   const desktopMq = useMedia("(min-width: 992px)");
   const reduce = useMedia("(prefers-reduced-motion: reduce)") === true;
   const desktop = desktopMq === true;          // attach the GSAP pin + scrub
-  const mobile = desktopMq === false;          // attach IO reveal + count-up
+  const mobile = desktopMq === false;          // attach IO fade-up reveals
   const animated = (p.animate !== false) && !reduce;
   const rootRef = React.useRef<HTMLElement>(null);
 
@@ -531,7 +491,6 @@ export function HeroTablet(p: HeroTabletProps) {
   const desc = React.useRef<HTMLParagraphElement>(null);
   const words = React.useRef<(HTMLSpanElement | null)[]>([]);
   const statEls = React.useRef<(HTMLDivElement | null)[]>([]);
-  const [statStart, setStatStart] = React.useState<boolean[]>([]);
   const [noGsap, setNoGsap] = React.useState(false);
 
   const tokens = React.useMemo(() => tokenize(c.phrase.replace(/\|/g, " ")), [c.phrase]);
@@ -580,7 +539,6 @@ export function HeroTablet(p: HeroTabletProps) {
     const navEl = document.querySelector<HTMLElement>("[data-nav]");
     const hasStats = el.stats.length > 0;
     let activeST: GsapLike = null, activeTl: GsapLike = null;
-    const fired: boolean[] = el.stats.map(() => false);
 
     function build() {
       // Rebuild must NOT move the scroll (see hero.js v1.8.3): clean kill +
@@ -678,13 +636,7 @@ export function HeroTablet(p: HeroTabletProps) {
         const sDur = 0.10, sStart = 0.76, sEnd = 0.92;
         const sSpace = el.stats.length > 1 ? (sEnd - sStart - sDur) / (el.stats.length - 1) : 0;
         el.stats.forEach((stat, i) => {
-          tl.to(stat, {
-            opacity: 1, y: 0, ease: "power3.out", duration: sDur,
-            onStart: () => {
-              // counter rolls the moment the stat starts revealing — once
-              if (!fired[i]) { fired[i] = true; setStatStart(fired.slice()); }
-            },
-          }, sStart + i * sSpace);
+          tl.to(stat, { opacity: 1, y: 0, ease: "power3.out", duration: sDur }, sStart + i * sSpace);
         });
       }
 
@@ -852,7 +804,7 @@ export function HeroTablet(p: HeroTabletProps) {
             {c.stats.length > 0 && (
               <div className="sh-stats"><div className="sh-stats-in">
                 {c.stats.map((s, i) => (
-                  <Stat key={i} stat={s} start={isStatic || !!statStart[i]} io={mobile} animate={c.animated} refCb={(el) => { statEls.current[i] = el; }} />
+                  <Stat key={i} stat={s} refCb={(el) => { statEls.current[i] = el; }} />
                 ))}
               </div></div>
             )}

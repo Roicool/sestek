@@ -14,7 +14,7 @@ function voice(n: number, d: { name: string; desc: string; file: string; colors:
 }
 
 export default declareComponent(VoiceOrbs, {
-  name: "Voice Orbs v1.14.1",
+  name: "Voice Orbs v1.14.2",
   description:
     "Ses örneği orb carousel'i — voice-orbs.js v3.4'ün React hali. Sesler " +
     "Voice 1–10 gruplarından manuel girilir (ad, açıklama, ses URL, renkler; " +
